@@ -10,6 +10,9 @@
       </button>
     </div>
     <h3 class="dc-title">{{ dossier.title }}</h3>
+    <div v-if="dossier.tags?.length" class="dc-tags">
+      <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>
+    </div>
     <p v-if="dossier.description" class="dc-desc">{{ dossier.description }}</p>
     <div class="dc-footer mono">
       <span>{{ new Date(dossier.updatedAt).toLocaleDateString('fr-FR') }}</span>
@@ -102,6 +105,19 @@ const statusLabel = computed(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.dc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dc-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--me-accent-glow);
+  color: var(--me-accent);
+  text-transform: lowercase;
 }
 .dc-footer {
   font-size: 11px;

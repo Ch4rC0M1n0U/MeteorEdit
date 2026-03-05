@@ -33,6 +33,21 @@
           <span class="di-label mono">Description / Synthese</span>
           <span class="di-value di-value-block">{{ form.description }}</span>
         </div>
+        <div class="di-field di-tags-field">
+          <span class="di-label mono">Tags</span>
+          <v-combobox
+            v-model="localTags"
+            :items="availableTags"
+            label="Tags"
+            multiple
+            chips
+            closable-chips
+            density="compact"
+            hide-details
+            variant="outlined"
+            @update:model-value="saveTags"
+          />
+        </div>
       </div>
 
       <div class="di-section">
@@ -163,8 +178,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch, computed } from 'vue';
+import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
+import api from '../../services/api';
 
 const dossierStore = useDossierStore();
 
@@ -198,6 +214,9 @@ const entityTypes = [
   'Pseudo',
   'Autre',
 ];
+
+const localTags = ref<string[]>([]);
+const availableTags = ref<string[]>([]);
 
 const form = reactive({
   title: '',
@@ -234,6 +253,27 @@ function loadFromDossier() {
 }
 
 watch(() => dossierStore.currentDossier, loadFromDossier, { immediate: true });
+
+watch(() => dossierStore.currentDossier?.tags, (tags) => {
+  localTags.value = tags || [];
+}, { immediate: true });
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/dossiers/tags');
+    availableTags.value = data;
+  } catch (e) {
+    console.error('Failed to load tags:', e);
+  }
+});
+
+async function saveTags(tags: string[]) {
+  const cleaned = tags.map(t => t.toLowerCase().trim()).filter(Boolean);
+  localTags.value = cleaned;
+  if (dossierStore.currentDossier) {
+    await dossierStore.updateDossier(dossierStore.currentDossier._id, { tags: cleaned });
+  }
+}
 
 function startEdit() {
   loadFromDossier();
@@ -531,6 +571,9 @@ async function removeEntity(index: number) {
 .di-el-btn-danger:hover {
   background: rgba(248, 113, 113, 0.1);
   color: var(--me-error);
+}
+.di-tags-field {
+  margin-top: 8px;
 }
 .di-empty {
   font-size: 12px;
