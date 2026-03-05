@@ -1,3 +1,11 @@
+/**
+ * Yjs WebSocket server for collaborative editing.
+ *
+ * Persistence strategy:
+ * - Primary: LevelDB stores Yjs document updates (real-time, via y-websocket)
+ * - Secondary: Clients save content to MongoDB API every 30s (for search indexing / API reads)
+ * - MongoDB contentText field is updated on each API save for full-text search
+ */
 import http from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
 import jwt from 'jsonwebtoken';
