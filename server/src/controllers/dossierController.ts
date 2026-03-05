@@ -101,3 +101,15 @@ export async function updateCollaborators(req: AuthRequest, res: Response): Prom
     res.status(500).json({ message: 'Server error' });
   }
 }
+
+export async function getTags(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const tags = await Dossier.distinct('tags', {
+      $or: [{ owner: userId }, { collaborators: userId }],
+    });
+    res.json(tags.filter(Boolean).sort());
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
