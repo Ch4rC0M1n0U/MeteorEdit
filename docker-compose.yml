@@ -16,6 +16,7 @@ services:
     container_name: meteoredit-server
     ports:
       - "3001:3001"
+      - "3002:3002"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/meteoredit
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
