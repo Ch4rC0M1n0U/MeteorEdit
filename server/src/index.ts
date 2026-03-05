@@ -16,6 +16,7 @@ import snapshotRoutes from './routes/snapshots';
 import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notifications';
 import SiteSettings from './models/SiteSettings';
+import { startYjsServer } from './yjs-server';
 
 dotenv.config();
 
@@ -66,6 +67,9 @@ async function start() {
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
+
+  const yjsPort = parseInt(process.env.YJS_PORT || '3002');
+  startYjsServer(yjsPort);
 }
 
 start().catch(console.error);
