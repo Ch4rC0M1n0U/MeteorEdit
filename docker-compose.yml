@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: meteoredit-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: meteoredit-server
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/meteoredit
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev-refresh-secret}
+      - PORT=3001
+    depends_on:
+      - mongodb
+    volumes:
+      - uploads:/app/uploads
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: meteoredit-client
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+
+volumes:
+  mongo-data:
+  uploads:

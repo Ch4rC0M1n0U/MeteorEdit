@@ -1,0 +1,228 @@
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/700.css';
+@import '@fontsource-variable/inter';
+
+:root {
+  --me-bg-deep: #0a0e17;
+  --me-bg-surface: #111827;
+  --me-bg-elevated: #1a2332;
+  --me-bg-glass: rgba(17, 24, 39, 0.7);
+  --me-border: rgba(99, 179, 237, 0.12);
+  --me-border-hover: rgba(99, 179, 237, 0.25);
+  --me-accent: #38bdf8;
+  --me-accent-glow: rgba(56, 189, 248, 0.15);
+  --me-accent-warm: #f59e0b;
+  --me-text-primary: #e2e8f0;
+  --me-text-secondary: #94a3b8;
+  --me-text-muted: #64748b;
+  --me-success: #34d399;
+  --me-error: #f87171;
+  --me-warning: #fbbf24;
+  --me-radius: 12px;
+  --me-radius-sm: 8px;
+  --me-radius-xs: 6px;
+  --me-font-mono: 'JetBrains Mono', monospace;
+  --me-font-body: 'Inter Variable', system-ui, sans-serif;
+  --me-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --me-shadow-glow: 0 0 20px rgba(56, 189, 248, 0.08);
+}
+
+[data-theme="light"] {
+  --me-bg-deep: #f1f5f9;
+  --me-bg-surface: #ffffff;
+  --me-bg-elevated: #f8fafc;
+  --me-bg-glass: rgba(255, 255, 255, 0.8);
+  --me-border: rgba(15, 23, 42, 0.1);
+  --me-border-hover: rgba(15, 23, 42, 0.2);
+  --me-accent: #2563eb;
+  --me-accent-glow: rgba(37, 99, 235, 0.1);
+  --me-accent-warm: #d97706;
+  --me-text-primary: #0f172a;
+  --me-text-secondary: #475569;
+  --me-text-muted: #94a3b8;
+  --me-success: #059669;
+  --me-error: #dc2626;
+  --me-warning: #d97706;
+  --me-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --me-shadow-glow: 0 0 20px rgba(37, 99, 235, 0.06);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body, h1, h2, h3, h4, h5, h6, p, ul, ol {
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #app {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--me-font-body);
+  background: var(--me-bg-deep);
+  color: var(--me-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--me-text-muted);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--me-text-secondary);
+}
+
+/* Override Vuetify defaults */
+.v-application {
+  font-family: var(--me-font-body) !important;
+  background: var(--me-bg-deep) !important;
+}
+
+.v-application .v-main {
+  background: var(--me-bg-deep);
+}
+
+/* Glass card style */
+.glass-card {
+  background: var(--me-bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius);
+  box-shadow: var(--me-shadow);
+}
+
+.glass-card:hover {
+  border-color: var(--me-border-hover);
+  box-shadow: var(--me-shadow), var(--me-shadow-glow);
+}
+
+/* Accent glow button */
+.btn-accent {
+  background: var(--me-accent) !important;
+  color: #0a0e17 !important;
+  font-weight: 600 !important;
+  border-radius: var(--me-radius-sm) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 0 0 0 var(--me-accent-glow) !important;
+}
+
+.btn-accent:hover {
+  box-shadow: 0 0 20px var(--me-accent-glow), 0 4px 12px rgba(0,0,0,0.3) !important;
+  transform: translateY(-1px);
+}
+
+/* Mono label */
+.mono {
+  font-family: var(--me-font-mono);
+}
+
+/* Status indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot--active { background: var(--me-success); box-shadow: 0 0 8px var(--me-success); }
+.status-dot--warning { background: var(--me-warning); box-shadow: 0 0 8px var(--me-warning); }
+.status-dot--error { background: var(--me-error); box-shadow: 0 0 8px var(--me-error); }
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+.fade-in-delay-1 { animation-delay: 0.05s; opacity: 0; }
+.fade-in-delay-2 { animation-delay: 0.1s; opacity: 0; }
+.fade-in-delay-3 { animation-delay: 0.15s; opacity: 0; }
+.fade-in-delay-4 { animation-delay: 0.2s; opacity: 0; }
+
+/* TipTap editor overrides */
+.editor-content .ProseMirror {
+  min-height: 400px;
+  outline: none;
+  font-family: var(--me-font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--me-text-primary);
+}
+.editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--me-text-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.editor-content .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.editor-content .ProseMirror td,
+.editor-content .ProseMirror th {
+  border: 1px solid var(--me-border);
+  padding: 10px 14px;
+}
+.editor-content .ProseMirror th {
+  background: var(--me-bg-elevated);
+  font-weight: 600;
+}
+.editor-content .ProseMirror img {
+  max-width: 100%;
+  border-radius: var(--me-radius-sm);
+  cursor: pointer;
+}
+.editor-content .ProseMirror h1,
+.editor-content .ProseMirror h2,
+.editor-content .ProseMirror h3 {
+  font-family: var(--me-font-mono);
+  font-weight: 700;
+  color: var(--me-text-primary);
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.editor-content .ProseMirror blockquote {
+  border-left: 3px solid var(--me-accent);
+  padding-left: 16px;
+  color: var(--me-text-secondary);
+  font-style: italic;
+}
+.editor-content .ProseMirror code {
+  font-family: var(--me-font-mono);
+  background: var(--me-bg-elevated);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.editor-content .ProseMirror pre {
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-sm);
+  padding: 16px;
+  overflow-x: auto;
+}
+.editor-content .ProseMirror pre code {
+  background: transparent;
+  padding: 0;
+}
