@@ -93,3 +93,13 @@ export interface IActivityLog extends Document {
   ip: string;
   timestamp: Date;
 }
+
+export interface INotification extends Document {
+  userId: Types.ObjectId;
+  type: 'collaborator.added' | 'collaborator.removed' | 'dossier.updated' | 'node.updated';
+  message: string;
+  dossierId: Types.ObjectId | null;
+  fromUserId: Types.ObjectId | null;
+  read: boolean;
+  createdAt: Date;
+}

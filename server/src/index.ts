@@ -14,6 +14,7 @@ import searchRoutes from './routes/search';
 import exportRoutes from './routes/export';
 import snapshotRoutes from './routes/snapshots';
 import settingsRoutes from './routes/settings';
+import notificationRoutes from './routes/notifications';
 import SiteSettings from './models/SiteSettings';
 
 dotenv.config();
@@ -49,6 +50,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/dossiers', dossierRoutes);
 app.use('/api', nodeRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api', exportRoutes);
 app.use('/api', snapshotRoutes);
 
