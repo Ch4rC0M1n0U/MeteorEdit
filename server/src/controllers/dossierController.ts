@@ -34,13 +34,14 @@ export async function createDossier(req: AuthRequest, res: Response): Promise<vo
 
 export async function getDossier(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const dossier = await Dossier.findById(req.params.id);
+    const dossier = await Dossier.findById(req.params.id).populate('collaborators', 'firstName lastName email');
     if (!dossier) {
       res.status(404).json({ message: 'Dossier not found' });
       return;
     }
     const userId = req.user!.userId;
-    if (dossier.owner.toString() !== userId && !dossier.collaborators.map(c => c.toString()).includes(userId)) {
+    const collabIds = dossier.collaborators.map((c: any) => (c._id || c).toString());
+    if (dossier.owner.toString() !== userId && !collabIds.includes(userId)) {
       res.status(403).json({ message: 'Access denied' });
       return;
     }
@@ -130,7 +131,8 @@ export async function updateCollaborators(req: AuthRequest, res: Response): Prom
     for (const uid of removed) {
       await createNotification(uid, 'collaborator.removed', `${actorName} vous a retire du dossier "${dossier.title}"`, dossier._id.toString(), req.user!.userId);
     }
-    res.json(dossier);
+    const updated = await Dossier.findById(req.params.id).populate('collaborators', 'firstName lastName email');
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

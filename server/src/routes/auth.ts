@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
 import { updateProfile, uploadAvatar, deleteAvatar, changePassword } from '../controllers/profileController';
 import { setup2FA, verify2FA, disable2FA, validate2FA } from '../controllers/twoFactorController';
+import { searchUsers } from '../controllers/userSearchController';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.post('/login', [
   body('password').notEmpty(),
 ], login);
 
+router.get('/users/search', authenticate, searchUsers);
 router.get('/me', authenticate, me);
 router.post('/refresh', refresh);
 router.get('/preferences', authenticate, getPreferences);
