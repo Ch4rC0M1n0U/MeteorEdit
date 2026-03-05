@@ -3,6 +3,8 @@ import Dossier from '../models/Dossier';
 import DossierNode from '../models/DossierNode';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
+import { createNotification } from '../utils/notifier';
+import User from '../models/User';
 
 export async function listDossiers(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -63,6 +65,16 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
     await dossier.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title }, ip);
+    if (dossier.collaborators.length > 0) {
+      const actor = await User.findById(req.user!.userId).select('firstName lastName');
+      const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Un utilisateur';
+      for (const collab of dossier.collaborators) {
+        const collabId = collab.toString();
+        if (collabId !== req.user!.userId) {
+          await createNotification(collabId, 'dossier.updated', `${actorName} a modifie le dossier "${dossier.title}"`, dossier._id.toString(), req.user!.userId);
+        }
+      }
+    }
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -110,6 +122,14 @@ export async function updateCollaborators(req: AuthRequest, res: Response): Prom
     const removed = previousCollabs.filter(c => !currentCollabs.includes(c));
     for (const uid of added) await logActivity(req.user!.userId, 'collaborator.add', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip);
     for (const uid of removed) await logActivity(req.user!.userId, 'collaborator.remove', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip);
+    const actor = await User.findById(req.user!.userId).select('firstName lastName');
+    const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Un utilisateur';
+    for (const uid of added) {
+      await createNotification(uid, 'collaborator.added', `${actorName} vous a ajoute au dossier "${dossier.title}"`, dossier._id.toString(), req.user!.userId);
+    }
+    for (const uid of removed) {
+      await createNotification(uid, 'collaborator.removed', `${actorName} vous a retire du dossier "${dossier.title}"`, dossier._id.toString(), req.user!.userId);
+    }
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
