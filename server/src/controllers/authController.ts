@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import User from '../models/User';
+import LoginLog from '../models/LoginLog';
 import { AuthRequest } from '../middleware/auth';
 
-function generateTokens(userId: string, role: string) {
+export function generateTokens(userId: string, role: string) {
   const accessOpts: SignOptions = { expiresIn: (process.env.JWT_EXPIRATION || '15m') as any };
   const refreshOpts: SignOptions = { expiresIn: (process.env.JWT_REFRESH_EXPIRATION || '7d') as any };
   const accessToken = jwt.sign({ userId, role }, process.env.JWT_SECRET!, accessOpts);
@@ -47,6 +48,24 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
     const tokens = generateTokens(user._id.toString(), user.role);
+
+    // Track login
+    user.lastLoginAt = new Date();
+    user.lastLoginIp = req.ip || req.socket.remoteAddress || '';
+    await user.save();
+    await LoginLog.create({ userId: user._id, ip: user.lastLoginIp });
+
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      const tempToken = jwt.sign(
+        { userId: user._id.toString(), purpose: '2fa' },
+        process.env.JWT_SECRET! + '_2fa',
+        { expiresIn: '5m' }
+      );
+      res.json({ requires2FA: true, tempToken });
+      return;
+    }
+
     res.json({
       ...tokens,
       user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
@@ -58,7 +77,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 export async function me(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const user = await User.findById(req.user!.userId).select('-password');
+    const user = await User.findById(req.user!.userId).select('-password -twoFactorSecret -twoFactorBackupCodes');
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
