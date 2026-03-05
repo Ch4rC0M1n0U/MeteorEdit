@@ -146,10 +146,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 import { useConfirm } from '../../composables/useConfirm';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
+import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import { useAuthStore } from '../../stores/auth';
 import { ResizableImageExtension } from './resizableImageExtension';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
@@ -171,9 +176,42 @@ import api, { SERVER_URL } from '../../services/api';
 const props = defineProps<{ modelValue: any; nodeId: string }>();
 const emit = defineEmits<{ 'update:modelValue': [value: any] }>();
 
+const authStore = useAuthStore();
 const { prompt: promptDialog } = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Yjs collaborative editing setup
+const ydoc = new Y.Doc();
+const yjsUrl = import.meta.env.VITE_YJS_URL || 'ws://localhost:3002';
+const token = localStorage.getItem('accessToken') || '';
+const provider = new WebsocketProvider(yjsUrl, `node:${props.nodeId}`, ydoc, {
+  params: { token },
+});
+
+// User color from userId hash
+function hashColor(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return `hsl(${Math.abs(hash) % 360}, 70%, 60%)`;
+}
+const userColor = hashColor(authStore.user?.id || 'default');
+const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : 'Anonyme';
+
+provider.awareness.setLocalStateField('user', {
+  name: userName,
+  color: userColor,
+});
+
+// Presence indicators
+const awarenessUsers = ref<Array<{ name: string; color: string }>>([]);
+
+provider.awareness.on('change', () => {
+  const states = Array.from(provider.awareness.getStates().values());
+  awarenessUsers.value = states
+    .filter((s: any) => s.user && s.user.name !== userName)
+    .map((s: any) => ({ name: s.user.name, color: s.user.color }));
+});
 
 const currentTextColor = computed(() => {
   if (!editor.value) return '#1a1a1a';
@@ -240,9 +278,10 @@ async function handleFileSelect(e: Event) {
 }
 
 const editor = useEditor({
-  content: props.modelValue || '',
   extensions: [
-    StarterKit,
+    StarterKit.configure({ undoRedo: false }),
+    Collaboration.configure({ document: ydoc }),
+    CollaborationCursor.configure({ provider }),
     ResizableImageExtension.configure({ inline: true, allowBase64: true }),
     Table.configure({ resizable: true }),
     TableRow,
@@ -266,7 +305,7 @@ const editor = useEditor({
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
       api.put(`/nodes/${props.nodeId}`, { content: json });
-    }, 2000);
+    }, 30000);
   },
   editorProps: {
     handlePaste: (view, event) => {
@@ -350,15 +389,14 @@ const editor = useEditor({
   },
 });
 
-watch(() => props.modelValue, (val) => {
-  if (editor.value && JSON.stringify(editor.value.getJSON()) !== JSON.stringify(val)) {
-    editor.value.commands.setContent(val || '');
-  }
-});
-
-watch(() => props.nodeId, () => {
-  if (editor.value) {
-    editor.value.commands.setContent(props.modelValue || '');
+// Sync initial content from server into Yjs when first connected
+provider.on('sync', (isSynced: boolean) => {
+  if (isSynced) {
+    const fragment = ydoc.getXmlFragment('default');
+    // If ydoc is empty and node has content, seed it
+    if (fragment.length === 0 && props.modelValue) {
+      editor.value?.commands.setContent(props.modelValue);
+    }
   }
 });
 
