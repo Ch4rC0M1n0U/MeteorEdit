@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
-import { listUsers, updateUser, deleteUser } from '../controllers/adminController';
+import { listUsers, updateUser, deleteUser, resetUserPassword, resetUser2FA } from '../controllers/adminController';
 import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon } from '../controllers/settingsController';
 import { getStats } from '../controllers/statsController';
 import { upload } from '../config/upload';
@@ -11,6 +11,8 @@ router.use(authenticate, requireAdmin);
 router.get('/users', listUsers);
 router.patch('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
+router.post('/users/:id/reset-password', resetUserPassword);
+router.post('/users/:id/reset-2fa', resetUser2FA);
 
 router.put('/settings', updateSettings);
 router.post('/settings/logo', upload.single('logo'), uploadLogo);

@@ -51,7 +51,8 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     // Track login
     user.lastLoginAt = new Date();
-    user.lastLoginIp = req.ip || req.socket.remoteAddress || '';
+    const rawIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || req.socket.remoteAddress || '';
+    user.lastLoginIp = rawIp.replace('::ffff:', '');
     await user.save();
     await LoginLog.create({ userId: user._id, ip: user.lastLoginIp });
 
