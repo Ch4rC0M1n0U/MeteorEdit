@@ -14,6 +14,8 @@
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@mdi/font": "^7.4.47",
     "@tiptap/extension-code-block-lowlight": "^3.20.0",
+    "@tiptap/extension-collaboration": "^3.20.0",
+    "@tiptap/extension-collaboration-cursor": "^3.0.0",
     "@tiptap/extension-color": "^3.20.0",
     "@tiptap/extension-highlight": "^3.20.0",
     "@tiptap/extension-image": "^3.20.0",
@@ -44,7 +46,9 @@
     "vue": "^3.5.25",
     "vue-chartjs": "^5.3.3",
     "vue-router": "^4.6.4",
-    "vuetify": "^4.0.1"
+    "vuetify": "^4.0.1",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.29"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
