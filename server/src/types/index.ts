@@ -59,6 +59,7 @@ export interface IDossierNode extends Document {
   title: string;
   order: number;
   content: any | null;
+  contentText: string | null;
   excalidrawData: any | null;
   fileUrl: string | null;
   fileName: string | null;

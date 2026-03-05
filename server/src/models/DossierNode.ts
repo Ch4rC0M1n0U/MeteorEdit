@@ -9,6 +9,7 @@ const dossierNodeSchema = new Schema<IDossierNode>(
     title: { type: String, required: true, trim: true },
     order: { type: Number, default: 0 },
     content: { type: Schema.Types.Mixed, default: null },
+    contentText: { type: String, default: null },
     excalidrawData: { type: Schema.Types.Mixed, default: null },
     fileUrl: { type: String, default: null },
     fileName: { type: String, default: null },
@@ -19,5 +20,6 @@ const dossierNodeSchema = new Schema<IDossierNode>(
 );
 
 dossierNodeSchema.index({ dossierId: 1, parentId: 1 });
+dossierNodeSchema.index({ contentText: 'text', title: 'text' });
 
 export default mongoose.model<IDossierNode>('DossierNode', dossierNodeSchema);
