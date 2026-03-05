@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../types';
 
 const onlineUsers = new Set<string>();
+let ioInstance: Server | null = null;
+const userSockets = new Map<string, Set<string>>();
 
 export function getOnlineUsers(): Set<string> {
   return onlineUsers;
@@ -13,10 +15,19 @@ export function getOnlineCount(): number {
   return onlineUsers.size;
 }
 
+export function getIO(): Server | null {
+  return ioInstance;
+}
+
+export function getUserSockets(): Map<string, Set<string>> {
+  return userSockets;
+}
+
 export function setupSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: { origin: '*', methods: ['GET', 'POST'] },
   });
+  ioInstance = io;
 
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
@@ -34,6 +45,9 @@ export function setupSocket(httpServer: HttpServer) {
     const user = (socket as any).user as JwtPayload;
     console.log(`User ${user.userId} connected`);
     onlineUsers.add(user.userId);
+
+    if (!userSockets.has(user.userId)) userSockets.set(user.userId, new Set());
+    userSockets.get(user.userId)!.add(socket.id);
 
     // Broadcast online count to admin room
     io.to('admin-room').emit('online-count', onlineUsers.size);
@@ -80,6 +94,8 @@ export function setupSocket(httpServer: HttpServer) {
 
     socket.on('disconnect', () => {
       console.log(`User ${user.userId} disconnected`);
+      userSockets.get(user.userId)?.delete(socket.id);
+      if (userSockets.get(user.userId)?.size === 0) userSockets.delete(user.userId);
       onlineUsers.delete(user.userId);
       io.to('admin-room').emit('online-count', onlineUsers.size);
     });
