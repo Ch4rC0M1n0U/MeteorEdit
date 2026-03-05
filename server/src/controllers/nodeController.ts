@@ -2,6 +2,7 @@ import { Response } from 'express';
 import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { AuthRequest } from '../middleware/auth';
+import { extractTextFromTipTap } from '../utils/extractText';
 
 async function checkDossierAccess(dossierId: string, userId: string): Promise<boolean> {
   const dossier = await Dossier.findById(dossierId);
@@ -59,6 +60,9 @@ export async function updateNode(req: AuthRequest, res: Response): Promise<void>
       return;
     }
     Object.assign(node, req.body);
+    if (req.body.content && node.type === 'note') {
+      node.contentText = extractTextFromTipTap(req.body.content);
+    }
     await node.save();
     res.json(node);
   } catch (error) {
