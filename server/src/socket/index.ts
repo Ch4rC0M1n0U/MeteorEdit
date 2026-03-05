@@ -68,6 +68,8 @@ export function setupSocket(httpServer: HttpServer) {
       socket.to(`dossier:${dossierId}`).emit('user-left', { userId: user.userId });
     });
 
+    // Fallback: used when Yjs collaboration is not available.
+    // When Yjs is active, real-time sync happens via y-websocket.
     socket.on('node-update', (data: { dossierId: string; nodeId: string; content: any }) => {
       socket.to(`dossier:${data.dossierId}`).emit('node-updated', {
         nodeId: data.nodeId,
@@ -76,6 +78,8 @@ export function setupSocket(httpServer: HttpServer) {
       });
     });
 
+    // Fallback: used when Yjs collaboration is not available.
+    // When Yjs is active, real-time sync happens via y-websocket.
     socket.on('excalidraw-update', (data: { dossierId: string; nodeId: string; elements: any }) => {
       socket.to(`dossier:${data.dossierId}`).emit('excalidraw-updated', {
         nodeId: data.nodeId,

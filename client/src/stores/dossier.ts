@@ -176,12 +176,16 @@ export const useDossierStore = defineStore('dossier', () => {
     selectedNode.value = node;
   }
 
+  // Fallback: used when Yjs collaboration is not available.
+  // When Yjs is active, real-time sync happens via y-websocket.
   function emitNodeUpdate(nodeId: string, content: any) {
     if (currentDossier.value) {
       getSocket()?.emit('node-update', { dossierId: currentDossier.value._id, nodeId, content });
     }
   }
 
+  // Fallback: used when Yjs collaboration is not available.
+  // When Yjs is active, real-time sync happens via y-websocket.
   function emitExcalidrawUpdate(nodeId: string, elements: any) {
     if (currentDossier.value) {
       getSocket()?.emit('excalidraw-update', { dossierId: currentDossier.value._id, nodeId, elements });
