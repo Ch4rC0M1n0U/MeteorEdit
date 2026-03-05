@@ -108,6 +108,53 @@
         </div>
         <div v-else class="di-empty mono">Aucune entite</div>
       </div>
+
+      <!-- COLLABORATEURS -->
+      <div class="di-section" v-if="dossierStore.currentDossier">
+        <div class="di-section-title mono">
+          <v-icon size="16" class="mr-2">mdi-account-multiple-outline</v-icon>
+          Collaborateurs
+          <span v-if="collaboratorDetails.length" class="di-count">{{ collaboratorDetails.length }}</span>
+        </div>
+
+        <div v-for="collab in collaboratorDetails" :key="collab._id" class="collab-row">
+          <span class="collab-avatar">{{ (collab.firstName[0] + collab.lastName[0]).toUpperCase() }}</span>
+          <div class="collab-info">
+            <span class="collab-name">{{ collab.firstName }} {{ collab.lastName }}</span>
+            <span class="collab-email mono">{{ collab.email }}</span>
+          </div>
+          <button v-if="isOwner" class="collab-remove" @click="removeCollaborator(collab._id)" title="Retirer">
+            <v-icon size="14">mdi-close</v-icon>
+          </button>
+        </div>
+
+        <div v-if="!collaboratorDetails.length" class="di-empty mono">Aucun collaborateur</div>
+
+        <div v-if="isOwner" class="collab-add">
+          <v-autocomplete
+            v-model="selectedUser"
+            :items="userSearchResults"
+            :loading="searchingUsers"
+            item-title="email"
+            item-value="_id"
+            label="Ajouter un collaborateur..."
+            density="compact"
+            variant="outlined"
+            hide-details
+            return-object
+            no-data-text="Aucun utilisateur trouve"
+            @update:search="onUserSearch"
+            @update:model-value="addCollaborator"
+          >
+            <template #item="{ item, props }">
+              <v-list-item v-bind="props">
+                <template #title>{{ item.raw.firstName }} {{ item.raw.lastName }}</template>
+                <template #subtitle>{{ item.raw.email }}</template>
+              </v-list-item>
+            </template>
+          </v-autocomplete>
+        </div>
+      </div>
     </div>
 
     <!-- MODE EDITION -->
@@ -180,9 +227,12 @@
 <script setup lang="ts">
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
+import { useAuthStore } from '../../stores/auth';
 import api from '../../services/api';
+import type { CollaboratorUser } from '../../types';
 
 const dossierStore = useDossierStore();
+const authStore = useAuthStore();
 
 const editing = ref(false);
 const entityDialog = ref(false);
@@ -356,6 +406,70 @@ async function removeEntity(index: number) {
   form.entities.splice(index, 1);
   if (dossierStore.currentDossier) {
     await dossierStore.updateDossier(dossierStore.currentDossier._id, form);
+  }
+}
+
+// --- Collaborateurs ---
+const collaboratorDetails = ref<CollaboratorUser[]>([]);
+const userSearchResults = ref<CollaboratorUser[]>([]);
+const selectedUser = ref<CollaboratorUser | null>(null);
+const searchingUsers = ref(false);
+let userSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const isOwner = computed(() => {
+  const dossier = dossierStore.currentDossier;
+  return dossier && dossier.owner === authStore.user?.id;
+});
+
+watch(() => dossierStore.currentDossier?.collaborators, (collabs) => {
+  if (!collabs?.length) { collaboratorDetails.value = []; return; }
+  // Collaborators are now populated objects from the backend
+  collaboratorDetails.value = collabs
+    .filter((c): c is CollaboratorUser => typeof c === 'object' && c !== null && '_id' in c)
+    .map(c => ({ _id: c._id, firstName: c.firstName, lastName: c.lastName, email: c.email }));
+}, { immediate: true, deep: true });
+
+function onUserSearch(q: string) {
+  if (userSearchTimeout) clearTimeout(userSearchTimeout);
+  if (!q || q.length < 2) { userSearchResults.value = []; return; }
+  userSearchTimeout = setTimeout(async () => {
+    searchingUsers.value = true;
+    try {
+      const { data } = await api.get<CollaboratorUser[]>('/auth/users/search', { params: { q } });
+      // Filter out users already in collaborators
+      const existingIds = collaboratorDetails.value.map(c => c._id);
+      userSearchResults.value = data.filter(u => !existingIds.includes(u._id));
+    } catch {
+      userSearchResults.value = [];
+    } finally {
+      searchingUsers.value = false;
+    }
+  }, 300);
+}
+
+async function addCollaborator(user: CollaboratorUser | null) {
+  if (!user || !dossierStore.currentDossier) return;
+  const currentIds = collaboratorDetails.value.map(c => c._id);
+  if (currentIds.includes(user._id)) return;
+  const newCollabIds = [...currentIds, user._id];
+  try {
+    const { data } = await api.patch(`/dossiers/${dossierStore.currentDossier._id}/collaborators`, { collaborators: newCollabIds });
+    dossierStore.currentDossier = data;
+  } catch (e) {
+    console.error('Failed to add collaborator:', e);
+  }
+  selectedUser.value = null;
+  userSearchResults.value = [];
+}
+
+async function removeCollaborator(userId: string) {
+  if (!dossierStore.currentDossier) return;
+  const newCollabIds = collaboratorDetails.value.filter(c => c._id !== userId).map(c => c._id);
+  try {
+    const { data } = await api.patch(`/dossiers/${dossierStore.currentDossier._id}/collaborators`, { collaborators: newCollabIds });
+    dossierStore.currentDossier = data;
+  } catch (e) {
+    console.error('Failed to remove collaborator:', e);
   }
 }
 </script>
@@ -680,4 +794,41 @@ async function removeEntity(index: number) {
   padding: 16px 24px;
   border-top: 1px solid var(--me-border);
 }
+
+/* Collaborateurs */
+.collab-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--me-border);
+}
+.collab-row:last-child { border-bottom: none; }
+.collab-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--me-font-mono);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--me-text-muted);
+  flex-shrink: 0;
+}
+.collab-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.collab-name { font-size: 13px; font-weight: 500; color: var(--me-text-primary); }
+.collab-email { font-size: 11px; color: var(--me-text-muted); }
+.collab-remove {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: none; border: none;
+  color: var(--me-text-muted); cursor: pointer;
+  transition: all 0.15s;
+}
+.collab-remove:hover { background: rgba(248,113,113,0.1); color: var(--me-error); }
+.collab-add { margin-top: 12px; }
 </style>

@@ -28,9 +28,16 @@ export interface Dossier {
   tags: string[];
   investigator: Investigator;
   owner: string;
-  collaborators: string[];
+  collaborators: (string | CollaboratorUser)[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CollaboratorUser {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 export interface Entity {
