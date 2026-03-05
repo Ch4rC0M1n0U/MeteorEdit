@@ -25,6 +25,7 @@
       <AdminUsers v-else-if="activeSection === 'users'" />
       <AdminBranding v-else-if="activeSection === 'branding'" />
       <AdminSecurity v-else-if="activeSection === 'security'" />
+      <AdminActivity v-else-if="activeSection === 'activity'" />
     </main>
   </div>
 </template>
@@ -35,6 +36,7 @@ import AdminDashboard from '../components/admin/AdminDashboard.vue';
 import AdminUsers from '../components/admin/AdminUsers.vue';
 import AdminBranding from '../components/admin/AdminBranding.vue';
 import AdminSecurity from '../components/admin/AdminSecurity.vue';
+import AdminActivity from '../components/admin/AdminActivity.vue';
 
 const activeSection = ref('dashboard');
 
@@ -43,6 +45,7 @@ const sections = [
   { id: 'users', label: 'Utilisateurs', icon: 'mdi-account-group-outline' },
   { id: 'branding', label: 'Parametres du site', icon: 'mdi-palette-outline' },
   { id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
+  { id: 'activity', label: 'Activite', icon: 'mdi-history' },
 ];
 </script>
 
