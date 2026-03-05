@@ -3,6 +3,7 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import User from '../models/User';
 import LoginLog from '../models/LoginLog';
 import { AuthRequest } from '../middleware/auth';
+import { logActivity } from '../utils/activityLogger';
 
 export function generateTokens(userId: string, role: string) {
   const accessOpts: SignOptions = { expiresIn: (process.env.JWT_EXPIRATION || '15m') as any };
@@ -55,6 +56,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     user.lastLoginIp = rawIp.replace('::ffff:', '');
     await user.save();
     await LoginLog.create({ userId: user._id, ip: user.lastLoginIp });
+    await logActivity(user._id.toString(), 'login', 'system', null, {}, user.lastLoginIp || '');
 
     // Check if 2FA is enabled
     if (user.twoFactorEnabled) {

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import crypto from 'crypto';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { logActivity } from '../utils/activityLogger';
 
 export async function listUsers(_req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -35,6 +36,13 @@ export async function updateUser(req: AuthRequest, res: Response): Promise<void>
       res.status(404).json({ message: 'User not found' });
       return;
     }
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    if (typeof isActive === 'boolean') {
+      await logActivity(req.user!.userId, isActive ? 'user.activate' : 'user.deactivate', 'user', id as string, { email: user!.email }, ip);
+    }
+    if (role) {
+      await logActivity(req.user!.userId, 'user.role_change', 'user', id as string, { email: user!.email, newRole: role }, ip);
+    }
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -52,6 +60,8 @@ export async function resetUserPassword(req: AuthRequest, res: Response): Promis
     const tempPassword = crypto.randomBytes(6).toString('base64url');
     user.password = tempPassword;
     await user.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'admin.reset_password', 'user', id as string, { email: user.email }, ip);
     res.json({ tempPassword });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -70,6 +80,8 @@ export async function resetUser2FA(req: AuthRequest, res: Response): Promise<voi
     user.twoFactorSecret = null;
     user.twoFactorBackupCodes = [];
     await user.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'admin.reset_2fa', 'user', id as string, { email: user.email }, ip);
     res.json({ message: '2FA reset' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -88,6 +100,8 @@ export async function deleteUser(req: AuthRequest, res: Response): Promise<void>
       res.status(404).json({ message: 'User not found' });
       return;
     }
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'user.delete', 'user', id as string, { email: user!.email }, ip);
     res.json({ message: 'User deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
