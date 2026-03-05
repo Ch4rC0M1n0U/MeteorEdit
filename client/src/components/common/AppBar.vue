@@ -18,6 +18,8 @@
         <v-icon size="20">{{ themeStore.isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
       </button>
 
+      <NotificationBell />
+
       <v-menu>
         <template #activator="{ props }">
           <button class="me-icon-btn me-avatar-btn" v-bind="props">
@@ -56,6 +58,7 @@ import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
 import { useBrandingStore } from '../../stores/branding';
 import SearchBar from './SearchBar.vue';
+import NotificationBell from './NotificationBell.vue';
 
 
 const authStore = useAuthStore();
