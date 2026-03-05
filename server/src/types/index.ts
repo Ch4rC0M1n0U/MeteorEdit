@@ -44,6 +44,7 @@ export interface IDossier extends Document {
   objectives: string;
   entities: IEntity[];
   judicialFacts: string;
+  tags: string[];
   investigator: IInvestigator;
   owner: Types.ObjectId;
   collaborators: Types.ObjectId[];

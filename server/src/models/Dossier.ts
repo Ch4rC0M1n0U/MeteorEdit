@@ -23,6 +23,7 @@ const dossierSchema = new Schema<IDossier>(
     objectives: { type: String, default: '' },
     entities: [entitySchema],
     judicialFacts: { type: String, default: '' },
+    tags: [{ type: String, lowercase: true, trim: true }],
     investigator: { type: investigatorSchema, default: () => ({}) },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     collaborators: [{ type: Schema.Types.ObjectId, ref: 'User' }],
@@ -31,5 +32,6 @@ const dossierSchema = new Schema<IDossier>(
 );
 
 dossierSchema.index({ title: 'text', description: 'text', objectives: 'text', judicialFacts: 'text' });
+dossierSchema.index({ tags: 1 });
 
 export default mongoose.model<IDossier>('Dossier', dossierSchema);

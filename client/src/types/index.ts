@@ -25,6 +25,7 @@ export interface Dossier {
   objectives: string;
   entities: Entity[];
   judicialFacts: string;
+  tags: string[];
   investigator: Investigator;
   owner: string;
   collaborators: string[];
