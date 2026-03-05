@@ -96,7 +96,7 @@ export async function deleteDossier(req: AuthRequest, res: Response): Promise<vo
     await DossierNode.deleteMany({ dossierId: dossier._id });
     await dossier.deleteOne();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.delete', 'dossier', req.params.id, { title: dossier.title }, ip);
+    await logActivity(req.user!.userId, 'dossier.delete', 'dossier', req.params.id as string, { title: dossier.title }, ip);
     res.json({ message: 'Dossier deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
