@@ -5,6 +5,11 @@
         <v-icon size="16">{{ copyMsg ? 'mdi-check' : 'mdi-camera' }}</v-icon>
         <span class="mono">{{ copyMsg || 'Copier comme image' }}</span>
       </button>
+      <div v-if="awarenessUsers.length" class="collab-presence">
+        <span v-for="u in awarenessUsers" :key="u.name" class="collab-user" :style="{ borderColor: u.color }" :title="u.name">
+          {{ u.name[0] }}
+        </span>
+      </div>
     </div>
     <div ref="containerRef" class="excalidraw-container" />
   </div>
@@ -14,16 +19,96 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
 import api, { SERVER_URL } from '../../services/api';
+import { useAuthStore } from '../../stores/auth';
 
 const props = defineProps<{ data: any; nodeId: string }>();
 const emit = defineEmits<{ 'update:data': [value: any] }>();
 const containerRef = ref<HTMLElement | null>(null);
 const copyMsg = ref('');
+const awarenessUsers = ref<Array<{ name: string; color: string }>>([]);
 let root: Root | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastData: any = null;
 let excalidrawApi: any = null;
+let isRemoteUpdate = false;
+
+// Yjs setup
+let ydoc: Y.Doc | null = null;
+let provider: WebsocketProvider | null = null;
+let yElements: Y.Map<any> | null = null;
+
+const authStore = useAuthStore();
+
+function hashColor(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return `hsl(${Math.abs(hash) % 360}, 70%, 60%)`;
+}
+
+const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : 'Anonyme';
+const userColor = hashColor(authStore.user?.id || 'default');
+
+function setupYjs() {
+  cleanupYjs();
+
+  ydoc = new Y.Doc();
+  const yjsUrl = import.meta.env.VITE_YJS_URL || 'ws://localhost:3002';
+  const token = localStorage.getItem('accessToken') || '';
+  provider = new WebsocketProvider(yjsUrl, `node:${props.nodeId}`, ydoc, {
+    params: { token },
+  });
+  yElements = ydoc.getMap('excalidraw-elements');
+
+  // Awareness (presence)
+  provider.awareness.setLocalStateField('user', { name: userName, color: userColor });
+  provider.awareness.on('change', () => {
+    if (!provider) return;
+    const states = Array.from(provider.awareness.getStates().values());
+    awarenessUsers.value = states
+      .filter((s: any) => s.user && s.user.name !== userName)
+      .map((s: any) => ({ name: s.user.name, color: s.user.color }));
+  });
+
+  // Remote changes -> update Excalidraw
+  yElements.observe(() => {
+    if (!yElements || !excalidrawApi) return;
+    const elements = yElements.get('elements');
+    if (elements) {
+      isRemoteUpdate = true;
+      excalidrawApi.updateScene({ elements });
+      requestAnimationFrame(() => { isRemoteUpdate = false; });
+    }
+  });
+
+  // Initial sync
+  provider.on('sync', (isSynced: boolean) => {
+    if (!isSynced || !yElements) return;
+    const elements = yElements.get('elements');
+    if (!elements && props.data?.elements) {
+      // Yjs is empty, seed from server data
+      yElements.set('elements', JSON.parse(JSON.stringify(props.data.elements)));
+    } else if (elements && excalidrawApi) {
+      // Yjs has data, update Excalidraw
+      excalidrawApi.updateScene({ elements });
+    }
+  });
+}
+
+function cleanupYjs() {
+  if (provider) {
+    provider.destroy();
+    provider = null;
+  }
+  if (ydoc) {
+    ydoc.destroy();
+    ydoc = null;
+  }
+  yElements = null;
+  awarenessUsers.value = [];
+}
 
 function flushSave() {
   if (saveTimeout) {
@@ -43,7 +128,7 @@ function scheduleSave(data: any) {
     api.put(`/nodes/${props.nodeId}`, { excalidrawData: lastData });
     lastData = null;
     saveTimeout = null;
-  }, 2000);
+  }, 30000);
 }
 
 async function copyAsImage() {
@@ -228,6 +313,13 @@ async function renderExcalidraw() {
       };
       emit('update:data', data);
       scheduleSave(data);
+
+      // Sync local changes to Yjs (skip if this change came from a remote update)
+      if (!isRemoteUpdate && yElements && ydoc) {
+        ydoc.transact(() => {
+          yElements!.set('elements', JSON.parse(JSON.stringify(elements)));
+        });
+      }
     },
   } as any);
 
@@ -236,18 +328,21 @@ async function renderExcalidraw() {
 
 onMounted(() => {
   renderExcalidraw();
+  setupYjs();
   containerRef.value?.addEventListener('paste', handlePasteImage as EventListener, true);
   containerRef.value?.addEventListener('keydown', handleCopycut as EventListener, true);
 });
 
 watch(() => props.nodeId, () => {
   flushSave();
+  cleanupYjs();
   excalidrawApi = null;
   if (root) {
     root.unmount();
     root = null;
   }
   renderExcalidraw();
+  setupYjs();
 });
 
 
@@ -255,6 +350,7 @@ onBeforeUnmount(() => {
   containerRef.value?.removeEventListener('paste', handlePasteImage as EventListener, true);
   containerRef.value?.removeEventListener('keydown', handleCopycut as EventListener, true);
   flushSave();
+  cleanupYjs();
   excalidrawApi = null;
   if (root) {
     root.unmount();
@@ -309,5 +405,25 @@ onBeforeUnmount(() => {
 .excalidraw-container .excalidraw {
   height: 100%;
   width: 100%;
+}
+.collab-presence {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.collab-user {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  background: var(--me-bg-surface);
+  cursor: default;
 }
 </style>
