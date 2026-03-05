@@ -21,22 +21,28 @@
     </aside>
 
     <main class="admin-content">
-      <AdminUsers v-if="activeSection === 'users'" />
+      <AdminDashboard v-if="activeSection === 'dashboard'" />
+      <AdminUsers v-else-if="activeSection === 'users'" />
       <AdminBranding v-else-if="activeSection === 'branding'" />
+      <AdminSecurity v-else-if="activeSection === 'security'" />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import AdminDashboard from '../components/admin/AdminDashboard.vue';
 import AdminUsers from '../components/admin/AdminUsers.vue';
 import AdminBranding from '../components/admin/AdminBranding.vue';
+import AdminSecurity from '../components/admin/AdminSecurity.vue';
 
-const activeSection = ref('users');
+const activeSection = ref('dashboard');
 
 const sections = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'mdi-view-dashboard-outline' },
   { id: 'users', label: 'Utilisateurs', icon: 'mdi-account-group-outline' },
   { id: 'branding', label: 'Parametres du site', icon: 'mdi-palette-outline' },
+  { id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
 ];
 </script>
 

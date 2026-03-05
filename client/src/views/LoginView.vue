@@ -16,7 +16,7 @@
           {{ error }}
         </v-alert>
 
-        <v-form @submit.prevent="handleLogin" :disabled="authStore.loading">
+        <v-form v-if="!show2FA" @submit.prevent="handleLogin" :disabled="authStore.loading">
           <v-text-field
             v-model="email"
             label="Email"
@@ -46,6 +46,26 @@
           </v-btn>
         </v-form>
 
+        <div v-if="show2FA" class="tfa-login-section">
+          <p class="tfa-login-text mono">Entrez le code de votre application d'authentification</p>
+          <v-text-field
+            v-model="tfaCode"
+            label="Code 2FA"
+            maxlength="8"
+            autofocus
+            prepend-inner-icon="mdi-shield-key-outline"
+            @keyup.enter="handle2FA"
+            class="mb-4"
+          />
+          <v-btn type="button" block size="large" :loading="authStore.loading" class="btn-accent mb-2" @click="handle2FA">
+            Verifier
+          </v-btn>
+          <button class="tfa-back-btn" @click="show2FA = false; tempToken = ''">
+            <v-icon size="14" class="mr-1">mdi-arrow-left</v-icon>
+            Retour
+          </button>
+        </div>
+
         <div class="login-footer">
           <span class="text-muted">Pas encore de compte ?</span>
           <router-link to="/register" class="login-link">S'inscrire</router-link>
@@ -69,14 +89,32 @@ const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
 const error = ref('');
+const show2FA = ref(false);
+const tempToken = ref('');
+const tfaCode = ref('');
 
 async function handleLogin() {
   error.value = '';
   try {
-    await authStore.login(email.value, password.value);
+    const result = await authStore.login(email.value, password.value);
+    if (result?.requires2FA) {
+      tempToken.value = result.tempToken!;
+      show2FA.value = true;
+      return;
+    }
     router.push('/');
   } catch (e: any) {
     error.value = e.response?.data?.message || 'Erreur de connexion';
+  }
+}
+
+async function handle2FA() {
+  error.value = '';
+  try {
+    await authStore.validate2FA(tempToken.value, tfaCode.value);
+    router.push('/');
+  } catch (e: any) {
+    error.value = e.response?.data?.message || 'Code invalide';
   }
 }
 </script>
@@ -153,4 +191,8 @@ async function handleLogin() {
 .login-link:hover {
   text-decoration: underline;
 }
+.tfa-login-section { margin-top: 8px; }
+.tfa-login-text { font-size: 13px; color: var(--me-text-secondary); margin-bottom: 16px; text-align: center; }
+.tfa-back-btn { display: flex; align-items: center; justify-content: center; width: 100%; margin-top: 8px; background: none; border: none; color: var(--me-text-muted); cursor: pointer; font-size: 13px; }
+.tfa-back-btn:hover { color: var(--me-text-primary); }
 </style>
