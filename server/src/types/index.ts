@@ -83,3 +83,13 @@ export interface ISiteSettings extends Document {
   loginMessage: string;
   require2FA: boolean;
 }
+
+export interface IActivityLog extends Document {
+  userId: Types.ObjectId;
+  action: string;
+  targetType: 'dossier' | 'user' | 'system';
+  targetId: Types.ObjectId | null;
+  metadata: Record<string, any>;
+  ip: string;
+  timestamp: Date;
+}
