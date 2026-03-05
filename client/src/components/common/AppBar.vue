@@ -34,7 +34,10 @@
             <v-icon size="16" class="mr-2">mdi-shield-account</v-icon>
             Administration
           </router-link>
-          <SettingsDialog />
+          <router-link to="/profile?section=preferences" class="me-dropdown-item">
+            <v-icon size="16" class="mr-2">mdi-cog-outline</v-icon>
+            Preferences
+          </router-link>
           <button class="me-dropdown-item" @click="handleLogout">
             <v-icon size="16" class="mr-2">mdi-logout</v-icon>
             Deconnexion
@@ -53,7 +56,7 @@ import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
 import { useBrandingStore } from '../../stores/branding';
 import SearchBar from './SearchBar.vue';
-import SettingsDialog from './SettingsDialog.vue';
+
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
