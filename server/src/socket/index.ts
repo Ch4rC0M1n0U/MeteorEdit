@@ -3,12 +3,21 @@ import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../types';
 
+const onlineUsers = new Set<string>();
+
+export function getOnlineUsers(): Set<string> {
+  return onlineUsers;
+}
+
+export function getOnlineCount(): number {
+  return onlineUsers.size;
+}
+
 export function setupSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: { origin: '*', methods: ['GET', 'POST'] },
   });
 
-  // Auth middleware
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) return next(new Error('Authentication required'));
@@ -24,20 +33,27 @@ export function setupSocket(httpServer: HttpServer) {
   io.on('connection', (socket: Socket) => {
     const user = (socket as any).user as JwtPayload;
     console.log(`User ${user.userId} connected`);
+    onlineUsers.add(user.userId);
 
-    // Join dossier room
+    // Broadcast online count to admin room
+    io.to('admin-room').emit('online-count', onlineUsers.size);
+
+    // Join admin room if admin
+    if (user.role === 'admin') {
+      socket.join('admin-room');
+      socket.emit('online-count', onlineUsers.size);
+    }
+
     socket.on('join-dossier', (dossierId: string) => {
       socket.join(`dossier:${dossierId}`);
       socket.to(`dossier:${dossierId}`).emit('user-joined', { userId: user.userId });
     });
 
-    // Leave dossier room
     socket.on('leave-dossier', (dossierId: string) => {
       socket.leave(`dossier:${dossierId}`);
       socket.to(`dossier:${dossierId}`).emit('user-left', { userId: user.userId });
     });
 
-    // Node content update (notes)
     socket.on('node-update', (data: { dossierId: string; nodeId: string; content: any }) => {
       socket.to(`dossier:${data.dossierId}`).emit('node-updated', {
         nodeId: data.nodeId,
@@ -46,7 +62,6 @@ export function setupSocket(httpServer: HttpServer) {
       });
     });
 
-    // Excalidraw update
     socket.on('excalidraw-update', (data: { dossierId: string; nodeId: string; elements: any }) => {
       socket.to(`dossier:${data.dossierId}`).emit('excalidraw-updated', {
         nodeId: data.nodeId,
@@ -55,7 +70,6 @@ export function setupSocket(httpServer: HttpServer) {
       });
     });
 
-    // Node tree changes
     socket.on('node-created', (data: { dossierId: string; node: any }) => {
       socket.to(`dossier:${data.dossierId}`).emit('node-added', data.node);
     });
@@ -66,6 +80,8 @@ export function setupSocket(httpServer: HttpServer) {
 
     socket.on('disconnect', () => {
       console.log(`User ${user.userId} disconnected`);
+      onlineUsers.delete(user.userId);
+      io.to('admin-room').emit('online-count', onlineUsers.size);
     });
   });
 

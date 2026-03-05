@@ -23,6 +23,7 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
     if (typeof appName === 'string') update.appName = appName.trim() || 'MeteorEdit';
     if (typeof accentColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(accentColor)) update.accentColor = accentColor;
     if (typeof loginMessage === 'string') update.loginMessage = loginMessage;
+    if (typeof req.body.require2FA === 'boolean') update.require2FA = req.body.require2FA;
 
     const settings = await SiteSettings.findOneAndUpdate({}, update, { new: true, upsert: true });
     res.json(settings);
