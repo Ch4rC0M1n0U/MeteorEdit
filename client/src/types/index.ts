@@ -5,6 +5,10 @@ export interface User {
   lastName: string;
   role: 'admin' | 'user';
   isActive: boolean;
+  avatarPath: string | null;
+  twoFactorEnabled: boolean;
+  lastLoginAt: string | null;
+  lastLoginIp: string | null;
 }
 
 export interface LoginResponse {

@@ -10,10 +10,26 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value);
   const isAdmin = computed(() => user.value?.role === 'admin');
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string): Promise<{ requires2FA?: boolean; tempToken?: string }> {
     loading.value = true;
     try {
-      const { data } = await api.post<LoginResponse>('/auth/login', { email, password });
+      const { data } = await api.post<LoginResponse & { requires2FA?: boolean; tempToken?: string }>('/auth/login', { email, password });
+      if (data.requires2FA) {
+        return { requires2FA: true, tempToken: data.tempToken };
+      }
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      user.value = data.user;
+      return {};
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function validate2FA(tempToken: string, code: string) {
+    loading.value = true;
+    try {
+      const { data } = await api.post<LoginResponse>('/auth/2fa/validate', { tempToken, code });
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       user.value = data.user;
@@ -53,5 +69,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, loading, isAuthenticated, isAdmin, login, register, fetchMe, logout, init };
+  return { user, loading, isAuthenticated, isAdmin, login, validate2FA, register, fetchMe, logout, init };
 });

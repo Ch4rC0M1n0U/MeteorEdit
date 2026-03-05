@@ -25,10 +25,10 @@
           </button>
         </template>
         <div class="me-dropdown glass-card">
-          <div class="me-dropdown-header">
+          <router-link to="/profile" class="me-dropdown-header me-dropdown-header--clickable">
             <span class="me-dropdown-name">{{ authStore.user?.firstName }} {{ authStore.user?.lastName }}</span>
             <span class="me-dropdown-email">{{ authStore.user?.email }}</span>
-          </div>
+          </router-link>
           <div class="me-dropdown-divider" />
           <router-link v-if="authStore.isAdmin" to="/admin" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-shield-account</v-icon>
@@ -209,5 +209,13 @@ function handleLogout() {
 .me-dropdown-item:hover {
   background: var(--me-accent-glow);
   color: var(--me-text-primary);
+}
+.me-dropdown-header--clickable {
+  text-decoration: none;
+  border-radius: var(--me-radius-xs);
+  transition: background 0.15s;
+}
+.me-dropdown-header--clickable:hover {
+  background: var(--me-accent-glow);
 }
 </style>
