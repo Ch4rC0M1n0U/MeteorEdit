@@ -8,6 +8,12 @@ export interface IUser extends Document {
   role: 'admin' | 'user';
   isActive: boolean;
   preferences: Record<string, any>;
+  avatarPath: string | null;
+  lastLoginAt: Date | null;
+  lastLoginIp: string | null;
+  twoFactorEnabled: boolean;
+  twoFactorSecret: string | null;
+  twoFactorBackupCodes: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,10 +67,17 @@ export interface IDossierNode extends Document {
   updatedAt: Date;
 }
 
+export interface ILoginLog extends Document {
+  userId: Types.ObjectId;
+  timestamp: Date;
+  ip: string;
+}
+
 export interface ISiteSettings extends Document {
   appName: string;
   logoPath: string | null;
   accentColor: string;
   faviconPath: string | null;
   loginMessage: string;
+  require2FA: boolean;
 }

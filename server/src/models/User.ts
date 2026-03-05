@@ -11,6 +11,12 @@ const userSchema = new Schema<IUser>(
     role: { type: String, enum: ['admin', 'user'], default: 'user' },
     isActive: { type: Boolean, default: false },
     preferences: { type: Schema.Types.Mixed, default: {} },
+    avatarPath: { type: String, default: null },
+    lastLoginAt: { type: Date, default: null },
+    lastLoginIp: { type: String, default: null },
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorSecret: { type: String, default: null },
+    twoFactorBackupCodes: [{ type: String }],
   },
   { timestamps: true }
 );

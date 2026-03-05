@@ -8,6 +8,7 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     accentColor: { type: String, default: '#38bdf8' },
     faviconPath: { type: String, default: null },
     loginMessage: { type: String, default: '' },
+    require2FA: { type: Boolean, default: false },
   },
   { collection: 'sitesettings' }
 );
