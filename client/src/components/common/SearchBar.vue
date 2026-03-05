@@ -194,16 +194,16 @@ const results = reactive<{
 });
 
 const statusOptions = [
-  { label: 'Ouvert', value: 'ouvert' },
-  { label: 'En cours', value: 'en_cours' },
-  { label: 'Ferme', value: 'ferme' },
+  { label: 'Ouvert', value: 'open' },
+  { label: 'En cours', value: 'in_progress' },
+  { label: 'Ferme', value: 'closed' },
 ];
 
 const nodeTypeOptions = [
+  { label: 'Dossier', value: 'folder' },
   { label: 'Note', value: 'note' },
   { label: 'Mindmap', value: 'mindmap' },
   { label: 'Document', value: 'document' },
-  { label: 'Dossier', value: 'dossier' },
 ];
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -292,9 +292,9 @@ async function doSearch(append: boolean) {
       results.dossiers = data.dossiers ?? [];
       results.nodes = data.nodes ?? [];
     }
-    results.dossiersTotal = data.dossiersTotal;
-    results.nodesTotal = data.nodesTotal;
-    results.total = data.total;
+    results.dossiersTotal = data.pagination?.dossierTotal;
+    results.nodesTotal = data.pagination?.nodeTotal;
+    results.total = (data.pagination?.dossierTotal ?? 0) + (data.pagination?.nodeTotal ?? 0);
     showResults.value = true;
   } catch {
     // silently ignore search errors
