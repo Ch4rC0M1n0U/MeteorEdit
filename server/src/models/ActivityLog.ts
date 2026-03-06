@@ -17,7 +17,7 @@ const activityLogSchema = new Schema<IActivityLog>({
   targetId: { type: Schema.Types.ObjectId, default: null },
   metadata: { type: Schema.Types.Mixed, default: {} },
   ip: { type: String, default: '' },
-  timestamp: { type: Date, default: Date.now, index: true },
+  timestamp: { type: Date, default: Date.now },
 });
 
 activityLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });

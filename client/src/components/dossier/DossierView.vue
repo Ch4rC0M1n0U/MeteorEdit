@@ -56,7 +56,7 @@
           :data="dossierStore.selectedNode.excalidrawData"
           :node-id="dossierStore.selectedNode._id"
           :key="dossierStore.selectedNode._id"
-          @update:data="(val) => dossierStore.selectedNode!.excalidrawData = val"
+          @update:data="onMindmapUpdate"
         />
       </div>
 
@@ -159,6 +159,12 @@ const snapshotLabel = ref('');
 const createType = ref('');
 const createParentId = ref<string | null>(null);
 const createTitle = ref('');
+
+function onMindmapUpdate(val: any) {
+  if (dossierStore.selectedNode) {
+    dossierStore.selectedNode.excalidrawData = val;
+  }
+}
 
 function handleCreateNode(type: string, parentId: string | null) {
   createType.value = type;

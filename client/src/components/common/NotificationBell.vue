@@ -1,6 +1,6 @@
 <template>
   <div class="notif-bell-wrapper" ref="wrapperRef">
-    <button class="me-icon-btn notif-bell-btn" @click="toggleDropdown" title="Notifications">
+    <button class="notif-bell-btn" @click="toggleDropdown" title="Notifications">
       <v-icon size="20">mdi-bell-outline</v-icon>
       <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
@@ -112,6 +112,22 @@ onUnmounted(() => {
 
 .notif-bell-btn {
   position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: none;
+  color: var(--me-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.notif-bell-btn:hover {
+  background: var(--me-accent-glow);
+  color: var(--me-accent);
 }
 
 .notif-badge {

@@ -138,9 +138,36 @@
           <v-icon size="16">mdi-minus</v-icon>
         </button>
       </div>
+
+      <div class="ne-separator" />
+
+      <!-- Comments -->
+      <div class="ne-toolbar-group">
+        <button class="ne-btn ne-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" title="Commentaires">
+          <v-icon size="16">mdi-comment-text-outline</v-icon>
+          <span v-if="commentCount" class="ne-comment-badge">{{ commentCount }}</span>
+        </button>
+      </div>
     </div>
 
-    <editor-content :editor="editor" class="editor-content" />
+    <!-- Presence indicators -->
+    <div v-if="presenceUsers.length" class="ne-presence">
+      <template v-for="u in presenceUsers">
+        <img v-if="u.avatarUrl" :key="'img-'+u.name" :src="u.avatarUrl" :alt="u.name" class="ne-presence-avatar ne-presence-img" :title="u.name" />
+        <span v-else :key="u.name" class="ne-presence-avatar" :style="{ background: u.color }" :title="u.name">
+          {{ u.initials }}
+        </span>
+      </template>
+    </div>
+
+    <div class="ne-body">
+      <editor-content :editor="editor" class="editor-content" />
+      <CommentSidebar
+        v-model="showComments"
+        :node-id="props.nodeId"
+        @count-change="commentCount = $event"
+      />
+    </div>
     <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileSelect" />
   </div>
 </template>
@@ -148,12 +175,12 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue';
 import { useConfirm } from '../../composables/useConfirm';
-import { useEditor, EditorContent } from '@tiptap/vue-3';
+import { useEditor, EditorContent, Extension } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import { yCursorPlugin } from '@tiptap/y-tiptap';
 import { useAuthStore } from '../../stores/auth';
 import { ResizableImageExtension } from './resizableImageExtension';
 import { Table } from '@tiptap/extension-table';
@@ -172,6 +199,7 @@ import { Superscript } from '@tiptap/extension-superscript';
 import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
 import api, { SERVER_URL } from '../../services/api';
+import CommentSidebar from './CommentSidebar.vue';
 
 const props = defineProps<{ modelValue: any; nodeId: string }>();
 const emit = defineEmits<{ 'update:modelValue': [value: any] }>();
@@ -179,9 +207,11 @@ const emit = defineEmits<{ 'update:modelValue': [value: any] }>();
 const authStore = useAuthStore();
 const { prompt: promptDialog } = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
+const showComments = ref(false);
+const commentCount = ref(0);
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
-// Yjs collaborative editing setup
+// Yjs collaborative editing
 const ydoc = new Y.Doc();
 const yjsUrl = import.meta.env.VITE_YJS_URL || 'ws://localhost:3002';
 const token = localStorage.getItem('accessToken') || '';
@@ -189,28 +219,38 @@ const provider = new WebsocketProvider(yjsUrl, `node:${props.nodeId}`, ydoc, {
   params: { token },
 });
 
-// User color from userId hash
 function hashColor(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   return `hsl(${Math.abs(hash) % 360}, 70%, 60%)`;
 }
-const userColor = hashColor(authStore.user?.id || 'default');
 const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : 'Anonyme';
-
+const userAvatarUrl = authStore.user?.avatarPath ? `${SERVER_URL}/${authStore.user.avatarPath}` : null;
 provider.awareness.setLocalStateField('user', {
   name: userName,
-  color: userColor,
+  color: hashColor(authStore.user?.id || 'default'),
+  avatarUrl: userAvatarUrl,
 });
 
-// Presence indicators
-const awarenessUsers = ref<Array<{ name: string; color: string }>>([]);
+// Cursor plugin via y-tiptap (compatible with Collaboration@3.20.0)
+const CollaborationCursorPlugin = Extension.create({
+  name: 'collaborationCursor',
+  addProseMirrorPlugins() {
+    return [yCursorPlugin(provider.awareness)];
+  },
+});
 
+// Presence tracking via awareness
+interface PresenceUser { name: string; color: string; initials: string; avatarUrl: string | null }
+const presenceUsers = ref<PresenceUser[]>([]);
+function getInitials(name: string): string {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
 provider.awareness.on('change', () => {
   const states = Array.from(provider.awareness.getStates().values());
-  awarenessUsers.value = states
+  presenceUsers.value = states
     .filter((s: any) => s.user && s.user.name !== userName)
-    .map((s: any) => ({ name: s.user.name, color: s.user.color }));
+    .map((s: any) => ({ name: s.user.name, color: s.user.color, initials: getInitials(s.user.name), avatarUrl: s.user.avatarUrl || null }));
 });
 
 const currentTextColor = computed(() => {
@@ -279,9 +319,13 @@ async function handleFileSelect(e: Event) {
 
 const editor = useEditor({
   extensions: [
-    StarterKit.configure({ undoRedo: false }),
+    StarterKit.configure({
+      link: false,
+      underline: false,
+      undoRedo: false,
+    }),
     Collaboration.configure({ document: ydoc }),
-    CollaborationCursor.configure({ provider }),
+    CollaborationCursorPlugin,
     ResizableImageExtension.configure({ inline: true, allowBase64: true }),
     Table.configure({ resizable: true }),
     TableRow,
@@ -389,11 +433,11 @@ const editor = useEditor({
   },
 });
 
-// Sync initial content from server into Yjs when first connected
+
+// Seed initial content into Yjs when first synced
 provider.on('sync', (isSynced: boolean) => {
   if (isSynced) {
     const fragment = ydoc.getXmlFragment('default');
-    // If ydoc is empty and node has content, seed it
     if (fragment.length === 0 && props.modelValue) {
       editor.value?.commands.setContent(props.modelValue);
     }
@@ -411,6 +455,8 @@ onBeforeUnmount(() => {
       api.put(`/nodes/${props.nodeId}`, { content: editor.value.getJSON() });
     }
   }
+  provider.disconnect();
+  ydoc.destroy();
   editor.value?.destroy();
 });
 </script>
@@ -494,6 +540,63 @@ onBeforeUnmount(() => {
   cursor: pointer;
   border: none;
   padding: 0;
+}
+.ne-presence {
+  display: flex;
+  gap: 6px;
+  padding: 4px 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--me-border);
+  background: var(--me-bg-surface);
+}
+.ne-presence-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--me-font-mono);
+  cursor: default;
+  border: 2px solid var(--me-bg-surface);
+}
+.ne-presence-img {
+  object-fit: cover;
+}
+.ne-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+.ne-body .editor-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+.ne-btn-comments {
+  position: relative;
+}
+.ne-comment-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--me-accent);
+  color: var(--me-bg-deep);
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  font-family: var(--me-font-mono);
 }
 </style>
 
@@ -636,5 +739,28 @@ onBeforeUnmount(() => {
 /* Task list checked */
 .note-editor .editor-content ul[data-type="taskList"] li[data-checked="true"] > div {
   color: #9ca3af;
+}
+
+/* Collaborative cursors (y-tiptap) */
+.ProseMirror-yjs-cursor {
+  position: relative;
+  border-left: 2px solid;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  word-break: normal;
+}
+.ProseMirror-yjs-cursor > div {
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--me-font-mono);
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 3px 3px 3px 0;
+  white-space: nowrap;
+  pointer-events: none;
 }
 </style>

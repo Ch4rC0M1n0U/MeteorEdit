@@ -85,7 +85,8 @@ export async function me(req: AuthRequest, res: Response): Promise<void> {
       res.status(404).json({ message: 'User not found' });
       return;
     }
-    res.json(user);
+    const u = user.toObject();
+    res.json({ id: u._id, email: u.email, firstName: u.firstName, lastName: u.lastName, role: u.role, avatarPath: u.avatarPath, twoFactorEnabled: u.twoFactorEnabled, preferences: u.preferences });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

@@ -4,7 +4,7 @@ import { ILoginLog } from '../types';
 const loginLogSchema = new Schema<ILoginLog>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    timestamp: { type: Date, default: Date.now, index: true },
+    timestamp: { type: Date, default: Date.now },
     ip: { type: String, default: '' },
   },
   { timestamps: false }

@@ -131,28 +131,35 @@
         <div v-if="!collaboratorDetails.length" class="di-empty mono">Aucun collaborateur</div>
 
         <div v-if="isOwner" class="collab-add">
-          <v-autocomplete
-            v-model="selectedUser"
-            :items="userSearchResults"
-            :loading="searchingUsers"
-            item-title="email"
-            item-value="_id"
-            label="Ajouter un collaborateur..."
-            density="compact"
-            variant="outlined"
-            hide-details
-            return-object
-            no-data-text="Aucun utilisateur trouve"
-            @update:search="onUserSearch"
-            @update:model-value="addCollaborator"
-          >
-            <template #item="{ item, props }">
-              <v-list-item v-bind="props">
-                <template #title>{{ item.raw.firstName }} {{ item.raw.lastName }}</template>
-                <template #subtitle>{{ item.raw.email }}</template>
-              </v-list-item>
-            </template>
-          </v-autocomplete>
+          <div class="collab-search-wrapper">
+            <v-text-field
+              v-model="userSearchQuery"
+              label="Ajouter un collaborateur..."
+              density="compact"
+              variant="outlined"
+              hide-details
+              prepend-inner-icon="mdi-magnify"
+              :loading="searchingUsers"
+              @input="onUserSearch(userSearchQuery)"
+            />
+            <div v-if="userSearchResults.length > 0" class="collab-search-results glass-card">
+              <div
+                v-for="u in userSearchResults"
+                :key="u._id"
+                class="collab-search-item"
+                @click="addCollaborator(u)"
+              >
+                <span class="collab-avatar">{{ (u.firstName[0] + u.lastName[0]).toUpperCase() }}</span>
+                <div class="collab-info">
+                  <span class="collab-name">{{ u.firstName }} {{ u.lastName }}</span>
+                  <span class="collab-email mono">{{ u.email }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="userSearchQuery.length >= 2 && !searchingUsers" class="collab-search-results glass-card">
+              <div class="collab-search-empty">Aucun utilisateur trouvé</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -414,7 +421,12 @@ const collaboratorDetails = ref<CollaboratorUser[]>([]);
 const userSearchResults = ref<CollaboratorUser[]>([]);
 const selectedUser = ref<CollaboratorUser | null>(null);
 const searchingUsers = ref(false);
+const userSearchQuery = ref('');
 let userSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function formatUserTitle(item: CollaboratorUser) {
+  return `${item.firstName} ${item.lastName} (${item.email})`;
+}
 
 const isOwner = computed(() => {
   const dossier = dossierStore.currentDossier;
@@ -430,6 +442,7 @@ watch(() => dossierStore.currentDossier?.collaborators, (collabs) => {
 }, { immediate: true, deep: true });
 
 function onUserSearch(q: string) {
+  userSearchQuery.value = q || '';
   if (userSearchTimeout) clearTimeout(userSearchTimeout);
   if (!q || q.length < 2) { userSearchResults.value = []; return; }
   userSearchTimeout = setTimeout(async () => {
@@ -459,6 +472,7 @@ async function addCollaborator(user: CollaboratorUser | null) {
     console.error('Failed to add collaborator:', e);
   }
   selectedUser.value = null;
+  userSearchQuery.value = '';
   userSearchResults.value = [];
 }
 
@@ -831,4 +845,17 @@ async function removeCollaborator(userId: string) {
 }
 .collab-remove:hover { background: rgba(248,113,113,0.1); color: var(--me-error); }
 .collab-add { margin-top: 12px; }
+.collab-search-wrapper { position: relative; }
+.collab-search-results {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  margin-top: 4px; padding: 4px 0; max-height: 200px; overflow-y: auto;
+}
+.collab-search-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; cursor: pointer; transition: background 0.15s;
+}
+.collab-search-item:hover { background: var(--me-accent-glow); }
+.collab-search-empty {
+  padding: 12px; text-align: center; color: var(--me-text-muted); font-size: 13px;
+}
 </style>

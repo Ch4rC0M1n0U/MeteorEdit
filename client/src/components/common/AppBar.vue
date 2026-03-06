@@ -23,7 +23,8 @@
       <v-menu>
         <template #activator="{ props }">
           <button class="me-icon-btn me-avatar-btn" v-bind="props">
-            <span class="me-avatar">{{ initials }}</span>
+            <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="me-avatar me-avatar-img" />
+            <span v-else class="me-avatar">{{ initials }}</span>
           </button>
         </template>
         <div class="me-dropdown glass-card">
@@ -57,6 +58,7 @@ import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
 import { useBrandingStore } from '../../stores/branding';
+import { SERVER_URL } from '../../services/api';
 import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
 
@@ -71,6 +73,10 @@ const initials = computed(() => {
   const f = authStore.user?.firstName?.[0] || '';
   const l = authStore.user?.lastName?.[0] || '';
   return (f + l).toUpperCase();
+});
+
+const avatarUrl = computed(() => {
+  return authStore.user?.avatarPath ? `${SERVER_URL}/${authStore.user.avatarPath}` : null;
 });
 
 function handleBack() {
@@ -173,6 +179,10 @@ function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.me-avatar-img {
+  object-fit: cover;
+  background: var(--me-bg-elevated);
 }
 .me-dropdown {
   min-width: 220px;
