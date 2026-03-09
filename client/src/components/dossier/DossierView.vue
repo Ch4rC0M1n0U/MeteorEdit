@@ -1,7 +1,7 @@
 <template>
-  <div class="dossier-view">
-    <!-- Left panel: tree -->
-    <aside class="dv-sidebar">
+  <div class="dossier-view" :class="{ 'dv-focus-mode': focusMode }">
+    <!-- Left panel: sidebar with tabs -->
+    <aside v-show="!focusMode" class="dv-sidebar">
       <div class="dv-sidebar-header">
         <h3 class="dv-sidebar-title mono" :title="dossierStore.currentDossier?.title">
           {{ dossierStore.currentDossier?.title }}
@@ -18,13 +18,9 @@
                 <v-icon size="16">mdi-code-json</v-icon>
                 <span>Export JSON</span>
               </button>
-              <button class="dv-export-option" @click="exportPDF">
-                <v-icon size="16">mdi-file-pdf-box</v-icon>
-                <span>Export PDF</span>
-              </button>
-              <button class="dv-export-option" @click="exportDOCX">
-                <v-icon size="16">mdi-file-word-box</v-icon>
-                <span>Export DOCX</span>
+              <button class="dv-export-option" @click="exportSelectOpen = true">
+                <v-icon size="16">mdi-file-export-outline</v-icon>
+                <span>Exporter PDF / DOCX</span>
               </button>
               <div v-if="aiEnabled" class="dv-export-divider" />
               <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="generateAiReport">
@@ -41,15 +37,53 @@
           >
             <v-icon size="16">mdi-history</v-icon>
           </button>
+          <button class="dv-action-btn" @click="webClipperOpen = true" title="Web Clipper">
+            <v-icon size="16">mdi-web</v-icon>
+          </button>
+          <button v-if="aiEnabled" class="dv-action-btn" @click="runSummary" :disabled="summarizing" title="Resume IA">
+            <v-icon size="16" :class="{ 'ai-spin': summarizing }">{{ summarizing ? 'mdi-loading' : 'mdi-robot-outline' }}</v-icon>
+          </button>
         </div>
       </div>
+
+      <!-- Sidebar tabs -->
+      <div class="dv-sidebar-tabs">
+        <button class="dv-tab" :class="{ active: sidebarTab === 'tree' }" @click="sidebarTab = 'tree'" title="Arborescence">
+          <v-icon size="16">mdi-file-tree-outline</v-icon>
+        </button>
+        <button class="dv-tab" :class="{ active: sidebarTab === 'tasks' }" @click="sidebarTab = 'tasks'" title="Taches">
+          <v-icon size="16">mdi-checkbox-marked-outline</v-icon>
+        </button>
+        <button class="dv-tab" :class="{ active: sidebarTab === 'activity' }" @click="sidebarTab = 'activity'" title="Historique">
+          <v-icon size="16">mdi-history</v-icon>
+        </button>
+      </div>
+
       <div class="dv-sidebar-content">
-        <NodeTree @create="handleCreateNode" />
+        <NodeTree v-show="sidebarTab === 'tree'" @create="handleCreateNode" />
+        <TaskPanel v-if="sidebarTab === 'tasks'" />
+        <ActivityPanel v-if="sidebarTab === 'activity'" />
       </div>
     </aside>
 
     <!-- Right panel: content -->
     <main class="dv-main">
+      <!-- Focus mode toggle (notes & maps only, not mindmap — mindmap uses toolbar slot) -->
+      <div
+        v-if="dossierStore.selectedNode && ['note', 'map'].includes(dossierStore.selectedNode.type)"
+        class="dv-focus-bar"
+      >
+        <PomodoroTimer v-if="focusMode" />
+        <button
+          class="dv-focus-btn"
+          :class="{ 'dv-focus-btn--active': focusMode }"
+          @click="toggleFocusMode"
+          :title="focusMode ? 'Quitter le mode focus (Esc)' : 'Mode focus'"
+        >
+          <v-icon size="18">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+        </button>
+      </div>
+
       <DossierInfo v-if="!dossierStore.selectedNode" />
 
       <div v-else-if="dossierStore.selectedNode.type === 'note'" class="dv-editor-wrap">
@@ -66,7 +100,19 @@
           :node-id="dossierStore.selectedNode._id"
           :key="dossierStore.selectedNode._id"
           @update:data="onMindmapUpdate"
-        />
+        >
+          <template #toolbar-end>
+            <PomodoroTimer v-if="focusMode" />
+            <button
+              class="ex-tb-btn"
+              :class="{ active: focusMode }"
+              @click="toggleFocusMode"
+              :title="focusMode ? 'Quitter le mode focus (Esc)' : 'Mode focus'"
+            >
+              <v-icon size="16">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+            </button>
+          </template>
+        </ExcalidrawWrapper>
       </div>
 
       <div v-else-if="dossierStore.selectedNode.type === 'map'" class="dv-map-wrap">
@@ -75,6 +121,15 @@
           :node-id="dossierStore.selectedNode._id"
           :key="dossierStore.selectedNode._id"
           @update:data="onMapUpdate"
+        />
+      </div>
+
+      <div v-else-if="dossierStore.selectedNode.type === 'dataset'" class="dv-editor-wrap">
+        <DatasetEditor
+          v-model="dossierStore.selectedNode.content"
+          :node-id="dossierStore.selectedNode._id"
+          :title="dossierStore.selectedNode.title"
+          :key="dossierStore.selectedNode._id"
         />
       </div>
 
@@ -94,6 +149,45 @@
         <p class="text-muted">Dossier</p>
       </div>
     </main>
+
+    <!-- Web Clipper -->
+    <WebClipperDialog v-model="webClipperOpen" />
+
+    <!-- Export Selection -->
+    <ExportSelectDialog
+      v-model="exportSelectOpen"
+      :nodes="dossierStore.nodes"
+      @export="handleSelectiveExport"
+    />
+
+    <!-- AI Summary dialog -->
+    <v-dialog v-model="summaryDialog" max-width="600">
+      <div class="glass-card dialog-card">
+        <div class="dialog-header">
+          <h3 class="mono">
+            <v-icon size="18" class="mr-1">mdi-robot-outline</v-icon>
+            Resume IA
+          </h3>
+          <button class="me-close-btn" @click="summaryDialog = false">
+            <v-icon size="18">mdi-close</v-icon>
+          </button>
+        </div>
+        <div class="dialog-body" style="max-height: 400px; overflow-y: auto;">
+          <div v-if="summarizing" style="text-align: center; padding: 32px;">
+            <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
+            <p style="margin-top: 12px; color: var(--me-text-muted); font-size: 13px;">Generation du resume...</p>
+          </div>
+          <pre v-else class="ai-summary-text">{{ summaryContent }}</pre>
+        </div>
+        <div class="dialog-footer">
+          <button class="me-btn-ghost" @click="summaryDialog = false">Fermer</button>
+          <button v-if="summaryContent" class="me-btn-primary" @click="copySummary">
+            <v-icon size="14" class="mr-1">mdi-content-copy</v-icon>
+            Copier
+          </button>
+        </div>
+      </div>
+    </v-dialog>
   </div>
 
   <!-- Snapshot panel -->
@@ -252,10 +346,11 @@
       </div>
     </div>
   </v-dialog>
+
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
@@ -268,6 +363,43 @@ import DossierInfo from './DossierInfo.vue';
 import NoteEditor from '../editor/NoteEditor.vue';
 import ExcalidrawWrapper from '../excalidraw/ExcalidrawWrapper.vue';
 import MapEditor from '../map/MapEditor.vue';
+import PomodoroTimer from '../common/PomodoroTimer.vue';
+import TaskPanel from './TaskPanel.vue';
+import ActivityPanel from './ActivityPanel.vue';
+import WebClipperDialog from './WebClipperDialog.vue';
+import ExportSelectDialog from './ExportSelectDialog.vue';
+import DatasetEditor from '../dataset/DatasetEditor.vue';
+
+const webClipperOpen = ref(false);
+const exportSelectOpen = ref(false);
+
+// AI Summary
+const summaryDialog = ref(false);
+const summaryContent = ref('');
+const summarizing = ref(false);
+
+async function runSummary() {
+  if (!dossierStore.currentDossier || summarizing.value) return;
+  summarizing.value = true;
+  summaryContent.value = '';
+  summaryDialog.value = true;
+  try {
+    const payload: Record<string, string> = { dossierId: dossierStore.currentDossier._id };
+    if (dossierStore.selectedNode && dossierStore.selectedNode.type === 'note') {
+      payload.nodeId = dossierStore.selectedNode._id;
+    }
+    const { data } = await api.post('/ai/summarize', payload);
+    summaryContent.value = data.summary;
+  } catch (err: any) {
+    summaryContent.value = `Erreur: ${err.response?.data?.message || err.message}`;
+  } finally {
+    summarizing.value = false;
+  }
+}
+
+function copySummary() {
+  navigator.clipboard.writeText(summaryContent.value);
+}
 
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
@@ -281,6 +413,25 @@ const createType = ref('');
 const createParentId = ref<string | null>(null);
 const createTitle = ref('');
 const selectedTemplateId = ref<string | null>(null);
+
+// Sidebar tab
+const sidebarTab = ref<'tree' | 'tasks' | 'activity'>('tree');
+
+// Focus mode
+const focusMode = ref(false);
+
+function toggleFocusMode() {
+  focusMode.value = !focusMode.value;
+}
+
+function onFocusKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && focusMode.value) {
+    focusMode.value = false;
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', onFocusKeydown));
+onUnmounted(() => document.removeEventListener('keydown', onFocusKeydown));
 
 // AI Report
 const aiEnabled = ref(false);
@@ -718,12 +869,18 @@ async function addSignatureBlock(b: ReturnType<typeof createPdfBuilder>) {
   }
 }
 
-async function exportPDF() {
+function handleSelectiveExport(format: 'pdf' | 'docx', selectedIds: string[]) {
+  if (format === 'pdf') exportPDF(selectedIds);
+  else exportDOCX(selectedIds);
+}
+
+async function exportPDF(selectedNodeIds?: string[]) {
   if (!dossierStore.currentDossier) return;
   try {
     const { jsPDF } = await import('jspdf');
     const dossier = dossierStore.currentDossier;
-    const nodes = dossierStore.nodes;
+    const allNodes = dossierStore.nodes;
+    const nodes = selectedNodeIds ? allNodes.filter(n => selectedNodeIds.includes(n._id)) : allNodes;
     const tpl = loadPdfTemplate();
     const logos = await loadTemplateLogos(tpl, SERVER_URL);
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -798,7 +955,7 @@ async function exportPDF() {
 }
 
 
-function buildDocxSections(dossier: any, nodes: any[]): DocxExportData['sections'] {
+function buildDocxSections(dossier: any, nodes: any[], selectedNodeIds?: string[]): DocxExportData['sections'] {
   const sections: DocxExportData['sections'] = [];
 
   if (dossier.entities?.length) {
@@ -854,11 +1011,12 @@ function buildDocxSections(dossier: any, nodes: any[]): DocxExportData['sections
   return sections;
 }
 
-async function exportDOCX() {
+async function exportDOCX(selectedNodeIds?: string[]) {
   if (!dossierStore.currentDossier) return;
   try {
     const dossier = dossierStore.currentDossier;
-    const nodes = dossierStore.nodes;
+    const allNodes = dossierStore.nodes;
+    const nodes = selectedNodeIds ? allNodes.filter(n => selectedNodeIds.includes(n._id)) : allNodes;
     const sig = (authStore.user as any)?.signature;
 
     const data: DocxExportData = {
@@ -988,6 +1146,34 @@ function downloadBlob(blob: Blob, filename: string) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.dv-sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--me-border);
+  padding: 0 8px;
+  gap: 2px;
+}
+.dv-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 0;
+}
+.dv-tab:hover {
+  color: var(--me-text-primary);
+  background: var(--me-accent-glow);
+}
+.dv-tab.active {
+  color: var(--me-accent);
+  border-bottom-color: var(--me-accent);
+}
 .dv-sidebar-content {
   flex: 1;
   overflow-y: auto;
@@ -995,14 +1181,55 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 .dv-main {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   background: var(--me-bg-deep);
+  position: relative;
+}
+.dv-focus-bar {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dv-focus-btn {
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  color: var(--me-text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--me-radius-xs);
+  transition: all 0.15s;
+  opacity: 0.6;
+}
+.dv-focus-btn:hover {
+  opacity: 1;
+  color: var(--me-accent);
+  border-color: var(--me-accent);
+}
+.dv-focus-btn--active {
+  opacity: 1;
+  color: var(--me-accent);
+  background: var(--me-accent-glow);
+  border-color: var(--me-accent);
+}
+.dv-focus-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+.dv-focus-mode .dv-main {
+  width: 100%;
 }
 .dv-editor-wrap {
   height: 100%;
 }
 .dv-excalidraw-wrap {
   height: 100%;
+  position: relative;
+  z-index: 0;
 }
 .dv-map-wrap {
   height: 100%;
@@ -1332,5 +1559,13 @@ function downloadBlob(blob: Blob, filename: string) {
   gap: 8px;
   width: 100%;
   justify-content: flex-end;
+}
+.ai-summary-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--me-text-primary);
 }
 </style>
