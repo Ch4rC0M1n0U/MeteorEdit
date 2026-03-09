@@ -34,6 +34,16 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     }
+    // Maintenance mode
+    if (error.response?.status === 503 && error.response?.data?.maintenance) {
+      const msg = error.response.data.message || 'Maintenance en cours';
+      if (window.location.pathname !== '/maintenance') {
+        sessionStorage.setItem('maintenanceMessage', msg);
+        window.location.href = '/maintenance';
+      }
+      return Promise.reject(error);
+    }
+
     return Promise.reject(error);
   }
 );

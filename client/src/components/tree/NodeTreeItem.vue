@@ -42,6 +42,9 @@
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'mindmap', node._id)">
             <v-icon size="14">mdi-vector-polyline</v-icon> Mind map
           </button>
+          <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'map', node._id)">
+            <v-icon size="14">mdi-map-outline</v-icon> Carte
+          </button>
           <button class="nti-ctx-item nti-ctx-danger" @click="handleDelete">
             <v-icon size="14">mdi-trash-can-outline</v-icon> Supprimer
           </button>
@@ -84,6 +87,7 @@ const icon = computed(() => {
   switch (props.node.type) {
     case 'note': return 'mdi-note-text-outline';
     case 'mindmap': return 'mdi-vector-polyline';
+    case 'map': return 'mdi-map-outline';
     case 'document': return 'mdi-file-document-outline';
     default: return 'mdi-file-outline';
   }

@@ -8,15 +8,20 @@
         </h2>
       </div>
       <nav class="admin-nav">
-        <button
-          v-for="section in sections"
-          :key="section.id"
-          :class="['admin-nav-item', { 'admin-nav-item--active': activeSection === section.id }]"
-          @click="activeSection = section.id"
-        >
-          <v-icon size="18">{{ section.icon }}</v-icon>
-          <span>{{ section.label }}</span>
-        </button>
+        <template v-for="(item, idx) in navItems">
+          <div v-if="item.type === 'group'" :key="'g-' + idx" :class="['admin-nav-group', { 'admin-nav-group--first': idx === 0 }]">
+            {{ item.label }}
+          </div>
+          <button
+            v-else
+            :key="item.id"
+            :class="['admin-nav-item', { 'admin-nav-item--active': activeSection === item.id }]"
+            @click="activeSection = item.id || ''"
+          >
+            <v-icon size="18">{{ item.icon }}</v-icon>
+            <span>{{ item.label }}</span>
+          </button>
+        </template>
       </nav>
     </aside>
 
@@ -26,6 +31,8 @@
       <AdminBranding v-else-if="activeSection === 'branding'" />
       <AdminSecurity v-else-if="activeSection === 'security'" />
       <AdminActivity v-else-if="activeSection === 'activity'" />
+      <AdminPlugins v-else-if="activeSection === 'plugins'" />
+      <AdminAI v-else-if="activeSection === 'ai'" />
     </main>
   </div>
 </template>
@@ -37,15 +44,22 @@ import AdminUsers from '../components/admin/AdminUsers.vue';
 import AdminBranding from '../components/admin/AdminBranding.vue';
 import AdminSecurity from '../components/admin/AdminSecurity.vue';
 import AdminActivity from '../components/admin/AdminActivity.vue';
+import AdminPlugins from '../components/admin/AdminPlugins.vue';
+import AdminAI from '../components/admin/AdminAI.vue';
 
 const activeSection = ref('dashboard');
 
-const sections = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'mdi-view-dashboard-outline' },
-  { id: 'users', label: 'Utilisateurs', icon: 'mdi-account-group-outline' },
-  { id: 'branding', label: 'Parametres du site', icon: 'mdi-palette-outline' },
-  { id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
-  { id: 'activity', label: 'Activite', icon: 'mdi-history' },
+const navItems: Array<{ type: 'group'; label: string; id?: undefined; icon?: undefined } | { type: 'item'; id: string; label: string; icon: string }> = [
+  { type: 'group', label: 'General' },
+  { type: 'item', id: 'dashboard', label: 'Dashboard', icon: 'mdi-view-dashboard-outline' },
+  { type: 'group', label: 'Gestion' },
+  { type: 'item', id: 'users', label: 'Utilisateurs', icon: 'mdi-account-group-outline' },
+  { type: 'item', id: 'activity', label: 'Activite', icon: 'mdi-history' },
+  { type: 'group', label: 'Configuration' },
+  { type: 'item', id: 'branding', label: 'Apparence', icon: 'mdi-palette-outline' },
+  { type: 'item', id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
+  { type: 'item', id: 'plugins', label: 'Plugins', icon: 'mdi-puzzle-outline' },
+  { type: 'item', id: 'ai', label: 'Intelligence Artificielle', icon: 'mdi-robot-outline' },
 ];
 </script>
 
@@ -78,6 +92,18 @@ const sections = [
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+.admin-nav-group {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--me-text-muted);
+  padding: 12px 12px 4px;
+  font-family: var(--me-font-mono);
+}
+.admin-nav-group--first {
+  padding-top: 4px;
 }
 .admin-nav-item {
   display: flex;

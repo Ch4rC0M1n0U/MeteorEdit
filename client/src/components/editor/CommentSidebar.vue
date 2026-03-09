@@ -53,9 +53,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import api, { SERVER_URL } from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
+import { connectSocket } from '../../services/socket';
+import type { Socket } from 'socket.io-client';
 
 interface CommentData {
   _id: string;
@@ -158,11 +160,38 @@ watch(() => props.nodeId, () => {
   if (props.modelValue) fetchComments();
 });
 
+function onCommentAdded(data: { nodeId: string; comment: any }) {
+  if (data.nodeId !== props.nodeId) return;
+  // Avoid duplicating our own comment (already added optimistically)
+  if (comments.value.some(c => c._id === data.comment._id)) return;
+  comments.value.unshift(mapComment(data.comment));
+  emit('count-change', comments.value.length);
+}
+
+function onCommentDeleted(data: { nodeId: string; commentId: string }) {
+  if (data.nodeId !== props.nodeId) return;
+  const before = comments.value.length;
+  comments.value = comments.value.filter(c => c._id !== data.commentId);
+  if (comments.value.length !== before) {
+    emit('count-change', comments.value.length);
+  }
+}
+
+let socket: Socket | null = null;
+
 onMounted(() => {
   // Fetch count on mount
   api.get(`/nodes/${props.nodeId}/comments/count`).then(({ data }) => {
     emit('count-change', data.count);
   });
+  socket = connectSocket();
+  socket.on('comment-added', onCommentAdded);
+  socket.on('comment-deleted', onCommentDeleted);
+});
+
+onUnmounted(() => {
+  socket?.off('comment-added', onCommentAdded);
+  socket?.off('comment-deleted', onCommentDeleted);
 });
 </script>
 

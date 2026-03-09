@@ -69,6 +69,25 @@
         </div>
       </div>
 
+      <!-- Login Background Upload -->
+      <div class="branding-card glass-card">
+        <h3 class="branding-card-title mono">Image de fond (connexion)</h3>
+        <p class="branding-card-desc">Image affichee dans le panneau gauche de la page de connexion</p>
+        <div class="upload-zone upload-zone-bg" @dragover.prevent @drop.prevent="dropLoginBg">
+          <div v-if="brandingStore.loginBackgroundUrl" class="upload-preview">
+            <img :src="brandingStore.loginBackgroundUrl" alt="Login Background" class="upload-preview-img upload-preview-bg" />
+            <button class="upload-remove-btn" @click="removeLoginBg" title="Supprimer l'image de fond">
+              <v-icon size="14">mdi-close</v-icon>
+            </button>
+          </div>
+          <div v-else class="upload-placeholder" @click="triggerLoginBgInput">
+            <v-icon size="28" color="var(--me-text-muted)">mdi-image-outline</v-icon>
+            <span>Glisser ou cliquer pour ajouter</span>
+          </div>
+          <input ref="loginBgInput" type="file" accept="image/png,image/jpeg,image/webp" hidden @change="handleLoginBgSelect" />
+        </div>
+      </div>
+
       <!-- Favicon Upload -->
       <div class="branding-card glass-card">
         <h3 class="branding-card-title mono">Favicon</h3>
@@ -119,6 +138,7 @@ const form = reactive({
 const saving = ref(false);
 const logoInput = ref<HTMLInputElement | null>(null);
 const faviconInput = ref<HTMLInputElement | null>(null);
+const loginBgInput = ref<HTMLInputElement | null>(null);
 
 onMounted(() => {
   form.appName = brandingStore.appName;
@@ -149,10 +169,17 @@ async function resetDefaults() {
 
 function triggerLogoInput() { logoInput.value?.click(); }
 function triggerFaviconInput() { faviconInput.value?.click(); }
+function triggerLoginBgInput() { loginBgInput.value?.click(); }
+
+const fieldNameMap: Record<string, string> = {
+  logo: 'logo',
+  favicon: 'favicon',
+  'login-background': 'loginBackground',
+};
 
 async function uploadFile(file: File, endpoint: string) {
   const fd = new FormData();
-  fd.append(endpoint.includes('logo') ? 'logo' : 'favicon', file);
+  fd.append(fieldNameMap[endpoint] || endpoint, file);
   await api.post(`/admin/settings/${endpoint}`, fd, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
@@ -186,6 +213,21 @@ async function removeLogo() {
 
 async function removeFavicon() {
   await api.delete('/admin/settings/favicon');
+  await brandingStore.fetchBranding();
+}
+
+async function handleLoginBgSelect(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (file) await uploadFile(file, 'login-background');
+}
+
+async function dropLoginBg(e: DragEvent) {
+  const file = e.dataTransfer?.files[0];
+  if (file) await uploadFile(file, 'login-background');
+}
+
+async function removeLoginBg() {
+  await api.delete('/admin/settings/login-background');
   await brandingStore.fetchBranding();
 }
 </script>
@@ -282,6 +324,8 @@ async function removeFavicon() {
   object-fit: contain;
 }
 .upload-preview-favicon { height: 32px; }
+.upload-zone-bg { min-height: 120px; }
+.upload-preview-bg { height: 80px; border-radius: 6px; }
 .upload-remove-btn {
   width: 28px;
   height: 28px;

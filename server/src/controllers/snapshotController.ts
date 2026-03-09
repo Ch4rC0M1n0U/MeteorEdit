@@ -3,6 +3,7 @@ import Snapshot from '../models/Snapshot';
 import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { AuthRequest } from '../middleware/auth';
+import { logActivity } from '../utils/activityLogger';
 
 async function checkDossierAccess(dossierId: string, userId: string): Promise<boolean> {
   const dossier = await Dossier.findById(dossierId);
@@ -56,6 +57,8 @@ export async function createSnapshot(req: AuthRequest, res: Response): Promise<v
       content,
       label: req.body.label || '',
     });
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'snapshot.create', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), snapshotId: snapshot._id.toString(), label: snapshot.label }, ip);
     res.status(201).json(snapshot);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -86,6 +89,8 @@ export async function restoreSnapshot(req: AuthRequest, res: Response): Promise<
       node.excalidrawData = snapshot.content;
     }
     await node.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'snapshot.restore', 'dossier', snapshot.dossierId.toString(), { nodeId: node._id.toString(), snapshotId: snapshot._id.toString() }, ip);
     res.json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -103,7 +108,12 @@ export async function deleteSnapshot(req: AuthRequest, res: Response): Promise<v
       res.status(403).json({ message: 'Access denied' });
       return;
     }
+    const snapshotDossierId = snapshot.dossierId.toString();
+    const snapshotNodeId = snapshot.nodeId.toString();
+    const snapshotId = snapshot._id.toString();
     await snapshot.deleteOne();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'snapshot.delete', 'dossier', snapshotDossierId, { nodeId: snapshotNodeId, snapshotId }, ip);
     res.json({ message: 'Snapshot deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

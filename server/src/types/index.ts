@@ -9,6 +9,14 @@ export interface IUser extends Document {
   isActive: boolean;
   preferences: Record<string, any>;
   avatarPath: string | null;
+  signature: {
+    title: string;
+    name: string;
+    service: string;
+    unit: string;
+    email: string;
+  };
+  signatureImagePath: string | null;
   lastLoginAt: Date | null;
   lastLoginIp: string | null;
   twoFactorEnabled: boolean;
@@ -41,6 +49,8 @@ export interface IDossier extends Document {
   title: string;
   description: string;
   status: 'open' | 'in_progress' | 'closed';
+  icon: string | null;
+  logoPath: string | null;
   objectives: string;
   entities: IEntity[];
   judicialFacts: string;
@@ -55,12 +65,13 @@ export interface IDossier extends Document {
 export interface IDossierNode extends Document {
   dossierId: Types.ObjectId;
   parentId: Types.ObjectId | null;
-  type: 'folder' | 'note' | 'mindmap' | 'document';
+  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map';
   title: string;
   order: number;
   content: any | null;
   contentText: string | null;
   excalidrawData: any | null;
+  mapData: any | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
@@ -81,7 +92,18 @@ export interface ISiteSettings extends Document {
   accentColor: string;
   faviconPath: string | null;
   loginMessage: string;
+  loginBackgroundPath: string | null;
   require2FA: boolean;
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
+  registrationEnabled: boolean;
+  sessionTimeoutMinutes: number;
+  passwordMinLength: number;
+  passwordRequireUppercase: boolean;
+  passwordRequireNumber: boolean;
+  passwordRequireSpecial: boolean;
+  maxLoginAttempts: number;
+  lockoutDurationMinutes: number;
 }
 
 export interface IActivityLog extends Document {
@@ -92,6 +114,21 @@ export interface IActivityLog extends Document {
   metadata: Record<string, any>;
   ip: string;
   timestamp: Date;
+}
+
+export interface IPluginSettings extends Document {
+  mapbox: {
+    apiKey: string;
+    defaultStyle: string;
+    defaultCenter: [number, number];
+    defaultZoom: number;
+  };
+  ollama: {
+    baseUrl: string;
+    selectedModel: string;
+    enabled: boolean;
+    reportPrompt: string;
+  };
 }
 
 export interface INotification extends Document {

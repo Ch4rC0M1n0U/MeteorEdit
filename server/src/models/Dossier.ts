@@ -20,6 +20,8 @@ const dossierSchema = new Schema<IDossier>(
     title: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
     status: { type: String, enum: ['open', 'in_progress', 'closed'], default: 'open' },
+    icon: { type: String, default: null },
+    logoPath: { type: String, default: null },
     objectives: { type: String, default: '' },
     entities: [entitySchema],
     judicialFacts: { type: String, default: '' },

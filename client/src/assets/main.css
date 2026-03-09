@@ -92,10 +92,16 @@ body {
 .v-application {
   font-family: var(--me-font-body) !important;
   background: var(--me-bg-deep) !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .v-application .v-main {
   background: var(--me-bg-deep);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Glass card style */

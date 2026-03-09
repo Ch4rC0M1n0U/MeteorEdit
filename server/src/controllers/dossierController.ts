@@ -1,4 +1,6 @@
 import { Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import Dossier from '../models/Dossier';
 import DossierNode from '../models/DossierNode';
 import { AuthRequest } from '../middleware/auth';
@@ -145,6 +147,46 @@ export async function getTags(req: AuthRequest, res: Response): Promise<void> {
       $or: [{ owner: userId }, { collaborators: userId }],
     });
     res.json(tags.filter(Boolean).sort());
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function uploadDossierLogo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    if (dossier.owner.toString() !== req.user!.userId) { res.status(403).json({ message: 'Only owner can update dossier' }); return; }
+    if (!req.file) { res.status(400).json({ message: 'No file provided' }); return; }
+    if (dossier.logoPath) {
+      const oldPath = path.join(process.env.UPLOAD_DIR || './uploads', dossier.logoPath.replace(/^uploads\//, ''));
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+    dossier.logoPath = `uploads/${req.file.filename}`;
+    dossier.icon = null;
+    await dossier.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_upload' }, ip);
+    res.json(dossier);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function deleteDossierLogo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    if (dossier.owner.toString() !== req.user!.userId) { res.status(403).json({ message: 'Only owner can update dossier' }); return; }
+    if (dossier.logoPath) {
+      const oldPath = path.join(process.env.UPLOAD_DIR || './uploads', dossier.logoPath.replace(/^uploads\//, ''));
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      dossier.logoPath = null;
+      await dossier.save();
+    }
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_delete' }, ip);
+    res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

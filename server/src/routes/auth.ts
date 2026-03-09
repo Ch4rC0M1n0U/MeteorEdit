@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { register, login, me, refresh, getPreferences, updatePreferences } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
-import { updateProfile, uploadAvatar, deleteAvatar, changePassword } from '../controllers/profileController';
+import { updateProfile, uploadAvatar, deleteAvatar, changePassword, updateSignature, uploadSignatureImage, saveDrawnSignature, deleteSignatureImage } from '../controllers/profileController';
 import { setup2FA, verify2FA, disable2FA, validate2FA } from '../controllers/twoFactorController';
 import { searchUsers } from '../controllers/userSearchController';
 
@@ -32,6 +32,10 @@ router.put('/profile', authenticate, updateProfile);
 router.post('/avatar', authenticate, upload.single('avatar'), uploadAvatar);
 router.delete('/avatar', authenticate, deleteAvatar);
 router.put('/password', authenticate, changePassword);
+router.put('/signature', authenticate, updateSignature);
+router.post('/signature/image', authenticate, upload.single('signatureImage'), uploadSignatureImage);
+router.post('/signature/draw', authenticate, saveDrawnSignature);
+router.delete('/signature/image', authenticate, deleteSignatureImage);
 
 // 2FA routes
 router.post('/2fa/setup', authenticate, setup2FA);

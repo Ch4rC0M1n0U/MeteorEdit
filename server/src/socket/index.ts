@@ -7,6 +7,9 @@ const onlineUsers = new Set<string>();
 let ioInstance: Server | null = null;
 const userSockets = new Map<string, Set<string>>();
 
+// Track map presence per nodeId: nodeId -> Map<userId, user data>
+const mapPresence = new Map<string, Map<string, any>>();
+
 export function getOnlineUsers(): Set<string> {
   return onlineUsers;
 }
@@ -88,6 +91,115 @@ export function setupSocket(httpServer: HttpServer) {
       });
     });
 
+    // Map marker events
+    socket.on('map-marker-add', (data: { dossierId: string; nodeId: string; marker: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-marker-added', {
+        nodeId: data.nodeId,
+        marker: data.marker,
+        userId: user.userId,
+      });
+    });
+
+    socket.on('map-marker-update', (data: { dossierId: string; nodeId: string; marker: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-marker-updated', {
+        nodeId: data.nodeId,
+        marker: data.marker,
+        userId: user.userId,
+      });
+    });
+
+    socket.on('map-marker-delete', (data: { dossierId: string; nodeId: string; markerId: string }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-marker-deleted', {
+        nodeId: data.nodeId,
+        markerId: data.markerId,
+        userId: user.userId,
+      });
+    });
+
+    // Map drawing events
+    socket.on('map-drawing-add', (data: { dossierId: string; nodeId: string; drawing: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-drawing-added', {
+        nodeId: data.nodeId,
+        drawing: data.drawing,
+        userId: user.userId,
+      });
+    });
+
+    socket.on('map-drawing-update', (data: { dossierId: string; nodeId: string; drawing: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-drawing-updated', {
+        nodeId: data.nodeId,
+        drawing: data.drawing,
+        userId: user.userId,
+      });
+    });
+
+    socket.on('map-drawing-delete', (data: { dossierId: string; nodeId: string; drawingId: string }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-drawing-deleted', {
+        nodeId: data.nodeId,
+        drawingId: data.drawingId,
+        userId: user.userId,
+      });
+    });
+
+    // Map entity events
+    socket.on('map-entity-add', (data: { dossierId: string; nodeId: string; entity: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-entity-added', {
+        nodeId: data.nodeId,
+        entity: data.entity,
+        userId: user.userId,
+      });
+    });
+
+    socket.on('map-entity-update', (data: { dossierId: string; nodeId: string; entity: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-entity-updated', {
+        nodeId: data.nodeId,
+        entity: data.entity,
+        userId: user.userId,
+      });
+    });
+
+    socket.on('map-entity-delete', (data: { dossierId: string; nodeId: string; entityId: string }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('map-entity-deleted', {
+        nodeId: data.nodeId,
+        entityId: data.entityId,
+        userId: user.userId,
+      });
+    });
+
+    // Map presence events
+    socket.on('map-presence-join', (data: { dossierId: string; nodeId: string; user: any }) => {
+      // Store presence
+      if (!mapPresence.has(data.nodeId)) mapPresence.set(data.nodeId, new Map());
+      const nodePresence = mapPresence.get(data.nodeId)!;
+      nodePresence.set(data.user.userId, data.user);
+
+      // Send existing users to the joiner
+      const existingUsers = Array.from(nodePresence.values()).filter(u => u.userId !== data.user.userId);
+      if (existingUsers.length) {
+        socket.emit('map-presence-list', { nodeId: data.nodeId, users: existingUsers });
+      }
+
+      // Broadcast join to others
+      socket.to(`dossier:${data.dossierId}`).emit('map-presence-joined', {
+        nodeId: data.nodeId,
+        user: data.user,
+      });
+    });
+
+    socket.on('map-presence-leave', (data: { dossierId: string; nodeId: string; userId: string }) => {
+      // Remove from tracking
+      const nodePresence = mapPresence.get(data.nodeId);
+      if (nodePresence) {
+        nodePresence.delete(data.userId);
+        if (nodePresence.size === 0) mapPresence.delete(data.nodeId);
+      }
+
+      socket.to(`dossier:${data.dossierId}`).emit('map-presence-left', {
+        nodeId: data.nodeId,
+        userId: data.userId,
+      });
+    });
+
     socket.on('node-created', (data: { dossierId: string; node: any }) => {
       socket.to(`dossier:${data.dossierId}`).emit('node-added', data.node);
     });
@@ -102,6 +214,14 @@ export function setupSocket(httpServer: HttpServer) {
       if (userSockets.get(user.userId)?.size === 0) userSockets.delete(user.userId);
       onlineUsers.delete(user.userId);
       io.to('admin-room').emit('online-count', onlineUsers.size);
+
+      // Clean up map presence for this user
+      for (const [nodeId, nodePresence] of mapPresence) {
+        if (nodePresence.has(user.userId)) {
+          nodePresence.delete(user.userId);
+          if (nodePresence.size === 0) mapPresence.delete(nodeId);
+        }
+      }
     });
   });
 

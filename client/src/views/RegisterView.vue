@@ -1,15 +1,50 @@
 <template>
-  <div class="login-page">
-    <div class="login-bg" />
-    <div class="login-container fade-in">
-      <div class="login-card glass-card">
-        <div class="login-header">
-          <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-logo-img" />
-          <div class="login-logo mono">
-            <span v-if="!brandingStore.logoUrl" class="logo-icon">&#9670;</span>
-            {{ brandingStore.appName }}
+  <div class="login-split">
+    <!-- Left panel: branding showcase -->
+    <div class="login-left" :class="{ 'has-bg-image': brandingStore.loginBackgroundUrl }">
+      <img v-if="brandingStore.loginBackgroundUrl" :src="brandingStore.loginBackgroundUrl" alt="" class="login-left-bg-img" />
+      <div class="login-left-overlay" />
+      <div class="login-left-content">
+        <div class="login-brand">
+          <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-brand-logo" />
+          <div v-else class="login-brand-icon">
+            <v-icon size="48" color="white">mdi-shield-search</v-icon>
           </div>
-          <p class="login-subtitle">Creer un compte</p>
+          <h1 class="login-brand-title mono">{{ brandingStore.appName }}</h1>
+          <p class="login-brand-tagline">{{ brandingStore.loginMessage || 'Plateforme d\'investigation OSINT' }}</p>
+        </div>
+        <div class="login-left-features">
+          <div class="login-feature">
+            <v-icon size="20">mdi-folder-search-outline</v-icon>
+            <span>Gestion de dossiers d'investigation</span>
+          </div>
+          <div class="login-feature">
+            <v-icon size="20">mdi-account-group-outline</v-icon>
+            <span>Collaboration en temps reel</span>
+          </div>
+          <div class="login-feature">
+            <v-icon size="20">mdi-map-marker-radius-outline</v-icon>
+            <span>Cartographie et visualisation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel: register form -->
+    <div class="login-right">
+      <!-- Mobile branding -->
+      <div class="login-mobile-brand">
+        <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-mobile-logo" />
+        <div v-else class="login-mobile-icon">
+          <v-icon size="28" color="white">mdi-shield-search</v-icon>
+        </div>
+        <span class="login-mobile-name mono">{{ brandingStore.appName }}</span>
+      </div>
+
+      <div class="login-right-inner fade-in">
+        <div class="login-form-header">
+          <h2 class="login-form-title">Creer un compte</h2>
+          <p class="login-form-subtitle">Rejoignez la plateforme d'investigation</p>
         </div>
 
         <v-alert v-if="success" type="success" variant="tonal" class="mb-4">
@@ -21,28 +56,39 @@
         </v-alert>
 
         <v-form v-if="!success" @submit.prevent="handleRegister" :disabled="authStore.loading">
-          <div class="d-flex ga-3 mb-1">
-            <v-text-field v-model="firstName" label="Prenom" prepend-inner-icon="mdi-account-outline" required />
-            <v-text-field v-model="lastName" label="Nom" required />
+          <div class="d-flex ga-3 mb-3">
+            <div style="flex: 1">
+              <label class="login-field-label">Prenom</label>
+              <v-text-field v-model="firstName" placeholder="Jean" prepend-inner-icon="mdi-account-outline" variant="outlined" density="comfortable" required />
+            </div>
+            <div style="flex: 1">
+              <label class="login-field-label">Nom</label>
+              <v-text-field v-model="lastName" placeholder="Dupont" variant="outlined" density="comfortable" required />
+            </div>
           </div>
-          <v-text-field v-model="email" label="Email" type="email" prepend-inner-icon="mdi-email-outline" required class="mb-1" />
+          <label class="login-field-label">Email</label>
+          <v-text-field v-model="email" type="email" placeholder="nom@exemple.com" prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable" required class="mb-3" />
+          <label class="login-field-label">Mot de passe</label>
           <v-text-field
             v-model="password"
-            label="Mot de passe (min. 8)"
+            placeholder="Min. 8 caracteres"
             :type="showPassword ? 'text' : 'password'"
             prepend-inner-icon="mdi-lock-outline"
             :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
             @click:append-inner="showPassword = !showPassword"
+            variant="outlined"
+            density="comfortable"
             required
-            class="mb-4"
+            class="mb-5"
           />
           <v-btn
             type="submit"
             block
             size="large"
             :loading="authStore.loading"
-            class="btn-accent mb-2"
+            class="btn-accent login-submit-btn"
           >
+            <v-icon start size="18">mdi-account-plus-outline</v-icon>
             S'inscrire
           </v-btn>
         </v-form>
@@ -84,75 +130,266 @@ async function handleRegister() {
 </script>
 
 <style scoped>
-.login-page {
-  height: 100vh;
+.login-split {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+  height: 100vh;
   overflow: hidden;
   background: var(--me-bg-deep);
 }
-.login-bg {
+
+.login-left {
+  position: relative;
+  flex: 0 0 45%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
+    linear-gradient(225deg, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
+    var(--me-bg-deep);
+  overflow: hidden;
+  border-right: 1px solid var(--me-border);
+}
+
+.login-left-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.login-left.has-bg-image .login-left-overlay {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.login-left.has-bg-image::before {
+  display: none;
+}
+
+.login-left-overlay {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(56, 189, 248, 0.06) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(245, 158, 11, 0.04) 0%, transparent 70%);
-}
-.login-container {
-  position: relative;
+    radial-gradient(circle at 30% 70%, var(--me-accent-glow) 0%, transparent 50%),
+    radial-gradient(circle at 70% 30%, var(--me-accent-glow) 0%, transparent 50%);
+  pointer-events: none;
   z-index: 1;
-  width: 100%;
-  max-width: 480px;
-  padding: 0 16px;
 }
-.login-card {
-  padding: 40px 32px;
+
+.login-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+  background-size: 32px 32px;
+  pointer-events: none;
 }
-.login-header {
+
+.login-left-content {
+  position: relative;
+  z-index: 2;
   text-align: center;
-  margin-bottom: 32px;
+  padding: 40px;
+  max-width: 400px;
 }
-.login-logo {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  letter-spacing: -0.5px;
-}
-.logo-icon {
-  color: var(--me-accent);
-  margin-right: 4px;
-}
-.login-logo-img {
-  height: 56px;
+
+.login-brand-logo {
+  height: 72px;
   width: auto;
   object-fit: contain;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 24px rgba(0, 0, 0, 0.3));
 }
-.login-subtitle {
-  color: var(--me-text-muted);
+
+.login-brand-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--me-accent), rgba(56, 189, 248, 0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 32px rgba(56, 189, 248, 0.25);
+}
+
+.login-brand-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--me-text-primary);
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.login-brand-tagline {
   font-size: 13px;
-  margin-top: 6px;
-  letter-spacing: 1px;
+  color: var(--me-text-muted);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   font-family: var(--me-font-mono);
+  line-height: 1.6;
 }
+
+.login-left-features {
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.login-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--me-text-secondary);
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.login-feature:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--me-accent-glow);
+}
+
+.login-feature .v-icon {
+  color: var(--me-accent);
+  flex-shrink: 0;
+}
+
+.login-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 40px;
+}
+
+.login-right-inner {
+  width: 100%;
+  max-width: 440px;
+}
+
+.login-form-header {
+  margin-bottom: 32px;
+}
+
+.login-form-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  margin-bottom: 6px;
+}
+
+.login-form-subtitle {
+  font-size: 14px;
+  color: var(--me-text-muted);
+}
+
+.login-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--me-text-secondary);
+  margin-bottom: 6px;
+}
+
+.login-submit-btn {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  border-radius: 10px;
+  height: 48px;
+}
+
 .login-footer {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--me-border);
   font-size: 14px;
 }
+
 .text-muted {
   color: var(--me-text-muted);
 }
+
 .login-link {
   color: var(--me-accent);
   text-decoration: none;
   margin-left: 6px;
-  font-weight: 500;
+  font-weight: 600;
 }
+
 .login-link:hover {
   text-decoration: underline;
+}
+
+.login-mobile-brand {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.login-mobile-logo {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-mobile-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--me-accent), rgba(56, 189, 248, 0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.login-mobile-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--me-text-primary);
+}
+
+@media (max-width: 900px) {
+  .login-left {
+    display: none;
+  }
+
+  .login-right {
+    padding: 24px;
+  }
+
+  .login-mobile-brand {
+    display: flex;
+  }
+
+  .login-form-header {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-right {
+    padding: 16px;
+  }
+
+  .login-right-inner {
+    max-width: 100%;
+  }
 }
 </style>

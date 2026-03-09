@@ -37,6 +37,10 @@
             <v-icon size="16" class="mr-2">mdi-shield-account</v-icon>
             Administration
           </router-link>
+          <router-link to="/templates" class="me-dropdown-item">
+            <v-icon size="16" class="mr-2">mdi-file-document-check-outline</v-icon>
+            Mes modeles
+          </router-link>
           <router-link to="/profile?section=preferences" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-cog-outline</v-icon>
             Preferences
@@ -83,6 +87,7 @@ function handleBack() {
   if (dossierStore.currentDossier) {
     dossierStore.closeDossier();
   }
+  router.push('/');
 }
 
 function handleLogout() {
@@ -93,14 +98,13 @@ function handleLogout() {
 
 <style scoped>
 .me-appbar {
-  height: 56px;
+  height: 48px;
   display: flex;
   align-items: center;
   padding: 0 16px;
   background: var(--me-bg-surface);
   border-bottom: 1px solid var(--me-border);
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 100;
   gap: 16px;
 }

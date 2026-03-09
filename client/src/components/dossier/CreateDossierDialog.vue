@@ -15,6 +15,21 @@
         </button>
       </div>
       <div class="dialog-body">
+        <!-- Icon picker -->
+        <div class="icon-picker-section">
+          <span class="icon-picker-label mono">Icone du dossier</span>
+          <div class="icon-picker-grid">
+            <button
+              v-for="ic in dossierIcons"
+              :key="ic"
+              :class="['icon-picker-item', { 'icon-picker-item--active': selectedIcon === ic }]"
+              @click="selectedIcon = selectedIcon === ic ? null : ic"
+              type="button"
+            >
+              <v-icon size="20">{{ ic }}</v-icon>
+            </button>
+          </div>
+        </div>
         <v-text-field v-model="title" label="Titre du dossier" autofocus class="mb-2" />
         <v-textarea v-model="description" label="Description" rows="3" />
       </div>
@@ -29,16 +44,24 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
+import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 
 const dossierStore = useDossierStore();
 const dialog = ref(false);
 const title = ref('');
 const description = ref('');
+const selectedIcon = ref<string | null>(null);
+const dossierIcons = DOSSIER_ICONS;
 
 async function handleCreate() {
-  await dossierStore.createDossier({ title: title.value, description: description.value });
+  await dossierStore.createDossier({
+    title: title.value,
+    description: description.value,
+    icon: selectedIcon.value,
+  });
   title.value = '';
   description.value = '';
+  selectedIcon.value = null;
   dialog.value = false;
 }
 </script>
@@ -118,5 +141,44 @@ async function handleCreate() {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+/* Icon picker */
+.icon-picker-section {
+  margin-bottom: 16px;
+}
+.icon-picker-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--me-text-muted);
+  margin-bottom: 8px;
+}
+.icon-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.icon-picker-item {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: 1px solid transparent;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.icon-picker-item:hover {
+  background: var(--me-accent-glow);
+  color: var(--me-text-primary);
+}
+.icon-picker-item--active {
+  background: var(--me-accent-glow);
+  border-color: var(--me-accent);
+  color: var(--me-accent);
 }
 </style>

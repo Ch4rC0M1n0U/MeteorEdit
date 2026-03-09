@@ -9,7 +9,12 @@
         <v-icon size="16">mdi-trash-can-outline</v-icon>
       </button>
     </div>
-    <h3 class="dc-title">{{ dossier.title }}</h3>
+    <div class="dc-title-row">
+      <img v-if="logoUrl" :src="logoUrl" alt="" class="dc-logo" />
+      <v-icon v-else-if="dossier.icon" size="22" class="dc-icon">{{ dossier.icon }}</v-icon>
+      <v-icon v-else size="22" class="dc-icon dc-icon-default">mdi-folder-outline</v-icon>
+      <h3 class="dc-title">{{ dossier.title }}</h3>
+    </div>
     <div v-if="dossier.tags?.length" class="dc-tags">
       <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>
     </div>
@@ -23,9 +28,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Dossier } from '../../types';
+import { SERVER_URL } from '../../services/api';
 
 const props = defineProps<{ dossier: Dossier }>();
 defineEmits<{ open: [id: string]; delete: [id: string] }>();
+
+const logoUrl = computed(() => {
+  return props.dossier.logoPath ? `${SERVER_URL}/${props.dossier.logoPath}` : null;
+});
 
 const statusDot = computed(() => {
   switch (props.dossier.status) {
@@ -90,6 +100,25 @@ const statusLabel = computed(() => {
 .dc-delete:hover {
   color: var(--me-error);
   background: rgba(248, 113, 113, 0.1);
+}
+.dc-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dc-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.dc-icon {
+  color: var(--me-accent);
+  flex-shrink: 0;
+}
+.dc-icon-default {
+  color: var(--me-text-muted);
 }
 .dc-title {
   font-size: 17px;

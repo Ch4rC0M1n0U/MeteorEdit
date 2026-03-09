@@ -15,8 +15,11 @@ import exportRoutes from './routes/export';
 import snapshotRoutes from './routes/snapshots';
 import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notifications';
+import templateRoutes from './routes/templates';
+import aiRoutes from './routes/ai';
 import SiteSettings from './models/SiteSettings';
 import { startYjsServer } from './yjs-server';
+import { checkMaintenance, loadMaintenanceState } from './middleware/maintenance';
 
 dotenv.config();
 
@@ -46,12 +49,15 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/settings', settingsRoutes);
+app.use('/api', checkMaintenance);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dossiers', dossierRoutes);
 app.use('/api', nodeRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/api', exportRoutes);
 app.use('/api', snapshotRoutes);
 
@@ -64,6 +70,7 @@ async function start() {
     await SiteSettings.create({});
     console.log('SiteSettings initialized');
   }
+  await loadMaintenanceState();
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

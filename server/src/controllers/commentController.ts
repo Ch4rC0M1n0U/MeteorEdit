@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import Comment from '../models/Comment';
+import { getIO, getUserSockets } from '../socket';
+import { logActivity } from '../utils/activityLogger';
 
 export async function getComments(req: AuthRequest, res: Response) {
   const nodeId = req.params.nodeId as string;
@@ -23,6 +25,17 @@ export async function createComment(req: AuthRequest, res: Response) {
     content: content.trim(),
   });
   const populated = await Comment.findById(comment._id).populate('userId', 'firstName lastName avatarPath');
+  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+  await logActivity(req.user!.userId, 'comment.create', 'dossier', null, { nodeId, commentId: comment._id.toString() }, ip);
+  const io = getIO();
+  if (io) {
+    const senderSockets = getUserSockets().get(req.user!.userId);
+    let broadcast: any = io;
+    if (senderSockets?.size) {
+      broadcast = io.except([...senderSockets]);
+    }
+    broadcast.emit('comment-added', { nodeId, comment: populated });
+  }
   res.status(201).json(populated);
 }
 
@@ -37,7 +50,19 @@ export async function deleteComment(req: AuthRequest, res: Response) {
     res.status(403).json({ message: 'Not authorized' });
     return;
   }
+  const nodeId = comment.nodeId.toString();
   await comment.deleteOne();
+  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+  await logActivity(req.user!.userId, 'comment.delete', 'dossier', null, { nodeId, commentId }, ip);
+  const io = getIO();
+  if (io) {
+    const senderSockets = getUserSockets().get(req.user!.userId);
+    let broadcast: any = io;
+    if (senderSockets?.size) {
+      broadcast = io.except([...senderSockets]);
+    }
+    broadcast.emit('comment-deleted', { nodeId, commentId });
+  }
   res.json({ message: 'Deleted' });
 }
 

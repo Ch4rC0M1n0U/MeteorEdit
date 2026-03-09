@@ -141,11 +141,14 @@
 
       <div class="ne-separator" />
 
-      <!-- Comments -->
+      <!-- Comments & Templates -->
       <div class="ne-toolbar-group">
         <button class="ne-btn ne-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" title="Commentaires">
           <v-icon size="16">mdi-comment-text-outline</v-icon>
           <span v-if="commentCount" class="ne-comment-badge">{{ commentCount }}</span>
+        </button>
+        <button class="ne-btn" @click="saveAsTemplate" title="Sauvegarder comme modele">
+          <v-icon size="16">mdi-content-save-check-outline</v-icon>
         </button>
       </div>
     </div>
@@ -199,12 +202,14 @@ import { Superscript } from '@tiptap/extension-superscript';
 import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
 import api, { SERVER_URL } from '../../services/api';
+import { useTemplateStore } from '../../stores/template';
 import CommentSidebar from './CommentSidebar.vue';
 
 const props = defineProps<{ modelValue: any; nodeId: string }>();
 const emit = defineEmits<{ 'update:modelValue': [value: any] }>();
 
 const authStore = useAuthStore();
+const templateStore = useTemplateStore();
 const { prompt: promptDialog } = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
 const showComments = ref(false);
@@ -443,6 +448,26 @@ provider.on('sync', (isSynced: boolean) => {
     }
   }
 });
+
+async function saveAsTemplate() {
+  if (!editor.value) return;
+  const title = await promptDialog({
+    title: 'Sauvegarder comme modele',
+    message: 'Donnez un nom a ce modele :',
+    promptLabel: 'Nom du modele',
+    promptDefault: '',
+    confirmText: 'Sauvegarder',
+  });
+  if (!title) return;
+  try {
+    await templateStore.createTemplate({
+      title,
+      content: editor.value.getJSON(),
+    });
+  } catch (err) {
+    console.error('Failed to save template:', err);
+  }
+}
 
 function insertTable() {
   editor.value?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();

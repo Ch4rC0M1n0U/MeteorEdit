@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import SiteSettings from '../models/SiteSettings';
+import { logActivity } from '../utils/activityLogger';
 
 function generateBackupCodes(): string[] {
   const codes: string[] = [];
@@ -72,6 +73,8 @@ export async function verify2FA(req: AuthRequest, res: Response): Promise<void> 
 
     user.twoFactorEnabled = true;
     await user.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, '2fa.enable', 'user', req.user!.userId, {}, ip);
     res.json({ message: '2FA enabled' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -95,6 +98,8 @@ export async function disable2FA(req: AuthRequest, res: Response): Promise<void>
     user.twoFactorSecret = null;
     user.twoFactorBackupCodes = [];
     await user.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, '2fa.disable', 'user', req.user!.userId, {}, ip);
     res.json({ message: '2FA disabled' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

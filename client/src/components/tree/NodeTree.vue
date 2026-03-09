@@ -39,6 +39,10 @@
           <v-icon size="16">mdi-vector-polyline</v-icon>
           <span>Mind Map</span>
         </button>
+        <button class="nt-add-option" @click="$emit('create', 'map', null)">
+          <v-icon size="16">mdi-map-outline</v-icon>
+          <span>Carte</span>
+        </button>
       </div>
     </v-menu>
 
@@ -107,6 +111,7 @@ function trashIcon(type: string) {
     case 'folder': return 'mdi-folder-outline';
     case 'note': return 'mdi-note-text-outline';
     case 'mindmap': return 'mdi-vector-polyline';
+    case 'map': return 'mdi-map-outline';
     case 'document': return 'mdi-file-document-outline';
     default: return 'mdi-file-outline';
   }

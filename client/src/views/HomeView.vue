@@ -26,6 +26,8 @@
       <h3 class="mono">Aucun dossier</h3>
       <p class="text-muted">Creez votre premier dossier pour commencer.</p>
     </div>
+
+    <UserDashboard @open-dossier="handleOpen" />
   </div>
 
   <DossierView v-else />
@@ -38,6 +40,7 @@ import { useConfirm } from '../composables/useConfirm';
 import DossierCard from '../components/dossier/DossierCard.vue';
 import CreateDossierDialog from '../components/dossier/CreateDossierDialog.vue';
 import DossierView from '../components/dossier/DossierView.vue';
+import UserDashboard from '../components/dashboard/UserDashboard.vue';
 
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();

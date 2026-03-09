@@ -8,6 +8,8 @@ export const useBrandingStore = defineStore('branding', () => {
   const accentColor = ref('#38bdf8');
   const faviconUrl = ref<string | null>(null);
   const loginMessage = ref('');
+  const loginBackgroundUrl = ref<string | null>(null);
+  const registrationEnabled = ref(true);
   const loaded = ref(false);
 
   async function fetchBranding() {
@@ -16,8 +18,10 @@ export const useBrandingStore = defineStore('branding', () => {
       appName.value = data.appName || 'MeteorEdit';
       accentColor.value = data.accentColor || '#38bdf8';
       loginMessage.value = data.loginMessage || '';
+      registrationEnabled.value = data.registrationEnabled !== false;
       logoUrl.value = data.logoPath ? `${SERVER_URL}/${data.logoPath}` : null;
       faviconUrl.value = data.faviconPath ? `${SERVER_URL}/${data.faviconPath}` : null;
+      loginBackgroundUrl.value = data.loginBackgroundPath ? `${SERVER_URL}/${data.loginBackgroundPath}` : null;
       applyBranding();
       loaded.value = true;
     } catch {
@@ -50,5 +54,5 @@ export const useBrandingStore = defineStore('branding', () => {
     return `rgba(${r}, ${g}, ${b}, 0.15)`;
   }
 
-  return { appName, logoUrl, accentColor, faviconUrl, loginMessage, loaded, fetchBranding, applyBranding };
+  return { appName, logoUrl, accentColor, faviconUrl, loginMessage, loginBackgroundUrl, registrationEnabled, loaded, fetchBranding, applyBranding };
 });

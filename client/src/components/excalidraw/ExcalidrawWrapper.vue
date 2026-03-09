@@ -13,8 +13,20 @@
           </span>
         </template>
       </div>
+      <div class="ex-toolbar-spacer" />
+      <button class="ex-tb-btn ex-tb-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" title="Commentaires">
+        <v-icon size="16">mdi-comment-text-outline</v-icon>
+        <span v-if="commentCount" class="ex-comment-badge">{{ commentCount }}</span>
+      </button>
     </div>
-    <div ref="containerRef" class="excalidraw-container" />
+    <div class="excalidraw-body">
+      <div ref="containerRef" class="excalidraw-container" />
+      <CommentSidebar
+        v-model="showComments"
+        :node-id="props.nodeId"
+        @count-change="commentCount = $event"
+      />
+    </div>
   </div>
 </template>
 
@@ -26,11 +38,14 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api, { SERVER_URL } from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
+import CommentSidebar from '../editor/CommentSidebar.vue';
 
 const props = defineProps<{ data: any; nodeId: string }>();
 const emit = defineEmits<{ 'update:data': [value: any] }>();
 const containerRef = ref<HTMLElement | null>(null);
 const copyMsg = ref('');
+const showComments = ref(false);
+const commentCount = ref(0);
 const awarenessUsers = ref<Array<{ name: string; color: string; initials: string; avatarUrl: string | null }>>([]);
 let root: Root | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -272,9 +287,15 @@ onBeforeUnmount(() => {
 .ex-tb-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--me-radius-xs); background: none; border: 1px solid var(--me-border); color: var(--me-text-secondary); cursor: pointer; font-size: 12px; transition: all 0.15s; }
 .ex-tb-btn:hover:not(:disabled) { border-color: var(--me-accent); color: var(--me-accent); background: var(--me-accent-glow); }
 .ex-tb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ex-tb-btn.active { border-color: var(--me-accent); color: var(--me-accent); background: var(--me-accent-glow); }
+.ex-toolbar-spacer { flex: 1; }
+.ex-tb-btn-comments { position: relative; }
+.ex-comment-badge { position: absolute; top: -4px; right: -4px; background: var(--me-accent); color: var(--me-bg-deep); font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px; font-family: var(--me-font-mono); }
+.excalidraw-body { flex: 1; min-height: 0; display: flex; position: relative; overflow: hidden; }
+.excalidraw-body .comment-sidebar { z-index: 50; }
 .excalidraw-container { flex: 1; min-height: 0; }
 .excalidraw-container .excalidraw { height: 100%; width: 100%; }
-.collab-presence { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.collab-presence { display: flex; align-items: center; gap: 4px; }
 .collab-user { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--me-bg-surface); font-size: 11px; font-weight: 700; color: #fff; font-family: var(--me-font-mono); cursor: default; }
 .collab-user-img { object-fit: cover; }
 </style>

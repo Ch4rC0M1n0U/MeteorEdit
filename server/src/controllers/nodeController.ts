@@ -3,6 +3,7 @@ import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { AuthRequest } from '../middleware/auth';
 import { extractTextFromTipTap } from '../utils/extractText';
+import { logActivity } from '../utils/activityLogger';
 
 async function checkDossierAccess(dossierId: string, userId: string): Promise<boolean> {
   const dossier = await Dossier.findById(dossierId);
@@ -42,6 +43,8 @@ export async function createNode(req: AuthRequest, res: Response): Promise<void>
       dossierId,
       order,
     });
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'node.create', 'dossier', dossierId, { nodeId: node._id.toString(), type: node.type, title: node.title }, ip);
     res.status(201).json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -94,6 +97,8 @@ export async function deleteNode(req: AuthRequest, res: Response): Promise<void>
     await softDeleteRecursive(node._id.toString());
     node.deletedAt = now;
     await node.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'node.delete', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip);
     res.json({ message: 'Node moved to trash' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -146,6 +151,8 @@ export async function restoreNode(req: AuthRequest, res: Response): Promise<void
     }
     node.deletedAt = null;
     await node.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'node.restore', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip);
     res.json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -170,8 +177,12 @@ export async function purgeNode(req: AuthRequest, res: Response): Promise<void> 
         await child.deleteOne();
       }
     }
+    const nodeTitle = node.title;
+    const nodeDossierId = node.dossierId.toString();
     await hardDeleteRecursive(node._id.toString());
     await node.deleteOne();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'node.purge', 'dossier', nodeDossierId, { nodeId: req.params.nodeId, title: nodeTitle }, ip);
     res.json({ message: 'Node permanently deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -186,6 +197,8 @@ export async function emptyTrash(req: AuthRequest, res: Response): Promise<void>
       return;
     }
     await DossierNode.deleteMany({ dossierId, deletedAt: { $ne: null } });
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'node.empty_trash', 'dossier', dossierId, {}, ip);
     res.json({ message: 'Trash emptied' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

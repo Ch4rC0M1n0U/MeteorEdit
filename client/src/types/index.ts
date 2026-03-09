@@ -22,6 +22,8 @@ export interface Dossier {
   title: string;
   description: string;
   status: 'open' | 'in_progress' | 'closed';
+  icon: string | null;
+  logoPath: string | null;
   objectives: string;
   entities: Entity[];
   judicialFacts: string;
@@ -54,15 +56,27 @@ export interface Investigator {
   email: string;
 }
 
+export interface NoteTemplate {
+  _id: string;
+  title: string;
+  description: string;
+  content: any;
+  owner: string;
+  isShared: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DossierNode {
   _id: string;
   dossierId: string;
   parentId: string | null;
-  type: 'folder' | 'note' | 'mindmap' | 'document';
+  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map';
   title: string;
   order: number;
   content: any | null;
   excalidrawData: any | null;
+  mapData: any | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;

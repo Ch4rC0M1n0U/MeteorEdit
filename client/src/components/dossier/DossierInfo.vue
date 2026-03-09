@@ -10,6 +10,48 @@
 
     <!-- MODE LECTURE -->
     <div v-if="!editing" class="di-form fade-in fade-in-delay-1">
+      <!-- Icon / Logo -->
+      <div class="di-section di-icon-section">
+        <div class="di-icon-display">
+          <div v-if="dossierLogoUrl" class="di-logo-wrap">
+            <img :src="dossierLogoUrl" alt="Logo" class="di-logo-img" />
+            <button v-if="isOwner" class="di-logo-remove" @click="removeLogo" title="Supprimer le logo">
+              <v-icon size="12">mdi-close</v-icon>
+            </button>
+          </div>
+          <v-icon v-else-if="form.icon" size="32" class="di-icon-large">{{ form.icon }}</v-icon>
+          <v-icon v-else size="32" class="di-icon-large di-icon-default">mdi-folder-outline</v-icon>
+          <div class="di-icon-actions" v-if="isOwner">
+            <button class="me-btn-small" @click="showIconPicker = !showIconPicker">
+              <v-icon size="14" class="mr-1">mdi-palette-outline</v-icon>
+              Icone
+            </button>
+            <button class="me-btn-small" @click="triggerLogoInput">
+              <v-icon size="14" class="mr-1">mdi-image-outline</v-icon>
+              Logo
+            </button>
+            <input ref="logoInput" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden @change="handleLogoUpload" />
+          </div>
+        </div>
+        <div v-if="showIconPicker" class="di-icon-picker">
+          <div class="icon-picker-grid">
+            <button
+              v-for="ic in dossierIcons"
+              :key="ic"
+              :class="['icon-picker-item', { 'icon-picker-item--active': form.icon === ic }]"
+              @click="selectIcon(ic)"
+              type="button"
+            >
+              <v-icon size="20">{{ ic }}</v-icon>
+            </button>
+          </div>
+          <button v-if="form.icon" class="di-icon-clear" @click="selectIcon(null)">
+            <v-icon size="12" class="mr-1">mdi-close</v-icon>
+            Retirer l'icone
+          </button>
+        </div>
+      </div>
+
       <div class="di-section">
         <div class="di-row">
           <div class="di-field">
@@ -235,8 +277,9 @@
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
-import api from '../../services/api';
+import api, { SERVER_URL } from '../../services/api';
 import type { CollaboratorUser } from '../../types';
+import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
@@ -245,6 +288,14 @@ const editing = ref(false);
 const entityDialog = ref(false);
 const copiedIndex = ref<number | null>(null);
 const editingEntityIndex = ref<number | null>(null);
+const showIconPicker = ref(false);
+const logoInput = ref<HTMLInputElement | null>(null);
+const dossierIcons = DOSSIER_ICONS;
+
+const dossierLogoUrl = computed(() => {
+  const d = dossierStore.currentDossier;
+  return d?.logoPath ? `${SERVER_URL}/${d.logoPath}` : null;
+});
 
 const statusOptions = [
   { title: 'Ouvert', value: 'open' },
@@ -278,7 +329,8 @@ const availableTags = ref<string[]>([]);
 const form = reactive({
   title: '',
   description: '',
-  status: 'open' as string,
+  status: 'open' as 'open' | 'in_progress' | 'closed',
+  icon: null as string | null,
   objectives: '',
   judicialFacts: '',
   investigator: { name: '', service: '', unit: '', phone: '', email: '' },
@@ -302,10 +354,53 @@ function loadFromDossier() {
     form.title = d.title;
     form.description = d.description;
     form.status = d.status;
+    form.icon = d.icon || null;
     form.objectives = d.objectives;
     form.judicialFacts = d.judicialFacts;
     form.investigator = { ...d.investigator };
     form.entities = (d.entities || []).map((e: any) => ({ ...e }));
+  }
+}
+
+async function selectIcon(icon: string | null) {
+  form.icon = icon;
+  if (dossierStore.currentDossier) {
+    await dossierStore.updateDossier(dossierStore.currentDossier._id, { icon, logoPath: null });
+  }
+  showIconPicker.value = false;
+}
+
+function triggerLogoInput() { logoInput.value?.click(); }
+
+function syncDossierInList(updated: any) {
+  dossierStore.currentDossier = updated;
+  const idx = dossierStore.dossiers.findIndex(d => d._id === updated._id);
+  if (idx >= 0) dossierStore.dossiers[idx] = updated;
+}
+
+async function handleLogoUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file || !dossierStore.currentDossier) return;
+  const fd = new FormData();
+  fd.append('logo', file);
+  try {
+    const { data } = await api.post(`/dossiers/${dossierStore.currentDossier._id}/logo`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    syncDossierInList(data);
+    form.icon = null;
+  } catch (err) {
+    console.error('Failed to upload logo:', err);
+  }
+}
+
+async function removeLogo() {
+  if (!dossierStore.currentDossier) return;
+  try {
+    const { data } = await api.delete(`/dossiers/${dossierStore.currentDossier._id}/logo`);
+    syncDossierInList(data);
+  } catch (err) {
+    console.error('Failed to remove logo:', err);
   }
 }
 
@@ -494,6 +589,95 @@ async function removeCollaborator(userId: string) {
   margin: 0 auto;
   padding: 32px 24px;
 }
+/* Icon / Logo section */
+.di-icon-section { padding: 16px 20px; }
+.di-icon-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.di-logo-wrap { position: relative; }
+.di-logo-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--me-border);
+}
+.di-logo-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-border);
+  color: var(--me-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.di-logo-remove:hover {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: var(--me-error);
+  color: var(--me-error);
+}
+.di-icon-large { color: var(--me-accent); }
+.di-icon-default { color: var(--me-text-muted); }
+.di-icon-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.di-icon-picker {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--me-border);
+}
+.icon-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.icon-picker-item {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: 1px solid transparent;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.icon-picker-item:hover {
+  background: var(--me-accent-glow);
+  color: var(--me-text-primary);
+}
+.icon-picker-item--active {
+  background: var(--me-accent-glow);
+  border-color: var(--me-accent);
+  color: var(--me-accent);
+}
+.di-icon-clear {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: none;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  transition: color 0.15s;
+}
+.di-icon-clear:hover { color: var(--me-error); }
 .di-header {
   display: flex;
   align-items: center;
