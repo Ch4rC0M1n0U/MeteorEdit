@@ -22,6 +22,10 @@
                 <v-icon size="16">mdi-file-pdf-box</v-icon>
                 <span>Export PDF</span>
               </button>
+              <button class="dv-export-option" @click="exportDOCX">
+                <v-icon size="16">mdi-file-word-box</v-icon>
+                <span>Export DOCX</span>
+              </button>
               <div v-if="aiEnabled" class="dv-export-divider" />
               <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="generateAiReport">
                 <v-icon size="16">mdi-robot-outline</v-icon>
@@ -194,7 +198,11 @@
           <button class="me-btn-ghost" @click="closeAiReport">Fermer</button>
           <button v-if="aiReportContent" class="me-btn-primary" @click="downloadAiReportAsPdf">
             <v-icon size="14" class="mr-1">mdi-file-pdf-box</v-icon>
-            Telecharger en PDF
+            PDF
+          </button>
+          <button v-if="aiReportContent" class="me-btn-primary" @click="downloadAiReportAsDocx">
+            <v-icon size="14" class="mr-1">mdi-file-word-box</v-icon>
+            DOCX
           </button>
         </div>
       </div>
@@ -253,6 +261,8 @@ import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
+import { loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, createPdfBuilder } from '../../utils/pdfTemplate';
+import { generateDocx, type DocxExportData } from '../../utils/docxTemplate';
 import NodeTree from '../tree/NodeTree.vue';
 import DossierInfo from './DossierInfo.vue';
 import NoteEditor from '../editor/NoteEditor.vue';
@@ -414,122 +424,19 @@ async function downloadAiReportAsPdf() {
   try {
     const { jsPDF } = await import('jspdf');
     const dossier = dossierStore.currentDossier;
+    const tpl = loadPdfTemplate();
+    const logos = await loadTemplateLogos(tpl, SERVER_URL);
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const usableW = pageW - margin * 2;
-    const headerH = 22;
-    const footerH = 15;
-    const contentTop = headerH + 5;
-    const contentBottom = pageH - footerH;
-    let y = contentTop;
-
-    // Pre-load logos
-    let logoDr5Data: string | null = null;
-    let logoPjfData: string | null = null;
-    try { logoDr5Data = await loadImageAsDataUrl(new URL('/logo-dr5.png', window.location.origin).href); } catch { /* skip */ }
-    try { logoPjfData = await loadImageAsDataUrl(new URL('/logo-pjf.jpeg', window.location.origin).href); } catch { /* skip */ }
-
-    function drawHeaderFooter(pageNum: number) {
-      const totalPages = '__TOTAL_PAGES__';
-      doc.setDrawColor(41, 65, 122);
-      doc.setLineWidth(0.5);
-      doc.line(margin, headerH, pageW - margin, headerH);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(41, 65, 122);
-      doc.text('PJF Bruxelles - DR5 - Data Management & Analysis', pageW / 2, headerH - 5, { align: 'center' });
-      if (logoDr5Data) doc.addImage(logoDr5Data, 'PNG', pageW - margin - 15, 3, 15, 15);
-      doc.setDrawColor(41, 65, 122);
-      doc.line(margin, pageH - footerH, pageW - margin, pageH - footerH);
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      doc.text(`Page ${pageNum} | ${totalPages}`, pageW - margin, pageH - footerH + 5, { align: 'right' });
-      doc.setTextColor(0);
-    }
-
-    let currentPage = 1;
-
-    function newContentPage() {
-      doc.addPage();
-      currentPage++;
-      y = contentTop;
-    }
-
-    function checkPage(need: number) {
-      if (y + need > contentBottom) newContentPage();
-    }
-
-    function addSectionTitle(title: string) {
-      checkPage(20);
-      y += 6;
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(41, 65, 122);
-      doc.text(title, margin, y);
-      y += 3;
-      doc.setDrawColor(41, 65, 122);
-      doc.setLineWidth(0.3);
-      doc.line(margin, y, pageW - margin, y);
-      doc.setTextColor(0);
-      y += 8;
-    }
-
-    function addBody(text: string) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0);
-      const lines: string[] = doc.splitTextToSize(text, usableW);
-      for (const line of lines) {
-        checkPage(5);
-        doc.text(line, margin, y, { maxWidth: usableW });
-        y += 4.5;
-      }
-      y += 3;
-    }
-
-    function addDisclaimer(text: string) {
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(238, 0, 0);
-      const lines: string[] = doc.splitTextToSize(text, usableW);
-      for (const line of lines) {
-        checkPage(5);
-        doc.text(line, margin, y, { maxWidth: usableW });
-        y += 4.5;
-      }
-      doc.setTextColor(0);
-      y += 3;
-    }
+    const b = createPdfBuilder(doc, tpl, logos);
 
     // === COVER PAGE ===
-    if (logoPjfData) doc.addImage(logoPjfData, 'JPEG', (pageW - 50) / 2, 30, 50, 50);
-    doc.setFontSize(36);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(41, 65, 122);
-    doc.text('Rapport OSINT', pageW / 2, 110, { align: 'center' });
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80);
-    doc.text(`Dossier \u00AB ${dossier.title} \u00BB`, pageW / 2, 130, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text(`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`, pageW / 2, 145, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Mod\u00E8le: ${aiReportModel.value}`, pageW / 2, 158, { align: 'center' });
-    if (dossier.investigator) {
-      doc.text(`Enqu\u00EAteur demandeur: ${dossier.investigator}`, pageW / 2, 170, { align: 'center' });
-    }
-    doc.setTextColor(0);
-    if (logoDr5Data) doc.addImage(logoDr5Data, 'PNG', (pageW - 25) / 2, 220, 25, 25);
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text('PJF Bruxelles - DR5 - Data Management & Analysis', pageW / 2, 260, { align: 'center' });
-    doc.setTextColor(0);
+    const extraLines = [`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`];
+    if (aiReportModel.value) extraLines.push(`Mod\u00E8le: ${aiReportModel.value}`);
+    if (dossier.investigator) extraLines.push(`Enqu\u00EAteur demandeur: ${dossier.investigator}`);
+    b.drawCover(`Dossier \u00AB ${dossier.title} \u00BB`, extraLines);
 
-    // === CONTENT PAGES ===
-    newContentPage();
+    // === CONTENT ===
+    b.newContentPage();
 
     // Parse AI content into sections
     const aiText = aiReportContent.value;
@@ -542,10 +449,8 @@ async function downloadAiReportAsPdf() {
     }
 
     if (matches.length > 0) {
-      // Text before first heading
       const preamble = aiText.substring(0, matches[0].index).trim();
       if (preamble) sections.push({ title: '', body: preamble });
-
       for (let i = 0; i < matches.length; i++) {
         const headingEnd = aiText.indexOf('\n', matches[i].index);
         const bodyStart = headingEnd >= 0 ? headingEnd + 1 : matches[i].index + matches[i].title.length;
@@ -553,85 +458,91 @@ async function downloadAiReportAsPdf() {
         sections.push({ title: matches[i].title, body: aiText.substring(bodyStart, bodyEnd).trim() });
       }
     } else {
-      // No headings — treat as single block
       sections.push({ title: '', body: aiText });
     }
 
-    // Render sections
     for (const section of sections) {
-      if (section.title) addSectionTitle(section.title);
+      if (section.title) b.addSectionTitle(section.title);
       if (section.body) {
-        // Split paragraphs by double newline
         const paragraphs = section.body.split(/\n\s*\n/);
         for (const para of paragraphs) {
           const trimmed = para.trim();
-          if (trimmed) addBody(trimmed);
+          if (trimmed) b.addBody(trimmed);
         }
       }
     }
 
-    // === DISCLAIMER ===
-    addDisclaimer('Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.');
+    b.addDisclaimer('Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.');
 
-    // === RIGHT-ALIGNED CLOSING ===
-    checkPage(60);
-    y += 10;
-    const rightX = pageW - margin;
-    const closingDate = new Date().toLocaleDateString('fr-FR');
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Bruxelles, le ${closingDate}`, rightX, y, { align: 'right' });
-    y += 8;
-
-    // Signature image
-    const sigImgPath = (authStore.user as any)?.signatureImagePath;
-    if (sigImgPath) {
-      try {
-        const imgUrl = `${SERVER_URL}/${sigImgPath}`;
-        const imgData = await loadImageAsDataUrl(imgUrl);
-        if (imgData) {
-          checkPage(35);
-          doc.addImage(imgData, 'PNG', rightX - 50, y, 50, 20);
-          y += 24;
-        }
-      } catch { /* skip */ }
-    }
-
-    // Signature text
-    const sig = (authStore.user as any)?.signature;
-    if (sig?.name) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      if (sig.title) { doc.text(sig.title, rightX, y, { align: 'right' }); y += 5; }
-      doc.text(sig.name, rightX, y, { align: 'right' }); y += 5;
-      doc.setFont('helvetica', 'normal');
-      if (sig.service) { doc.text(sig.service, rightX, y, { align: 'right' }); y += 5; }
-      if (sig.unit) { doc.text(sig.unit, rightX, y, { align: 'right' }); y += 5; }
-      if (sig.email) { doc.text(sig.email, rightX, y, { align: 'right' }); y += 5; }
-    }
-
-    // === APPLY HEADERS/FOOTERS ===
-    const totalPages = currentPage;
-    for (let p = 2; p <= totalPages; p++) {
-      doc.setPage(p);
-      drawHeaderFooter(p - 1);
-    }
-
-    // Replace total pages placeholder
-    const pdfOutput = doc.output('arraybuffer');
-    const pdfString = new TextDecoder('latin1').decode(new Uint8Array(pdfOutput));
-    const fixedPdf = pdfString.replace(/__TOTAL_PAGES__/g, String(totalPages - 1));
-    const finalBytes = new Uint8Array(fixedPdf.length);
-    for (let i = 0; i < fixedPdf.length; i++) {
-      finalBytes[i] = fixedPdf.charCodeAt(i) & 0xff;
-    }
-
-    const blob = new Blob([finalBytes], { type: 'application/pdf' });
+    await addSignatureBlock(b);
+    const blob = b.finalize();
     downloadBlob(blob, `Rapport_OSINT_IA_${dossier.title}.pdf`);
     aiReportDialog.value = false;
   } catch (err) {
     console.error('AI PDF export failed:', err);
+  }
+}
+
+async function downloadAiReportAsDocx() {
+  if (!aiReportContent.value || !dossierStore.currentDossier) return;
+  try {
+    const dossier = dossierStore.currentDossier;
+    const sig = (authStore.user as any)?.signature;
+
+    // Parse AI content into sections
+    const aiText = aiReportContent.value;
+    const sectionRegex = /^#{1,3}\s+(.+)$/gm;
+    const docxSections: DocxExportData['sections'] = [];
+    let match: RegExpExecArray | null;
+    const matches: Array<{ title: string; index: number; hashes: number }> = [];
+    while ((match = sectionRegex.exec(aiText)) !== null) {
+      const hashes = match[0].indexOf(' ');
+      matches.push({ title: match[1].trim(), index: match.index, hashes });
+    }
+
+    if (matches.length > 0) {
+      const preamble = aiText.substring(0, matches[0].index).trim();
+      if (preamble) {
+        docxSections.push({ title: '', level: 'h1', paragraphs: preamble.split(/\n\s*\n/).filter((p: string) => p.trim()) });
+      }
+      for (let i = 0; i < matches.length; i++) {
+        const m = matches[i]!;
+        const mNext = matches[i + 1];
+        const headingEnd = aiText.indexOf('\n', m.index);
+        const bodyStart = headingEnd >= 0 ? headingEnd + 1 : m.index + m.title.length;
+        const bodyEnd = mNext ? mNext.index : aiText.length;
+        const body = aiText.substring(bodyStart, bodyEnd).trim();
+        const level = m.hashes <= 1 ? 'h1' : m.hashes === 2 ? 'h2' : 'h3';
+        docxSections.push({
+          title: m.title,
+          level,
+          paragraphs: body ? body.split(/\n\s*\n/).filter((p: string) => p.trim()) : [],
+        });
+      }
+    } else {
+      docxSections.push({ title: '', level: 'h1', paragraphs: aiText.split(/\n\s*\n/).filter((p: string) => p.trim()) });
+    }
+
+    const data: DocxExportData = {
+      dossierTitle: dossier.title,
+      subtitle: `Dossier \u00AB ${dossier.title} \u00BB - Rapport IA`,
+      extraCoverLines: [
+        new Date().toLocaleDateString('fr-FR'),
+        ...(aiReportModel.value ? [`Mod\u00E8le: ${aiReportModel.value}`] : []),
+        ...(dossier.investigator ? [`Enqu\u00EAteur demandeur: ${dossier.investigator}`] : []),
+      ],
+      sections: docxSections,
+      disclaimerText: 'Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.',
+      closingDate: new Date().toLocaleDateString('fr-FR'),
+      signature: sig?.name ? sig : undefined,
+      signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
+      serverUrl: SERVER_URL,
+    };
+
+    await generateDocx(data);
+    aiReportDialog.value = false;
+  } catch (err) {
+    console.error('AI DOCX export failed:', err);
   }
 }
 
@@ -767,336 +678,209 @@ async function exportJSON() {
   }
 }
 
+async function addSignatureBlock(b: ReturnType<typeof createPdfBuilder>) {
+  const { doc } = b;
+  const rightX = b.pageW - b.margin;
+  const closingDate = new Date().toLocaleDateString('fr-FR');
+
+  b.checkPage(60);
+  b.y += 10;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Bruxelles, le ${closingDate}`, rightX, b.y, { align: 'right' });
+  b.y += 8;
+
+  // Signature image
+  const sigImgPath = (authStore.user as any)?.signatureImagePath;
+  if (sigImgPath) {
+    try {
+      const imgData = await loadImageAsDataUrl(`${SERVER_URL}/${sigImgPath}`);
+      if (imgData) {
+        b.checkPage(35);
+        doc.addImage(imgData, 'PNG', rightX - 50, b.y, 50, 20);
+        b.y += 24;
+      }
+    } catch { /* skip */ }
+  }
+
+  // Signature text
+  const sig = (authStore.user as any)?.signature;
+  if (sig?.name) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    if (sig.title) { doc.text(sig.title, rightX, b.y, { align: 'right' }); b.y += 5; }
+    doc.text(sig.name, rightX, b.y, { align: 'right' }); b.y += 5;
+    doc.setFont('helvetica', 'normal');
+    if (sig.service) { doc.text(sig.service, rightX, b.y, { align: 'right' }); b.y += 5; }
+    if (sig.unit) { doc.text(sig.unit, rightX, b.y, { align: 'right' }); b.y += 5; }
+    if (sig.email) { doc.text(sig.email, rightX, b.y, { align: 'right' }); b.y += 5; }
+  }
+}
+
 async function exportPDF() {
   if (!dossierStore.currentDossier) return;
   try {
     const { jsPDF } = await import('jspdf');
     const dossier = dossierStore.currentDossier;
     const nodes = dossierStore.nodes;
+    const tpl = loadPdfTemplate();
+    const logos = await loadTemplateLogos(tpl, SERVER_URL);
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth(); // 210
-    const pageH = doc.internal.pageSize.getHeight(); // 297
-    const margin = 20;
-    const usableW = pageW - margin * 2;
-    const headerH = 22; // header zone height
-    const footerH = 15; // footer zone height
-    const contentTop = headerH + 5; // content starts after header
-    const contentBottom = pageH - footerH; // content ends before footer
-    let y = contentTop;
+    const b = createPdfBuilder(doc, tpl, logos);
 
-    // Pre-load logos
-    let logoDr5Data: string | null = null;
-    let logoPjfData: string | null = null;
-    try { logoDr5Data = await loadImageAsDataUrl(new URL('/logo-dr5.png', window.location.origin).href); } catch { /* skip */ }
-    try { logoPjfData = await loadImageAsDataUrl(new URL('/logo-pjf.jpeg', window.location.origin).href); } catch { /* skip */ }
+    // === COVER PAGE ===
+    const extraLines = [`Rapport n\u00B01 - ${new Date().toLocaleDateString('fr-FR')}`];
+    if (dossier.status) extraLines.push(`Statut: ${dossier.status}`);
+    if (dossier.investigator) extraLines.push(`Enqu\u00EAteur demandeur: ${dossier.investigator}`);
+    b.drawCover(`Dossier \u00AB ${dossier.title} \u00BB`, extraLines);
 
-    // --- Header/Footer applied to every page ---
-    function drawHeaderFooter(pageNum: number) {
-      const totalPages = '__TOTAL_PAGES__'; // placeholder replaced at end
-      // Header background line
-      doc.setDrawColor(41, 65, 122); // dark blue
-      doc.setLineWidth(0.5);
-      doc.line(margin, headerH, pageW - margin, headerH);
+    // === CONTENT ===
+    b.newContentPage();
 
-      // Header text
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(41, 65, 122);
-      doc.text('PJF Bruxelles - DR5 - Data Management & Analysis', pageW / 2, headerH - 5, { align: 'center' });
-
-      // Header DR5 logo (right side)
-      if (logoDr5Data) {
-        doc.addImage(logoDr5Data, 'PNG', pageW - margin - 15, 3, 15, 15);
-      }
-
-      // Footer line
-      doc.setDrawColor(41, 65, 122);
-      doc.line(margin, pageH - footerH, pageW - margin, pageH - footerH);
-
-      // Footer page number (right-aligned)
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      doc.text(`Page ${pageNum} | ${totalPages}`, pageW - margin, pageH - footerH + 5, { align: 'right' });
-      doc.setTextColor(0);
-    }
-
-    // --- Page management ---
-    let currentPage = 1;
-
-    function newContentPage() {
-      doc.addPage();
-      currentPage++;
-      y = contentTop;
-    }
-
-    function checkPage(need: number) {
-      if (y + need > contentBottom) {
-        newContentPage();
-      }
-    }
-
-    // --- Section title (GrandTitre style) ---
-    function addSectionTitle(title: string) {
-      checkPage(20);
-      y += 6;
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(41, 65, 122);
-      doc.text(title, margin, y);
-      y += 3;
-      // underline
-      doc.setDrawColor(41, 65, 122);
-      doc.setLineWidth(0.3);
-      doc.line(margin, y, pageW - margin, y);
-      doc.setTextColor(0);
-      y += 8;
-    }
-
-    // --- Sub-heading (sz=28 ~ 14pt) ---
-    function addSubHeading(text: string) {
-      checkPage(12);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0);
-      doc.text(text, margin, y);
-      y += 7;
-    }
-
-    // --- Body text (justified) ---
-    function addBody(text: string) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0);
-      const lines: string[] = doc.splitTextToSize(text, usableW);
-      for (const line of lines) {
-        checkPage(5);
-        doc.text(line, margin, y, { maxWidth: usableW });
-        y += 4.5;
-      }
-      y += 3;
-    }
-
-    // --- Disclaimer text (red) ---
-    function addDisclaimer(text: string) {
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(238, 0, 0); // #EE0000
-      const lines: string[] = doc.splitTextToSize(text, usableW);
-      for (const line of lines) {
-        checkPage(5);
-        doc.text(line, margin, y, { maxWidth: usableW });
-        y += 4.5;
-      }
-      doc.setTextColor(0);
-      y += 3;
-    }
-
-    // ============================================================
-    // PAGE 1 — COVER PAGE (no header/footer on cover)
-    // ============================================================
-    // PJF logo centered at top
-    if (logoPjfData) {
-      doc.addImage(logoPjfData, 'JPEG', (pageW - 50) / 2, 30, 50, 50);
-    }
-
-    // Title: "Rapport OSINT" (sz=72 ~ 36pt)
-    doc.setFontSize(36);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(41, 65, 122);
-    doc.text('Rapport OSINT', pageW / 2, 110, { align: 'center' });
-
-    // Subtitle: Dossier name (sz=40 ~ 20pt)
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80);
-    doc.text(`Dossier \u00AB ${dossier.title} \u00BB`, pageW / 2, 130, { align: 'center' });
-
-    // Report number / date
-    doc.setFontSize(12);
-    doc.text(`Rapport n\u00B01 - ${new Date().toLocaleDateString('fr-FR')}`, pageW / 2, 145, { align: 'center' });
-
-    // Status
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Statut: ${dossier.status}`, pageW / 2, 158, { align: 'center' });
-
-    // Investigator
-    if (dossier.investigator) {
-      doc.setFontSize(10);
-      doc.setTextColor(80);
-      doc.text(`Enqu\u00EAteur demandeur: ${dossier.investigator}`, pageW / 2, 170, { align: 'center' });
-    }
-
-    doc.setTextColor(0);
-
-    // DR5 logo small on cover bottom
-    if (logoDr5Data) {
-      doc.addImage(logoDr5Data, 'PNG', (pageW - 25) / 2, 220, 25, 25);
-    }
-
-    // Footer text on cover
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text('PJF Bruxelles - DR5 - Data Management & Analysis', pageW / 2, 260, { align: 'center' });
-    doc.setTextColor(0);
-
-    // ============================================================
-    // CONTENT PAGES — Start page 2
-    // ============================================================
-    newContentPage();
-
-    // === Entites concernees ===
     if (dossier.entities?.length) {
-      addSectionTitle('Entit\u00E9s concern\u00E9es');
-      addBody('Les recherches demand\u00E9es par l\u2019enqu\u00EAteur portent sur les entit\u00E9s suivantes :');
+      b.addSectionTitle('Entit\u00E9s concern\u00E9es');
+      b.addBody('Les recherches demand\u00E9es par l\u2019enqu\u00EAteur portent sur les entit\u00E9s suivantes :');
       dossier.entities.forEach(ent => {
-        checkPage(8);
-        doc.setFontSize(10);
+        b.checkPage(8);
+        doc.setFontSize(tpl.body.fontSize);
         doc.setFont('helvetica', 'normal');
         const entLine = `\u2022 ${ent.name} (${ent.type})${ent.description ? ' : ' + ent.description : ''}`;
-        const entLines: string[] = doc.splitTextToSize(entLine, usableW - 5);
+        const entLines: string[] = doc.splitTextToSize(entLine, b.usableW - 5);
         for (const l of entLines) {
-          checkPage(5);
-          doc.text(l, margin + 4, y);
-          y += 4.5;
+          b.checkPage(5);
+          doc.text(l, b.margin + 4, b.y);
+          b.y += 4.5;
         }
       });
-      y += 4;
+      b.y += 4;
     }
 
-    // === Objectifs de la recherche OSINT ===
     if (dossier.objectives) {
-      addSectionTitle('Objectifs de la recherche OSINT');
-      addBody('Les objectifs sont d\u00E9finis comme suit :');
-      addBody(dossier.objectives);
+      b.addSectionTitle('Objectifs de la recherche OSINT');
+      b.addBody('Les objectifs sont d\u00E9finis comme suit :');
+      b.addBody(dossier.objectives);
     }
 
-    // === Synthese des faits ===
-    addSectionTitle('Synth\u00E8se des faits');
-    if (dossier.judicialFacts) {
-      addBody(dossier.judicialFacts);
-    }
-    if (dossier.description) {
-      addBody(dossier.description);
-    }
-    if (!dossier.judicialFacts && !dossier.description) {
-      addBody('Aucune information disponible.');
-    }
+    b.addSectionTitle('Synth\u00E8se des faits');
+    if (dossier.judicialFacts) b.addBody(dossier.judicialFacts);
+    if (dossier.description) b.addBody(dossier.description);
+    if (!dossier.judicialFacts && !dossier.description) b.addBody('Aucune information disponible.');
 
-    // === Resume des recherches et des resultats ===
-    addSectionTitle('R\u00E9sum\u00E9 des recherches et des r\u00E9sultats');
-    addBody('Les recherches en sources ouvertes ont \u00E9t\u00E9 men\u00E9es sur Internet. Il convient de souligner que, compte tenu de l\u2019immensit\u00E9 de ce r\u00E9seau et de la multiplicit\u00E9 des ressources disponibles, certaines informations pertinentes pourraient ne pas avoir \u00E9t\u00E9 identifi\u00E9es.');
-    addDisclaimer('Note : toutes les recherches reprises dans ce rapport ont \u00E9t\u00E9 r\u00E9alis\u00E9es en sources ouvertes uniquement.');
+    b.addSectionTitle('R\u00E9sum\u00E9 des recherches et des r\u00E9sultats');
+    b.addBody('Les recherches en sources ouvertes ont \u00E9t\u00E9 men\u00E9es sur Internet. Il convient de souligner que, compte tenu de l\u2019immensit\u00E9 de ce r\u00E9seau et de la multiplicit\u00E9 des ressources disponibles, certaines informations pertinentes pourraient ne pas avoir \u00E9t\u00E9 identifi\u00E9es.');
+    b.addDisclaimer('Note : toutes les recherches reprises dans ce rapport ont \u00E9t\u00E9 r\u00E9alis\u00E9es en sources ouvertes uniquement.');
 
-    // === Recherches en source ouverte (Notes) ===
     const noteNodes = nodes.filter(n => n.type === 'note');
     if (noteNodes.length > 0) {
-      addSectionTitle('Recherches en source ouverte');
+      b.addSectionTitle('Recherches en source ouverte');
       for (const node of noteNodes) {
-        checkPage(15);
-        addSubHeading(node.title);
-
+        b.checkPage(15);
+        b.addSubHeading(node.title);
         if (node.content) {
           const text = extractTextFromTiptap(node.content);
-          if (text) {
-            addBody(text);
-          }
+          if (text) b.addBody(text);
         }
-        y += 2;
+        b.y += 2;
       }
     }
 
-    // === Conclusion ===
-    addSectionTitle('Conclusion');
-    const closingDate = new Date().toLocaleDateString('fr-FR');
-    addBody(`Ce rapport est clos le ${closingDate}.`);
+    b.addSectionTitle('Conclusion');
+    b.addBody(`Ce rapport est clos le ${new Date().toLocaleDateString('fr-FR')}.`);
+    b.addDisclaimer('Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.');
 
-    addDisclaimer('Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.');
-
-    // === Right-aligned closing: date + signature ===
-    checkPage(60);
-    y += 10;
-    const rightX = pageW - margin;
-
-    // Date right-aligned
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Bruxelles, le ${closingDate}`, rightX, y, { align: 'right' });
-    y += 8;
-
-    // Signature image (drawn or uploaded)
-    const sigImgPath = (authStore.user as any)?.signatureImagePath;
-    if (sigImgPath) {
-      try {
-        const imgUrl = `${SERVER_URL}/${sigImgPath}`;
-        const imgData = await loadImageAsDataUrl(imgUrl);
-        if (imgData) {
-          checkPage(35);
-          doc.addImage(imgData, 'PNG', rightX - 50, y, 50, 20);
-          y += 24;
-        }
-      } catch {
-        // Skip if image can't be loaded
-      }
-    }
-
-    // Signature text right-aligned
-    const sig = (authStore.user as any)?.signature;
-    if (sig?.name) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      if (sig.title) { doc.text(sig.title, rightX, y, { align: 'right' }); y += 5; }
-      doc.text(sig.name, rightX, y, { align: 'right' });
-      y += 5;
-      doc.setFont('helvetica', 'normal');
-      if (sig.service) { doc.text(sig.service, rightX, y, { align: 'right' }); y += 5; }
-      if (sig.unit) { doc.text(sig.unit, rightX, y, { align: 'right' }); y += 5; }
-      if (sig.email) { doc.text(sig.email, rightX, y, { align: 'right' }); y += 5; }
-    }
-
-    // ============================================================
-    // Apply headers/footers to all pages except cover (page 1)
-    // ============================================================
-    const totalPages = currentPage;
-    for (let p = 2; p <= totalPages; p++) {
-      doc.setPage(p);
-      drawHeaderFooter(p - 1); // page numbering starts at 1 for content pages
-    }
-
-    // Replace total pages placeholder
-    const pdfOutput = doc.output('arraybuffer');
-    const pdfBytes = new Uint8Array(pdfOutput);
-    const pdfString = new TextDecoder('latin1').decode(pdfBytes);
-    const fixedPdf = pdfString.replace(/__TOTAL_PAGES__/g, String(totalPages - 1));
-    const fixedBytes = new TextEncoder().encode(fixedPdf);
-    // Use Uint8Array directly for latin1 encoding
-    const finalBytes = new Uint8Array(fixedBytes.length);
-    for (let i = 0; i < fixedPdf.length; i++) {
-      finalBytes[i] = fixedPdf.charCodeAt(i) & 0xff;
-    }
-
-    const blob = new Blob([finalBytes], { type: 'application/pdf' });
+    await addSignatureBlock(b);
+    const blob = b.finalize();
     downloadBlob(blob, `Rapport_OSINT_${dossier.title}.pdf`);
   } catch (err) {
     console.error('PDF export failed:', err);
   }
 }
 
-function loadImageAsDataUrl(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = reject;
-    img.src = url;
+
+function buildDocxSections(dossier: any, nodes: any[]): DocxExportData['sections'] {
+  const sections: DocxExportData['sections'] = [];
+
+  if (dossier.entities?.length) {
+    sections.push({
+      title: 'Entit\u00E9s concern\u00E9es',
+      level: 'h1',
+      paragraphs: ['Les recherches demand\u00E9es par l\u2019enqu\u00EAteur portent sur les entit\u00E9s suivantes :'],
+      bullets: dossier.entities.map((ent: any) => `${ent.name} (${ent.type})${ent.description ? ' : ' + ent.description : ''}`),
+    });
+  }
+
+  if (dossier.objectives) {
+    sections.push({
+      title: 'Objectifs de la recherche OSINT',
+      level: 'h1',
+      paragraphs: ['Les objectifs sont d\u00E9finis comme suit :', dossier.objectives],
+    });
+  }
+
+  const factsParagraphs: string[] = [];
+  if (dossier.judicialFacts) factsParagraphs.push(dossier.judicialFacts);
+  if (dossier.description) factsParagraphs.push(dossier.description);
+  if (!factsParagraphs.length) factsParagraphs.push('Aucune information disponible.');
+  sections.push({ title: 'Synth\u00E8se des faits', level: 'h1', paragraphs: factsParagraphs });
+
+  sections.push({
+    title: 'R\u00E9sum\u00E9 des recherches et des r\u00E9sultats',
+    level: 'h1',
+    paragraphs: [
+      'Les recherches en sources ouvertes ont \u00E9t\u00E9 men\u00E9es sur Internet. Il convient de souligner que, compte tenu de l\u2019immensit\u00E9 de ce r\u00E9seau et de la multiplicit\u00E9 des ressources disponibles, certaines informations pertinentes pourraient ne pas avoir \u00E9t\u00E9 identifi\u00E9es.',
+      'Note : toutes les recherches reprises dans ce rapport ont \u00E9t\u00E9 r\u00E9alis\u00E9es en sources ouvertes uniquement.',
+    ],
   });
+
+  const noteNodes = nodes.filter(n => n.type === 'note');
+  if (noteNodes.length > 0) {
+    for (const node of noteNodes) {
+      const text = node.content ? extractTextFromTiptap(node.content) : '';
+      sections.push({
+        title: node.title,
+        level: 'h2',
+        paragraphs: text ? text.split('\n').filter((l: string) => l.trim()) : [],
+      });
+    }
+  }
+
+  sections.push({
+    title: 'Conclusion',
+    level: 'h1',
+    paragraphs: [`Ce rapport est clos le ${new Date().toLocaleDateString('fr-FR')}.`],
+  });
+
+  return sections;
+}
+
+async function exportDOCX() {
+  if (!dossierStore.currentDossier) return;
+  try {
+    const dossier = dossierStore.currentDossier;
+    const nodes = dossierStore.nodes;
+    const sig = (authStore.user as any)?.signature;
+
+    const data: DocxExportData = {
+      dossierTitle: dossier.title,
+      subtitle: `Dossier \u00AB ${dossier.title} \u00BB - Rapport n\u00B01`,
+      extraCoverLines: [
+        `${new Date().toLocaleDateString('fr-FR')}`,
+        `Statut: ${dossier.status}`,
+        ...(dossier.investigator ? [`Enqu\u00EAteur demandeur: ${dossier.investigator}`] : []),
+      ],
+      sections: buildDocxSections(dossier, nodes),
+      disclaimerText: 'Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.',
+      closingDate: new Date().toLocaleDateString('fr-FR'),
+      signature: sig?.name ? sig : undefined,
+      signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
+      serverUrl: SERVER_URL,
+    };
+
+    await generateDocx(data);
+  } catch (err) {
+    console.error('DOCX export failed:', err);
+  }
 }
 
 function extractTextFromTiptap(json: any): string {

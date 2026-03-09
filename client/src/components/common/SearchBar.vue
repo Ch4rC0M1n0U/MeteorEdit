@@ -27,6 +27,12 @@
 
     <!-- Filter panel -->
     <div v-if="filtersOpen" class="me-filter-panel glass-card">
+      <div class="me-filter-panel-header">
+        <span class="me-filter-panel-title mono">Filtres</span>
+        <button class="me-filter-close" @click="filtersOpen = false">
+          <v-icon size="16">mdi-close</v-icon>
+        </button>
+      </div>
       <div class="me-filter-grid">
         <div class="me-filter-group">
           <div class="me-filter-label mono">Statut</div>
@@ -161,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 
@@ -196,7 +202,7 @@ const results = reactive<{
 const statusOptions = [
   { label: 'Ouvert', value: 'open' },
   { label: 'En cours', value: 'in_progress' },
-  { label: 'Ferme', value: 'closed' },
+  { label: 'Ferm\u00E9', value: 'closed' },
 ];
 
 const nodeTypeOptions = [
@@ -373,8 +379,21 @@ watch(
   }
 );
 
+function onClickOutside(e: MouseEvent) {
+  if (searchRef.value && !searchRef.value.contains(e.target as Node)) {
+    filtersOpen.value = false;
+    showResults.value = false;
+    isFocused.value = false;
+  }
+}
+
 onMounted(() => {
   loadTags();
+  document.addEventListener('click', onClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onClickOutside);
 });
 </script>
 
@@ -472,9 +491,42 @@ onMounted(() => {
 
 /* Filter panel */
 .me-filter-panel {
-  margin-top: 8px;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  min-width: 420px;
   padding: 16px;
-  z-index: 201;
+  z-index: 202;
+}
+.me-filter-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.me-filter-panel-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--me-text-muted);
+}
+.me-filter-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-sm);
+  color: var(--me-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.me-filter-close:hover {
+  border-color: var(--me-accent);
+  color: var(--me-accent);
 }
 .me-filter-grid {
   display: grid;

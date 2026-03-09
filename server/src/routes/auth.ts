@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { register, login, me, refresh, getPreferences, updatePreferences } from '../controllers/authController';
+import { register, login, me, refresh, getPreferences, updatePreferences, uploadTemplateLogo } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
 import { updateProfile, uploadAvatar, deleteAvatar, changePassword, updateSignature, uploadSignatureImage, saveDrawnSignature, deleteSignatureImage } from '../controllers/profileController';
@@ -36,6 +36,7 @@ router.put('/signature', authenticate, updateSignature);
 router.post('/signature/image', authenticate, upload.single('signatureImage'), uploadSignatureImage);
 router.post('/signature/draw', authenticate, saveDrawnSignature);
 router.delete('/signature/image', authenticate, deleteSignatureImage);
+router.post('/template-logo', authenticate, upload.single('templateLogo'), uploadTemplateLogo);
 
 // 2FA routes
 router.post('/2fa/setup', authenticate, setup2FA);

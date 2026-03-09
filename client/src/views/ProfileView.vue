@@ -22,6 +22,7 @@
     <main class="admin-content">
       <ProfileInfo v-if="activeSection === 'info'" />
       <ProfileSecurity v-else-if="activeSection === 'security'" />
+      <ProfileTemplate v-else-if="activeSection === 'template'" />
       <ProfilePreferences v-else-if="activeSection === 'preferences'" />
     </main>
   </div>
@@ -33,6 +34,7 @@ import { useRoute } from 'vue-router';
 import ProfileInfo from '../components/profile/ProfileInfo.vue';
 import ProfileSecurity from '../components/profile/ProfileSecurity.vue';
 import ProfilePreferences from '../components/profile/ProfilePreferences.vue';
+import ProfileTemplate from '../components/profile/ProfileTemplate.vue';
 
 const route = useRoute();
 const activeSection = ref('info');
@@ -40,6 +42,7 @@ const activeSection = ref('info');
 const sections = [
   { id: 'info', label: 'Mon profil', icon: 'mdi-account-outline' },
   { id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
+  { id: 'template', label: 'Template rapport', icon: 'mdi-file-document-edit-outline' },
   { id: 'preferences', label: 'Preferences', icon: 'mdi-cog-outline' },
 ];
 
@@ -59,5 +62,5 @@ onMounted(() => {
 .admin-nav-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: var(--me-radius-xs); background: none; border: none; color: var(--me-text-secondary); font-size: 14px; cursor: pointer; transition: all 0.15s; text-align: left; }
 .admin-nav-item:hover { background: var(--me-accent-glow); color: var(--me-text-primary); }
 .admin-nav-item--active { background: var(--me-accent-glow); color: var(--me-accent); font-weight: 600; }
-.admin-content { flex: 1; overflow-y: auto; padding: 32px 24px; max-width: 800px; }
+.admin-content { flex: 1; overflow-y: auto; padding: 32px 24px; max-width: 1100px; }
 </style>

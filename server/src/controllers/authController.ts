@@ -151,6 +151,21 @@ export async function updatePreferences(req: AuthRequest, res: Response): Promis
   }
 }
 
+export async function uploadTemplateLogo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+    const filePath = `uploads/${req.file.filename}`;
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'profile.template_logo_upload', 'user', req.user!.userId, { slot: req.body.slot }, ip);
+    res.json({ path: filePath });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function refresh(req: Request, res: Response): Promise<void> {
   try {
     const { refreshToken } = req.body;
