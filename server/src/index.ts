@@ -4,6 +4,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 import { connectDB } from './config/database';
 import { setupSocket } from './socket';
 import authRoutes from './routes/auth';
@@ -47,6 +49,16 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads')));
+
+// Swagger API documentation (public, no auth required)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'MeteorEdit API Documentation',
+}));
+app.get('/api-docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });

@@ -6,6 +6,7 @@
     </v-main>
     <ConfirmDialog />
     <CommandPalette v-if="authStore.isAuthenticated" />
+    <PwaUpdatePrompt />
   </v-app>
 </template>
 
@@ -18,6 +19,7 @@ import { useBrandingStore } from './stores/branding';
 import AppBar from './components/common/AppBar.vue';
 import ConfirmDialog from './components/common/ConfirmDialog.vue';
 import CommandPalette from './components/common/CommandPalette.vue';
+import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue';
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();

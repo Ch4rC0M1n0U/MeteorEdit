@@ -118,13 +118,4 @@ export interface Task {
   updatedAt: string;
 }
 
-export interface ActivityLog {
-  _id: string;
-  userId: { _id: string; firstName: string; lastName: string; email: string; avatarPath?: string | null };
-  action: string;
-  targetType: string;
-  targetId: string | null;
-  metadata: Record<string, any>;
-  ip: string;
-  timestamp: string;
-}
+

@@ -54,15 +54,11 @@
         <button class="dv-tab" :class="{ active: sidebarTab === 'tasks' }" @click="sidebarTab = 'tasks'" title="Taches">
           <v-icon size="16">mdi-checkbox-marked-outline</v-icon>
         </button>
-        <button class="dv-tab" :class="{ active: sidebarTab === 'activity' }" @click="sidebarTab = 'activity'" title="Historique">
-          <v-icon size="16">mdi-history</v-icon>
-        </button>
       </div>
 
       <div class="dv-sidebar-content">
         <NodeTree v-show="sidebarTab === 'tree'" @create="handleCreateNode" />
         <TaskPanel v-if="sidebarTab === 'tasks'" />
-        <ActivityPanel v-if="sidebarTab === 'activity'" />
       </div>
     </aside>
 
@@ -419,7 +415,6 @@ import ExcalidrawWrapper from '../excalidraw/ExcalidrawWrapper.vue';
 import MapEditor from '../map/MapEditor.vue';
 import PomodoroTimer from '../common/PomodoroTimer.vue';
 import TaskPanel from './TaskPanel.vue';
-import ActivityPanel from './ActivityPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
 import DatasetEditor from '../dataset/DatasetEditor.vue';
@@ -469,7 +464,7 @@ const createTitle = ref('');
 const selectedTemplateId = ref<string | null>(null);
 
 // Sidebar tab
-const sidebarTab = ref<'tree' | 'tasks' | 'activity'>('tree');
+const sidebarTab = ref<'tree' | 'tasks'>('tree');
 
 // Focus mode
 const focusMode = ref(false);
