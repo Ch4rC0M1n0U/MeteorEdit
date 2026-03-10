@@ -28,11 +28,17 @@
     <main class="admin-content">
       <AdminDashboard v-if="activeSection === 'dashboard'" />
       <AdminUsers v-else-if="activeSection === 'users'" />
+      <AdminAudit v-else-if="activeSection === 'audit'" />
       <AdminBranding v-else-if="activeSection === 'branding'" />
       <AdminSecurity v-else-if="activeSection === 'security'" />
-      <AdminAudit v-else-if="activeSection === 'audit'" />
-      <AdminPlugins v-else-if="activeSection === 'plugins'" />
+      <AdminStorage v-else-if="activeSection === 'storage'" />
+      <AdminEmail v-else-if="activeSection === 'email'" />
+      <AdminClipper v-else-if="activeSection === 'clipper'" />
+      <AdminDefaults v-else-if="activeSection === 'defaults'" />
+      <AdminNetwork v-else-if="activeSection === 'network'" />
+      <AdminBackup v-else-if="activeSection === 'backup'" />
       <AdminAI v-else-if="activeSection === 'ai'" />
+      <AdminPlugins v-else-if="activeSection === 'plugins'" />
     </main>
   </div>
 </template>
@@ -43,6 +49,12 @@ import AdminDashboard from '../components/admin/AdminDashboard.vue';
 import AdminUsers from '../components/admin/AdminUsers.vue';
 import AdminBranding from '../components/admin/AdminBranding.vue';
 import AdminSecurity from '../components/admin/AdminSecurity.vue';
+import AdminStorage from '../components/admin/AdminStorage.vue';
+import AdminEmail from '../components/admin/AdminEmail.vue';
+import AdminClipper from '../components/admin/AdminClipper.vue';
+import AdminDefaults from '../components/admin/AdminDefaults.vue';
+import AdminNetwork from '../components/admin/AdminNetwork.vue';
+import AdminBackup from '../components/admin/AdminBackup.vue';
 import AdminAudit from '../components/admin/AdminAudit.vue';
 import AdminPlugins from '../components/admin/AdminPlugins.vue';
 import AdminAI from '../components/admin/AdminAI.vue';
@@ -52,14 +64,21 @@ const activeSection = ref('dashboard');
 const navItems: Array<{ type: 'group'; label: string; id?: undefined; icon?: undefined } | { type: 'item'; id: string; label: string; icon: string }> = [
   { type: 'group', label: 'General' },
   { type: 'item', id: 'dashboard', label: 'Dashboard', icon: 'mdi-view-dashboard-outline' },
-  { type: 'group', label: 'Gestion' },
   { type: 'item', id: 'users', label: 'Utilisateurs', icon: 'mdi-account-group-outline' },
-  { type: 'item', id: 'audit', label: 'Audit', icon: 'mdi-shield-check' },
+  { type: 'item', id: 'audit', label: 'Journal d\'audit', icon: 'mdi-shield-check' },
   { type: 'group', label: 'Configuration' },
   { type: 'item', id: 'branding', label: 'Apparence', icon: 'mdi-palette-outline' },
   { type: 'item', id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
+  { type: 'item', id: 'storage', label: 'Stockage', icon: 'mdi-harddisk' },
+  { type: 'item', id: 'defaults', label: 'Parametres par defaut', icon: 'mdi-cog-outline' },
+  { type: 'item', id: 'network', label: 'Reseau & Annonces', icon: 'mdi-lan' },
+  { type: 'group', label: 'Services' },
+  { type: 'item', id: 'email', label: 'Email / SMTP', icon: 'mdi-email-outline' },
+  { type: 'item', id: 'clipper', label: 'Web Clipper', icon: 'mdi-scissors-cutting' },
+  { type: 'item', id: 'ai', label: 'Intelligence artificielle', icon: 'mdi-robot-outline' },
   { type: 'item', id: 'plugins', label: 'Plugins', icon: 'mdi-puzzle-outline' },
-  { type: 'item', id: 'ai', label: 'Intelligence Artificielle', icon: 'mdi-robot-outline' },
+  { type: 'group', label: 'Maintenance' },
+  { type: 'item', id: 'backup', label: 'Sauvegarde', icon: 'mdi-backup-restore' },
 ];
 </script>
 

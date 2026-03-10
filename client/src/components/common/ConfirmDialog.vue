@@ -18,6 +18,7 @@
           <input
             ref="promptInput"
             v-model="confirmState.promptValue"
+            :type="confirmState.promptType || 'text'"
             class="cd-prompt-input"
             @keyup.enter="handleConfirm"
             autofocus
@@ -26,7 +27,7 @@
       </div>
 
       <div class="cd-footer">
-        <button class="cd-btn cd-btn-cancel" @click="handleCancel">
+        <button v-if="confirmState.cancelText" class="cd-btn cd-btn-cancel" @click="handleCancel">
           {{ confirmState.cancelText }}
         </button>
         <button

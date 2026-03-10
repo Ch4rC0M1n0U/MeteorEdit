@@ -15,6 +15,9 @@
         <button class="ri-tb-btn" @click="copyImage" :title="copied ? 'Copie !' : 'Copier l\'image'">
           <v-icon size="14">{{ copied ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
         </button>
+        <button class="ri-tb-btn" @click="openAnnotator" title="Annoter">
+          <v-icon size="14">mdi-draw</v-icon>
+        </button>
         <button class="ri-tb-btn" @click="setSize(200)" title="Petit">S</button>
         <button class="ri-tb-btn" @click="setSize(400)" title="Moyen">M</button>
         <button class="ri-tb-btn" @click="setSize(700)" title="Grand">L</button>
@@ -32,18 +35,39 @@
         @mousedown.prevent="startResize"
       />
     </div>
+
+    <!-- Annotation dialog (teleported to body to escape TipTap) -->
+    <Teleport to="body">
+      <div v-if="annotatorOpen" class="ri-annotator-overlay" @click.self="annotatorOpen = false">
+        <div class="ri-annotator-dialog">
+          <div class="ri-annotator-header">
+            <span class="ri-annotator-title">Annoter l'image</span>
+            <button class="ri-annotator-close" @click="annotatorOpen = false">
+              <v-icon size="18">mdi-close</v-icon>
+            </button>
+          </div>
+          <ImageAnnotator
+            :image-src="node.attrs.src"
+            @save="onAnnotationSave"
+          />
+        </div>
+      </div>
+    </Teleport>
   </node-view-wrapper>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3';
+import ImageAnnotator from './ImageAnnotator.vue';
+import api, { SERVER_URL } from '../../services/api';
 
 const props = defineProps(nodeViewProps);
 
 const imgWidth = ref<number>(0);
 const selected = ref(false);
 const copied = ref(false);
+const annotatorOpen = ref(false);
 let resizing = false;
 let startX = 0;
 let startWidth = 0;
@@ -153,6 +177,92 @@ function handleKeydown(e: KeyboardEvent) {
 function deleteNode() {
   props.deleteNode();
 }
+
+function openAnnotator() {
+  annotatorOpen.value = true;
+}
+
+async function onAnnotationSave(annotations: any[]) {
+  // Render annotations onto the image using a canvas, then upload as new image
+  try {
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.src = props.node.attrs.src;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = reject;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+
+    // Draw annotations
+    for (const a of annotations) {
+      ctx.strokeStyle = a.color;
+      ctx.fillStyle = a.color;
+      ctx.lineWidth = a.strokeWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (a.type === 'rect') {
+        ctx.strokeRect(a.x, a.y, a.w, a.h);
+      } else if (a.type === 'circle') {
+        ctx.beginPath();
+        ctx.ellipse(a.x + a.w / 2, a.y + a.h / 2, Math.abs(a.w / 2), Math.abs(a.h / 2), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (a.type === 'arrow') {
+        ctx.beginPath();
+        ctx.moveTo(a.x1, a.y1);
+        ctx.lineTo(a.x2, a.y2);
+        ctx.stroke();
+        const angle = Math.atan2(a.y2 - a.y1, a.x2 - a.x1);
+        const headLen = 12 * (a.strokeWidth / 2);
+        ctx.beginPath();
+        ctx.moveTo(a.x2, a.y2);
+        ctx.lineTo(a.x2 - headLen * Math.cos(angle - Math.PI / 6), a.y2 - headLen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(a.x2, a.y2);
+        ctx.lineTo(a.x2 - headLen * Math.cos(angle + Math.PI / 6), a.y2 - headLen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+      } else if (a.type === 'freehand' && a.points?.length) {
+        ctx.beginPath();
+        ctx.moveTo(a.points[0].x, a.points[0].y);
+        for (let i = 1; i < a.points.length; i++) {
+          ctx.lineTo(a.points[i].x, a.points[i].y);
+        }
+        ctx.stroke();
+      } else if (a.type === 'text' && a.text) {
+        ctx.font = `bold ${a.fontSize || 16}px sans-serif`;
+        ctx.fillText(a.text, a.x, a.y);
+      }
+    }
+
+    // Convert to blob and upload
+    const blob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob((b) => resolve(b!), 'image/png');
+    });
+    const formData = new FormData();
+    formData.append('image', blob, 'annotated.png');
+    const { data } = await api.post('/upload/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    // Delete the old image file
+    const oldSrc = props.node.attrs.src as string;
+    const oldFilename = oldSrc.split('/uploads/').pop();
+    if (oldFilename) {
+      api.delete(`/upload/${oldFilename}`).catch(() => {});
+    }
+
+    // Update image src in the editor
+    props.updateAttributes({ src: `${SERVER_URL}${data.url}` });
+    annotatorOpen.value = false;
+  } catch (err) {
+    console.error('Annotation save failed:', err);
+  }
+}
 </script>
 
 <style>
@@ -231,5 +341,53 @@ function deleteNode() {
 .ri-handle:hover {
   opacity: 1;
   transform: scale(1.2);
+}
+/* Annotator overlay */
+.ri-annotator-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ri-annotator-dialog {
+  width: 90vw;
+  height: 85vh;
+  background: var(--me-bg-surface);
+  border-radius: 12px;
+  border: 1px solid var(--me-border);
+  box-shadow: var(--me-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ri-annotator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--me-border);
+  flex-shrink: 0;
+}
+.ri-annotator-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  font-family: var(--me-font-mono);
+}
+.ri-annotator-close {
+  background: none;
+  border: none;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.ri-annotator-close:hover {
+  background: var(--me-accent-glow);
+  color: var(--me-text-primary);
 }
 </style>

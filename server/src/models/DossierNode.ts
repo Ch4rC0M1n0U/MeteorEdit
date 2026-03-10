@@ -15,6 +15,9 @@ const dossierNodeSchema = new Schema<IDossierNode>(
     fileUrl: { type: String, default: null },
     fileName: { type: String, default: null },
     fileSize: { type: Number, default: null },
+    fileHash: { type: String, default: null },
+    hashVerifiedAt: { type: Date, default: null },
+    lastVerificationStatus: { type: String, enum: ['valid', 'tampered', 'missing'], default: null },
     deletedAt: { type: Date, default: null },
   },
   { timestamps: true }

@@ -3,9 +3,16 @@
     <!-- Left panel: sidebar with tabs -->
     <aside v-show="!focusMode" class="dv-sidebar">
       <div class="dv-sidebar-header">
-        <h3 class="dv-sidebar-title mono" :title="dossierStore.currentDossier?.title">
-          {{ dossierStore.currentDossier?.title }}
-        </h3>
+        <div class="dv-sidebar-title-row">
+          <div class="dv-sidebar-icon-wrap">
+            <img v-if="dossierLogoUrl" :src="dossierLogoUrl" class="dv-sidebar-logo" />
+            <v-icon v-else-if="dossierStore.currentDossier?.icon" size="20">{{ dossierStore.currentDossier.icon }}</v-icon>
+            <v-icon v-else size="20" class="dv-sidebar-icon-default">mdi-folder-outline</v-icon>
+          </div>
+          <h3 class="dv-sidebar-title" :title="dossierStore.currentDossier?.title">
+            {{ dossierStore.currentDossier?.title }}
+          </h3>
+        </div>
         <div class="dv-sidebar-actions">
           <v-menu>
             <template #activator="{ props: menuProps }">
@@ -37,6 +44,14 @@
           >
             <v-icon size="16">mdi-history</v-icon>
           </button>
+          <button
+            v-if="dossierStore.selectedNode?.fileHash"
+            class="dv-action-btn"
+            @click="evidencePanelOpen = true"
+            title="Integrite de la preuve"
+          >
+            <v-icon size="16">mdi-shield-check-outline</v-icon>
+          </button>
           <button class="dv-action-btn" @click="webClipperOpen = true" title="Web Clipper">
             <v-icon size="16">mdi-web</v-icon>
           </button>
@@ -46,19 +61,46 @@
         </div>
       </div>
 
-      <!-- Sidebar tabs -->
-      <div class="dv-sidebar-tabs">
-        <button class="dv-tab" :class="{ active: sidebarTab === 'tree' }" @click="sidebarTab = 'tree'" title="Arborescence">
-          <v-icon size="16">mdi-file-tree-outline</v-icon>
+      <!-- Online collaborators -->
+      <div v-if="dossierStore.activeCollaborators.length" class="dv-collab-bar">
+        <div class="dv-collab-avatars">
+          <v-tooltip v-for="collab in dossierStore.activeCollaborators" :key="collab.userId" :text="`${collab.firstName} ${collab.lastName}`" location="bottom">
+            <template #activator="{ props: tooltipProps }">
+              <div v-bind="tooltipProps" class="dv-collab-avatar">
+                <img v-if="collab.avatarPath" :src="SERVER_URL + '/' + collab.avatarPath" class="dv-collab-img" />
+                <span v-else class="dv-collab-initials">{{ collab.initials }}</span>
+                <span class="dv-collab-dot" />
+              </div>
+            </template>
+          </v-tooltip>
+        </div>
+        <span class="dv-collab-label">{{ dossierStore.activeCollaborators.length }} en ligne</span>
+      </div>
+
+      <!-- Quick nav -->
+      <div class="dv-sidebar-nav">
+        <button class="dv-nav-item" :class="{ active: sidebarTab === 'tree' }" @click="sidebarTab = 'tree'">
+          <v-icon size="18">mdi-file-tree-outline</v-icon>
+          <span>Arborescence</span>
         </button>
-        <button class="dv-tab" :class="{ active: sidebarTab === 'tasks' }" @click="sidebarTab = 'tasks'" title="Taches">
-          <v-icon size="16">mdi-checkbox-marked-outline</v-icon>
+        <button class="dv-nav-item" :class="{ active: sidebarTab === 'tasks' }" @click="sidebarTab = 'tasks'">
+          <v-icon size="18">mdi-checkbox-marked-outline</v-icon>
+          <span>Taches</span>
+        </button>
+        <button class="dv-nav-item" :class="{ active: sidebarTab === 'evidence' }" @click="sidebarTab = 'evidence'">
+          <v-icon size="18">mdi-shield-check-outline</v-icon>
+          <span>Integrite</span>
         </button>
       </div>
 
       <div class="dv-sidebar-content">
-        <NodeTree v-show="sidebarTab === 'tree'" @create="handleCreateNode" />
+        <NodeTree v-show="sidebarTab === 'tree'" @create="handleCreateNode" @duplicate="handleDuplicateNode" @file-drop="handleFileDrop" />
         <TaskPanel v-if="sidebarTab === 'tasks'" />
+        <DossierEvidenceView
+          v-if="sidebarTab === 'evidence' && dossierStore.currentDossier"
+          :dossier-id="dossierStore.currentDossier._id"
+          @select-node="onEvidenceSelectNode"
+        />
       </div>
     </aside>
 
@@ -129,12 +171,61 @@
         />
       </div>
 
-      <div v-else-if="dossierStore.selectedNode.type === 'document'" class="dv-content-panel">
+      <div v-else-if="dossierStore.selectedNode.type === 'document'" class="dv-content-panel dv-document-panel">
         <div class="dv-content-header">
           <v-icon size="20" class="mr-2">mdi-file-document-outline</v-icon>
           <h2>{{ dossierStore.selectedNode.title }}</h2>
+          <span class="text-muted mono ml-2" style="font-size: 12px;">{{ dossierStore.selectedNode.fileName }}</span>
+          <div class="dv-doc-actions">
+            <button
+              v-if="isImageFile(dossierStore.selectedNode.fileName)"
+              class="dv-action-btn"
+              :class="{ 'dv-action-btn--active': annotatorOpen }"
+              @click="annotatorOpen = !annotatorOpen"
+              title="Annoter l'image"
+            >
+              <v-icon size="16">mdi-draw</v-icon>
+            </button>
+            <a
+              v-if="dossierStore.selectedNode.fileUrl"
+              :href="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+              target="_blank"
+              class="dv-action-btn"
+              title="Ouvrir le fichier"
+            >
+              <v-icon size="16">mdi-open-in-new</v-icon>
+            </a>
+          </div>
         </div>
-        <p class="text-muted mono">{{ dossierStore.selectedNode.fileName }}</p>
+        <!-- Image preview with optional annotator -->
+        <div v-if="isImageFile(dossierStore.selectedNode.fileName) && dossierStore.selectedNode.fileUrl" class="dv-doc-image-area">
+          <ImageAnnotator
+            v-if="annotatorOpen"
+            :image-src="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+            :initial-annotations="dossierStore.selectedNode.content?.annotations"
+            :key="'annot-' + dossierStore.selectedNode._id"
+            @save="onAnnotationsSave"
+          />
+          <img
+            v-else
+            :src="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+            class="dv-doc-image-preview"
+          />
+        </div>
+        <!-- Non-image file info -->
+        <div v-else-if="dossierStore.selectedNode.fileUrl" class="dv-doc-file-info">
+          <v-icon size="48" class="dv-doc-file-icon">mdi-file-document-outline</v-icon>
+          <p class="text-muted">{{ dossierStore.selectedNode.fileName }}</p>
+          <a
+            :href="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+            target="_blank"
+            class="dv-doc-download-btn"
+          >
+            <v-icon size="14" class="mr-1">mdi-download</v-icon>
+            Telecharger
+          </a>
+        </div>
+        <p v-else class="text-muted" style="padding: 16px;">Aucun fichier attache.</p>
       </div>
 
       <div v-else-if="dossierStore.selectedNode.type === 'folder'" class="dv-content-panel">
@@ -145,6 +236,18 @@
         <p class="text-muted">Dossier</p>
       </div>
     </main>
+
+    <!-- Evidence Panel -->
+    <v-dialog v-model="evidencePanelOpen" max-width="480">
+      <div class="glass-card" style="max-height: 80vh; overflow: hidden;">
+        <EvidencePanel
+          v-if="dossierStore.selectedNode"
+          :node-id="dossierStore.selectedNode._id"
+          :node-title="dossierStore.selectedNode.title"
+          @close="evidencePanelOpen = false"
+        />
+      </div>
+    </v-dialog>
 
     <!-- Web Clipper -->
     <WebClipperDialog v-model="webClipperOpen" />
@@ -399,7 +502,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
@@ -413,11 +516,14 @@ import DossierInfo from './DossierInfo.vue';
 import NoteEditor from '../editor/NoteEditor.vue';
 import ExcalidrawWrapper from '../excalidraw/ExcalidrawWrapper.vue';
 import MapEditor from '../map/MapEditor.vue';
+import ImageAnnotator from '../editor/ImageAnnotator.vue';
 import PomodoroTimer from '../common/PomodoroTimer.vue';
 import TaskPanel from './TaskPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
 import DatasetEditor from '../dataset/DatasetEditor.vue';
+import EvidencePanel from '../evidence/EvidencePanel.vue';
+import DossierEvidenceView from '../evidence/DossierEvidenceView.vue';
 
 const webClipperOpen = ref(false);
 const exportSelectOpen = ref(false);
@@ -463,8 +569,44 @@ const createParentId = ref<string | null>(null);
 const createTitle = ref('');
 const selectedTemplateId = ref<string | null>(null);
 
-// Sidebar tab
-const sidebarTab = ref<'tree' | 'tasks'>('tree');
+// Sidebar
+const sidebarTab = ref<'tree' | 'tasks' | 'evidence'>('tree');
+const evidencePanelOpen = ref(false);
+const annotatorOpen = ref(false);
+
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
+
+function isImageFile(fileName: string | null): boolean {
+  if (!fileName) return false;
+  const ext = fileName.toLowerCase().slice(fileName.lastIndexOf('.'));
+  return IMAGE_EXTENSIONS.includes(ext);
+}
+
+async function onAnnotationsSave(annotations: any[]) {
+  if (!dossierStore.selectedNode) return;
+  const existing = dossierStore.selectedNode.content || {};
+  await dossierStore.updateNode(dossierStore.selectedNode._id, {
+    content: { ...existing, annotations },
+  });
+}
+
+// Reset annotator when node changes
+watch(() => dossierStore.selectedNode?._id, () => {
+  annotatorOpen.value = false;
+});
+
+function onEvidenceSelectNode(nodeId: string) {
+  const node = dossierStore.nodes.find(n => n._id === nodeId);
+  if (node) {
+    dossierStore.selectNode(node);
+    sidebarTab.value = 'tree';
+  }
+}
+
+const dossierLogoUrl = computed(() => {
+  const d = dossierStore.currentDossier;
+  return d?.logoPath ? `${SERVER_URL}/${d.logoPath}` : null;
+});
 
 // Focus mode
 const focusMode = ref(false);
@@ -473,14 +615,43 @@ function toggleFocusMode() {
   focusMode.value = !focusMode.value;
 }
 
-function onFocusKeydown(e: KeyboardEvent) {
+function onGlobalKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && focusMode.value) {
     focusMode.value = false;
+    return;
+  }
+
+  // Delete selected node with Delete key
+  if (e.key === 'Delete' && dossierStore.selectedNode) {
+    // Ignore if user is typing in an input/editor
+    const tag = (e.target as HTMLElement)?.tagName;
+    const editable = (e.target as HTMLElement)?.isContentEditable;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable) return;
+
+    e.preventDefault();
+    const node = dossierStore.selectedNode;
+
+    if (e.shiftKey) {
+      // Shift+Delete: permanent delete without confirmation
+      dossierStore.deleteNode(node._id).then(() => {
+        dossierStore.purgeNode(node._id).catch(() => {});
+      });
+    } else {
+      // Delete: soft delete with confirmation
+      confirmDialog({
+        title: 'Supprimer',
+        message: `Envoyer "${node.title}" dans la corbeille ?`,
+        confirmText: 'Supprimer',
+        variant: 'danger',
+      }).then((ok: boolean) => {
+        if (ok) dossierStore.deleteNode(node._id);
+      });
+    }
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onFocusKeydown));
-onUnmounted(() => document.removeEventListener('keydown', onFocusKeydown));
+onMounted(() => document.addEventListener('keydown', onGlobalKeydown));
+onUnmounted(() => document.removeEventListener('keydown', onGlobalKeydown));
 
 // AI Report
 const aiEnabled = ref(false);
@@ -811,6 +982,42 @@ async function confirmCreate() {
     content,
   });
   createDialog.value = false;
+}
+
+async function handleDuplicateNode(nodeId: string) {
+  try {
+    const { data } = await api.post(`/nodes/${nodeId}/duplicate`);
+    dossierStore.nodes.push(data);
+    dossierStore.selectNode(data);
+  } catch (err) {
+    console.error('Duplicate failed:', err);
+  }
+}
+
+async function handleFileDrop(files: FileList, parentId: string | null) {
+  if (!dossierStore.currentDossier) return;
+  for (const file of Array.from(files)) {
+    try {
+      // Create a document node first
+      const node = await dossierStore.createNode({
+        type: 'document',
+        title: file.name,
+        parentId,
+      });
+      // Upload the file to the node
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data: updated } = await api.post(`/nodes/${node._id}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      // Update local node with file info
+      const idx = dossierStore.nodes.findIndex(n => n._id === node._id);
+      if (idx >= 0) dossierStore.nodes[idx] = updated;
+      dossierStore.selectNode(updated);
+    } catch (err) {
+      console.error('File drop upload failed:', err);
+    }
+  }
 }
 
 const { confirm: confirmDialog } = useConfirm();
@@ -1388,7 +1595,7 @@ function downloadBlob(blob: Blob, filename: string) {
   height: calc(100vh - 56px);
 }
 .dv-sidebar {
-  width: 280px;
+  width: 320px;
   flex-shrink: 0;
   border-right: 1px solid var(--me-border);
   background: var(--me-bg-surface);
@@ -1397,33 +1604,114 @@ function downloadBlob(blob: Blob, filename: string) {
   overflow: hidden;
 }
 .dv-sidebar-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--me-border);
+  padding: 16px 18px 12px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
-.dv-sidebar-actions {
+.dv-sidebar-title-row {
   display: flex;
-  gap: 4px;
-  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
 }
-.dv-action-btn {
-  width: 30px;
-  height: 30px;
+.dv-sidebar-icon-wrap {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--me-radius-xs);
-  background: none;
+  border-radius: 8px;
+  background: var(--me-bg-elevated);
   border: 1px solid var(--me-border);
+  flex-shrink: 0;
+  color: var(--me-accent);
+}
+.dv-sidebar-icon-default { color: var(--me-text-muted); }
+.dv-sidebar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.dv-sidebar-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+/* Online collaborators bar */
+.dv-collab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--me-border);
+}
+.dv-collab-avatars {
+  display: flex;
+  gap: 0;
+}
+.dv-collab-avatar {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--me-bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -6px;
+  border: 2px solid var(--me-bg-surface);
+  cursor: default;
+  flex-shrink: 0;
+}
+.dv-collab-avatar:first-child {
+  margin-left: 0;
+}
+.dv-collab-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.dv-collab-initials {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--me-accent);
+  letter-spacing: 0.5px;
+  font-family: var(--me-font-mono);
+}
+.dv-collab-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid var(--me-bg-surface);
+}
+.dv-collab-label {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  white-space: nowrap;
+}
+.dv-action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: none;
+  border: none;
   color: var(--me-text-muted);
   cursor: pointer;
   transition: all 0.15s;
 }
 .dv-action-btn:hover {
-  border-color: var(--me-accent);
   color: var(--me-accent);
   background: var(--me-accent-glow);
 }
@@ -1450,45 +1738,52 @@ function downloadBlob(blob: Blob, filename: string) {
   color: var(--me-text-primary);
 }
 .dv-sidebar-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--me-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.3;
 }
-.dv-sidebar-tabs {
+
+/* Nav items (replaces tabs) */
+.dv-sidebar-nav {
   display: flex;
-  border-bottom: 1px solid var(--me-border);
-  padding: 0 8px;
+  flex-direction: column;
+  padding: 4px 12px 8px;
   gap: 2px;
 }
-.dv-tab {
-  flex: 1;
+.dv-nav-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 0;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--me-text-muted);
+  color: var(--me-text-secondary);
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.15s;
-  border-radius: 0;
+  text-align: left;
 }
-.dv-tab:hover {
-  color: var(--me-text-primary);
+.dv-nav-item:hover {
   background: var(--me-accent-glow);
+  color: var(--me-text-primary);
 }
-.dv-tab.active {
+.dv-nav-item.active {
+  background: var(--me-accent-glow);
   color: var(--me-accent);
-  border-bottom-color: var(--me-accent);
+  font-weight: 600;
 }
+
 .dv-sidebar-content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 4px 12px 12px;
+  border-top: 1px solid var(--me-border);
 }
 .dv-main {
   flex: 1;
@@ -1557,6 +1852,69 @@ function downloadBlob(blob: Blob, filename: string) {
   font-size: 20px;
   font-weight: 600;
   color: var(--me-text-primary);
+}
+/* Document node styles */
+.dv-document-panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.dv-document-panel .dv-content-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--me-border);
+  flex-shrink: 0;
+}
+.dv-doc-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+.dv-action-btn--active {
+  color: var(--me-accent) !important;
+  background: var(--me-accent-glow) !important;
+}
+.dv-doc-image-area {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.dv-doc-image-preview {
+  max-width: 100%;
+  max-height: 100%;
+  padding: 16px;
+  object-fit: contain;
+}
+.dv-doc-file-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px;
+  flex: 1;
+}
+.dv-doc-file-icon {
+  color: var(--me-text-muted);
+  opacity: 0.4;
+}
+.dv-doc-download-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--me-accent-glow);
+  color: var(--me-accent);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.dv-doc-download-btn:hover {
+  background: var(--me-accent);
+  color: #fff;
 }
 .text-muted {
   color: var(--me-text-muted);

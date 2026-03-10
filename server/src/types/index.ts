@@ -8,6 +8,12 @@ export interface IUser extends Document {
   role: 'admin' | 'user';
   isActive: boolean;
   preferences: Record<string, any>;
+  notificationPreferences: {
+    inApp: Record<string, boolean>;
+    email: Record<string, boolean>;
+    doNotDisturb: boolean;
+    soundEnabled: boolean;
+  };
   avatarPath: string | null;
   signature: {
     title: string;
@@ -80,6 +86,9 @@ export interface IDossierNode extends Document {
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
+  fileHash: string | null;
+  hashVerifiedAt: Date | null;
+  lastVerificationStatus: 'valid' | 'tampered' | 'missing' | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -109,6 +118,29 @@ export interface ISiteSettings extends Document {
   passwordRequireSpecial: boolean;
   maxLoginAttempts: number;
   lockoutDurationMinutes: number;
+  trashAutoDeleteDays: number;
+  // Storage
+  maxFileSizeMB: number;
+  allowedFileTypes: string;
+  // SMTP
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  smtpFrom: string;
+  smtpSecure: boolean;
+  // Web Clipper
+  clipperTimeoutMs: number;
+  clipperQuality: number;
+  clipperUserAgent: string;
+  clipperProxy: string;
+  // Defaults
+  defaultEncryptionEnabled: boolean;
+  // Network
+  allowedOrigins: string;
+  announcementEnabled: boolean;
+  announcementMessage: string;
+  announcementVariant: 'info' | 'warning' | 'error';
 }
 
 export interface IActivityLog extends Document {
@@ -139,7 +171,7 @@ export interface IPluginSettings extends Document {
 
 export interface INotification extends Document {
   userId: Types.ObjectId;
-  type: 'collaborator.added' | 'collaborator.removed' | 'dossier.updated' | 'node.updated' | 'mention' | 'task.assigned';
+  type: 'collaborator.added' | 'collaborator.removed' | 'dossier.updated' | 'node.updated' | 'mention' | 'task.assigned' | 'task.deadline' | 'task.completed' | 'dossier.shared' | 'comment.reply' | 'system.announcement';
   message: string;
   dossierId: Types.ObjectId | null;
   fromUserId: Types.ObjectId | null;

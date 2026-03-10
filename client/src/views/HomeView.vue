@@ -5,7 +5,14 @@
         <h1 class="home-title mono">Mes dossiers</h1>
         <p class="home-subtitle">{{ dossierStore.dossiers.length }} dossier{{ dossierStore.dossiers.length > 1 ? 's' : '' }}</p>
       </div>
-      <CreateDossierDialog />
+      <div class="home-header-actions">
+        <button class="home-import-btn" @click="triggerImport" title="Importer un dossier JSON">
+          <v-icon size="16" class="mr-1">mdi-upload-outline</v-icon>
+          <span class="mono">Importer</span>
+        </button>
+        <CreateDossierDialog />
+      </div>
+      <input ref="importInputRef" type="file" accept=".json" style="display: none;" @change="handleImport" />
     </div>
 
     <v-progress-linear v-if="dossierStore.loading" indeterminate color="primary" class="mb-4" style="border-radius: 4px;" />
@@ -51,9 +58,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useDossierStore } from '../stores/dossier';
 import { useConfirm } from '../composables/useConfirm';
+import api from '../services/api';
 import DossierCard from '../components/dossier/DossierCard.vue';
 import CreateDossierDialog from '../components/dossier/CreateDossierDialog.vue';
 import DossierView from '../components/dossier/DossierView.vue';
@@ -61,6 +69,7 @@ import UserDashboard from '../components/dashboard/UserDashboard.vue';
 
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
+const importInputRef = ref<HTMLInputElement | null>(null);
 
 const favoriteDossiers = computed(() =>
   dossierStore.dossiers.filter(d => dossierStore.isFavorite(d._id))
@@ -77,6 +86,32 @@ function handleOpen(id: string) {
 
 function handleToggleFavorite(id: string) {
   dossierStore.toggleFavorite(id);
+}
+
+function triggerImport() {
+  importInputRef.value?.click();
+}
+
+async function handleImport(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  input.value = '';
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.dossier?.title) {
+      await confirm({ title: 'Import invalide', message: 'Fichier JSON invalide : le champ "dossier.title" est manquant.', confirmText: 'OK', cancelText: '' });
+      return;
+    }
+    const { data: newDossier } = await api.post('/dossiers/import/json', data);
+    await dossierStore.fetchDossiers();
+    dossierStore.openDossier(newDossier._id);
+  } catch (err) {
+    console.error('Import failed:', err);
+    await confirm({ title: 'Erreur', message: 'Erreur lors de l\'import du fichier JSON.', confirmText: 'OK', cancelText: '', variant: 'danger' });
+  }
 }
 
 async function handleDelete(id: string) {
@@ -136,6 +171,29 @@ async function handleDelete(id: string) {
 .home-empty h3 {
   color: var(--me-text-primary);
   margin-bottom: 8px;
+}
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home-import-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.home-import-btn:hover {
+  border-color: var(--me-accent);
+  color: var(--me-accent);
+  background: var(--me-accent-glow);
 }
 .text-muted {
   color: var(--me-text-muted);

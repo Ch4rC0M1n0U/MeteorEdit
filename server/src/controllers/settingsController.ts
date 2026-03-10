@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import nodemailer from 'nodemailer';
 import SiteSettings from '../models/SiteSettings';
 import { AuthRequest } from '../middleware/auth';
 import { setMaintenanceState } from '../middleware/maintenance';
@@ -29,13 +30,21 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
     if (typeof body.loginMessage === 'string') update.loginMessage = body.loginMessage;
 
     // Security toggles
-    const boolFields = ['require2FA', 'maintenanceMode', 'registrationEnabled', 'passwordRequireUppercase', 'passwordRequireNumber', 'passwordRequireSpecial'];
+    const boolFields = ['require2FA', 'maintenanceMode', 'registrationEnabled', 'passwordRequireUppercase', 'passwordRequireNumber', 'passwordRequireSpecial', 'smtpSecure', 'defaultEncryptionEnabled', 'announcementEnabled'];
     for (const field of boolFields) {
       if (typeof body[field] === 'boolean') update[field] = body[field];
     }
 
     // String fields
-    if (typeof body.maintenanceMessage === 'string') update.maintenanceMessage = body.maintenanceMessage;
+    const stringFields = ['maintenanceMessage', 'allowedFileTypes', 'smtpHost', 'smtpUser', 'smtpPass', 'smtpFrom', 'clipperUserAgent', 'clipperProxy', 'allowedOrigins', 'announcementMessage'];
+    for (const field of stringFields) {
+      if (typeof body[field] === 'string') update[field] = body[field];
+    }
+
+    // Announcement variant
+    if (typeof body.announcementVariant === 'string' && ['info', 'warning', 'error'].includes(body.announcementVariant)) {
+      update.announcementVariant = body.announcementVariant;
+    }
 
     // Numeric fields with validation
     const numFields: Record<string, { min: number; max: number }> = {
@@ -43,6 +52,10 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
       passwordMinLength: { min: 4, max: 128 },
       maxLoginAttempts: { min: 0, max: 100 },
       lockoutDurationMinutes: { min: 1, max: 1440 },
+      maxFileSizeMB: { min: 1, max: 500 },
+      smtpPort: { min: 1, max: 65535 },
+      clipperTimeoutMs: { min: 5000, max: 120000 },
+      clipperQuality: { min: 10, max: 100 },
     };
     for (const [field, range] of Object.entries(numFields)) {
       if (typeof body[field] === 'number') {
@@ -67,6 +80,24 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
     }
     if (changedKeys.some(k => ['appName', 'accentColor', 'loginMessage'].includes(k))) {
       await logActivity(req.user!.userId, 'settings.branding_update', 'system', null, { fields: changedKeys.filter(k => ['appName', 'accentColor', 'loginMessage'].includes(k)) }, ip);
+    }
+    if (changedKeys.some(k => ['maxFileSizeMB', 'allowedFileTypes'].includes(k))) {
+      await logActivity(req.user!.userId, 'settings.storage_update', 'system', null, { fields: changedKeys.filter(k => ['maxFileSizeMB', 'allowedFileTypes'].includes(k)) }, ip);
+    }
+    if (changedKeys.some(k => ['smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom', 'smtpSecure'].includes(k))) {
+      await logActivity(req.user!.userId, 'settings.email_update', 'system', null, { fields: changedKeys.filter(k => k.startsWith('smtp')).map(k => k === 'smtpPass' ? 'smtpPass (masked)' : k) }, ip);
+    }
+    if (changedKeys.some(k => ['clipperTimeoutMs', 'clipperQuality', 'clipperUserAgent', 'clipperProxy'].includes(k))) {
+      await logActivity(req.user!.userId, 'settings.clipper_update', 'system', null, { fields: changedKeys.filter(k => k.startsWith('clipper')) }, ip);
+    }
+    if (changedKeys.some(k => ['defaultEncryptionEnabled'].includes(k))) {
+      await logActivity(req.user!.userId, 'settings.defaults_update', 'system', null, { defaultEncryptionEnabled: update.defaultEncryptionEnabled }, ip);
+    }
+    if (changedKeys.some(k => ['allowedOrigins'].includes(k))) {
+      await logActivity(req.user!.userId, 'settings.network_update', 'system', null, { allowedOrigins: update.allowedOrigins }, ip);
+    }
+    if (changedKeys.some(k => ['announcementEnabled', 'announcementMessage', 'announcementVariant'].includes(k))) {
+      await logActivity(req.user!.userId, 'settings.announcement_update', 'system', null, { announcementEnabled: update.announcementEnabled }, ip);
     }
 
     res.json(settings);
@@ -185,5 +216,40 @@ export async function deleteLoginBackground(req: AuthRequest, res: Response): Pr
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function testEmail(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const settings = await SiteSettings.findOne();
+    if (!settings?.smtpHost || !settings?.smtpFrom) {
+      res.status(400).json({ message: 'Configuration SMTP incomplete. Veuillez renseigner le serveur et l\'expediteur.' });
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpSecure || false,
+      auth: settings.smtpUser ? {
+        user: settings.smtpUser,
+        pass: settings.smtpPass || '',
+      } : undefined,
+    });
+
+    await transporter.verify();
+    await transporter.sendMail({
+      from: settings.smtpFrom,
+      to: settings.smtpFrom,
+      subject: `[${settings.appName || 'MeteorEdit'}] Test de connexion SMTP`,
+      text: 'Ce message confirme que la configuration SMTP fonctionne correctement.',
+    });
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'settings.email_test', 'system', null, { smtpHost: settings.smtpHost }, ip);
+
+    res.json({ message: 'Email de test envoye avec succes' });
+  } catch (error: any) {
+    res.status(502).json({ message: `Erreur SMTP: ${error.message || 'Connexion impossible'}` });
   }
 }

@@ -10,6 +10,7 @@ export interface ConfirmOptions {
   prompt?: boolean;
   promptLabel?: string;
   promptDefault?: string;
+  promptType?: 'text' | 'password';
 }
 
 interface ConfirmState {
@@ -22,6 +23,7 @@ interface ConfirmState {
   prompt: boolean;
   promptLabel: string;
   promptValue: string;
+  promptType: 'text' | 'password';
   resolve: ((value: boolean | string | null) => void) | null;
 }
 
@@ -35,6 +37,7 @@ const state = reactive<ConfirmState>({
   prompt: false,
   promptLabel: '',
   promptValue: '',
+  promptType: 'text',
   resolve: null,
 });
 
@@ -63,6 +66,7 @@ export function useConfirm() {
       state.prompt = true;
       state.promptLabel = options.promptLabel || '';
       state.promptValue = options.promptDefault || '';
+      state.promptType = options.promptType || 'text';
       state.resolve = (val) => resolve(val as string | null);
     });
   }

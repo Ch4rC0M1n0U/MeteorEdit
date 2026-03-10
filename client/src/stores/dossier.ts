@@ -13,6 +13,7 @@ export const useDossierStore = defineStore('dossier', () => {
   const selectedNode = ref<DossierNode | null>(null);
   const loading = ref(false);
   const favorites = ref<string[]>([]);
+  const activeCollaborators = ref<{ userId: string; firstName: string; lastName: string; avatarPath: string | null; initials: string }[]>([]);
 
   // Sensitive dossier fields that get encrypted
   const ENCRYPTED_DOSSIER_FIELDS = ['objectives', 'judicialFacts', 'description', 'entities'] as const;
@@ -220,6 +221,7 @@ export const useDossierStore = defineStore('dossier', () => {
     nodes.value = [];
     trashNodes.value = [];
     selectedNode.value = null;
+    activeCollaborators.value = [];
   }
 
   function setupSocketListeners() {
@@ -231,6 +233,25 @@ export const useDossierStore = defineStore('dossier', () => {
     socket.off('excalidraw-updated');
     socket.off('node-added');
     socket.off('node-removed');
+    socket.off('dossier-presence-list');
+    socket.off('user-joined');
+    socket.off('user-left');
+
+    // Dossier presence
+    socket.on('dossier-presence-list', (data: { dossierId: string; users: any[] }) => {
+      activeCollaborators.value = data.users;
+    });
+
+    socket.on('user-joined', (userData: { userId: string; firstName?: string; lastName?: string; avatarPath?: string | null; initials?: string }) => {
+      if (!userData.firstName) return; // Skip unenriched events
+      if (!activeCollaborators.value.find(u => u.userId === userData.userId)) {
+        activeCollaborators.value.push(userData as any);
+      }
+    });
+
+    socket.on('user-left', (data: { userId: string }) => {
+      activeCollaborators.value = activeCollaborators.value.filter(u => u.userId !== data.userId);
+    });
 
     socket.on('node-updated', (data: { nodeId: string; content: any }) => {
       const idx = nodes.value.findIndex(n => n._id === data.nodeId);
@@ -395,7 +416,7 @@ export const useDossierStore = defineStore('dossier', () => {
 
   return {
     dossiers, currentDossier, nodes, trashNodes, selectedNode, loading,
-    favorites, fetchFavorites, toggleFavorite, isFavorite,
+    favorites, fetchFavorites, toggleFavorite, isFavorite, activeCollaborators,
     fetchDossiers, createDossier, openDossier, closeDossier,
     updateDossier, deleteDossier,
     createNode, updateNode, deleteNode, selectNode,

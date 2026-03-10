@@ -83,10 +83,36 @@ export interface DossierNode {
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
+  fileHash: string | null;
+  hashVerifiedAt: string | null;
+  lastVerificationStatus: 'valid' | 'tampered' | 'missing' | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
   children?: DossierNode[];
+}
+
+export interface EvidenceVerification {
+  verifiedAt: string;
+  verifiedBy: string;
+  status: 'valid' | 'tampered' | 'missing';
+  computedHash: string | null;
+}
+
+export interface EvidenceRecord {
+  _id: string;
+  nodeId: string | { _id: string; title: string; type: string };
+  dossierId: string;
+  capturedBy: { _id: string; firstName: string; lastName: string };
+  capturedAt: string;
+  fileHash: string;
+  fileSize: number;
+  sourceUrl: string | null;
+  evidenceType: 'file' | 'screenshot' | 'clip';
+  verifications: EvidenceVerification[];
+  lastVerifiedAt: string | null;
+  lastVerificationStatus: 'valid' | 'tampered' | 'missing' | null;
+  createdAt: string;
 }
 
 export interface TaskAssignee {

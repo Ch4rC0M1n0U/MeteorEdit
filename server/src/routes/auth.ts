@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { register, login, me, refresh, getPreferences, updatePreferences, uploadTemplateLogo } from '../controllers/authController';
+import { register, login, me, refresh, getPreferences, updatePreferences, uploadTemplateLogo, getNotificationPreferences, updateNotificationPreferences } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
 import { updateProfile, uploadAvatar, deleteAvatar, changePassword, updateSignature, uploadSignatureImage, saveDrawnSignature, deleteSignatureImage } from '../controllers/profileController';
@@ -693,5 +693,8 @@ router.delete('/2fa', authenticate, disable2FA);
  *         description: Token expire ou invalide
  */
 router.post('/2fa/validate', validate2FA); // No auth — uses tempToken
+
+router.get('/notification-preferences', authenticate, getNotificationPreferences);
+router.patch('/notification-preferences', authenticate, updateNotificationPreferences);
 
 export default router;

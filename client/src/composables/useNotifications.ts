@@ -39,12 +39,31 @@ export function useNotifications() {
     unreadCount.value = 0;
   }
 
+  function playNotificationSound() {
+    try {
+      const prefsStr = localStorage.getItem('userPreferences');
+      const userPrefs = prefsStr ? JSON.parse(prefsStr) : {};
+      if (userPrefs.soundEnabled === false) return;
+
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      gain.gain.value = 0.1;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {}
+  }
+
   function setupSocketListener() {
     const socket = getSocket();
     if (!socket) return;
     socket.on('notification:new', (notif: NotificationItem) => {
       notifications.value.unshift(notif);
       unreadCount.value++;
+      playNotificationSound();
     });
   }
 

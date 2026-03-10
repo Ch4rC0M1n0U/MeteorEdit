@@ -10,6 +10,9 @@ export const useBrandingStore = defineStore('branding', () => {
   const loginMessage = ref('');
   const loginBackgroundUrl = ref<string | null>(null);
   const registrationEnabled = ref(true);
+  const announcementEnabled = ref(false);
+  const announcementMessage = ref('');
+  const announcementVariant = ref<'info' | 'warning' | 'error'>('info');
   const loaded = ref(false);
 
   async function fetchBranding() {
@@ -19,6 +22,9 @@ export const useBrandingStore = defineStore('branding', () => {
       accentColor.value = data.accentColor || '#38bdf8';
       loginMessage.value = data.loginMessage || '';
       registrationEnabled.value = data.registrationEnabled !== false;
+      announcementEnabled.value = !!data.announcementEnabled;
+      announcementMessage.value = data.announcementMessage || '';
+      announcementVariant.value = data.announcementVariant || 'info';
       logoUrl.value = data.logoPath ? `${SERVER_URL}/${data.logoPath}` : null;
       faviconUrl.value = data.faviconPath ? `${SERVER_URL}/${data.faviconPath}` : null;
       loginBackgroundUrl.value = data.loginBackgroundPath ? `${SERVER_URL}/${data.loginBackgroundPath}` : null;
@@ -54,5 +60,5 @@ export const useBrandingStore = defineStore('branding', () => {
     return `rgba(${r}, ${g}, ${b}, 0.15)`;
   }
 
-  return { appName, logoUrl, accentColor, faviconUrl, loginMessage, loginBackgroundUrl, registrationEnabled, loaded, fetchBranding, applyBranding };
+  return { appName, logoUrl, accentColor, faviconUrl, loginMessage, loginBackgroundUrl, registrationEnabled, announcementEnabled, announcementMessage, announcementVariant, loaded, fetchBranding, applyBranding };
 });

@@ -6,6 +6,29 @@ import { AuthRequest } from '../middleware/auth';
 import { extractTextFromTipTap } from '../utils/extractText';
 import { logActivity } from '../utils/activityLogger';
 import { createNotification } from '../utils/notifier';
+import { computeFileHash } from '../utils/hashFile';
+import EvidenceRecord from '../models/EvidenceRecord';
+import path from 'path';
+import fs from 'fs';
+
+const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
+
+/**
+ * Delete physical files and evidence records associated with a node.
+ */
+async function cleanupNodeFiles(node: any): Promise<void> {
+  // Delete physical file if exists (fileUrl is relative like "uploads/screenshots/clip-xxx.png")
+  if (node.fileUrl) {
+    const filePath = path.resolve(UPLOAD_DIR, '..', node.fileUrl);
+    try {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (err) {
+      console.warn(`Failed to delete file ${filePath}:`, err);
+    }
+  }
+  // Delete associated evidence records
+  await EvidenceRecord.deleteMany({ nodeId: node._id });
+}
 
 async function checkDossierAccess(dossierId: string, userId: string): Promise<boolean> {
   const dossier = await Dossier.findById(dossierId);
@@ -182,12 +205,14 @@ export async function purgeNode(req: AuthRequest, res: Response): Promise<void> 
       const children = await DossierNode.find({ parentId });
       for (const child of children) {
         await hardDeleteRecursive(child._id.toString());
+        await cleanupNodeFiles(child);
         await child.deleteOne();
       }
     }
     const nodeTitle = node.title;
     const nodeDossierId = node.dossierId.toString();
     await hardDeleteRecursive(node._id.toString());
+    await cleanupNodeFiles(node);
     await node.deleteOne();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
@@ -204,6 +229,10 @@ export async function emptyTrash(req: AuthRequest, res: Response): Promise<void>
     if (!(await checkDossierAccess(dossierId, req.user!.userId))) {
       res.status(403).json({ message: 'Access denied' });
       return;
+    }
+    const trashedNodes = await DossierNode.find({ dossierId, deletedAt: { $ne: null } });
+    for (const n of trashedNodes) {
+      await cleanupNodeFiles(n);
     }
     await DossierNode.deleteMany({ dossierId, deletedAt: { $ne: null } });
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
@@ -296,10 +325,29 @@ export async function uploadFile(req: AuthRequest, res: Response): Promise<void>
       res.status(400).json({ message: 'No file provided' });
       return;
     }
+    const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
+    const absFilePath = path.join(uploadDir, req.file.filename);
+    const fileHash = await computeFileHash(absFilePath);
+
     node.fileUrl = `/uploads/${req.file.filename}`;
     node.fileName = req.file.originalname;
     node.fileSize = req.file.size;
+    node.fileHash = fileHash;
     await node.save();
+
+    // Create evidence record
+    await EvidenceRecord.create({
+      nodeId: node._id,
+      dossierId: node.dossierId,
+      capturedBy: req.user!.userId,
+      capturedAt: new Date(),
+      fileHash,
+      filePath: absFilePath,
+      fileSize: req.file.size,
+      sourceUrl: null,
+      evidenceType: 'file',
+    });
+
     res.json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -336,6 +384,46 @@ export async function mentionUser(req: AuthRequest, res: Response): Promise<void
   }
 }
 
+export async function duplicateNode(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const node = await DossierNode.findById(req.params.nodeId);
+    if (!node) {
+      res.status(404).json({ message: 'Node not found' });
+      return;
+    }
+    if (!(await checkDossierAccess(node.dossierId.toString(), req.user!.userId))) {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+
+    // Get next order in the same parent
+    const lastSibling = await DossierNode.findOne({
+      dossierId: node.dossierId,
+      parentId: node.parentId,
+    }).sort({ order: -1 });
+    const newOrder = lastSibling ? lastSibling.order + 1 : 0;
+
+    const duplicate = await DossierNode.create({
+      dossierId: node.dossierId,
+      parentId: node.parentId,
+      type: node.type,
+      title: `${node.title} (copie)`,
+      order: newOrder,
+      content: node.content,
+      contentText: node.contentText,
+      excalidrawData: node.excalidrawData,
+      mapData: node.mapData,
+    });
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(req.user!.userId, 'node.duplicate', 'dossier', node.dossierId.toString(), { nodeId: duplicate._id.toString(), sourceNodeId: node._id.toString(), title: duplicate.title }, ip, ua);
+    res.status(201).json(duplicate);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function uploadImage(req: AuthRequest, res: Response): Promise<void> {
   try {
     if (!req.file) {
@@ -344,6 +432,32 @@ export async function uploadImage(req: AuthRequest, res: Response): Promise<void
     }
     const url = `/uploads/${req.file.filename}`;
     res.json({ url });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function deleteUploadedFile(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    // Express 5 wildcard returns array of segments
+    const raw = req.params.filepath;
+    const filePath = Array.isArray(raw) ? raw.join('/') : (raw || req.params[0]);
+    // Sanitize: block path traversal
+    if (!filePath || filePath.includes('..')) {
+      res.status(400).json({ message: 'Invalid file path' });
+      return;
+    }
+    const fullPath = path.join(UPLOAD_DIR, filePath);
+    // Ensure resolved path stays within UPLOAD_DIR
+    const resolved = path.resolve(fullPath);
+    if (!resolved.startsWith(path.resolve(UPLOAD_DIR))) {
+      res.status(400).json({ message: 'Invalid file path' });
+      return;
+    }
+    if (fs.existsSync(resolved)) {
+      fs.unlinkSync(resolved);
+    }
+    res.json({ ok: true });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

@@ -6,7 +6,7 @@ const notificationSchema = new Schema<INotification>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: {
       type: String,
-      enum: ['collaborator.added', 'collaborator.removed', 'dossier.updated', 'node.updated', 'mention', 'task.assigned'],
+      enum: ['collaborator.added', 'collaborator.removed', 'dossier.updated', 'node.updated', 'mention', 'task.assigned', 'task.deadline', 'task.completed', 'dossier.shared', 'comment.reply', 'system.announcement'],
       required: true,
     },
     message: { type: String, required: true },

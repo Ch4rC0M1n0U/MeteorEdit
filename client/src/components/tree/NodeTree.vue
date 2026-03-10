@@ -5,11 +5,13 @@
       :class="{ active: !dossierStore.selectedNode }"
       @click="dossierStore.selectNode(null)"
     >
-      <v-icon size="16" class="mr-2">mdi-information-outline</v-icon>
+      <v-icon size="18">mdi-information-outline</v-icon>
       <span>Info dossier</span>
     </button>
 
-    <div class="nt-divider" />
+    <div class="nt-section-label">
+      <span>Contenu</span>
+    </div>
 
     <div
       class="nt-root-drop"
@@ -25,6 +27,7 @@
         :node="node"
         :all-nodes="dossierStore.nodes"
         @create="(type, parentId) => $emit('create', type, parentId)"
+        @duplicate="(nodeId) => $emit('duplicate', nodeId)"
       />
     </div>
 
@@ -60,7 +63,9 @@
     </v-menu>
 
     <!-- Corbeille -->
-    <div class="nt-divider" style="margin-top: 12px;" />
+    <div class="nt-section-label" style="margin-top: 8px;">
+      <span>Autres</span>
+    </div>
 
     <button class="nt-trash-header" @click="trashOpen = !trashOpen">
       <v-icon size="16">mdi-delete-outline</v-icon>
@@ -104,7 +109,7 @@ import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
 import NodeTreeItem from './NodeTreeItem.vue';
 
-defineEmits<{ create: [type: string, parentId: string | null] }>();
+const emit = defineEmits<{ create: [type: string, parentId: string | null]; duplicate: [nodeId: string]; fileDrop: [files: FileList, parentId: string | null] }>();
 
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
@@ -135,6 +140,14 @@ onUnmounted(() => document.removeEventListener('dragend', onGlobalDragEnd));
 async function onRootDrop(e: DragEvent) {
   rootDragCounter.value = 0;
   rootDropActive.value = false;
+
+  // Check for file drop from OS
+  if (e.dataTransfer?.files?.length) {
+    e.preventDefault();
+    emit('fileDrop', e.dataTransfer.files, null);
+    return;
+  }
+
   const draggedId = e.dataTransfer?.getData('text/plain');
   if (!draggedId) return;
   const node = dossierStore.nodes.find(n => n._id === draggedId);
@@ -205,18 +218,19 @@ async function handleEmptyTrash() {
 .node-tree {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 .nt-item {
   display: flex;
   align-items: center;
+  gap: 10px;
   width: 100%;
-  padding: 7px 10px;
-  border-radius: var(--me-radius-xs);
+  padding: 8px 12px;
+  border-radius: 8px;
   background: none;
   border: none;
   color: var(--me-text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.15s;
   text-align: left;
@@ -228,35 +242,41 @@ async function handleEmptyTrash() {
 .nt-item.active {
   background: var(--me-accent-glow);
   color: var(--me-accent);
-  border-left: 2px solid var(--me-accent);
-  padding-left: 8px;
   font-weight: 600;
 }
-.nt-divider {
-  height: 1px;
-  background: var(--me-border);
-  margin: 4px 0;
+
+/* Section labels */
+.nt-section-label {
+  padding: 12px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--me-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  user-select: none;
 }
+
 .nt-root-drop {
   min-height: 20px;
 }
 .nt-root-drop-active {
   outline: 2px dashed var(--me-accent);
   outline-offset: -2px;
-  border-radius: var(--me-radius-xs);
+  border-radius: 8px;
 }
 .nt-add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   width: 100%;
-  padding: 8px;
-  margin-top: 8px;
-  border-radius: var(--me-radius-xs);
+  padding: 8px 12px;
+  margin-top: 4px;
+  border-radius: 8px;
   background: none;
   border: 1px dashed var(--me-border);
   color: var(--me-text-muted);
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -267,15 +287,15 @@ async function handleEmptyTrash() {
 }
 .nt-add-menu {
   padding: 6px;
-  min-width: 160px;
+  min-width: 180px;
 }
 .nt-add-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--me-radius-xs);
+  padding: 8px 12px;
+  border-radius: 8px;
   background: none;
   border: none;
   color: var(--me-text-secondary);
@@ -292,14 +312,14 @@ async function handleEmptyTrash() {
 .nt-trash-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
-  padding: 6px 10px;
-  border-radius: var(--me-radius-xs);
+  padding: 8px 12px;
+  border-radius: 8px;
   background: none;
   border: none;
   color: var(--me-text-muted);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.15s;
   text-align: left;
@@ -325,14 +345,14 @@ async function handleEmptyTrash() {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding-left: 4px;
+  padding-left: 8px;
 }
 .nt-trash-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: var(--me-radius-xs);
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
   transition: all 0.15s;
 }
 .nt-trash-item:hover {
@@ -345,7 +365,7 @@ async function handleEmptyTrash() {
 }
 .nt-trash-item-title {
   flex: 1;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--me-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -358,8 +378,8 @@ async function handleEmptyTrash() {
   border: none;
   color: var(--me-text-muted);
   cursor: pointer;
-  padding: 2px;
-  border-radius: 3px;
+  padding: 3px;
+  border-radius: 4px;
   opacity: 0;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -376,8 +396,8 @@ async function handleEmptyTrash() {
   color: var(--me-error, #f87171);
 }
 .nt-trash-empty {
-  padding: 8px 10px;
-  font-size: 11px;
+  padding: 12px;
+  font-size: 12px;
   color: var(--me-text-muted);
   opacity: 0.5;
   text-align: center;
@@ -388,13 +408,13 @@ async function handleEmptyTrash() {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 6px;
+  padding: 8px;
   margin-top: 4px;
-  border-radius: var(--me-radius-xs);
+  border-radius: 8px;
   background: none;
   border: 1px dashed rgba(248, 113, 113, 0.3);
   color: var(--me-error, #f87171);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
   opacity: 0.7;

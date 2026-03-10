@@ -5,7 +5,7 @@ import {
   updateDossier, deleteDossier, updateCollaborators, getTags,
   uploadDossierLogo, deleteDossierLogo,
 } from '../controllers/dossierController';
-import { getUserDashboard } from '../controllers/dashboardController';
+import { getUserDashboard, getTaskStats } from '../controllers/dashboardController';
 import { upload } from '../config/upload';
 
 const router = Router();
@@ -65,6 +65,7 @@ router.use(authenticate);
  *         description: Non authentifie
  */
 router.get('/dashboard', getUserDashboard);
+router.get('/dashboard/task-stats', getTaskStats);
 
 /**
  * @swagger

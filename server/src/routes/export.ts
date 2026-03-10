@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { exportJSON } from '../controllers/exportController';
+import { exportJSON, importJSON } from '../controllers/exportController';
 
 const router = Router();
 
@@ -45,5 +45,40 @@ const router = Router();
  *         description: Dossier non trouve
  */
 router.get('/dossiers/:id/export/json', authenticate, exportJSON);
+
+/**
+ * @swagger
+ * /api/dossiers/import/json:
+ *   post:
+ *     tags: [Export]
+ *     summary: Importer un dossier depuis un fichier JSON
+ *     description: Cree un nouveau dossier a partir d'un export JSON precedent.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [dossier]
+ *             properties:
+ *               dossier:
+ *                 type: object
+ *               nodes:
+ *                 type: array
+ *               version:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Dossier importe
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Dossier'
+ *       400:
+ *         description: Donnees invalides
+ */
+router.post('/dossiers/import/json', authenticate, importJSON);
 
 export default router;

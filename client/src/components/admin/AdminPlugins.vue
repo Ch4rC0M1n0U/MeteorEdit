@@ -153,9 +153,6 @@ onMounted(load);
 </script>
 
 <style scoped>
-.admin-plugins {
-  max-width: 800px;
-}
 .admin-section-header {
   margin-bottom: 24px;
 }

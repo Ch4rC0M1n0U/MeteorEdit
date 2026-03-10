@@ -11,6 +11,29 @@ const userSchema = new Schema<IUser>(
     role: { type: String, enum: ['admin', 'user'], default: 'user' },
     isActive: { type: Boolean, default: false },
     preferences: { type: Schema.Types.Mixed, default: {} },
+    notificationPreferences: {
+      type: Schema.Types.Mixed,
+      default: {
+        inApp: {
+          'collaborator.added': true, 'collaborator.removed': true,
+          'dossier.updated': true, 'node.updated': true,
+          'mention': true, 'task.assigned': true,
+          'task.deadline': true, 'task.completed': true,
+          'dossier.shared': true, 'comment.reply': true,
+          'system.announcement': true,
+        },
+        email: {
+          'collaborator.added': false, 'collaborator.removed': false,
+          'dossier.updated': false, 'node.updated': false,
+          'mention': true, 'task.assigned': true,
+          'task.deadline': true, 'task.completed': false,
+          'dossier.shared': true, 'comment.reply': true,
+          'system.announcement': false,
+        },
+        doNotDisturb: false,
+        soundEnabled: true,
+      },
+    },
     avatarPath: { type: String, default: null },
     signature: {
       title: { type: String, default: '' },

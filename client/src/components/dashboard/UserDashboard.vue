@@ -10,7 +10,7 @@
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" style="border-radius: 4px;" />
 
     <template v-if="!loading">
-      <!-- KPI Cards -->
+      <!-- KPI Cards (always visible) -->
       <div class="dash-kpi-row fade-in">
         <div class="dash-kpi glass-card">
           <div class="dash-kpi-icon"><v-icon size="22">mdi-folder-multiple-outline</v-icon></div>
@@ -42,66 +42,106 @@
         </div>
       </div>
 
-      <!-- Charts + Recent Activity -->
-      <div class="dash-content-row fade-in fade-in-delay-1">
-        <!-- Status chart -->
-        <div class="dash-card glass-card dash-card--chart">
-          <h3 class="dash-card-title mono">Statuts des dossiers</h3>
-          <div class="dash-status-bars">
-            <div v-for="s in statusItems" :key="s.key" class="dash-status-item">
-              <div class="dash-status-head">
-                <span :class="['status-dot', `status-dot--${s.dot}`]" />
-                <span class="dash-status-name">{{ s.label }}</span>
-                <span class="dash-status-count mono">{{ s.count }}</span>
+      <!-- Tabs -->
+      <v-tabs v-model="activeTab" color="primary" density="compact" class="dash-tabs mb-4">
+        <v-tab value="overview">
+          <v-icon size="16" start>mdi-home-outline</v-icon>
+          Apercu
+        </v-tab>
+        <v-tab value="stats">
+          <v-icon size="16" start>mdi-chart-bar</v-icon>
+          Statistiques
+        </v-tab>
+        <v-tab value="activity">
+          <v-icon size="16" start>mdi-history</v-icon>
+          Activite
+        </v-tab>
+      </v-tabs>
+
+      <v-tabs-window v-model="activeTab">
+        <!-- Tab: Apercu -->
+        <v-tabs-window-item value="overview">
+          <DashboardQuickAccess
+            :last-accessed="stats.lastAccessedNodes || []"
+            :assigned-tasks="stats.assignedTasks || []"
+            @open-node="handleOpenNode"
+          />
+
+          <div v-if="stats.recentDossiers?.length" class="dash-recent fade-in">
+            <div class="dash-card glass-card">
+              <h3 class="dash-card-title mono">Dossiers recemment modifies</h3>
+              <div class="dash-recent-list">
+                <div v-for="d in stats.recentDossiers" :key="d._id" class="dash-recent-item" @click="$emit('openDossier', d._id)">
+                  <span :class="['status-dot', `status-dot--${statusDot(d.status)}`]" />
+                  <span class="dash-recent-title">{{ d.title }}</span>
+                  <span class="dash-recent-date mono">{{ formatDate(d.updatedAt) }}</span>
+                </div>
               </div>
-              <div class="dash-status-bar-bg">
-                <div class="dash-status-bar-fill" :style="{ width: s.pct + '%', background: s.color }" />
+            </div>
+          </div>
+        </v-tabs-window-item>
+
+        <!-- Tab: Statistiques -->
+        <v-tabs-window-item value="stats">
+          <DashboardStats
+            :node-counts-by-type="stats.nodeCountsByType || []"
+            :top-dossiers-this-week="stats.topDossiersThisWeek || []"
+            :streaks="stats.streaks || { current: 0, best: 0 }"
+            :weekly-trend="stats.weeklyTrend || { current: 0, previous: 0 }"
+          />
+
+          <DashboardHeatmap :heatmap="stats.heatmap || []" />
+
+          <div class="dash-content-row fade-in">
+            <div class="dash-card glass-card dash-card--chart">
+              <h3 class="dash-card-title mono">Statuts des dossiers</h3>
+              <div class="dash-status-bars">
+                <div v-for="s in statusItems" :key="s.key" class="dash-status-item">
+                  <div class="dash-status-head">
+                    <span :class="['status-dot', `status-dot--${s.dot}`]" />
+                    <span class="dash-status-name">{{ s.label }}</span>
+                    <span class="dash-status-count mono">{{ s.count }}</span>
+                  </div>
+                  <div class="dash-status-bar-bg">
+                    <div class="dash-status-bar-fill" :style="{ width: s.pct + '%', background: s.color }" />
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="dash-card-title mono mt-16">Types d'elements</h3>
+              <div class="dash-node-types">
+                <div v-for="n in nodeTypeItems" :key="n.type" class="dash-node-type">
+                  <v-icon size="16" class="dash-node-icon">{{ n.icon }}</v-icon>
+                  <span class="dash-node-label">{{ n.label }}</span>
+                  <span class="dash-node-count mono">{{ n.count }}</span>
+                </div>
               </div>
             </div>
           </div>
+        </v-tabs-window-item>
 
-          <h3 class="dash-card-title mono mt-16">Types d'elements</h3>
-          <div class="dash-node-types">
-            <div v-for="n in nodeTypeItems" :key="n.type" class="dash-node-type">
-              <v-icon size="16" class="dash-node-icon">{{ n.icon }}</v-icon>
-              <span class="dash-node-label">{{ n.label }}</span>
-              <span class="dash-node-count mono">{{ n.count }}</span>
-            </div>
+        <!-- Tab: Activite -->
+        <v-tabs-window-item value="activity">
+          <div class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
+            <h3 class="dash-card-title mono">Activite (7 jours)</h3>
+            <Line v-if="activityChartData" :data="activityChartData" :options="lineOptions" />
+            <p v-else class="dash-empty-text">Aucune activite recente</p>
           </div>
-        </div>
 
-        <!-- Activity chart + recent -->
-        <div class="dash-card glass-card dash-card--activity">
-          <h3 class="dash-card-title mono">Activite (7 jours)</h3>
-          <Line v-if="activityChartData" :data="activityChartData" :options="lineOptions" />
-          <p v-else class="dash-empty-text">Aucune activite recente</p>
-
-          <h3 class="dash-card-title mono mt-16">Activite recente</h3>
-          <div v-if="stats.recentActivity?.length" class="dash-activity-list">
-            <div v-for="act in stats.recentActivity" :key="act._id" class="dash-activity-item">
-              <v-icon size="14" class="dash-act-icon">{{ actionIcon(act.action) }}</v-icon>
-              <span class="dash-act-label">{{ actionLabel(act.action) }}</span>
-              <span v-if="act.metadata?.title" class="dash-act-target mono">{{ act.metadata.title }}</span>
-              <span class="dash-act-time mono">{{ formatTime(act.timestamp) }}</span>
+          <div class="dash-card glass-card fade-in">
+            <h3 class="dash-card-title mono">Activite recente</h3>
+            <div v-if="stats.recentActivity?.length" class="dash-activity-list">
+              <div v-for="act in stats.recentActivity" :key="act._id" class="dash-activity-item">
+                <v-icon size="14" class="dash-act-icon">{{ actionIcon(act.action) }}</v-icon>
+                <span class="dash-act-label">{{ actionLabel(act.action) }}</span>
+                <span v-if="act.metadata?.title" class="dash-act-target mono">{{ act.metadata.title }}</span>
+                <span class="dash-act-time mono">{{ formatTime(act.timestamp) }}</span>
+              </div>
             </div>
+            <p v-else class="dash-empty-text">Aucune activite cette semaine</p>
           </div>
-          <p v-else class="dash-empty-text">Aucune activite cette semaine</p>
-        </div>
-      </div>
-
-      <!-- Recent dossiers -->
-      <div v-if="stats.recentDossiers?.length" class="dash-recent fade-in fade-in-delay-2">
-        <div class="dash-card glass-card">
-          <h3 class="dash-card-title mono">Dossiers recemment modifies</h3>
-          <div class="dash-recent-list">
-            <div v-for="d in stats.recentDossiers" :key="d._id" class="dash-recent-item" @click="$emit('openDossier', d._id)">
-              <span :class="['status-dot', `status-dot--${statusDot(d.status)}`]" />
-              <span class="dash-recent-title">{{ d.title }}</span>
-              <span class="dash-recent-date mono">{{ formatDate(d.updatedAt) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        </v-tabs-window-item>
+      </v-tabs-window>
     </template>
   </div>
 </template>
@@ -114,11 +154,21 @@ import {
   LineElement, Title, Tooltip, Filler,
 } from 'chart.js';
 import api from '../../services/api';
+import DashboardQuickAccess from './DashboardQuickAccess.vue';
+import DashboardHeatmap from './DashboardHeatmap.vue';
+import DashboardStats from './DashboardStats.vue';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler);
 
-defineEmits<{ openDossier: [id: string] }>();
+const emit = defineEmits<{ openDossier: [id: string] }>();
 
+function handleOpenNode(node: any) {
+  if (node.dossierId?._id) {
+    emit('openDossier', node.dossierId._id);
+  }
+}
+
+const activeTab = ref('overview');
 const loading = ref(true);
 const stats = ref<any>({
   totalDossiers: 0, ownedDossiers: 0, collabDossiers: 0,
@@ -304,10 +354,15 @@ function formatDate(dateStr: string): string {
 .dash-kpi-value { font-size: 24px; font-weight: 700; color: var(--me-text-primary); line-height: 1; }
 .dash-kpi-label { font-size: 12px; color: var(--me-text-muted); margin-top: 2px; }
 
+/* Tabs */
+.dash-tabs {
+  border-bottom: 1px solid var(--me-border);
+}
+
 /* Content row */
 .dash-content-row {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 16px;
 }

@@ -233,7 +233,6 @@ async function removeLoginBg() {
 </script>
 
 <style scoped>
-.admin-branding { max-width: 800px; }
 .admin-section-header { margin-bottom: 24px; }
 .admin-section-title {
   font-size: 18px;

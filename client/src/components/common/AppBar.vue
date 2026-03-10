@@ -28,24 +28,32 @@
           </button>
         </template>
         <div class="me-dropdown glass-card">
-          <router-link to="/profile" class="me-dropdown-header me-dropdown-header--clickable">
-            <span class="me-dropdown-name">{{ authStore.user?.firstName }} {{ authStore.user?.lastName }}</span>
-            <span class="me-dropdown-email">{{ authStore.user?.email }}</span>
+          <router-link to="/profile" class="me-dropdown-item me-dropdown-profile">
+            <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
+            <div class="me-dropdown-profile-text">
+              <span class="me-dropdown-name">{{ authStore.user?.firstName }} {{ authStore.user?.lastName }}</span>
+              <span class="me-dropdown-email">{{ authStore.user?.email }}</span>
+            </div>
           </router-link>
           <div class="me-dropdown-divider" />
           <router-link v-if="authStore.isAdmin" to="/admin" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-shield-account</v-icon>
             Administration
           </router-link>
-          <router-link to="/templates" class="me-dropdown-item">
-            <v-icon size="16" class="mr-2">mdi-file-document-check-outline</v-icon>
-            Mes modeles
-          </router-link>
           <router-link to="/profile?section=preferences" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-cog-outline</v-icon>
             Preferences
           </router-link>
-          <button class="me-dropdown-item" @click="handleLogout">
+          <router-link to="/templates" class="me-dropdown-item">
+            <v-icon size="16" class="mr-2">mdi-file-document-check-outline</v-icon>
+            Mes modeles
+          </router-link>
+          <router-link to="/help" class="me-dropdown-item">
+            <v-icon size="16" class="mr-2">mdi-help-circle-outline</v-icon>
+            Aide
+          </router-link>
+          <div class="me-dropdown-divider" />
+          <button class="me-dropdown-item me-dropdown-item--danger" @click="handleLogout">
             <v-icon size="16" class="mr-2">mdi-logout</v-icon>
             Deconnexion
           </button>
@@ -191,21 +199,34 @@ function handleLogout() {
 .me-dropdown {
   min-width: 220px;
   padding: 8px;
+  border-color: var(--me-border) !important;
+  box-shadow: var(--me-shadow) !important;
 }
-.me-dropdown-header {
-  padding: 10px 12px;
+.me-dropdown:hover {
+  border-color: var(--me-border) !important;
+  box-shadow: var(--me-shadow) !important;
+}
+.me-dropdown-profile {
+  align-items: flex-start !important;
+}
+.me-dropdown-profile-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 .me-dropdown-name {
-  display: block;
   font-weight: 600;
   color: var(--me-text-primary);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.3;
 }
 .me-dropdown-email {
-  display: block;
   color: var(--me-text-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-family: var(--me-font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .me-dropdown-divider {
   height: 1px;
@@ -230,12 +251,18 @@ function handleLogout() {
   background: var(--me-accent-glow);
   color: var(--me-text-primary);
 }
-.me-dropdown-header--clickable {
-  text-decoration: none;
-  border-radius: var(--me-radius-xs);
-  transition: background 0.15s;
+.me-dropdown-item--danger:hover {
+  color: var(--me-error, #ef4444) !important;
 }
-.me-dropdown-header--clickable:hover {
+/* Neutralize router-link active styles in dropdown */
+.me-dropdown .router-link-active,
+.me-dropdown .router-link-exact-active {
+  color: var(--me-text-secondary);
+  background: none;
+}
+.me-dropdown .router-link-active:hover,
+.me-dropdown .router-link-exact-active:hover {
   background: var(--me-accent-glow);
+  color: var(--me-text-primary);
 }
 </style>

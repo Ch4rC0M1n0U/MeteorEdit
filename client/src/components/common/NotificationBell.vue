@@ -11,9 +11,21 @@
         <button v-if="unreadCount > 0" class="notif-mark-all" @click="handleMarkAllRead">Tout lire</button>
       </div>
 
+      <div class="notif-filters">
+        <button
+          v-for="f in filters"
+          :key="f.key"
+          class="notif-filter-btn"
+          :class="{ active: activeFilter === f.key }"
+          @click="activeFilter = f.key"
+        >
+          {{ f.label }}
+        </button>
+      </div>
+
       <div class="notif-dropdown-list">
         <div
-          v-for="notif in notifications"
+          v-for="notif in filteredNotifications"
           :key="notif._id"
           class="notif-item"
           :class="{ 'notif-item--unread': !notif.read }"
@@ -29,7 +41,7 @@
           <span v-if="!notif.read" class="notif-unread-dot" />
         </div>
 
-        <div v-if="notifications.length === 0" class="notif-empty">
+        <div v-if="filteredNotifications.length === 0" class="notif-empty">
           Aucune notification
         </div>
       </div>
@@ -38,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useNotifications } from '../../composables/useNotifications';
 import { useDossierStore } from '../../stores/dossier';
 
@@ -47,6 +59,26 @@ const dossierStore = useDossierStore();
 
 const open = ref(false);
 const wrapperRef = ref<HTMLElement | null>(null);
+
+const activeFilter = ref('all');
+const filters = [
+  { key: 'all', label: 'Tout' },
+  { key: 'tasks', label: 'Taches' },
+  { key: 'collab', label: 'Collaborations' },
+  { key: 'system', label: 'Systeme' },
+];
+
+const filterMap: Record<string, string[]> = {
+  tasks: ['task.assigned', 'task.deadline', 'task.completed'],
+  collab: ['collaborator.added', 'collaborator.removed', 'dossier.updated', 'dossier.shared', 'node.updated', 'mention', 'comment.reply'],
+  system: ['system.announcement'],
+};
+
+const filteredNotifications = computed(() => {
+  if (activeFilter.value === 'all') return notifications.value;
+  const types = filterMap[activeFilter.value] || [];
+  return notifications.value.filter(n => types.includes(n.type));
+});
 
 function toggleDropdown() {
   open.value = !open.value;
@@ -256,4 +288,16 @@ onUnmounted(() => {
   color: var(--me-text-muted);
   font-size: 13px;
 }
+
+.notif-filters {
+  display: flex; gap: 4px; padding: 8px 16px;
+  border-bottom: 1px solid var(--me-border);
+}
+.notif-filter-btn {
+  background: none; border: none; padding: 4px 10px;
+  border-radius: var(--me-radius-xs); font-size: 12px;
+  color: var(--me-text-muted); cursor: pointer; transition: all 0.15s;
+}
+.notif-filter-btn:hover { background: var(--me-accent-glow); color: var(--me-accent); }
+.notif-filter-btn.active { background: var(--me-accent); color: var(--me-bg-deep); font-weight: 600; }
 </style>

@@ -24,6 +24,7 @@
       <ProfileSecurity v-else-if="activeSection === 'security'" />
       <ProfileTemplate v-else-if="activeSection === 'template'" />
       <ProfilePreferences v-else-if="activeSection === 'preferences'" />
+      <NotificationPreferences v-else-if="activeSection === 'notifications'" />
     </main>
   </div>
 </template>
@@ -35,6 +36,7 @@ import ProfileInfo from '../components/profile/ProfileInfo.vue';
 import ProfileSecurity from '../components/profile/ProfileSecurity.vue';
 import ProfilePreferences from '../components/profile/ProfilePreferences.vue';
 import ProfileTemplate from '../components/profile/ProfileTemplate.vue';
+import NotificationPreferences from '../components/profile/NotificationPreferences.vue';
 
 const route = useRoute();
 const activeSection = ref('info');
@@ -44,6 +46,7 @@ const sections = [
   { id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
   { id: 'template', label: 'Template rapport', icon: 'mdi-file-document-edit-outline' },
   { id: 'preferences', label: 'Preferences', icon: 'mdi-cog-outline' },
+  { id: 'notifications', label: 'Notifications', icon: 'mdi-bell-cog-outline' },
 ];
 
 onMounted(() => {

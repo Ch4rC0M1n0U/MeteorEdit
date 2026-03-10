@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { JwtPayload } from '../types';
+import User from '../models/User';
 
 const onlineUsers = new Set<string>();
 let ioInstance: Server | null = null;
@@ -9,6 +10,9 @@ const userSockets = new Map<string, Set<string>>();
 
 // Track map presence per nodeId: nodeId -> Map<userId, user data>
 const mapPresence = new Map<string, Map<string, any>>();
+
+// Track dossier presence per dossierId: dossierId -> Map<userId, user data>
+const dossierPresence = new Map<string, Map<string, any>>();
 
 export function getOnlineUsers(): Set<string> {
   return onlineUsers;
@@ -61,13 +65,51 @@ export function setupSocket(httpServer: HttpServer) {
       socket.emit('online-count', onlineUsers.size);
     }
 
-    socket.on('join-dossier', (dossierId: string) => {
+    socket.on('join-dossier', async (dossierId: string) => {
       socket.join(`dossier:${dossierId}`);
-      socket.to(`dossier:${dossierId}`).emit('user-joined', { userId: user.userId });
+
+      // Fetch user info for presence
+      try {
+        const dbUser = await User.findById(user.userId).select('firstName lastName avatarPath').lean();
+        if (dbUser) {
+          const userData = {
+            userId: user.userId,
+            firstName: dbUser.firstName,
+            lastName: dbUser.lastName,
+            avatarPath: dbUser.avatarPath || null,
+            initials: `${dbUser.firstName[0] || ''}${dbUser.lastName[0] || ''}`.toUpperCase(),
+          };
+
+          // Store presence
+          if (!dossierPresence.has(dossierId)) dossierPresence.set(dossierId, new Map());
+          const presenceMap = dossierPresence.get(dossierId)!;
+          presenceMap.set(user.userId, userData);
+
+          // Send existing users to the joiner (excluding self)
+          const existingUsers = Array.from(presenceMap.values()).filter(u => u.userId !== user.userId);
+          if (existingUsers.length) {
+            socket.emit('dossier-presence-list', { dossierId, users: existingUsers });
+          }
+
+          // Broadcast join to others
+          socket.to(`dossier:${dossierId}`).emit('user-joined', userData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user for presence:', err);
+        socket.to(`dossier:${dossierId}`).emit('user-joined', { userId: user.userId });
+      }
     });
 
     socket.on('leave-dossier', (dossierId: string) => {
       socket.leave(`dossier:${dossierId}`);
+
+      // Remove from dossier presence
+      const presenceMap = dossierPresence.get(dossierId);
+      if (presenceMap) {
+        presenceMap.delete(user.userId);
+        if (presenceMap.size === 0) dossierPresence.delete(dossierId);
+      }
+
       socket.to(`dossier:${dossierId}`).emit('user-left', { userId: user.userId });
     });
 
@@ -220,6 +262,16 @@ export function setupSocket(httpServer: HttpServer) {
         if (nodePresence.has(user.userId)) {
           nodePresence.delete(user.userId);
           if (nodePresence.size === 0) mapPresence.delete(nodeId);
+        }
+      }
+
+      // Clean up dossier presence for this user
+      for (const [dossierId, presenceMap] of dossierPresence) {
+        if (presenceMap.has(user.userId)) {
+          presenceMap.delete(user.userId);
+          if (presenceMap.size === 0) dossierPresence.delete(dossierId);
+          // Notify others in the dossier room
+          io.to(`dossier:${dossierId}`).emit('user-left', { userId: user.userId });
         }
       }
     });

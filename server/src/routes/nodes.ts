@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
 import {
   getNodes, createNode, updateNode,
-  deleteNode, moveNode, uploadFile, uploadImage, mentionUser,
+  deleteNode, moveNode, duplicateNode, uploadFile, uploadImage, deleteUploadedFile, mentionUser,
   getTrash, restoreNode, purgeNode, emptyTrash,
 } from '../controllers/nodeController';
 import { getComments, createComment, deleteComment, getCommentCount } from '../controllers/commentController';
@@ -235,6 +235,34 @@ router.delete('/nodes/:nodeId', deleteNode);
  *         description: Noeud non trouve
  */
 router.patch('/nodes/:nodeId/move', moveNode);
+
+/**
+ * @swagger
+ * /api/nodes/{nodeId}/duplicate:
+ *   post:
+ *     tags: [Nodes]
+ *     summary: Dupliquer un noeud avec son contenu
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: nodeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       201:
+ *         description: Noeud duplique
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DossierNode'
+ *       403:
+ *         description: Acces refuse
+ *       404:
+ *         description: Noeud non trouve
+ */
+router.post('/nodes/:nodeId/duplicate', duplicateNode);
 
 /**
  * @swagger
@@ -508,5 +536,25 @@ router.delete('/comments/:commentId', deleteComment);
  *         description: Aucun fichier fourni
  */
 router.post('/upload/image', upload.single('image'), uploadImage);
+
+/**
+ * @swagger
+ * /api/upload/{filename}:
+ *   delete:
+ *     tags: [Nodes]
+ *     summary: Supprimer un fichier uploade
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Fichier supprime
+ */
+router.delete('/upload/*filepath', deleteUploadedFile);
 
 export default router;

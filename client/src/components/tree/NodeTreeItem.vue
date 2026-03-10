@@ -27,7 +27,18 @@
       <span v-else class="nti-chevron-spacer" />
 
       <v-icon size="16" class="nti-icon">{{ icon }}</v-icon>
-      <span class="nti-title">{{ node.title }}</span>
+      <input
+        v-if="renaming"
+        ref="renameInputRef"
+        v-model="renameValue"
+        class="nti-rename-input"
+        @keyup.enter="confirmRename"
+        @keyup.escape="cancelRename"
+        @blur="confirmRename"
+        @click.stop
+      />
+      <span v-else class="nti-title" @dblclick.stop="startRename">{{ node.title }}</span>
+      <EvidenceBadge v-if="node.fileHash" :file-hash="node.fileHash" :last-status="node.lastVerificationStatus" />
 
       <v-menu v-model="showMenu" location="end">
         <template #activator="{ props }">
@@ -51,6 +62,12 @@
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'dataset', node._id)">
             <v-icon size="14">mdi-table</v-icon> Dataset
           </button>
+          <button class="nti-ctx-item" @click="showMenu = false; startRename()">
+            <v-icon size="14">mdi-pencil-outline</v-icon> Renommer
+          </button>
+          <button class="nti-ctx-item" @click="showMenu = false; $emit('duplicate', node._id)">
+            <v-icon size="14">mdi-content-copy</v-icon> Dupliquer
+          </button>
           <button class="nti-ctx-item nti-ctx-danger" @click="handleDelete">
             <v-icon size="14">mdi-trash-can-outline</v-icon> Supprimer
           </button>
@@ -65,26 +82,54 @@
         :node="child"
         :all-nodes="allNodes"
         @create="(type, parentId) => $emit('create', type, parentId)"
+        @duplicate="(nodeId) => $emit('duplicate', nodeId)"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
 import type { DossierNode } from '../../types';
+import EvidenceBadge from '../evidence/EvidenceBadge.vue';
 
 const props = defineProps<{ node: DossierNode; allNodes: DossierNode[] }>();
-defineEmits<{ create: [type: string, parentId: string] }>();
+defineEmits<{ create: [type: string, parentId: string]; duplicate: [nodeId: string] }>();
 
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const showMenu = ref(false);
 const dropPosition = ref<'before' | 'after' | 'inside' | null>(null);
 const expanded = ref(true);
+
+// Inline rename
+const renaming = ref(false);
+const renameValue = ref('');
+const renameInputRef = ref<HTMLInputElement | null>(null);
+
+function startRename() {
+  renaming.value = true;
+  renameValue.value = props.node.title;
+  nextTick(() => {
+    renameInputRef.value?.focus();
+    renameInputRef.value?.select();
+  });
+}
+
+async function confirmRename() {
+  if (!renaming.value) return;
+  renaming.value = false;
+  const trimmed = renameValue.value.trim();
+  if (!trimmed || trimmed === props.node.title) return;
+  await dossierStore.updateNode(props.node._id, { title: trimmed });
+}
+
+function cancelRename() {
+  renaming.value = false;
+}
 
 const icon = computed(() => {
   if (props.node.type === 'folder') {
@@ -204,11 +249,11 @@ async function onDrop(e: DragEvent) {
 .nti-item {
   display: flex;
   align-items: center;
-  padding: 5px 6px;
-  border-radius: var(--me-radius-xs);
+  padding: 6px 8px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
-  gap: 4px;
+  gap: 6px;
   position: relative;
 }
 .nti-item:hover {
@@ -217,8 +262,6 @@ async function onDrop(e: DragEvent) {
 .nti-item.active {
   background: var(--me-accent-glow);
   color: var(--me-accent);
-  border-left: 2px solid var(--me-accent);
-  padding-left: 4px;
 }
 .nti-item.active .nti-icon {
   color: var(--me-accent);
@@ -228,8 +271,8 @@ async function onDrop(e: DragEvent) {
   font-weight: 600;
 }
 .nti-chevron {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -237,7 +280,7 @@ async function onDrop(e: DragEvent) {
   border: none;
   color: var(--me-text-muted);
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: 4px;
   flex-shrink: 0;
   padding: 0;
   transition: all 0.15s;
@@ -247,7 +290,7 @@ async function onDrop(e: DragEvent) {
   color: var(--me-text-primary);
 }
 .nti-chevron-spacer {
-  width: 20px;
+  width: 22px;
   flex-shrink: 0;
 }
 .nti-icon {
@@ -256,11 +299,23 @@ async function onDrop(e: DragEvent) {
 }
 .nti-title {
   flex: 1;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--me-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.nti-rename-input {
+  flex: 1;
+  font-size: 14px;
+  color: var(--me-text-primary);
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  outline: none;
+  min-width: 0;
+  font-family: inherit;
 }
 .nti-item.active .nti-title {
   color: var(--me-accent);
@@ -273,7 +328,7 @@ async function onDrop(e: DragEvent) {
   border: none;
   color: var(--me-text-muted);
   cursor: pointer;
-  padding: 2px;
+  padding: 3px;
   border-radius: 4px;
   opacity: 0;
   transition: all 0.15s;
@@ -286,14 +341,14 @@ async function onDrop(e: DragEvent) {
   color: var(--me-text-primary);
 }
 .nti-children {
-  margin-left: 12px;
+  margin-left: 14px;
   border-left: 1px solid var(--me-border);
-  padding-left: 4px;
+  padding-left: 6px;
 }
 .nti-drop-inside {
   outline: 2px dashed var(--me-accent);
   outline-offset: -2px;
-  border-radius: var(--me-radius-xs);
+  border-radius: 8px;
   background: rgba(59, 130, 246, 0.06);
 }
 .nti-drop-before {
@@ -304,19 +359,19 @@ async function onDrop(e: DragEvent) {
 }
 .nti-context-menu {
   padding: 6px;
-  min-width: 160px;
+  min-width: 180px;
 }
 .nti-ctx-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 7px 10px;
-  border-radius: var(--me-radius-xs);
+  padding: 8px 12px;
+  border-radius: 8px;
   background: none;
   border: none;
   color: var(--me-text-secondary);
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
 }

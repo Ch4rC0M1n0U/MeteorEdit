@@ -23,9 +23,11 @@ import reportTemplateRoutes from './routes/reportTemplates';
 import taskRoutes from './routes/tasks';
 import clipperRoutes from './routes/clipper';
 import encryptionRoutes from './routes/encryption';
+import evidenceRoutes from './routes/evidence';
 import SiteSettings from './models/SiteSettings';
 import { startYjsServer } from './yjs-server';
 import { checkMaintenance, loadMaintenanceState } from './middleware/maintenance';
+import { startTrashPurgeJob } from './jobs/trashPurge';
 
 dotenv.config();
 
@@ -80,6 +82,7 @@ app.use('/api', snapshotRoutes);
 app.use('/api', taskRoutes);
 app.use('/api/clip', clipperRoutes);
 app.use('/api/encryption', encryptionRoutes);
+app.use('/api', evidenceRoutes);
 
 setupSocket(httpServer);
 
@@ -97,6 +100,7 @@ async function start() {
 
   const yjsPort = parseInt(process.env.YJS_PORT || '3002');
   startYjsServer(yjsPort);
+  startTrashPurgeJob();
 }
 
 start().catch(console.error);

@@ -324,7 +324,9 @@ import { useEncryptionStore } from '../../stores/encryption';
 import api, { SERVER_URL } from '../../services/api';
 import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
+import { useConfirm } from '../../composables/useConfirm';
 
+const { prompt: customPrompt, confirm: customConfirm } = useConfirm();
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
 const encryptionStore = useEncryptionStore();
@@ -588,7 +590,13 @@ async function generateEncryptionKeys() {
   generatingKeys.value = true;
   try {
     // Prompt user for password to protect the private key
-    const password = prompt('Entrez votre mot de passe pour proteger vos cles de chiffrement :');
+    const password = await customPrompt({
+      title: 'Chiffrement E2E',
+      message: 'Entrez votre mot de passe pour proteger vos cles de chiffrement :',
+      promptLabel: 'Mot de passe',
+      confirmText: 'Generer les cles',
+      promptType: 'password',
+    });
     if (!password) return;
     await encryptionStore.initializeKeys(password);
   } catch (err) {
@@ -608,12 +616,12 @@ async function toggleEncryption(newValue: boolean | null) {
       // Enable encryption
       if (!encryptionStore.hasKeys) {
         encryptionEnabled.value = false;
-        alert('Vous devez d\'abord generer vos cles de chiffrement.');
+        await customConfirm({ title: 'Chiffrement', message: 'Vous devez d\'abord generer vos cles de chiffrement.', confirmText: 'OK', cancelText: '' });
         return;
       }
       if (!encryptionStore.isUnlocked) {
         encryptionEnabled.value = false;
-        alert('Vos cles de chiffrement sont verrouillees. Reconnectez-vous.');
+        await customConfirm({ title: 'Chiffrement', message: 'Vos cles de chiffrement sont verrouillees. Reconnectez-vous.', confirmText: 'OK', cancelText: '' });
         return;
       }
 
@@ -660,7 +668,7 @@ async function toggleEncryption(newValue: boolean | null) {
       // Disable encryption - decrypt all content first
       if (!encryptionStore.isUnlocked) {
         encryptionEnabled.value = true;
-        alert('Vos cles de chiffrement sont verrouillees. Reconnectez-vous pour desactiver le chiffrement.');
+        await customConfirm({ title: 'Chiffrement', message: 'Vos cles de chiffrement sont verrouillees. Reconnectez-vous pour desactiver le chiffrement.', confirmText: 'OK', cancelText: '' });
         return;
       }
 
@@ -788,6 +796,8 @@ async function removeCollaborator(userId: string) {
   max-width: 800px;
   margin: 0 auto;
   padding: 32px 24px;
+  height: 100%;
+  overflow-y: auto;
 }
 /* Icon / Logo section */
 .di-icon-section { padding: 16px 20px; }

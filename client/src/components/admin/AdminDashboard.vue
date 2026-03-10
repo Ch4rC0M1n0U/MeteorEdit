@@ -195,7 +195,6 @@ function formatDate(dateStr: string): string {
 </script>
 
 <style scoped>
-.admin-dashboard { max-width: 1100px; }
 .admin-section-header { margin-bottom: 20px; }
 .admin-section-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
 .mb-4 { margin-bottom: 16px; }

@@ -186,3 +186,30 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     res.status(401).json({ message: 'Invalid refresh token' });
   }
 }
+
+export async function getNotificationPreferences(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const user = await User.findById(req.user!.userId).select('notificationPreferences');
+    res.json(user?.notificationPreferences || {});
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function updateNotificationPreferences(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { inApp, email, doNotDisturb, soundEnabled } = req.body;
+    const update: Record<string, any> = {};
+
+    if (typeof inApp === 'object') update['notificationPreferences.inApp'] = inApp;
+    if (typeof email === 'object') update['notificationPreferences.email'] = email;
+    if (typeof doNotDisturb === 'boolean') update['notificationPreferences.doNotDisturb'] = doNotDisturb;
+    if (typeof soundEnabled === 'boolean') update['notificationPreferences.soundEnabled'] = soundEnabled;
+
+    const user = await User.findByIdAndUpdate(req.user!.userId, { $set: update }, { new: true })
+      .select('notificationPreferences');
+    res.json(user?.notificationPreferences || {});
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
