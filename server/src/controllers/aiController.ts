@@ -125,7 +125,8 @@ export async function pullOllamaModel(req: AuthRequest, res: Response) {
     }
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'ai.model_pull', 'system', null, { model }, ip);
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(req.user!.userId, 'ai.model_pull', 'system', null, { model }, ip, ua);
     sendEvent({ type: 'done', message: `Modele ${model} telecharge avec succes` });
   } catch (err: any) {
     if (err.name === 'AbortError') {
@@ -168,7 +169,8 @@ export async function deleteOllamaModel(req: AuthRequest, res: Response) {
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'ai.model_delete', 'system', null, { model: modelName }, ip);
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(req.user!.userId, 'ai.model_delete', 'system', null, { model: modelName }, ip, ua);
     res.json({ message: `Modele ${modelName} supprime` });
   } catch (err: any) {
     res.status(502).json({ message: `Erreur suppression: ${err.message}` });
@@ -188,7 +190,8 @@ export async function updateOllamaSettings(req: AuthRequest, res: Response) {
 
   await settings.save();
   const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-  await logActivity(req.user!.userId, 'settings.ai_update', 'system', null, { baseUrl, selectedModel, enabled }, ip);
+  const ua = req.headers['user-agent'] || '';
+  await logActivity(req.user!.userId, 'settings.ai_update', 'system', null, { baseUrl, selectedModel, enabled }, ip, ua);
   res.json(settings.ollama);
 }
 
@@ -364,7 +367,8 @@ export async function generateReport(req: AuthRequest, res: Response) {
     }
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(userId, 'ai.generate_report', 'dossier', dossierId, { model: config.selectedModel, title: dossier.title }, ip);
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'ai.generate_report', 'dossier', dossierId, { model: config.selectedModel, title: dossier.title }, ip, ua);
 
     sendEvent({
       type: 'done',
@@ -439,7 +443,8 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
     await dossier.save();
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(userId, 'entity.enrich', 'dossier', dossierId, { entityName: entity.name, entityType: entity.type }, ip);
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'entity.enrich', 'dossier', dossierId, { entityName: entity.name, entityType: entity.type }, ip, ua);
 
     res.json({ description: enrichedDescription });
   } catch (err: any) {
@@ -516,7 +521,8 @@ Fournis un resume structure en points cles (bullet points). Sois concis mais com
     const data = await response.json() as { response?: string };
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(userId, 'ai.summarize', nodeId ? 'node' : 'dossier', nodeId || dossierId, { title: targetTitle }, ip);
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'ai.summarize', nodeId ? 'node' : 'dossier', nodeId || dossierId, { title: targetTitle }, ip, ua);
 
     res.json({ summary: data.response?.trim() || '' });
   } catch (err: any) {

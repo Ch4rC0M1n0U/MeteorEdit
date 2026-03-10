@@ -2,10 +2,13 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '../services/api';
 import type { User, LoginResponse } from '../types';
+import { useEncryptionStore } from './encryption';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const loading = ref(false);
+  // Temporarily cached password for 2FA flow (cleared after use)
+  let pendingPassword: string | null = null;
 
   const isAuthenticated = computed(() => !!user.value);
   const isAdmin = computed(() => user.value?.role === 'admin');
@@ -15,11 +18,20 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { data } = await api.post<LoginResponse & { requires2FA?: boolean; tempToken?: string }>('/auth/login', { email, password });
       if (data.requires2FA) {
+        pendingPassword = password;
         return { requires2FA: true, tempToken: data.tempToken };
       }
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       user.value = data.user;
+
+      // Try to unlock encryption keys after login
+      const encStore = useEncryptionStore();
+      const hasKeys = await encStore.checkKeys();
+      if (hasKeys) {
+        await encStore.unlockKeys(password);
+      }
+
       return {};
     } finally {
       loading.value = false;
@@ -33,6 +45,16 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       user.value = data.user;
+
+      // Unlock encryption keys using cached password from login step
+      if (pendingPassword) {
+        const encStore = useEncryptionStore();
+        const hasKeys = await encStore.checkKeys();
+        if (hasKeys) {
+          await encStore.unlockKeys(pendingPassword);
+        }
+        pendingPassword = null;
+      }
     } finally {
       loading.value = false;
     }
@@ -60,6 +82,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null;
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    pendingPassword = null;
+    const encStore = useEncryptionStore();
+    encStore.lockKeys();
   }
 
   async function init() {

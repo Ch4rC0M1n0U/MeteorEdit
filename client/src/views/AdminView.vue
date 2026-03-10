@@ -31,6 +31,7 @@
       <AdminBranding v-else-if="activeSection === 'branding'" />
       <AdminSecurity v-else-if="activeSection === 'security'" />
       <AdminActivity v-else-if="activeSection === 'activity'" />
+      <AdminAudit v-else-if="activeSection === 'audit'" />
       <AdminPlugins v-else-if="activeSection === 'plugins'" />
       <AdminAI v-else-if="activeSection === 'ai'" />
     </main>
@@ -44,6 +45,7 @@ import AdminUsers from '../components/admin/AdminUsers.vue';
 import AdminBranding from '../components/admin/AdminBranding.vue';
 import AdminSecurity from '../components/admin/AdminSecurity.vue';
 import AdminActivity from '../components/admin/AdminActivity.vue';
+import AdminAudit from '../components/admin/AdminAudit.vue';
 import AdminPlugins from '../components/admin/AdminPlugins.vue';
 import AdminAI from '../components/admin/AdminAI.vue';
 
@@ -55,6 +57,7 @@ const navItems: Array<{ type: 'group'; label: string; id?: undefined; icon?: und
   { type: 'group', label: 'Gestion' },
   { type: 'item', id: 'users', label: 'Utilisateurs', icon: 'mdi-account-group-outline' },
   { type: 'item', id: 'activity', label: 'Activite', icon: 'mdi-history' },
+  { type: 'item', id: 'audit', label: 'Audit', icon: 'mdi-shield-check' },
   { type: 'group', label: 'Configuration' },
   { type: 'item', id: 'branding', label: 'Apparence', icon: 'mdi-palette-outline' },
   { type: 'item', id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },

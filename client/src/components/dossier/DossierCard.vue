@@ -5,15 +5,21 @@
         <span :class="['status-dot', `status-dot--${statusDot}`]" />
         <span class="dc-status-label mono">{{ statusLabel }}</span>
       </div>
-      <button class="dc-delete" @click.stop="$emit('delete', dossier._id)" title="Supprimer">
-        <v-icon size="16">mdi-trash-can-outline</v-icon>
-      </button>
+      <div class="dc-actions">
+        <button class="dc-fav" :class="{ 'dc-fav--active': isFav }" @click.stop="$emit('toggle-favorite', dossier._id)" :title="isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'">
+          <v-icon size="16">{{ isFav ? 'mdi-star' : 'mdi-star-outline' }}</v-icon>
+        </button>
+        <button class="dc-delete" @click.stop="$emit('delete', dossier._id)" title="Supprimer">
+          <v-icon size="16">mdi-trash-can-outline</v-icon>
+        </button>
+      </div>
     </div>
     <div class="dc-title-row">
       <img v-if="logoUrl" :src="logoUrl" alt="" class="dc-logo" />
       <v-icon v-else-if="dossier.icon" size="22" class="dc-icon">{{ dossier.icon }}</v-icon>
       <v-icon v-else size="22" class="dc-icon dc-icon-default">mdi-folder-outline</v-icon>
       <h3 class="dc-title">{{ dossier.title }}</h3>
+      <v-icon v-if="dossier.isEncrypted" size="16" class="dc-lock" title="Chiffrement E2E actif">mdi-lock-outline</v-icon>
     </div>
     <div v-if="dossier.tags?.length" class="dc-tags">
       <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>
@@ -30,8 +36,8 @@ import { computed } from 'vue';
 import type { Dossier } from '../../types';
 import { SERVER_URL } from '../../services/api';
 
-const props = defineProps<{ dossier: Dossier }>();
-defineEmits<{ open: [id: string]; delete: [id: string] }>();
+const props = defineProps<{ dossier: Dossier; isFav?: boolean }>();
+defineEmits<{ open: [id: string]; delete: [id: string]; 'toggle-favorite': [id: string] }>();
 
 const logoUrl = computed(() => {
   return props.dossier.logoPath ? `${SERVER_URL}/${props.dossier.logoPath}` : null;
@@ -84,6 +90,32 @@ const statusLabel = computed(() => {
   letter-spacing: 1px;
   color: var(--me-text-muted);
 }
+.dc-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.dc-fav {
+  background: none;
+  border: none;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.15s;
+}
+.dc-fav--active {
+  opacity: 1 !important;
+  color: var(--me-accent);
+}
+.dossier-card:hover .dc-fav {
+  opacity: 1;
+}
+.dc-fav:hover {
+  color: var(--me-accent);
+  background: rgba(var(--me-accent-rgb, 59, 130, 246), 0.1);
+}
 .dc-delete {
   background: none;
   border: none;
@@ -119,6 +151,12 @@ const statusLabel = computed(() => {
 }
 .dc-icon-default {
   color: var(--me-text-muted);
+}
+.dc-lock {
+  color: var(--me-accent);
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 .dc-title {
   font-size: 17px;

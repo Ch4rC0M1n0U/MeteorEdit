@@ -52,7 +52,8 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
     const user = await User.create({ email, password, firstName, lastName });
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(user._id.toString(), 'register', 'user', user._id.toString(), { email: user.email }, ip);
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(user._id.toString(), 'auth.register', 'user', user._id.toString(), { email: user.email }, ip, ua);
     res.status(201).json({
       message: 'Account created. Waiting for admin activation.',
       user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName },
@@ -65,6 +66,9 @@ export async function register(req: Request, res: Response): Promise<void> {
 export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body;
+    const ua = req.headers['user-agent'] || '';
+    const rawIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || req.socket.remoteAddress || '';
+    const ip = rawIp.replace('::ffff:', '');
     const user = await User.findOne({ email });
     if (!user) {
       res.status(401).json({ message: 'Invalid credentials' });
@@ -72,10 +76,12 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
     const isMatch = await (user as any).comparePassword(password);
     if (!isMatch) {
+      await logActivity(user._id.toString(), 'auth.login_failed', 'system', null, { email, reason: 'bad_password' }, ip, ua);
       res.status(401).json({ message: 'Invalid credentials' });
       return;
     }
     if (!user.isActive) {
+      await logActivity(user._id.toString(), 'auth.login_failed', 'system', null, { email, reason: 'inactive_account' }, ip, ua);
       res.status(403).json({ message: 'Account not activated. Contact admin.' });
       return;
     }
@@ -83,11 +89,10 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     // Track login
     user.lastLoginAt = new Date();
-    const rawIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || req.socket.remoteAddress || '';
-    user.lastLoginIp = rawIp.replace('::ffff:', '');
+    user.lastLoginIp = ip;
     await user.save();
     await LoginLog.create({ userId: user._id, ip: user.lastLoginIp });
-    await logActivity(user._id.toString(), 'login', 'system', null, {}, user.lastLoginIp || '');
+    await logActivity(user._id.toString(), 'auth.login', 'system', null, { email }, user.lastLoginIp || '', ua);
 
     // Check if 2FA is enabled
     if (user.twoFactorEnabled) {
@@ -159,7 +164,8 @@ export async function uploadTemplateLogo(req: AuthRequest, res: Response): Promi
     }
     const filePath = `uploads/${req.file.filename}`;
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.template_logo_upload', 'user', req.user!.userId, { slot: req.body.slot }, ip);
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(req.user!.userId, 'profile.template_logo_upload', 'user', req.user!.userId, { slot: req.body.slot }, ip, ua);
     res.json({ path: filePath });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

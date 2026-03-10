@@ -22,6 +22,9 @@ export interface IUser extends Document {
   twoFactorEnabled: boolean;
   twoFactorSecret: string | null;
   twoFactorBackupCodes: string[];
+  encryptionPublicKey: string | null;
+  encryptionPrivateKey: string | null;
+  encryptionSalt: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +61,8 @@ export interface IDossier extends Document {
   investigator: IInvestigator;
   owner: Types.ObjectId;
   collaborators: Types.ObjectId[];
+  encryptionKeys: { userId: Types.ObjectId; encryptedKey: string }[];
+  isEncrypted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,7 +70,7 @@ export interface IDossier extends Document {
 export interface IDossierNode extends Document {
   dossierId: Types.ObjectId;
   parentId: Types.ObjectId | null;
-  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map';
+  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset';
   title: string;
   order: number;
   content: any | null;
@@ -109,10 +114,11 @@ export interface ISiteSettings extends Document {
 export interface IActivityLog extends Document {
   userId: Types.ObjectId;
   action: string;
-  targetType: 'dossier' | 'user' | 'system';
+  targetType: 'dossier' | 'user' | 'system' | 'node';
   targetId: Types.ObjectId | null;
   metadata: Record<string, any>;
   ip: string;
+  userAgent: string;
   timestamp: Date;
 }
 
@@ -133,7 +139,7 @@ export interface IPluginSettings extends Document {
 
 export interface INotification extends Document {
   userId: Types.ObjectId;
-  type: 'collaborator.added' | 'collaborator.removed' | 'dossier.updated' | 'node.updated';
+  type: 'collaborator.added' | 'collaborator.removed' | 'dossier.updated' | 'node.updated' | 'mention' | 'task.assigned';
   message: string;
   dossierId: Types.ObjectId | null;
   fromUserId: Types.ObjectId | null;

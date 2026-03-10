@@ -25,6 +25,9 @@ const userSchema = new Schema<IUser>(
     twoFactorEnabled: { type: Boolean, default: false },
     twoFactorSecret: { type: String, default: null },
     twoFactorBackupCodes: [{ type: String }],
+    encryptionPublicKey: { type: String, default: null },
+    encryptionPrivateKey: { type: String, default: null },
+    encryptionSalt: { type: String, default: null },
   },
   { timestamps: true }
 );

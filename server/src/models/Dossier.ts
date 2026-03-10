@@ -29,6 +29,11 @@ const dossierSchema = new Schema<IDossier>(
     investigator: { type: investigatorSchema, default: () => ({}) },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     collaborators: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    encryptionKeys: [{
+      userId: { type: Schema.Types.ObjectId, ref: 'User' },
+      encryptedKey: { type: String },
+    }],
+    isEncrypted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -27,7 +27,7 @@ export async function createDossier(req: AuthRequest, res: Response): Promise<vo
       owner: req.user!.userId,
     });
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.create', 'dossier', dossier._id.toString(), { title: dossier.title }, ip);
+    await logActivity(req.user!.userId, 'dossier.create', 'dossier', dossier._id.toString(), { title: dossier.title }, ip, req.headers['user-agent'] || '');
     res.status(201).json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -67,7 +67,7 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
     Object.assign(dossier, req.body);
     await dossier.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title }, ip);
+    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title }, ip, req.headers['user-agent'] || '');
     if (dossier.collaborators.length > 0) {
       const actor = await User.findById(req.user!.userId).select('firstName lastName');
       const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Un utilisateur';
@@ -98,7 +98,7 @@ export async function deleteDossier(req: AuthRequest, res: Response): Promise<vo
     await DossierNode.deleteMany({ dossierId: dossier._id });
     await dossier.deleteOne();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.delete', 'dossier', req.params.id as string, { title: dossier.title }, ip);
+    await logActivity(req.user!.userId, 'dossier.delete', 'dossier', req.params.id as string, { title: dossier.title }, ip, req.headers['user-agent'] || '');
     res.json({ message: 'Dossier deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -123,8 +123,9 @@ export async function updateCollaborators(req: AuthRequest, res: Response): Prom
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const added = currentCollabs.filter(c => !previousCollabs.includes(c));
     const removed = previousCollabs.filter(c => !currentCollabs.includes(c));
-    for (const uid of added) await logActivity(req.user!.userId, 'collaborator.add', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip);
-    for (const uid of removed) await logActivity(req.user!.userId, 'collaborator.remove', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip);
+    const ua = req.headers['user-agent'] || '';
+    for (const uid of added) await logActivity(req.user!.userId, 'collaborator.add', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip, ua);
+    for (const uid of removed) await logActivity(req.user!.userId, 'collaborator.remove', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip, ua);
     const actor = await User.findById(req.user!.userId).select('firstName lastName');
     const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Un utilisateur';
     for (const uid of added) {
@@ -166,7 +167,7 @@ export async function uploadDossierLogo(req: AuthRequest, res: Response): Promis
     dossier.icon = null;
     await dossier.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_upload' }, ip);
+    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_upload' }, ip, req.headers['user-agent'] || '');
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -185,7 +186,7 @@ export async function deleteDossierLogo(req: AuthRequest, res: Response): Promis
       await dossier.save();
     }
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_delete' }, ip);
+    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_delete' }, ip, req.headers['user-agent'] || '');
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

@@ -31,6 +31,8 @@ export interface Dossier {
   investigator: Investigator;
   owner: string;
   collaborators: (string | CollaboratorUser)[];
+  encryptionKeys: { userId: string; encryptedKey: string }[];
+  isEncrypted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,10 +73,11 @@ export interface DossierNode {
   _id: string;
   dossierId: string;
   parentId: string | null;
-  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map';
+  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset';
   title: string;
   order: number;
   content: any | null;
+  contentText: string | null;
   excalidrawData: any | null;
   mapData: any | null;
   fileUrl: string | null;
@@ -84,4 +87,44 @@ export interface DossierNode {
   createdAt: string;
   updatedAt: string;
   children?: DossierNode[];
+}
+
+export interface TaskAssignee {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatarPath: string | null;
+}
+
+export interface TaskCreator {
+  _id: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface Task {
+  _id: string;
+  dossierId: string;
+  title: string;
+  description: string;
+  status: 'todo' | 'in_progress' | 'done';
+  priority: 'low' | 'medium' | 'high';
+  assigneeId: TaskAssignee | null;
+  createdBy: TaskCreator;
+  dueDate: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActivityLog {
+  _id: string;
+  userId: { _id: string; firstName: string; lastName: string; email: string; avatarPath?: string | null };
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  metadata: Record<string, any>;
+  ip: string;
+  timestamp: string;
 }

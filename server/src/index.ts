@@ -20,6 +20,7 @@ import aiRoutes from './routes/ai';
 import reportTemplateRoutes from './routes/reportTemplates';
 import taskRoutes from './routes/tasks';
 import clipperRoutes from './routes/clipper';
+import encryptionRoutes from './routes/encryption';
 import SiteSettings from './models/SiteSettings';
 import { startYjsServer } from './yjs-server';
 import { checkMaintenance, loadMaintenanceState } from './middleware/maintenance';
@@ -66,6 +67,7 @@ app.use('/api', exportRoutes);
 app.use('/api', snapshotRoutes);
 app.use('/api', taskRoutes);
 app.use('/api/clip', clipperRoutes);
+app.use('/api/encryption', encryptionRoutes);
 
 setupSocket(httpServer);
 

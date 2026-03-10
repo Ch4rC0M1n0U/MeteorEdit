@@ -139,6 +139,9 @@
               <button class="di-el-btn" @click="copyEntity(entity.name, i)" :title="'Copier ' + entity.name">
                 <v-icon size="15">{{ copiedIndex === i ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
               </button>
+              <button class="di-el-btn" @click="enrichEntityAI(i)" :title="'Enrichir avec IA'" :disabled="enrichingIndex === i">
+                <v-icon size="15" :class="{ 'spin': enrichingIndex === i }">{{ enrichingIndex === i ? 'mdi-loading' : 'mdi-robot-outline' }}</v-icon>
+              </button>
               <button class="di-el-btn" @click="openEditEntity(i)" title="Modifier">
                 <v-icon size="15">mdi-pencil-outline</v-icon>
               </button>
@@ -149,6 +152,46 @@
           </div>
         </div>
         <div v-else class="di-empty mono">Aucune entite</div>
+      </div>
+
+      <!-- CHIFFREMENT E2E -->
+      <div class="di-section" v-if="dossierStore.currentDossier && isOwner">
+        <div class="di-section-header">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-lock-outline</v-icon>
+            Chiffrement E2E
+          </h3>
+          <div class="di-encryption-toggle">
+            <v-switch
+              v-model="encryptionEnabled"
+              :loading="encryptionBusy"
+              :disabled="encryptionBusy"
+              color="primary"
+              density="compact"
+              hide-details
+              @update:model-value="toggleEncryption"
+            />
+          </div>
+        </div>
+        <p v-if="encryptionEnabled" class="di-encryption-info mono">
+          <v-icon size="14" class="mr-1" color="success">mdi-shield-check-outline</v-icon>
+          Le contenu sensible de ce dossier est chiffre de bout en bout. Le serveur ne peut pas lire les donnees.
+        </p>
+        <p v-else class="di-encryption-info mono">
+          <v-icon size="14" class="mr-1" color="warning">mdi-shield-off-outline</v-icon>
+          Le chiffrement E2E n'est pas actif. Activez-le pour proteger les donnees sensibles.
+        </p>
+        <p v-if="!encryptionStore.isUnlocked && encryptionStore.hasKeys" class="di-encryption-warning mono">
+          <v-icon size="14" class="mr-1" color="error">mdi-key-alert</v-icon>
+          Cles de chiffrement verrouillees. Reconnectez-vous pour les deverrouiller.
+        </p>
+        <p v-if="!encryptionStore.hasKeys" class="di-encryption-warning mono">
+          <v-icon size="14" class="mr-1" color="warning">mdi-key-plus</v-icon>
+          Aucune cle de chiffrement.
+          <button class="di-gen-keys-btn" @click="generateEncryptionKeys" :disabled="generatingKeys">
+            {{ generatingKeys ? 'Generation...' : 'Generer les cles' }}
+          </button>
+        </p>
       </div>
 
       <!-- COLLABORATEURS -->
@@ -277,12 +320,14 @@
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
+import { useEncryptionStore } from '../../stores/encryption';
 import api, { SERVER_URL } from '../../services/api';
 import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
+const encryptionStore = useEncryptionStore();
 
 const editing = ref(false);
 const entityDialog = ref(false);
@@ -511,6 +556,152 @@ async function removeEntity(index: number) {
   }
 }
 
+// --- Enrichissement AI ---
+const enrichingIndex = ref<number | null>(null);
+
+async function enrichEntityAI(index: number) {
+  if (!dossierStore.currentDossier || enrichingIndex.value !== null) return;
+  enrichingIndex.value = index;
+  try {
+    const { data } = await api.post('/ai/enrich-entity', {
+      dossierId: dossierStore.currentDossier._id,
+      entityIndex: index,
+    });
+    form.entities[index].description = data.description;
+  } catch (err: any) {
+    console.error('Enrich error:', err);
+  } finally {
+    enrichingIndex.value = null;
+  }
+}
+
+// --- Chiffrement E2E ---
+const encryptionEnabled = ref(false);
+const encryptionBusy = ref(false);
+const generatingKeys = ref(false);
+
+watch(() => dossierStore.currentDossier?.isEncrypted, (val) => {
+  encryptionEnabled.value = !!val;
+}, { immediate: true });
+
+async function generateEncryptionKeys() {
+  generatingKeys.value = true;
+  try {
+    // Prompt user for password to protect the private key
+    const password = prompt('Entrez votre mot de passe pour proteger vos cles de chiffrement :');
+    if (!password) return;
+    await encryptionStore.initializeKeys(password);
+  } catch (err) {
+    console.error('Failed to generate encryption keys:', err);
+  } finally {
+    generatingKeys.value = false;
+  }
+}
+
+async function toggleEncryption(newValue: boolean | null) {
+  if (!dossierStore.currentDossier) return;
+  const dossierId = dossierStore.currentDossier._id;
+  encryptionBusy.value = true;
+
+  try {
+    if (newValue) {
+      // Enable encryption
+      if (!encryptionStore.hasKeys) {
+        encryptionEnabled.value = false;
+        alert('Vous devez d\'abord generer vos cles de chiffrement.');
+        return;
+      }
+      if (!encryptionStore.isUnlocked) {
+        encryptionEnabled.value = false;
+        alert('Vos cles de chiffrement sont verrouillees. Reconnectez-vous.');
+        return;
+      }
+
+      // Setup dossier encryption (generates AES key)
+      await encryptionStore.setupDossierEncryption(dossierId);
+
+      // Re-save current dossier fields encrypted
+      const dossier = dossierStore.currentDossier;
+      // Mark dossier as encrypted in local state first
+      dossier.isEncrypted = true;
+
+      await dossierStore.updateDossier(dossierId, {
+        objectives: dossier.objectives,
+        judicialFacts: dossier.judicialFacts,
+        description: dossier.description,
+        entities: dossier.entities,
+      });
+
+      // Re-encrypt all existing node content
+      const allNodes = [...dossierStore.nodes];
+      for (const node of allNodes) {
+        if (node.content || node.excalidrawData || node.mapData) {
+          await dossierStore.updateNode(node._id, {
+            content: node.content,
+            excalidrawData: node.excalidrawData,
+            mapData: node.mapData,
+          });
+        }
+      }
+
+      // Share key with collaborators
+      const collabs = dossier.collaborators || [];
+      for (const collab of collabs) {
+        const collabId = typeof collab === 'string' ? collab : collab._id;
+        try {
+          await encryptionStore.shareDossierKey(dossierId, collabId);
+        } catch {
+          console.warn(`Could not share encryption key with collaborator ${collabId}`);
+        }
+      }
+
+      encryptionEnabled.value = true;
+    } else {
+      // Disable encryption - decrypt all content first
+      if (!encryptionStore.isUnlocked) {
+        encryptionEnabled.value = true;
+        alert('Vos cles de chiffrement sont verrouillees. Reconnectez-vous pour desactiver le chiffrement.');
+        return;
+      }
+
+      // The current data in memory is already decrypted.
+      // We need to save it unencrypted, then disable encryption flag.
+      const dossier = dossierStore.currentDossier;
+      // Temporarily mark as not encrypted so updateDossier won't re-encrypt
+      dossier.isEncrypted = false;
+
+      await dossierStore.updateDossier(dossierId, {
+        objectives: dossier.objectives,
+        judicialFacts: dossier.judicialFacts,
+        description: dossier.description,
+        entities: dossier.entities,
+      });
+
+      // Re-save all node content unencrypted
+      const allNodes = [...dossierStore.nodes];
+      for (const node of allNodes) {
+        if (node.content || node.excalidrawData || node.mapData) {
+          await dossierStore.updateNode(node._id, {
+            content: node.content,
+            excalidrawData: node.excalidrawData,
+            mapData: node.mapData,
+          });
+        }
+      }
+
+      // Remove encryption keys from dossier
+      await encryptionStore.disableDossierEncryption(dossierId);
+      encryptionEnabled.value = false;
+    }
+  } catch (err) {
+    console.error('Encryption toggle error:', err);
+    // Revert UI state
+    encryptionEnabled.value = !newValue;
+  } finally {
+    encryptionBusy.value = false;
+  }
+}
+
 // --- Collaborateurs ---
 const collaboratorDetails = ref<CollaboratorUser[]>([]);
 const userSearchResults = ref<CollaboratorUser[]>([]);
@@ -563,6 +754,15 @@ async function addCollaborator(user: CollaboratorUser | null) {
   try {
     const { data } = await api.patch(`/dossiers/${dossierStore.currentDossier._id}/collaborators`, { collaborators: newCollabIds });
     dossierStore.currentDossier = data;
+
+    // If dossier is encrypted, share the encryption key with the new collaborator
+    if (dossierStore.currentDossier?.isEncrypted && encryptionStore.isUnlocked) {
+      try {
+        await encryptionStore.shareDossierKey(dossierStore.currentDossier._id, user._id);
+      } catch (err) {
+        console.warn('Could not share encryption key with collaborator:', err);
+      }
+    }
   } catch (e) {
     console.error('Failed to add collaborator:', e);
   }
@@ -1041,5 +1241,48 @@ async function removeCollaborator(userId: string) {
 .collab-search-item:hover { background: var(--me-accent-glow); }
 .collab-search-empty {
   padding: 12px; text-align: center; color: var(--me-text-muted); font-size: 13px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+
+/* Encryption */
+.di-encryption-toggle {
+  display: flex;
+  align-items: center;
+}
+.di-encryption-info {
+  font-size: 12px;
+  color: var(--me-text-muted);
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+}
+.di-encryption-warning {
+  font-size: 12px;
+  color: var(--me-text-muted);
+  line-height: 1.6;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+}
+.di-gen-keys-btn {
+  margin-left: 8px;
+  padding: 3px 10px;
+  border-radius: var(--me-radius-xs);
+  background: var(--me-accent-glow);
+  border: 1px solid var(--me-accent);
+  color: var(--me-accent);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.di-gen-keys-btn:hover {
+  background: var(--me-accent);
+  color: var(--me-bg-deep);
+}
+.di-gen-keys-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

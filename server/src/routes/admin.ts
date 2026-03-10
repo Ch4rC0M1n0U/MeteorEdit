@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
-import { listUsers, updateUser, deleteUser, resetUserPassword, resetUser2FA } from '../controllers/adminController';
+import { listUsers, updateUser, deleteUser, resetUserPassword, resetUser2FA, getAuditLogs, getAuditStats } from '../controllers/adminController';
 import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, uploadLoginBackground, deleteLoginBackground } from '../controllers/settingsController';
 import { getStats } from '../controllers/statsController';
 import { getActivityLogs } from '../controllers/activityLogController';
@@ -27,6 +27,8 @@ router.delete('/settings/login-background', deleteLoginBackground);
 
 router.get('/stats', getStats);
 router.get('/logs', getActivityLogs);
+router.get('/audit-logs', getAuditLogs);
+router.get('/audit-stats', getAuditStats);
 
 router.get('/plugins', getPluginSettings);
 router.put('/plugins', updatePluginSettings);

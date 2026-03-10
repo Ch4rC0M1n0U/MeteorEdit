@@ -25,7 +25,7 @@ export async function updateProfile(req: AuthRequest, res: Response): Promise<vo
       return;
     }
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.update', 'user', req.user!.userId, { fields: Object.keys(update) }, ip);
+    await logActivity(req.user!.userId, 'profile.update', 'user', req.user!.userId, { fields: Object.keys(update) }, ip, req.headers['user-agent'] || '');
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -50,7 +50,7 @@ export async function uploadAvatar(req: AuthRequest, res: Response): Promise<voi
     user.avatarPath = `uploads/${req.file.filename}`;
     await user.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.avatar_upload', 'user', req.user!.userId, {}, ip);
+    await logActivity(req.user!.userId, 'profile.avatar_upload', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
     res.json({ avatarPath: user.avatarPath });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -71,7 +71,7 @@ export async function deleteAvatar(req: AuthRequest, res: Response): Promise<voi
     user.avatarPath = null;
     await user.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.avatar_delete', 'user', req.user!.userId, {}, ip);
+    await logActivity(req.user!.userId, 'profile.avatar_delete', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
     res.json({ message: 'Avatar deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -95,7 +95,7 @@ export async function updateSignature(req: AuthRequest, res: Response): Promise<
       return;
     }
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.signature_update', 'user', req.user!.userId, {}, ip);
+    await logActivity(req.user!.userId, 'profile.signature_update', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
     res.json(user.signature);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -121,7 +121,7 @@ export async function uploadSignatureImage(req: AuthRequest, res: Response): Pro
     user.signatureImagePath = `uploads/${req.file.filename}`;
     await user.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.signature_image_upload', 'user', req.user!.userId, {}, ip);
+    await logActivity(req.user!.userId, 'profile.signature_image_upload', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
     res.json({ signatureImagePath: user.signatureImagePath });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -155,7 +155,7 @@ export async function saveDrawnSignature(req: AuthRequest, res: Response): Promi
     user.signatureImagePath = `uploads/${filename}`;
     await user.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.signature_image_draw', 'user', req.user!.userId, {}, ip);
+    await logActivity(req.user!.userId, 'profile.signature_image_draw', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
     res.json({ signatureImagePath: user.signatureImagePath });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -176,7 +176,7 @@ export async function deleteSignatureImage(req: AuthRequest, res: Response): Pro
     user.signatureImagePath = null;
     await user.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.signature_image_delete', 'user', req.user!.userId, {}, ip);
+    await logActivity(req.user!.userId, 'profile.signature_image_delete', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
     res.json({ message: 'Signature image deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -203,7 +203,7 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
     user.password = newPassword;
     await user.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'profile.password_change', 'user', req.user!.userId, {}, ip);
+    await logActivity(req.user!.userId, 'profile.password_change', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
     res.json({ message: 'Password changed' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
