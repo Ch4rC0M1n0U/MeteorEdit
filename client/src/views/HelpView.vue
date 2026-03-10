@@ -879,6 +879,93 @@ const categories: Category[] = [
 <h3>Throttle email</h3>
 <p>Pour eviter la surcharge de votre boite mail, un systeme de <strong>limitation de frequence</strong> est applique aux emails : au maximum <strong>1 email par type de notification par heure</strong>. Les notifications supplementaires sont regroupees et envoyees ulterieurement.</p>`,
       },
+      {
+        id: 'prefs-enrichies',
+        title: 'Preferences avancees',
+        keywords: ['preferences', 'parametres', 'theme', 'densite', 'date', 'format', 'langue', 'auto-sauvegarde', 'confirmation', 'node', 'defaut'],
+        content: `<h2>Preferences avancees</h2>
+<p>Depuis <strong>Mon compte > Preferences</strong>, personnalisez votre experience en detail.</p>
+<h3>Apparence</h3>
+<ul>
+<li><strong>Theme</strong> — Choisissez entre mode sombre et clair</li>
+<li><strong>Densite d'affichage</strong> — Compact, Confortable ou Spacieux pour ajuster l'espacement general</li>
+<li><strong>Largeur du sidebar</strong> — Ajustez la largeur du panneau lateral (200px a 500px)</li>
+</ul>
+<h3>Editeur</h3>
+<ul>
+<li><strong>Taille de police</strong> — De 12px a 24px pour le confort de lecture</li>
+<li><strong>Auto-sauvegarde</strong> — Intervalle configurable (5s, 10s, 30s, 60s ou desactive)</li>
+<li><strong>Type de noeud par defaut</strong> — Choisissez le type cree par defaut (note, dossier, document, etc.)</li>
+</ul>
+<h3>Regional</h3>
+<ul>
+<li><strong>Format de date</strong> — DD/MM/YYYY, YYYY-MM-DD ou MM/DD/YYYY</li>
+<li><strong>Langue</strong> — Francais (anglais bientot disponible)</li>
+</ul>
+<h3>Comportement</h3>
+<ul>
+<li><strong>Confirmation avant suppression</strong> — Activez ou desactivez la demande de confirmation lors de la suppression d'elements</li>
+</ul>`,
+      },
+      {
+        id: 'securite-avancee',
+        title: 'Securite avancee',
+        keywords: ['securite', 'sessions', 'score', 'connexion', 'historique', 'login', 'ip', 'navigateur', 'mot de passe', 'force'],
+        content: `<h2>Securite avancee</h2>
+<p>Depuis <strong>Mon compte > Sessions & score</strong>, surveillez la securite de votre compte.</p>
+<h3>Score de securite</h3>
+<p>Un indicateur visuel evalue le niveau de protection de votre compte sur 4 criteres :</p>
+<ul>
+<li><strong>Mot de passe defini</strong> (+25%)</li>
+<li><strong>2FA active</strong> (+25%)</li>
+<li><strong>Cles de chiffrement configurees</strong> (+25%)</li>
+<li><strong>Mot de passe change recemment</strong> (moins de 90 jours, +25%)</li>
+</ul>
+<h3>Historique de connexion</h3>
+<p>Consultez vos 20 dernieres connexions (7 jours) avec l'adresse IP, le navigateur et l'heure.</p>
+<h3>Sessions actives</h3>
+<p>Visualisez les sessions actuellement connectees a votre compte. La session en cours est identifiee par un badge vert.</p>`,
+      },
+      {
+        id: 'mes-donnees',
+        title: 'Mes donnees',
+        keywords: ['donnees', 'stockage', 'export', 'rgpd', 'suppression', 'compte', 'espace', 'fichiers', 'telecharger'],
+        content: `<h2>Mes donnees</h2>
+<p>Depuis <strong>Mon compte > Mes donnees</strong>, gerez vos donnees personnelles.</p>
+<h3>Espace de stockage</h3>
+<p>Visualisez l'espace occupe par vos fichiers (avatar, signatures, documents uploades). Une barre de progression indique l'utilisation relative.</p>
+<h3>Export de donnees (RGPD)</h3>
+<p>Telechargez une copie complete de vos donnees : profil, dossiers, noeuds et historique d'activite au format JSON. Conforme aux exigences du RGPD.</p>
+<h3>Suppression de compte</h3>
+<p>La zone dangereuse permet de supprimer definitivement votre compte. Cette action est <strong>irreversible</strong> : tous vos dossiers, notes, fichiers et donnees seront supprimes. Une confirmation par mot de passe est requise.</p>`,
+      },
+      {
+        id: 'journal-activite',
+        title: 'Journal d\'activite',
+        keywords: ['journal', 'activite', 'historique', 'actions', 'filtre', 'csv', 'export', 'connexion', 'modification'],
+        content: `<h2>Journal d'activite</h2>
+<p>Depuis <strong>Mon compte > Journal d'activite</strong>, consultez l'historique de vos actions sur les 7 derniers jours.</p>
+<h3>Filtrage</h3>
+<p>Filtrez par type d'action : connexions, modifications de dossiers, gestion d'elements, collaborations, commentaires, snapshots, profil et securite.</p>
+<h3>Export CSV</h3>
+<p>Exportez votre historique d'activite au format CSV pour analyse externe ou archivage.</p>
+<h3>Informations affichees</h3>
+<p>Chaque entree montre l'action effectuee, l'element concerne (si applicable), l'heure et l'adresse IP.</p>`,
+      },
+      {
+        id: 'raccourcis-ref',
+        title: 'Raccourcis clavier',
+        keywords: ['raccourcis', 'clavier', 'shortcut', 'ctrl', 'reference', 'touche'],
+        content: `<h2>Raccourcis clavier</h2>
+<p>Depuis <strong>Mon compte > Raccourcis clavier</strong>, consultez la reference complete des raccourcis disponibles.</p>
+<p>Les raccourcis sont organises en 4 categories :</p>
+<ul>
+<li><strong>Navigation</strong> — Recherche rapide (Ctrl+K), toggle sidebar (Ctrl+B), accueil (Ctrl+H)</li>
+<li><strong>Editeur</strong> — Sauvegarde, annulation, formatage (gras, italique, titres)</li>
+<li><strong>Dossiers</strong> — Nouveau noeud (Ctrl+N), suppression (Delete), renommer (F2)</li>
+<li><strong>General</strong> — Preferences (Ctrl+,), fermeture (Escape)</li>
+</ul>`,
+      },
     ],
   },
 ];

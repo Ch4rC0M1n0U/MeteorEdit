@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { register, login, me, refresh, getPreferences, updatePreferences, uploadTemplateLogo, getNotificationPreferences, updateNotificationPreferences } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
-import { updateProfile, uploadAvatar, deleteAvatar, changePassword, updateSignature, uploadSignatureImage, saveDrawnSignature, deleteSignatureImage } from '../controllers/profileController';
+import { updateProfile, uploadAvatar, deleteAvatar, changePassword, updateSignature, uploadSignatureImage, saveDrawnSignature, deleteSignatureImage, getSessions, getLoginHistory, getStorageUsage, exportUserData, deleteAccount, getActivity } from '../controllers/profileController';
 import { setup2FA, verify2FA, disable2FA, validate2FA } from '../controllers/twoFactorController';
 import { searchUsers } from '../controllers/userSearchController';
 
@@ -696,5 +696,144 @@ router.post('/2fa/validate', validate2FA); // No auth — uses tempToken
 
 router.get('/notification-preferences', authenticate, getNotificationPreferences);
 router.patch('/notification-preferences', authenticate, updateNotificationPreferences);
+
+// ─── Sessions & Login History ───────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/auth/sessions:
+ *   get:
+ *     tags: [Profile]
+ *     summary: Liste des sessions recentes (30 jours)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des sessions avec IP et timestamp
+ */
+router.get('/sessions', authenticate, getSessions);
+
+/**
+ * @swagger
+ * /api/auth/login-history:
+ *   get:
+ *     tags: [Profile]
+ *     summary: Historique des connexions (7 jours)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des connexions recentes
+ */
+router.get('/login-history', authenticate, getLoginHistory);
+
+// ─── Storage ────────────────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/auth/storage:
+ *   get:
+ *     tags: [Profile]
+ *     summary: Utilisation du stockage utilisateur
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Taille totale et nombre de fichiers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 used:
+ *                   type: number
+ *                   description: Octets utilises
+ *                 files:
+ *                   type: number
+ *                   description: Nombre de fichiers
+ */
+router.get('/storage', authenticate, getStorageUsage);
+
+// ─── Export Data ────────────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/auth/export-data:
+ *   post:
+ *     tags: [Profile]
+ *     summary: Exporter les donnees utilisateur en JSON
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Fichier JSON contenant profil, dossiers, nodes et activite
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ */
+router.post('/export-data', authenticate, exportUserData);
+
+// ─── Account Deletion ───────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/auth/account:
+ *   delete:
+ *     tags: [Profile]
+ *     summary: Supprimer le compte utilisateur
+ *     description: Supprime definitivement le compte et toutes les donnees associees. Necessite la confirmation du mot de passe.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [password]
+ *             properties:
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Compte supprime
+ *       401:
+ *         description: Mot de passe invalide
+ */
+router.delete('/account', authenticate, deleteAccount);
+
+// ─── Activity Log ───────────────────────────────────────────────────────────────
+/**
+ * @swagger
+ * /api/auth/activity:
+ *   get:
+ *     tags: [Profile]
+ *     summary: Journal d'activite filtre (7 jours)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: action
+ *         schema:
+ *           type: string
+ *         description: Filtrer par actions (separees par des virgules)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [json, csv]
+ *           default: json
+ *     responses:
+ *       200:
+ *         description: Activites filtrees avec pagination
+ */
+router.get('/activity', authenticate, getActivity);
 
 export default router;
