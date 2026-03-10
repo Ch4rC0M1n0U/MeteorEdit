@@ -5,6 +5,7 @@
       <router-view />
     </v-main>
     <ConfirmDialog />
+    <CommandPalette v-if="authStore.isAuthenticated" />
   </v-app>
 </template>
 
@@ -16,6 +17,7 @@ import { useThemeStore } from './stores/theme';
 import { useBrandingStore } from './stores/branding';
 import AppBar from './components/common/AppBar.vue';
 import ConfirmDialog from './components/common/ConfirmDialog.vue';
+import CommandPalette from './components/common/CommandPalette.vue';
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();

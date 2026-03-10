@@ -20,11 +20,7 @@
               </button>
               <button class="dv-export-option" @click="exportSelectOpen = true">
                 <v-icon size="16">mdi-file-export-outline</v-icon>
-                <span>Exporter PDF / DOCX</span>
-              </button>
-              <button class="dv-export-option" @click="printDossier">
-                <v-icon size="16">mdi-printer-outline</v-icon>
-                <span>Imprimer</span>
+                <span>Exporter / Imprimer</span>
               </button>
               <div v-if="aiEnabled" class="dv-export-divider" />
               <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect">
@@ -915,11 +911,12 @@ function esc(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function printDossier() {
+function printDossier(selectedNodeIds?: string[]) {
   const dossier = dossierStore.currentDossier;
   if (!dossier) return;
 
-  const nodes = dossierStore.nodes.filter((n) => n.type === 'note' && !n.deletedAt);
+  const allNotes = dossierStore.nodes.filter((n) => n.type === 'note' && !n.deletedAt);
+  const nodes = selectedNodeIds ? allNotes.filter((n) => selectedNodeIds.includes(n._id)) : allNotes;
   const statusLabels: Record<string, string> = { open: 'Ouvert', in_progress: 'En cours', closed: 'Clos' };
 
   let entitiesHtml = '';
@@ -1187,9 +1184,10 @@ async function addSignatureBlock(b: ReturnType<typeof createPdfBuilder>) {
   }
 }
 
-function handleSelectiveExport(format: 'pdf' | 'docx', selectedIds: string[]) {
+function handleSelectiveExport(format: 'pdf' | 'docx' | 'print', selectedIds: string[]) {
   if (format === 'pdf') exportPDF(selectedIds);
-  else exportDOCX(selectedIds);
+  else if (format === 'docx') exportDOCX(selectedIds);
+  else if (format === 'print') printDossier(selectedIds);
 }
 
 async function exportPDF(selectedNodeIds?: string[]) {

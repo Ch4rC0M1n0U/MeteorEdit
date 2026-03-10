@@ -1,10 +1,6 @@
 <template>
   <div class="excalidraw-outer">
     <div class="excalidraw-toolbar">
-      <button class="ex-tb-btn" @click="copyAsImage" :disabled="!excalidrawApi" :title="copyMsg || 'Copier le canvas comme image'">
-        <v-icon size="16">{{ copyMsg ? 'mdi-check' : 'mdi-camera' }}</v-icon>
-        <span class="mono">{{ copyMsg || 'Copier comme image' }}</span>
-      </button>
       <div v-if="awarenessUsers.length" class="collab-presence">
         <template v-for="u in awarenessUsers">
           <img v-if="u.avatarUrl" :key="'img-'+u.name" :src="u.avatarUrl" :alt="u.name" class="collab-user collab-user-img" :title="u.name" />
@@ -14,6 +10,10 @@
         </template>
       </div>
       <div class="ex-toolbar-spacer" />
+      <slot name="toolbar-end" />
+      <button class="ex-tb-btn" @click="copyAsImage" :disabled="!excalidrawApi" :title="copyMsg || 'Copier comme image'">
+        <v-icon size="16">{{ copyMsg ? 'mdi-check' : 'mdi-camera' }}</v-icon>
+      </button>
       <button class="ex-tb-btn ex-tb-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" title="Commentaires">
         <v-icon size="16">mdi-comment-text-outline</v-icon>
         <span v-if="commentCount" class="ex-comment-badge">{{ commentCount }}</span>

@@ -6,6 +6,7 @@ import {
   uploadDossierLogo, deleteDossierLogo,
 } from '../controllers/dossierController';
 import { getUserDashboard } from '../controllers/dashboardController';
+import { getDossierActivityLogs } from '../controllers/activityLogController';
 import { upload } from '../config/upload';
 
 const router = Router();
@@ -21,5 +22,6 @@ router.delete('/:id', deleteDossier);
 router.patch('/:id/collaborators', updateCollaborators);
 router.post('/:id/logo', upload.single('logo'), uploadDossierLogo);
 router.delete('/:id/logo', deleteDossierLogo);
+router.get('/:id/activity', getDossierActivityLogs);
 
 export default router;

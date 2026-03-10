@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
 import {
   getNodes, createNode, updateNode,
-  deleteNode, moveNode, uploadFile, uploadImage,
+  deleteNode, moveNode, uploadFile, uploadImage, mentionUser,
   getTrash, restoreNode, purgeNode, emptyTrash,
 } from '../controllers/nodeController';
 import { getComments, createComment, deleteComment, getCommentCount } from '../controllers/commentController';
@@ -24,6 +24,7 @@ router.patch('/nodes/:nodeId/move', moveNode);
 router.patch('/nodes/:nodeId/restore', restoreNode);
 router.delete('/nodes/:nodeId/purge', purgeNode);
 router.post('/nodes/:nodeId/upload', upload.single('file'), uploadFile);
+router.post('/nodes/:nodeId/mention', mentionUser);
 
 // Comments
 router.get('/nodes/:nodeId/comments', getComments);

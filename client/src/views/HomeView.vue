@@ -10,14 +10,31 @@
 
     <v-progress-linear v-if="dossierStore.loading" indeterminate color="primary" class="mb-4" style="border-radius: 4px;" />
 
+    <div v-if="favoriteDossiers.length" class="favorites-section fade-in">
+      <h2 class="section-title mono"><v-icon size="18" class="mr-1">mdi-star</v-icon> Favoris</h2>
+      <div class="dossier-grid">
+        <DossierCard
+          v-for="dossier in favoriteDossiers"
+          :key="'fav-' + dossier._id"
+          :dossier="dossier"
+          :is-fav="true"
+          @open="handleOpen"
+          @delete="handleDelete"
+          @toggle-favorite="handleToggleFavorite"
+        />
+      </div>
+    </div>
+
     <div v-if="dossierStore.dossiers.length" class="dossier-grid">
       <DossierCard
         v-for="(dossier, i) in dossierStore.dossiers"
         :key="dossier._id"
         :dossier="dossier"
+        :is-fav="dossierStore.isFavorite(dossier._id)"
         :class="['fade-in', `fade-in-delay-${Math.min(i + 1, 4)}`]"
         @open="handleOpen"
         @delete="handleDelete"
+        @toggle-favorite="handleToggleFavorite"
       />
     </div>
 
@@ -34,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useDossierStore } from '../stores/dossier';
 import { useConfirm } from '../composables/useConfirm';
 import DossierCard from '../components/dossier/DossierCard.vue';
@@ -45,12 +62,21 @@ import UserDashboard from '../components/dashboard/UserDashboard.vue';
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 
+const favoriteDossiers = computed(() =>
+  dossierStore.dossiers.filter(d => dossierStore.isFavorite(d._id))
+);
+
 onMounted(() => {
   dossierStore.fetchDossiers();
+  dossierStore.fetchFavorites();
 });
 
 function handleOpen(id: string) {
   dossierStore.openDossier(id);
+}
+
+function handleToggleFavorite(id: string) {
+  dossierStore.toggleFavorite(id);
 }
 
 async function handleDelete(id: string) {
@@ -86,6 +112,17 @@ async function handleDelete(id: string) {
   color: var(--me-text-muted);
   margin-top: 4px;
   font-family: var(--me-font-mono);
+}
+.favorites-section {
+  margin-bottom: 32px;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
 }
 .dossier-grid {
   display: grid;

@@ -1,15 +1,18 @@
 <template>
-  <div
-    draggable="true"
-    @dragstart="onDragStart"
-    @dragover.prevent="onDragOver"
-    @dragleave="onDragLeave"
-    @drop="onDrop"
-    :class="{ 'nti-drop-target': isDragOver }"
-  >
+  <div>
     <div
       class="nti-item"
-      :class="{ active: dossierStore.selectedNode?._id === node._id }"
+      :class="{
+        active: dossierStore.selectedNode?._id === node._id,
+        'nti-drop-inside': dropPosition === 'inside',
+        'nti-drop-before': dropPosition === 'before',
+        'nti-drop-after': dropPosition === 'after',
+      }"
+      draggable="true"
+      @dragstart="onDragStart"
+      @dragover.prevent="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
       @click="dossierStore.selectNode(node)"
       @contextmenu.prevent="showMenu = true"
     >
@@ -45,6 +48,9 @@
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'map', node._id)">
             <v-icon size="14">mdi-map-outline</v-icon> Carte
           </button>
+          <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'dataset', node._id)">
+            <v-icon size="14">mdi-table</v-icon> Dataset
+          </button>
           <button class="nti-ctx-item nti-ctx-danger" @click="handleDelete">
             <v-icon size="14">mdi-trash-can-outline</v-icon> Supprimer
           </button>
@@ -77,7 +83,7 @@ defineEmits<{ create: [type: string, parentId: string] }>();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const showMenu = ref(false);
-const isDragOver = ref(false);
+const dropPosition = ref<'before' | 'after' | 'inside' | null>(null);
 const expanded = ref(true);
 
 const icon = computed(() => {
@@ -89,6 +95,7 @@ const icon = computed(() => {
     case 'mindmap': return 'mdi-vector-polyline';
     case 'map': return 'mdi-map-outline';
     case 'document': return 'mdi-file-document-outline';
+    case 'dataset': return 'mdi-table';
     default: return 'mdi-file-outline';
   }
 });
@@ -111,30 +118,81 @@ function onDragStart(e: DragEvent) {
   e.dataTransfer?.setData('text/plain', props.node._id);
 }
 
-function onDragOver() {
-  if (props.node.type === 'folder') {
-    isDragOver.value = true;
+function onDragOver(e: DragEvent) {
+  const el = (e.currentTarget as HTMLElement);
+  const rect = el.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  const ratio = y / rect.height;
+
+  if (props.node.type === 'folder' && ratio > 0.25 && ratio < 0.75) {
+    dropPosition.value = 'inside';
+  } else if (ratio <= 0.5) {
+    dropPosition.value = 'before';
+  } else {
+    dropPosition.value = 'after';
   }
 }
 
-function onDragLeave() {
-  isDragOver.value = false;
+function onDragLeave(e: DragEvent) {
+  const el = e.currentTarget as HTMLElement;
+  const related = e.relatedTarget as HTMLElement | null;
+  // Only reset if we're truly leaving the item, not moving to a child element
+  if (!related || !el.contains(related)) {
+    dropPosition.value = null;
+  }
+}
+
+function getSiblings(parentId: string | null) {
+  return dossierStore.nodes
+    .filter(n => n.parentId === parentId && !n.deletedAt)
+    .sort((a, b) => a.order - b.order);
+}
+
+function isDescendant(nodeId: string, potentialParentId: string): boolean {
+  let current = potentialParentId;
+  const visited = new Set<string>();
+  while (current) {
+    if (visited.has(current)) return false;
+    visited.add(current);
+    if (current === nodeId) return true;
+    const parent = props.allNodes.find(n => n._id === current);
+    current = parent?.parentId || '';
+  }
+  return false;
 }
 
 async function onDrop(e: DragEvent) {
-  isDragOver.value = false;
+  e.stopPropagation();
+  const pos = dropPosition.value;
+  dropPosition.value = null;
   const draggedId = e.dataTransfer?.getData('text/plain');
-  if (!draggedId || draggedId === props.node._id) return;
-  if (props.node.type !== 'folder') return;
+  if (!draggedId || draggedId === props.node._id || !pos) return;
+
+  // Prevent dropping a folder into its own descendant
+  if (pos === 'inside' && isDescendant(draggedId, props.node._id)) return;
 
   try {
-    const { data } = await api.patch(`/nodes/${draggedId}/move`, {
-      parentId: props.node._id,
-      order: children.value.length,
-    });
-    const idx = dossierStore.nodes.findIndex(n => n._id === draggedId);
-    if (idx >= 0) {
-      dossierStore.nodes[idx] = data;
+    if (pos === 'inside' && props.node.type === 'folder') {
+      await api.patch(`/nodes/${draggedId}/move`, {
+        parentId: props.node._id,
+        order: children.value.length,
+      });
+    } else {
+      const targetParentId = props.node.parentId;
+      const siblings = getSiblings(targetParentId);
+      const targetIndex = siblings.findIndex(n => n._id === props.node._id);
+      const insertIndex = pos === 'before' ? targetIndex : targetIndex + 1;
+
+      await api.patch(`/nodes/${draggedId}/move`, {
+        parentId: targetParentId,
+        order: insertIndex,
+      });
+    }
+
+    // Refetch all nodes to ensure consistent state
+    if (dossierStore.currentDossier) {
+      const { data } = await api.get(`/dossiers/${dossierStore.currentDossier._id}/nodes`);
+      dossierStore.nodes = data;
     }
   } catch (err) {
     console.error('Move failed:', err);
@@ -232,10 +290,17 @@ async function onDrop(e: DragEvent) {
   border-left: 1px solid var(--me-border);
   padding-left: 4px;
 }
-.nti-drop-target {
+.nti-drop-inside {
   outline: 2px dashed var(--me-accent);
   outline-offset: -2px;
   border-radius: var(--me-radius-xs);
+  background: rgba(59, 130, 246, 0.06);
+}
+.nti-drop-before {
+  box-shadow: inset 0 2px 0 0 var(--me-accent);
+}
+.nti-drop-after {
+  box-shadow: inset 0 -2px 0 0 var(--me-accent);
 }
 .nti-context-menu {
   padding: 6px;

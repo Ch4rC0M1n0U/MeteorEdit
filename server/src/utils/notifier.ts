@@ -3,7 +3,7 @@ import { getIO, getUserSockets } from '../socket';
 
 export async function createNotification(
   userId: string,
-  type: 'collaborator.added' | 'collaborator.removed' | 'dossier.updated' | 'node.updated',
+  type: 'collaborator.added' | 'collaborator.removed' | 'dossier.updated' | 'node.updated' | 'mention' | 'task.assigned',
   message: string,
   dossierId: string | null = null,
   fromUserId: string | null = null

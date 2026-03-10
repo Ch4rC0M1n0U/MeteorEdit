@@ -40,6 +40,10 @@
         <span class="es-count mono">{{ selectedIds.size }} / {{ allNodes.length }} selectionnes</span>
         <div class="es-footer-btns">
           <button class="es-btn es-btn--cancel" @click="model = false">Annuler</button>
+          <button class="es-btn es-btn--print" @click="doExport('print')" :disabled="selectedIds.size === 0">
+            <v-icon size="14">mdi-printer-outline</v-icon>
+            Imprimer
+          </button>
           <button class="es-btn es-btn--pdf" @click="doExport('pdf')" :disabled="selectedIds.size === 0">
             <v-icon size="14">mdi-file-pdf-box</v-icon>
             PDF
@@ -65,7 +69,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  export: [format: 'pdf' | 'docx', selectedIds: string[]];
+  export: [format: 'pdf' | 'docx' | 'print', selectedIds: string[]];
 }>();
 
 const NODE_ICONS: Record<string, string> = {
@@ -153,7 +157,7 @@ function toggleNode(nodeId: string) {
   selectedIds.value = newSet;
 }
 
-function doExport(format: 'pdf' | 'docx') {
+function doExport(format: 'pdf' | 'docx' | 'print') {
   emit('export', format, Array.from(selectedIds.value));
   model.value = false;
 }
@@ -175,11 +179,11 @@ const ExportNodeItem = defineComponent({
 
     return () => {
       const nodeEl = h('div', {
-        class: 'es-node',
+        class: ['es-node', isSelected.value ? 'es-node--selected' : ''],
         style: { paddingLeft: `${props.depth * 20 + 8}px` },
         onClick: () => emit('toggle', props.node._id),
       }, [
-        h('v-icon', { size: 16, class: 'es-node-check' },
+        h('v-icon', { size: 16, class: isSelected.value ? 'es-node-check es-node-check--active' : 'es-node-check' },
           () => isSelected.value ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'
         ),
         h('v-icon', { size: 16, class: 'es-node-icon' }, () => icon.value),
@@ -231,10 +235,15 @@ const ExportNodeItem = defineComponent({
   padding: 7px 10px; cursor: pointer; transition: background 0.12s;
   user-select: none;
 }
-.es-node:hover { background: rgba(255,255,255,0.04); }
-.es-node-check { color: var(--me-accent); flex-shrink: 0; }
+.es-node:hover { background: rgba(255,255,255,0.06); }
+.es-node--selected { background: rgba(var(--me-accent-rgb, 66,133,244), 0.15); border-left: 3px solid var(--me-accent); }
+.es-node--selected:hover { background: rgba(var(--me-accent-rgb, 66,133,244), 0.22); }
+.es-node-check { color: var(--me-text-muted); flex-shrink: 0; }
+.es-node-check--active { color: var(--me-accent); }
 .es-node-icon { color: var(--me-text-muted); flex-shrink: 0; }
+.es-node--selected .es-node-icon { color: var(--me-accent); }
 .es-node-title { font-size: 13px; color: var(--me-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.es-node--selected .es-node-title { color: var(--me-accent); font-weight: 600; }
 
 .es-empty { padding: 24px; text-align: center; color: var(--me-text-muted); font-size: 13px; }
 
@@ -253,6 +262,8 @@ const ExportNodeItem = defineComponent({
 .es-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .es-btn--cancel { background: none; color: var(--me-text-muted); }
 .es-btn--cancel:hover { background: rgba(255,255,255,0.06); color: var(--me-text-primary); }
+.es-btn--print { background: #27ae60; color: #fff; }
+.es-btn--print:hover:not(:disabled) { filter: brightness(1.15); }
 .es-btn--pdf { background: #c0392b; color: #fff; }
 .es-btn--pdf:hover:not(:disabled) { filter: brightness(1.15); }
 .es-btn--docx { background: #2980b9; color: #fff; }

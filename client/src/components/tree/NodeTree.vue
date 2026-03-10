@@ -11,13 +11,22 @@
 
     <div class="nt-divider" />
 
-    <NodeTreeItem
-      v-for="node in rootNodes"
-      :key="node._id"
-      :node="node"
-      :all-nodes="dossierStore.nodes"
-      @create="(type, parentId) => $emit('create', type, parentId)"
-    />
+    <div
+      class="nt-root-drop"
+      :class="{ 'nt-root-drop-active': rootDropActive }"
+      @dragover.prevent
+      @dragenter.prevent="onRootDragEnter"
+      @dragleave="onRootDragLeave"
+      @drop="onRootDrop"
+    >
+      <NodeTreeItem
+        v-for="node in rootNodes"
+        :key="node._id"
+        :node="node"
+        :all-nodes="dossierStore.nodes"
+        @create="(type, parentId) => $emit('create', type, parentId)"
+      />
+    </div>
 
     <v-menu>
       <template #activator="{ props }">
@@ -42,6 +51,10 @@
         <button class="nt-add-option" @click="$emit('create', 'map', null)">
           <v-icon size="16">mdi-map-outline</v-icon>
           <span>Carte</span>
+        </button>
+        <button class="nt-add-option" @click="$emit('create', 'dataset', null)">
+          <v-icon size="16">mdi-table</v-icon>
+          <span>Dataset</span>
         </button>
       </div>
     </v-menu>
@@ -85,9 +98,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
+import api from '../../services/api';
 import NodeTreeItem from './NodeTreeItem.vue';
 
 defineEmits<{ create: [type: string, parentId: string | null] }>();
@@ -95,6 +109,50 @@ defineEmits<{ create: [type: string, parentId: string | null] }>();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const trashOpen = ref(false);
+const rootDropActive = ref(false);
+const rootDragCounter = ref(0);
+
+function onRootDragEnter() {
+  rootDragCounter.value++;
+  rootDropActive.value = true;
+}
+function onRootDragLeave() {
+  rootDragCounter.value--;
+  if (rootDragCounter.value <= 0) {
+    rootDragCounter.value = 0;
+    rootDropActive.value = false;
+  }
+}
+
+// Global dragend to reset state when drag ends anywhere (including on children that stopPropagation)
+function onGlobalDragEnd() {
+  rootDragCounter.value = 0;
+  rootDropActive.value = false;
+}
+onMounted(() => document.addEventListener('dragend', onGlobalDragEnd));
+onUnmounted(() => document.removeEventListener('dragend', onGlobalDragEnd));
+
+async function onRootDrop(e: DragEvent) {
+  rootDragCounter.value = 0;
+  rootDropActive.value = false;
+  const draggedId = e.dataTransfer?.getData('text/plain');
+  if (!draggedId) return;
+  const node = dossierStore.nodes.find(n => n._id === draggedId);
+  if (!node || node.parentId === null) return;
+  try {
+    await api.patch(`/nodes/${draggedId}/move`, {
+      parentId: null,
+      order: rootNodes.value.length,
+    });
+    // Refetch all nodes
+    if (dossierStore.currentDossier) {
+      const { data } = await api.get(`/dossiers/${dossierStore.currentDossier._id}/nodes`);
+      dossierStore.nodes = data;
+    }
+  } catch (err) {
+    console.error('Root drop failed:', err);
+  }
+}
 
 const rootNodes = computed(() =>
   dossierStore.nodes.filter(n => n.parentId === null).sort((a, b) => a.order - b.order)
@@ -113,6 +171,7 @@ function trashIcon(type: string) {
     case 'mindmap': return 'mdi-vector-polyline';
     case 'map': return 'mdi-map-outline';
     case 'document': return 'mdi-file-document-outline';
+    case 'dataset': return 'mdi-table';
     default: return 'mdi-file-outline';
   }
 }
@@ -177,6 +236,14 @@ async function handleEmptyTrash() {
   height: 1px;
   background: var(--me-border);
   margin: 4px 0;
+}
+.nt-root-drop {
+  min-height: 20px;
+}
+.nt-root-drop-active {
+  outline: 2px dashed var(--me-accent);
+  outline-offset: -2px;
+  border-radius: var(--me-radius-xs);
 }
 .nt-add-btn {
   display: flex;
