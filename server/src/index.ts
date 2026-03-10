@@ -17,6 +17,9 @@ import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notifications';
 import templateRoutes from './routes/templates';
 import aiRoutes from './routes/ai';
+import reportTemplateRoutes from './routes/reportTemplates';
+import taskRoutes from './routes/tasks';
+import clipperRoutes from './routes/clipper';
 import SiteSettings from './models/SiteSettings';
 import { startYjsServer } from './yjs-server';
 import { checkMaintenance, loadMaintenanceState } from './middleware/maintenance';
@@ -58,8 +61,11 @@ app.use('/api/search', searchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/report-templates', reportTemplateRoutes);
 app.use('/api', exportRoutes);
 app.use('/api', snapshotRoutes);
+app.use('/api', taskRoutes);
+app.use('/api/clip', clipperRoutes);
 
 setupSocket(httpServer);
 

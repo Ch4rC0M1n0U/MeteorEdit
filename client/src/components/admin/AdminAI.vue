@@ -120,6 +120,110 @@
       </div>
     </div>
 
+    <!-- Report templates management -->
+    <div class="ai-card glass-card fade-in fade-in-delay-2">
+      <div class="ai-card-header">
+        <div class="ai-icon">
+          <v-icon size="24">mdi-file-document-multiple-outline</v-icon>
+        </div>
+        <div>
+          <h3 class="ai-card-title mono">Templates de rapport</h3>
+          <p class="ai-card-desc">Gerer les templates de prompt pour la generation de rapports IA</p>
+        </div>
+        <button class="ai-test-btn" @click="openCreateTemplate">
+          <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+          Nouveau template
+        </button>
+      </div>
+
+      <!-- Template form (create/edit) -->
+      <div v-if="tplFormOpen" class="ai-tpl-form">
+        <div class="ai-field">
+          <label class="ai-label mono">Titre</label>
+          <v-text-field
+            v-model="tplForm.title"
+            density="compact"
+            hide-details
+            placeholder="Titre du template"
+          />
+        </div>
+        <div class="ai-field">
+          <label class="ai-label mono">Description</label>
+          <v-text-field
+            v-model="tplForm.description"
+            density="compact"
+            hide-details
+            placeholder="Description courte (optionnel)"
+          />
+        </div>
+        <div class="ai-field">
+          <label class="ai-label mono">Variables disponibles</label>
+          <div class="ai-prompt-vars">
+            <span v-for="v in promptVariables" :key="v.key" class="ai-prompt-var-chip" :title="v.desc" @click="insertTplVariable(v.key)">
+              {{ v.key }}
+            </span>
+          </div>
+        </div>
+        <div class="ai-field">
+          <label class="ai-label mono">Prompt</label>
+          <textarea
+            ref="tplPromptTextarea"
+            v-model="tplForm.prompt"
+            class="ai-prompt-textarea"
+            rows="12"
+            placeholder="Prompt du template..."
+          />
+        </div>
+        <div class="ai-field">
+          <label class="ai-label mono">Partage</label>
+          <div class="ai-toggle-row">
+            <v-switch v-model="tplForm.isShared" hide-details color="var(--me-accent)" density="compact" />
+            <span class="ai-toggle-label">{{ tplForm.isShared ? 'Visible par tous les utilisateurs' : 'Prive (vous uniquement)' }}</span>
+          </div>
+        </div>
+        <div class="ai-tpl-form-actions">
+          <button class="me-btn-ghost" @click="tplFormOpen = false">Annuler</button>
+          <button class="me-btn-primary" @click="saveTemplate" :disabled="tplSaving || !tplForm.title.trim() || !tplForm.prompt.trim()">
+            <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+            {{ tplSaving ? 'Enregistrement...' : (tplEditingId ? 'Mettre a jour' : 'Creer') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Templates list -->
+      <div v-if="reportTemplates.length > 0 && !tplFormOpen" class="ai-tpl-list">
+        <div class="ai-tpl-item" v-for="tpl in reportTemplates" :key="tpl._id">
+          <div class="ai-tpl-info">
+            <span class="ai-tpl-name mono">{{ tpl.title }}</span>
+            <span class="ai-tpl-desc">{{ tpl.description || 'Aucune description' }}</span>
+            <div class="ai-tpl-badges">
+              <span v-if="tpl.isShared" class="ai-tpl-badge ai-tpl-badge--shared">Partage</span>
+              <span v-else class="ai-tpl-badge ai-tpl-badge--private">Prive</span>
+            </div>
+          </div>
+          <div class="ai-tpl-actions">
+            <button class="ai-model-select-btn" @click="editTemplate(tpl)" title="Modifier">
+              <v-icon size="14">mdi-pencil-outline</v-icon>
+            </button>
+            <button class="ai-model-delete-btn" @click="deleteTemplate(tpl._id)" title="Supprimer">
+              <v-icon size="14">mdi-delete-outline</v-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="!tplFormOpen && !loadingTemplates" class="ai-empty">
+        <v-icon size="32" class="mb-2" color="var(--me-text-muted)">mdi-file-document-outline</v-icon>
+        <p>Aucun template personnalise</p>
+        <p class="ai-empty-hint">Le template par defaut (ci-dessus) sera utilise</p>
+      </div>
+
+      <div class="ai-loading" v-if="loadingTemplates">
+        <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
+        <span>Chargement des templates...</span>
+      </div>
+    </div>
+
     <!-- Models management -->
     <div class="ai-card glass-card fade-in fade-in-delay-2">
       <div class="ai-card-header">
@@ -272,6 +376,20 @@ const pullProgressLabel = ref('');
 let pullAbortController: AbortController | null = null;
 
 const promptTextarea = ref<HTMLTextAreaElement | null>(null);
+const tplPromptTextarea = ref<HTMLTextAreaElement | null>(null);
+
+// Report templates
+const loadingTemplates = ref(false);
+const tplFormOpen = ref(false);
+const tplSaving = ref(false);
+const tplEditingId = ref<string | null>(null);
+const reportTemplates = ref<Array<{ _id: string; title: string; description: string; prompt: string; isShared: boolean; owner?: any }>>([]);
+const tplForm = reactive({
+  title: '',
+  description: '',
+  prompt: '',
+  isShared: false,
+});
 
 const defaultReportPrompt = `Tu es un analyste OSINT professionnel. Redige un rapport d'investigation structure en suivant EXACTEMENT le format ci-dessous. Utilise les donnees fournies pour remplir chaque section. Redige en francais, de maniere professionnelle et factuelle.
 
@@ -537,9 +655,82 @@ async function removeModel(name: string) {
   }
 }
 
+// Template management functions
+function insertTplVariable(variable: string) {
+  const textarea = tplPromptTextarea.value;
+  if (!textarea) return;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const before = tplForm.prompt.substring(0, start);
+  const after = tplForm.prompt.substring(end);
+  tplForm.prompt = before + variable + after;
+  nextTick(() => {
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + variable.length;
+  });
+}
+
+async function loadTemplates() {
+  loadingTemplates.value = true;
+  try {
+    const { data } = await api.get('/report-templates');
+    reportTemplates.value = data.templates || [];
+  } catch (err) {
+    console.error('Failed to load report templates:', err);
+  } finally {
+    loadingTemplates.value = false;
+  }
+}
+
+function openCreateTemplate() {
+  tplEditingId.value = null;
+  tplForm.title = '';
+  tplForm.description = '';
+  tplForm.prompt = '';
+  tplForm.isShared = false;
+  tplFormOpen.value = true;
+}
+
+function editTemplate(tpl: { _id: string; title: string; description: string; prompt: string; isShared: boolean }) {
+  tplEditingId.value = tpl._id;
+  tplForm.title = tpl.title;
+  tplForm.description = tpl.description;
+  tplForm.prompt = tpl.prompt;
+  tplForm.isShared = tpl.isShared;
+  tplFormOpen.value = true;
+}
+
+async function saveTemplate() {
+  if (!tplForm.title.trim() || !tplForm.prompt.trim()) return;
+  tplSaving.value = true;
+  try {
+    if (tplEditingId.value) {
+      await api.put(`/report-templates/${tplEditingId.value}`, tplForm);
+    } else {
+      await api.post('/report-templates', tplForm);
+    }
+    tplFormOpen.value = false;
+    await loadTemplates();
+  } catch (err) {
+    console.error('Failed to save report template:', err);
+  } finally {
+    tplSaving.value = false;
+  }
+}
+
+async function deleteTemplate(id: string) {
+  try {
+    await api.delete(`/report-templates/${id}`);
+    await loadTemplates();
+  } catch (err) {
+    console.error('Failed to delete report template:', err);
+  }
+}
+
 onMounted(() => {
   loadSettings();
   loadModels();
+  loadTemplates();
 });
 
 onUnmounted(() => {
@@ -929,6 +1120,97 @@ onUnmounted(() => {
   font-size: 11px;
   color: var(--me-text-muted);
   margin-top: 2px;
+}
+/* Report templates */
+.ai-tpl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--me-radius-xs);
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  margin-bottom: 16px;
+}
+.ai-tpl-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ai-tpl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-tpl-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--me-radius-xs);
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+}
+.ai-tpl-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.ai-tpl-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+}
+.ai-tpl-desc {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-tpl-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+.ai-tpl-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-family: var(--me-font-mono);
+}
+.ai-tpl-badge--shared {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+.ai-tpl-badge--private {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--me-text-muted);
+}
+.ai-tpl-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.me-btn-ghost {
+  padding: 8px 16px;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.me-btn-ghost:hover {
+  border-color: var(--me-accent);
+  color: var(--me-accent);
 }
 .ai-reset-btn {
   padding: 6px 14px;

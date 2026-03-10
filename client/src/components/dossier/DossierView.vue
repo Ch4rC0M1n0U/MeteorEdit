@@ -22,8 +22,12 @@
                 <v-icon size="16">mdi-file-export-outline</v-icon>
                 <span>Exporter PDF / DOCX</span>
               </button>
+              <button class="dv-export-option" @click="printDossier">
+                <v-icon size="16">mdi-printer-outline</v-icon>
+                <span>Imprimer</span>
+              </button>
               <div v-if="aiEnabled" class="dv-export-divider" />
-              <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="generateAiReport">
+              <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect">
                 <v-icon size="16">mdi-robot-outline</v-icon>
                 <span>Generer rapport IA</span>
               </button>
@@ -233,6 +237,59 @@
     </div>
   </v-dialog>
 
+  <!-- AI Template selection dialog -->
+  <v-dialog v-model="aiTemplateSelectDialog" max-width="500">
+    <div class="glass-card dialog-card">
+      <div class="dialog-header">
+        <h3 class="mono">
+          <v-icon size="18" class="mr-1">mdi-file-document-edit-outline</v-icon>
+          Choisir un template
+        </h3>
+        <button class="me-close-btn" @click="aiTemplateSelectDialog = false">
+          <v-icon size="18">mdi-close</v-icon>
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div v-if="aiLoadingTemplates" class="ai-tpl-loading">
+          <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
+          <span>Chargement...</span>
+        </div>
+        <div v-else class="ai-tpl-list">
+          <button
+            :class="['ai-tpl-item', { 'ai-tpl-item--active': aiSelectedTemplateId === null }]"
+            @click="aiSelectedTemplateId = null"
+          >
+            <div class="ai-tpl-item-info">
+              <span class="ai-tpl-item-title mono">Template par defaut</span>
+              <span class="ai-tpl-item-desc">Prompt systeme configure dans les parametres</span>
+            </div>
+            <v-icon v-if="aiSelectedTemplateId === null" size="16" color="var(--me-accent)">mdi-check-circle</v-icon>
+          </button>
+          <button
+            v-for="tpl in aiReportTemplates"
+            :key="tpl._id"
+            :class="['ai-tpl-item', { 'ai-tpl-item--active': aiSelectedTemplateId === tpl._id }]"
+            @click="aiSelectedTemplateId = tpl._id"
+          >
+            <div class="ai-tpl-item-info">
+              <span class="ai-tpl-item-title mono">{{ tpl.title }}</span>
+              <span class="ai-tpl-item-desc">{{ tpl.description || 'Aucune description' }}</span>
+              <span v-if="tpl.isShared" class="ai-tpl-shared-badge mono">Partage</span>
+            </div>
+            <v-icon v-if="aiSelectedTemplateId === tpl._id" size="16" color="var(--me-accent)">mdi-check-circle</v-icon>
+          </button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="me-btn-ghost" @click="aiTemplateSelectDialog = false">Annuler</button>
+        <button class="me-btn-primary" @click="generateAiReport(aiSelectedTemplateId)" :disabled="aiLoadingTemplates">
+          <v-icon size="14" class="mr-1">mdi-robot-outline</v-icon>
+          Generer
+        </button>
+      </div>
+    </div>
+  </v-dialog>
+
   <!-- AI Report dialog -->
   <v-dialog v-model="aiReportDialog" max-width="800" persistent>
     <div class="glass-card dialog-card">
@@ -358,6 +415,7 @@ import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
 import { loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, createPdfBuilder } from '../../utils/pdfTemplate';
 import { generateDocx, type DocxExportData } from '../../utils/docxTemplate';
+import { tiptapJsonToHtml } from '../../utils/tiptapToHtml';
 import NodeTree from '../tree/NodeTree.vue';
 import DossierInfo from './DossierInfo.vue';
 import NoteEditor from '../editor/NoteEditor.vue';
@@ -435,6 +493,10 @@ onUnmounted(() => document.removeEventListener('keydown', onFocusKeydown));
 
 // AI Report
 const aiEnabled = ref(false);
+const aiTemplateSelectDialog = ref(false);
+const aiReportTemplates = ref<Array<{ _id: string; title: string; description: string; isShared: boolean; owner?: any }>>([]);
+const aiSelectedTemplateId = ref<string | null>(null);
+const aiLoadingTemplates = ref(false);
 const aiReportDialog = ref(false);
 const aiGenerating = ref(false);
 const aiReportContent = ref('');
@@ -461,7 +523,23 @@ async function checkAiStatus() {
 }
 checkAiStatus();
 
-async function generateAiReport() {
+async function openAiReportTemplateSelect() {
+  if (!dossierStore.currentDossier) return;
+  aiSelectedTemplateId.value = null;
+  aiLoadingTemplates.value = true;
+  aiTemplateSelectDialog.value = true;
+  try {
+    const { data } = await api.get('/report-templates');
+    aiReportTemplates.value = data.templates || [];
+  } catch {
+    aiReportTemplates.value = [];
+  } finally {
+    aiLoadingTemplates.value = false;
+  }
+}
+
+async function generateAiReport(templateId?: string | null) {
+  aiTemplateSelectDialog.value = false;
   if (!dossierStore.currentDossier) return;
   aiReportDialog.value = true;
   aiGenerating.value = true;
@@ -478,6 +556,9 @@ async function generateAiReport() {
 
   aiLogs.value.push({ time: aiLogTime(), message: 'Envoi de la requete...', type: 'info' });
 
+  const bodyPayload: any = { dossierId };
+  if (templateId) bodyPayload.templateId = templateId;
+
   try {
     const response = await fetch(`${SERVER_URL}/api/ai/generate-report`, {
       method: 'POST',
@@ -485,7 +566,7 @@ async function generateAiReport() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ dossierId }),
+      body: JSON.stringify(bodyPayload),
       signal: aiAbortController.signal,
     });
 
@@ -827,6 +908,243 @@ async function exportJSON() {
   } catch (err) {
     console.error('JSON export failed:', err);
   }
+}
+
+function esc(str: string): string {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function printDossier() {
+  const dossier = dossierStore.currentDossier;
+  if (!dossier) return;
+
+  const nodes = dossierStore.nodes.filter((n) => n.type === 'note' && !n.deletedAt);
+  const statusLabels: Record<string, string> = { open: 'Ouvert', in_progress: 'En cours', closed: 'Clos' };
+
+  let entitiesHtml = '';
+  if (dossier.entities && dossier.entities.length > 0) {
+    entitiesHtml = `
+      <div class="print-section">
+        <h2>Entites</h2>
+        <table>
+          <thead><tr><th>Nom</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            ${dossier.entities.map((e) => `<tr><td>${esc(e.name)}</td><td>${esc(e.type)}</td><td>${esc(e.description)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  let investigatorHtml = '';
+  const inv = dossier.investigator;
+  if (inv && (inv.name || inv.service || inv.email)) {
+    investigatorHtml = `
+      <div class="print-section">
+        <h2>Enqueteur</h2>
+        <table>
+          <tbody>
+            ${inv.name ? `<tr><td><strong>Nom</strong></td><td>${esc(inv.name)}</td></tr>` : ''}
+            ${inv.service ? `<tr><td><strong>Service</strong></td><td>${esc(inv.service)}</td></tr>` : ''}
+            ${inv.unit ? `<tr><td><strong>Unite</strong></td><td>${esc(inv.unit)}</td></tr>` : ''}
+            ${inv.phone ? `<tr><td><strong>Telephone</strong></td><td>${esc(inv.phone)}</td></tr>` : ''}
+            ${inv.email ? `<tr><td><strong>Email</strong></td><td>${esc(inv.email)}</td></tr>` : ''}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  let objectivesHtml = '';
+  if (dossier.objectives) {
+    objectivesHtml = `
+      <div class="print-section">
+        <h2>Objectifs</h2>
+        <p>${esc(dossier.objectives).replace(/\n/g, '<br>')}</p>
+      </div>`;
+  }
+
+  let judicialHtml = '';
+  if (dossier.judicialFacts) {
+    judicialHtml = `
+      <div class="print-section">
+        <h2>Faits judiciaires</h2>
+        <p>${esc(dossier.judicialFacts).replace(/\n/g, '<br>')}</p>
+      </div>`;
+  }
+
+  let notesHtml = '';
+  if (nodes.length > 0) {
+    notesHtml = nodes.map((node) => {
+      let contentHtml = '';
+      if (node.content) {
+        contentHtml = tiptapJsonToHtml(node.content);
+      }
+      if (!contentHtml) {
+        contentHtml = '<p><em>Contenu vide</em></p>';
+      }
+      return `
+        <div class="print-section print-note">
+          <h2>${esc(node.title)}</h2>
+          <div class="note-content">${contentHtml}</div>
+        </div>`;
+    }).join('');
+  }
+
+  const createdDate = new Date(dossier.createdAt).toLocaleDateString('fr-FR', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  const printHtml = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Impression - ${esc(dossier.title)}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      color: #1a1a1a;
+      background: #fff;
+      line-height: 1.6;
+      font-size: 12pt;
+    }
+    .print-cover {
+      text-align: center;
+      padding: 60px 40px 40px;
+      border-bottom: 3px solid #2196F3;
+      margin-bottom: 30px;
+    }
+    .print-cover h1 {
+      font-size: 28pt;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+    .print-cover .subtitle {
+      font-size: 12pt;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    .print-cover .status {
+      display: inline-block;
+      padding: 4px 16px;
+      border-radius: 12px;
+      background: #e3f2fd;
+      color: #1565c0;
+      font-size: 10pt;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    .print-container { max-width: 800px; margin: 0 auto; padding: 0 40px 40px; }
+    .print-section {
+      margin-bottom: 28px;
+      page-break-inside: avoid;
+    }
+    .print-note { page-break-before: auto; }
+    .print-section h2 {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #1565c0;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 11pt;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+      color: #333;
+    }
+    .note-content img { max-width: 100%; height: auto; }
+    .note-content blockquote {
+      border-left: 4px solid #90caf9;
+      padding: 8px 16px;
+      margin: 12px 0;
+      background: #f9f9f9;
+      color: #444;
+    }
+    .note-content pre {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 10pt;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    .note-content code {
+      background: #f0f0f0;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-size: 10pt;
+    }
+    .note-content pre code { background: none; padding: 0; }
+    .note-content ul, .note-content ol { padding-left: 24px; margin: 8px 0; }
+    .note-content p { margin-bottom: 8px; }
+    .note-content h1, .note-content h2, .note-content h3,
+    .note-content h4, .note-content h5, .note-content h6 {
+      margin-top: 16px; margin-bottom: 8px; color: #1a1a1a;
+    }
+    .note-content hr { border: none; border-top: 1px solid #ddd; margin: 16px 0; }
+    .note-content a { color: #1565c0; text-decoration: underline; }
+    .note-content .task-list { list-style: none; padding-left: 0; }
+    .note-content .task-item { display: flex; align-items: flex-start; gap: 6px; }
+    .note-content .task-item input[type="checkbox"] { margin-top: 5px; }
+    .print-footer {
+      text-align: center;
+      font-size: 9pt;
+      color: #999;
+      border-top: 1px solid #eee;
+      padding-top: 12px;
+      margin-top: 40px;
+    }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-cover { page-break-after: always; }
+      .print-note { page-break-inside: avoid; }
+      .print-section { page-break-inside: avoid; }
+      @page { margin: 15mm 20mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-cover">
+    <h1>${esc(dossier.title)}</h1>
+    ${dossier.description ? `<p class="subtitle">${esc(dossier.description)}</p>` : ''}
+    <p class="subtitle">${createdDate}</p>
+    <span class="status">${statusLabels[dossier.status] || dossier.status}</span>
+  </div>
+  <div class="print-container">
+    ${investigatorHtml}
+    ${objectivesHtml}
+    ${judicialHtml}
+    ${entitiesHtml}
+    ${notesHtml}
+    <div class="print-footer">
+      Impression generee le ${new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+  printWindow.document.write(printHtml);
+  printWindow.document.close();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
 }
 
 async function addSignatureBlock(b: ReturnType<typeof createPdfBuilder>) {
@@ -1567,5 +1885,66 @@ function downloadBlob(blob: Blob, filename: string) {
   font-size: 13px;
   line-height: 1.6;
   color: var(--me-text-primary);
+}
+/* AI Template selection */
+.ai-tpl-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  color: var(--me-text-muted);
+  font-size: 13px;
+}
+.ai-tpl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 350px;
+  overflow-y: auto;
+}
+.ai-tpl-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--me-radius-xs);
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+  color: var(--me-text-primary);
+}
+.ai-tpl-item:hover {
+  border-color: var(--me-accent);
+}
+.ai-tpl-item--active {
+  border-color: var(--me-accent);
+  background: var(--me-accent-glow);
+}
+.ai-tpl-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.ai-tpl-item-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ai-tpl-item-desc {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-tpl-shared-badge {
+  font-size: 10px;
+  color: var(--me-accent);
+  font-weight: 600;
+  margin-top: 2px;
 }
 </style>

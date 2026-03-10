@@ -4,6 +4,7 @@ import PluginSettings from '../models/PluginSettings';
 import Dossier from '../models/Dossier';
 import DossierNode from '../models/DossierNode';
 import User from '../models/User';
+import ReportTemplate from '../models/ReportTemplate';
 import { logActivity } from '../utils/activityLogger';
 
 async function getOllamaConfig() {
@@ -197,7 +198,7 @@ const activeGenerations = new Map<string, AbortController>();
 // POST /api/ai/generate-report - Generate AI report with SSE streaming
 export async function generateReport(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
-  const { dossierId } = req.body;
+  const { dossierId, templateId } = req.body;
 
   if (!dossierId) return res.status(400).json({ message: 'dossierId requis' });
 
@@ -250,7 +251,18 @@ export async function generateReport(req: AuthRequest, res: Response) {
     ? [sig.title, sig.name, sig.service, sig.unit, sig.email].filter(Boolean).join('\n')
     : `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() || 'Non renseigne';
 
-  const promptTemplate = config.reportPrompt || `Tu es un analyste OSINT professionnel. Genere un rapport d'investigation structure et detaille.`;
+  // Load prompt from template if templateId provided, otherwise fall back to PluginSettings
+  let promptTemplate: string;
+  if (templateId) {
+    const reportTemplate = await ReportTemplate.findById(templateId);
+    if (reportTemplate) {
+      promptTemplate = reportTemplate.prompt;
+    } else {
+      promptTemplate = config.reportPrompt || `Tu es un analyste OSINT professionnel. Genere un rapport d'investigation structure et detaille.`;
+    }
+  } else {
+    promptTemplate = config.reportPrompt || `Tu es un analyste OSINT professionnel. Genere un rapport d'investigation structure et detaille.`;
+  }
   const prompt = promptTemplate
     .replace(/\{\{title\}\}/g, dossier.title || '')
     .replace(/\{\{description\}\}/g, dossier.description || 'Non renseignee')
@@ -368,6 +380,147 @@ export async function generateReport(req: AuthRequest, res: Response) {
   } finally {
     activeGenerations.delete(genId);
     res.end();
+  }
+}
+
+// POST /api/ai/enrich-entity - Enrich entity info using Ollama
+export async function enrichEntity(req: AuthRequest, res: Response) {
+  const userId = req.user!.userId;
+  const { dossierId, entityIndex } = req.body;
+
+  if (!dossierId || entityIndex === undefined) {
+    return res.status(400).json({ message: 'dossierId et entityIndex requis' });
+  }
+
+  const config = await getOllamaConfig();
+  if (!config.enabled || !config.selectedModel) {
+    return res.status(400).json({ message: 'IA non configuree' });
+  }
+
+  const dossier = await Dossier.findById(dossierId);
+  if (!dossier) return res.status(404).json({ message: 'Dossier non trouve' });
+
+  const isOwner = dossier.owner.toString() === userId;
+  const isCollaborator = dossier.collaborators.some(c => c.toString() === userId);
+  if (!isOwner && !isCollaborator) return res.status(403).json({ message: 'Acces refuse' });
+
+  const entity = dossier.entities?.[entityIndex];
+  if (!entity) return res.status(404).json({ message: 'Entite non trouvee' });
+
+  const prompt = `Tu es un analyste OSINT. Enrichis les informations sur l'entite suivante en fournissant une description detaillee et pertinente pour une investigation.
+
+Entite: ${entity.name}
+Type: ${entity.type}
+Description actuelle: ${entity.description || 'Aucune'}
+
+Contexte du dossier: ${dossier.title}
+${dossier.description ? `Description du dossier: ${dossier.description}` : ''}
+
+Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des informations factuelles potentielles, des pistes de recherche OSINT, et des elements a verifier. Reponds uniquement avec la description enrichie, sans introduction ni conclusion.`;
+
+  try {
+    const response = await fetch(`${config.baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.selectedModel,
+        prompt,
+        stream: false,
+        options: { temperature: 0.3, num_predict: 1024 },
+      }),
+    });
+
+    if (!response.ok) throw new Error(`Ollama status ${response.status}`);
+    const data = await response.json() as { response?: string };
+    const enrichedDescription = data.response?.trim() || entity.description;
+
+    // Update entity description
+    dossier.entities![entityIndex].description = enrichedDescription;
+    await dossier.save();
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'entity.enrich', 'dossier', dossierId, { entityName: entity.name, entityType: entity.type }, ip);
+
+    res.json({ description: enrichedDescription });
+  } catch (err: any) {
+    res.status(502).json({ message: `Erreur IA: ${err.message}` });
+  }
+}
+
+// POST /api/ai/summarize - Summarize a node or dossier using Ollama
+export async function summarizeContent(req: AuthRequest, res: Response) {
+  const userId = req.user!.userId;
+  const { dossierId, nodeId } = req.body;
+
+  if (!dossierId) return res.status(400).json({ message: 'dossierId requis' });
+
+  const config = await getOllamaConfig();
+  if (!config.enabled || !config.selectedModel) {
+    return res.status(400).json({ message: 'IA non configuree' });
+  }
+
+  const dossier = await Dossier.findById(dossierId);
+  if (!dossier) return res.status(404).json({ message: 'Dossier non trouve' });
+
+  const isOwner = dossier.owner.toString() === userId;
+  const isCollaborator = dossier.collaborators.some(c => c.toString() === userId);
+  if (!isOwner && !isCollaborator) return res.status(403).json({ message: 'Acces refuse' });
+
+  let contentToSummarize = '';
+  let targetTitle = dossier.title;
+
+  if (nodeId) {
+    const node = await DossierNode.findById(nodeId);
+    if (!node) return res.status(404).json({ message: 'Noeud non trouve' });
+    targetTitle = node.title;
+    contentToSummarize = node.contentText || '';
+    if (!contentToSummarize && node.content) {
+      contentToSummarize = typeof node.content === 'string' ? node.content : JSON.stringify(node.content);
+    }
+  } else {
+    const nodes = await DossierNode.find({ dossierId, deletedAt: null, type: 'note' }).select('title contentText');
+    contentToSummarize = nodes
+      .filter(n => n.contentText)
+      .map(n => `### ${n.title}\n${n.contentText}`)
+      .join('\n\n');
+    if (dossier.description) contentToSummarize = `Description: ${dossier.description}\n\n${contentToSummarize}`;
+    if (dossier.objectives) contentToSummarize = `Objectifs: ${dossier.objectives}\n\n${contentToSummarize}`;
+  }
+
+  if (!contentToSummarize.trim()) {
+    return res.status(400).json({ message: 'Aucun contenu a resumer' });
+  }
+
+  const prompt = `Tu es un analyste OSINT. Fais un resume concis et structure du contenu suivant.
+
+Titre: ${targetTitle}
+
+Contenu:
+${contentToSummarize.substring(0, 8000)}
+
+Fournis un resume structure en points cles (bullet points). Sois concis mais complet. Reponds uniquement avec le resume.`;
+
+  try {
+    const response = await fetch(`${config.baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.selectedModel,
+        prompt,
+        stream: false,
+        options: { temperature: 0.2, num_predict: 1024 },
+      }),
+    });
+
+    if (!response.ok) throw new Error(`Ollama status ${response.status}`);
+    const data = await response.json() as { response?: string };
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'ai.summarize', nodeId ? 'node' : 'dossier', nodeId || dossierId, { title: targetTitle }, ip);
+
+    res.json({ summary: data.response?.trim() || '' });
+  } catch (err: any) {
+    res.status(502).json({ message: `Erreur IA: ${err.message}` });
   }
 }
 
