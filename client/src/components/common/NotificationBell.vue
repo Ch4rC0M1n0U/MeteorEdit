@@ -1,14 +1,14 @@
 <template>
   <div class="notif-bell-wrapper" ref="wrapperRef">
-    <button class="notif-bell-btn" @click="toggleDropdown" title="Notifications">
+    <button class="notif-bell-btn" @click="toggleDropdown" :title="$t('notificationBell.title')">
       <v-icon size="20">mdi-bell-outline</v-icon>
       <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
 
     <div v-if="open" class="notif-dropdown glass-card">
       <div class="notif-dropdown-header">
-        <span class="notif-dropdown-title">Notifications</span>
-        <button v-if="unreadCount > 0" class="notif-mark-all" @click="handleMarkAllRead">Tout lire</button>
+        <span class="notif-dropdown-title">{{ $t('notificationBell.title') }}</span>
+        <button v-if="unreadCount > 0" class="notif-mark-all" @click="handleMarkAllRead">{{ $t('notificationBell.markAllRead') }}</button>
       </div>
 
       <div class="notif-filters">
@@ -42,7 +42,7 @@
         </div>
 
         <div v-if="filteredNotifications.length === 0" class="notif-empty">
-          Aucune notification
+          {{ $t('notificationBell.noNotifications') }}
         </div>
       </div>
     </div>
@@ -51,9 +51,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useNotifications } from '../../composables/useNotifications';
 import { useDossierStore } from '../../stores/dossier';
 
+const { t } = useI18n();
 const { notifications, unreadCount, fetchNotifications, markRead, markAllRead, setupSocketListener, cleanupSocketListener } = useNotifications();
 const dossierStore = useDossierStore();
 
@@ -61,12 +63,12 @@ const open = ref(false);
 const wrapperRef = ref<HTMLElement | null>(null);
 
 const activeFilter = ref('all');
-const filters = [
-  { key: 'all', label: 'Tout' },
-  { key: 'tasks', label: 'Taches' },
-  { key: 'collab', label: 'Collaborations' },
-  { key: 'system', label: 'Systeme' },
-];
+const filters = computed(() => [
+  { key: 'all', label: t('notificationBell.filterAll') },
+  { key: 'tasks', label: t('notificationBell.filterTasks') },
+  { key: 'collab', label: t('notificationBell.filterCollab') },
+  { key: 'system', label: t('notificationBell.filterSystem') },
+]);
 
 const filterMap: Record<string, string[]> = {
   tasks: ['task.assigned', 'task.deadline', 'task.completed'],
@@ -96,13 +98,13 @@ function iconFor(type: string): string {
 
 function timeAgo(date: string): string {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return 'A l\'instant';
+  if (seconds < 60) return t('notificationBell.justNow');
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `Il y a ${minutes}min`;
+  if (minutes < 60) return t('notificationBell.minutesAgo', { min: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Il y a ${hours}h`;
+  if (hours < 24) return t('notificationBell.hoursAgo', { hours });
   const days = Math.floor(hours / 24);
-  return `Il y a ${days}j`;
+  return t('notificationBell.daysAgo', { days });
 }
 
 async function handleClick(notif: { _id: string; read: boolean; dossierId: string | null }) {

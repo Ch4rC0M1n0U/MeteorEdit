@@ -10,21 +10,21 @@
         </div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono">{{ streaks.current }}</span>
-          <span class="dash-kpi-label">Streak actuel</span>
+          <span class="dash-kpi-label">{{ $t('dashboard.currentStreak') }}</span>
         </div>
       </div>
       <div class="dash-kpi glass-card">
         <div class="dash-kpi-icon"><v-icon size="22">mdi-trophy-outline</v-icon></div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono">{{ streaks.best }}</span>
-          <span class="dash-kpi-label">Meilleur streak</span>
+          <span class="dash-kpi-label">{{ $t('dashboard.bestStreak') }}</span>
         </div>
       </div>
       <div class="dash-kpi glass-card">
         <div class="dash-kpi-icon"><v-icon size="22">mdi-folder-star-outline</v-icon></div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono dash-kpi-value--small">{{ topDossierTitle }}</span>
-          <span class="dash-kpi-label">Top dossier</span>
+          <span class="dash-kpi-label">{{ $t('dashboard.topDossier') }}</span>
         </div>
       </div>
       <div class="dash-kpi glass-card">
@@ -33,7 +33,7 @@
         </div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono">{{ weeklyTrend.current }}</span>
-          <span class="dash-kpi-label">Cette semaine</span>
+          <span class="dash-kpi-label">{{ $t('dashboard.thisWeek') }}</span>
         </div>
       </div>
     </div>
@@ -42,16 +42,16 @@
     <div class="dash-stats-row">
       <!-- Donut -->
       <div class="dash-card glass-card">
-        <h3 class="dash-card-title mono">Repartition par type</h3>
+        <h3 class="dash-card-title mono">{{ $t('dashboard.distributionByType') }}</h3>
         <div class="dash-donut-container">
           <Doughnut v-if="donutData" :data="donutData" :options="donutOptions" />
         </div>
       </div>
       <!-- Top dossiers bar -->
       <div class="dash-card glass-card">
-        <h3 class="dash-card-title mono">Top dossiers actifs</h3>
+        <h3 class="dash-card-title mono">{{ $t('dashboard.topActiveDossiers') }}</h3>
         <Bar v-if="barData" :data="barData" :options="barOptions" />
-        <p v-else class="dash-empty-text">Pas assez de donnees</p>
+        <p v-else class="dash-empty-text">{{ $t('dashboard.notEnoughData') }}</p>
       </div>
     </div>
   </div>
@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Doughnut, Bar } from 'vue-chartjs';
 import {
   Chart as ChartJS, ArcElement, CategoryScale, LinearScale,
@@ -66,6 +67,8 @@ import {
 } from 'chart.js';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+
+const { t } = useI18n();
 
 const props = defineProps<{
   nodeCountsByType: { _id: string; count: number }[];
@@ -79,9 +82,13 @@ const typeColors: Record<string, string> = {
   map: '#fb923c', dataset: '#22d3ee', folder: '#94a3b8',
 };
 
-const typeLabels: Record<string, string> = {
-  note: 'Notes', mindmap: 'Mindmaps', document: 'Documents',
-  map: 'Cartes', dataset: 'Datasets', folder: 'Dossiers',
+const typeLabelsMap: Record<string, string> = {
+  note: 'dashboard.nodeTypes.notes',
+  mindmap: 'dashboard.nodeTypes.mindmaps',
+  document: 'dashboard.nodeTypes.documents',
+  map: 'dashboard.nodeTypes.maps',
+  dataset: 'nodeTypes.dataset',
+  folder: 'dashboard.nodeTypes.folders',
 };
 
 const topDossierTitle = computed(() => {
@@ -91,7 +98,7 @@ const topDossierTitle = computed(() => {
 const donutData = computed(() => {
   if (!props.nodeCountsByType.length) return null;
   return {
-    labels: props.nodeCountsByType.map(n => typeLabels[n._id] || n._id),
+    labels: props.nodeCountsByType.map(n => t(typeLabelsMap[n._id] || n._id)),
     datasets: [{
       data: props.nodeCountsByType.map(n => n.count),
       backgroundColor: props.nodeCountsByType.map(n => typeColors[n._id] || '#64748b'),

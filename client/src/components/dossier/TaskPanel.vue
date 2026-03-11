@@ -3,13 +3,13 @@
     <div class="tp-header">
       <h3 class="tp-title mono">
         <v-icon size="18" class="mr-2">mdi-checkbox-marked-outline</v-icon>
-        Taches
+        {{ $t('tasks.title') }}
       </h3>
       <div class="tp-stats mono">
         <span class="tp-stat">{{ doneCount }}/{{ tasks.length }}</span>
       </div>
       <button class="tp-add-btn" @click="showCreate = true">
-        <v-icon size="16">mdi-plus</v-icon> Nouvelle tache
+        <v-icon size="16">mdi-plus</v-icon> {{ $t('tasks.newTask') }}
       </button>
     </div>
 
@@ -56,17 +56,17 @@
               <v-icon size="12">mdi-calendar</v-icon>
               {{ formatDate(task.dueDate) }}
             </span>
-            <span :class="'tp-priority tp-priority--' + task.priority">{{ task.priority }}</span>
+            <span :class="'tp-priority tp-priority--' + task.priority">{{ priorityLabel(task.priority) }}</span>
           </div>
         </div>
 
-        <button class="tp-delete-btn" @click="handleDelete(task)" title="Supprimer">
+        <button class="tp-delete-btn" @click="handleDelete(task)" :title="$t('common.delete')">
           <v-icon size="14">mdi-trash-can-outline</v-icon>
         </button>
       </div>
 
       <div v-if="!loading && filteredTasks.length === 0" class="tp-empty">
-        Aucune tache{{ filterStatus ? ' avec ce filtre' : '' }}
+        {{ filterStatus ? $t('tasks.noTasksFiltered') : $t('tasks.noTasks') }}
       </div>
     </div>
 
@@ -75,7 +75,7 @@
       <div class="tp-dialog glass-card">
         <div class="tp-dialog-header">
           <v-icon size="20" class="tp-dialog-icon">mdi-checkbox-marked-outline</v-icon>
-          <span>{{ editingTask ? 'Modifier la tache' : 'Nouvelle tache' }}</span>
+          <span>{{ editingTask ? $t('tasks.editTask') : $t('tasks.newTask') }}</span>
           <button class="tp-dialog-close" @click="closeDialog">
             <v-icon size="18">mdi-close</v-icon>
           </button>
@@ -83,31 +83,31 @@
 
         <div class="tp-dialog-body">
           <div class="tp-field">
-            <label class="tp-field-label">Titre *</label>
-            <input v-model="form.title" class="tp-input" placeholder="Titre de la tache" />
+            <label class="tp-field-label">{{ $t('tasks.taskTitle') }}</label>
+            <input v-model="form.title" class="tp-input" :placeholder="$t('tasks.taskTitlePlaceholder')" />
           </div>
           <div class="tp-field">
-            <label class="tp-field-label">Description</label>
-            <textarea v-model="form.description" class="tp-input tp-textarea" rows="3" placeholder="Description optionnelle" />
+            <label class="tp-field-label">{{ $t('tasks.description') }}</label>
+            <textarea v-model="form.description" class="tp-input tp-textarea" rows="3" :placeholder="$t('tasks.descPlaceholder')" />
           </div>
           <div class="tp-field-row">
             <div class="tp-field">
-              <label class="tp-field-label">Priorite</label>
+              <label class="tp-field-label">{{ $t('tasks.priority') }}</label>
               <select v-model="form.priority" class="tp-input">
-                <option value="low">Basse</option>
-                <option value="medium">Moyenne</option>
-                <option value="high">Haute</option>
+                <option value="low">{{ $t('tasks.priorityLow') }}</option>
+                <option value="medium">{{ $t('tasks.priorityMedium') }}</option>
+                <option value="high">{{ $t('tasks.priorityHigh') }}</option>
               </select>
             </div>
             <div class="tp-field">
-              <label class="tp-field-label">Echeance</label>
+              <label class="tp-field-label">{{ $t('tasks.dueDate') }}</label>
               <input v-model="form.dueDate" type="date" class="tp-input mono" />
             </div>
           </div>
           <div class="tp-field">
-            <label class="tp-field-label">Assigner a</label>
+            <label class="tp-field-label">{{ $t('tasks.assignTo') }}</label>
             <select v-model="form.assigneeId" class="tp-input">
-              <option value="">Non assigne</option>
+              <option value="">{{ $t('tasks.unassigned') }}</option>
               <option v-for="u in assignableUsers" :key="u._id" :value="u._id">
                 {{ u.firstName }} {{ u.lastName }}
               </option>
@@ -116,9 +116,9 @@
         </div>
 
         <div class="tp-dialog-footer">
-          <button class="tp-btn tp-btn--cancel" @click="closeDialog">Annuler</button>
+          <button class="tp-btn tp-btn--cancel" @click="closeDialog">{{ $t('common.cancel') }}</button>
           <button class="tp-btn tp-btn--save" @click="saveTask" :disabled="!form.title.trim()">
-            {{ editingTask ? 'Modifier' : 'Creer' }}
+            {{ editingTask ? $t('tasks.modify') : $t('common.create') }}
           </button>
         </div>
       </div>
@@ -128,11 +128,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import type { Task, CollaboratorUser } from '../../types';
 
+const { t, locale } = useI18n();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 
@@ -143,11 +145,11 @@ const editingTask = ref<Task | null>(null);
 const filterStatus = ref<string | null>(null);
 const assignableUsers = ref<CollaboratorUser[]>([]);
 
-const statusFilters = [
-  { label: 'A faire', value: 'todo' },
-  { label: 'En cours', value: 'in_progress' },
-  { label: 'Termine', value: 'done' },
-];
+const statusFilters = computed(() => [
+  { label: t('tasks.toDo'), value: 'todo' },
+  { label: t('tasks.inProgress'), value: 'in_progress' },
+  { label: t('tasks.done'), value: 'done' },
+]);
 
 const form = ref({
   title: '',
@@ -170,13 +172,22 @@ const filteredTasks = computed(() => {
   });
 });
 
+function priorityLabel(priority: string): string {
+  const map: Record<string, string> = {
+    low: t('tasks.priorityLow'),
+    medium: t('tasks.priorityMedium'),
+    high: t('tasks.priorityHigh'),
+  };
+  return map[priority] || priority;
+}
+
 function isOverdue(task: Task): boolean {
   if (!task.dueDate || task.status === 'done') return false;
   return new Date(task.dueDate) < new Date();
 }
 
 function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+  return new Date(d).toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' });
 }
 
 async function fetchTasks() {
@@ -272,9 +283,9 @@ async function cycleStatus(task: Task) {
 
 async function handleDelete(task: Task) {
   const ok = await confirm({
-    title: 'Supprimer la tache',
-    message: `Supprimer "${task.title}" ?`,
-    confirmText: 'Supprimer',
+    title: t('tasks.deleteTask'),
+    message: t('tasks.deleteTaskConfirm', { title: task.title }),
+    confirmText: t('common.delete'),
     variant: 'danger',
   });
   if (!ok) return;

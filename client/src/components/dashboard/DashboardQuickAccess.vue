@@ -4,7 +4,7 @@
     <div class="dash-card glass-card">
       <h3 class="dash-card-title mono">
         <v-icon size="16" class="mr-1">mdi-history</v-icon>
-        Derniers elements ouverts
+        {{ $t('dashboard.lastOpened') }}
       </h3>
       <div v-if="lastAccessed.length" class="dash-quick-list">
         <div
@@ -20,14 +20,14 @@
           </div>
         </div>
       </div>
-      <p v-else class="dash-empty-text">Aucun element recent</p>
+      <p v-else class="dash-empty-text">{{ $t('dashboard.noRecentElements') }}</p>
     </div>
 
     <!-- Assigned tasks -->
     <div class="dash-card glass-card">
       <h3 class="dash-card-title mono">
         <v-icon size="16" class="mr-1">mdi-checkbox-marked-circle-outline</v-icon>
-        Taches assignees
+        {{ $t('dashboard.assignedTasks') }}
       </h3>
       <div v-if="assignedTasks.length" class="dash-quick-list">
         <div
@@ -42,18 +42,22 @@
           </div>
         </div>
       </div>
-      <p v-else class="dash-empty-text">Aucune tache assignee</p>
+      <p v-else class="dash-empty-text">{{ $t('dashboard.noAssignedTasks') }}</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
 defineProps<{
   lastAccessed: any[];
   assignedTasks: any[];
 }>();
 
 defineEmits<{ openNode: [node: any] }>();
+
+const { locale } = useI18n();
 
 function nodeIcon(type: string): string {
   const icons: Record<string, string> = {
@@ -68,7 +72,7 @@ function nodeIcon(type: string): string {
 }
 
 function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+  return new Date(d).toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' });
 }
 </script>
 

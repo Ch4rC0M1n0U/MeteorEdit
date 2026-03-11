@@ -3,9 +3,9 @@
     <div class="dev-header">
       <h3 class="dev-title mono">
         <v-icon size="18" class="mr-2">mdi-shield-check-outline</v-icon>
-        Preuves du dossier
+        {{ $t('evidence.title') }}
       </h3>
-      <button class="dev-refresh" @click="refresh" :disabled="evidenceStore.loading" title="Actualiser">
+      <button class="dev-refresh" @click="refresh" :disabled="evidenceStore.loading" :title="$t('evidence.refresh')">
         <v-icon size="16" :class="{ 'dev-spin': evidenceStore.loading }">
           {{ evidenceStore.loading ? 'mdi-loading' : 'mdi-refresh' }}
         </v-icon>
@@ -18,8 +18,8 @@
 
     <div v-else-if="!evidenceStore.dossierEvidence.length" class="dev-empty">
       <v-icon size="32" class="dev-empty-icon">mdi-shield-outline</v-icon>
-      <p>Aucune preuve enregistree pour ce dossier.</p>
-      <p class="dev-empty-hint">Les preuves sont creees automatiquement lors du web clipper ou de l'upload de fichier.</p>
+      <p>{{ $t('evidence.noEvidence') }}</p>
+      <p class="dev-empty-hint">{{ $t('evidence.autoCreatedHint') }}</p>
     </div>
 
     <div v-else class="dev-list">
@@ -47,14 +47,17 @@
     </div>
 
     <div v-if="evidenceStore.dossierEvidence.length" class="dev-footer mono">
-      {{ evidenceStore.dossierEvidence.length }} preuve(s) enregistree(s)
+      {{ $t('evidence.evidenceCount', { count: evidenceStore.dossierEvidence.length }) }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useEvidenceStore } from '../../stores/evidence';
+
+const { t, locale } = useI18n();
 
 const props = defineProps<{ dossierId: string }>();
 defineEmits<{ 'select-node': [nodeId: string] }>();
@@ -93,24 +96,26 @@ function statusClass(status: string | null) {
 }
 
 function statusLabel(status: string | null) {
-  if (!status) return 'Non verifie';
+  if (!status) return t('evidence.statusPending');
   const labels: Record<string, string> = {
-    valid: 'Valide',
-    tampered: 'Altere',
-    missing: 'Manquant',
+    valid: t('evidence.statusValid'),
+    tampered: t('evidence.statusTampered'),
+    missing: t('evidence.statusMissing'),
   };
   return labels[status] || status;
 }
 
 function typeLabel(type: string) {
   const labels: Record<string, string> = {
-    file: 'Fichier', screenshot: 'Capture', clip: 'Clip web',
+    file: t('evidence.typeFile'),
+    screenshot: t('evidence.typeScreenshot'),
+    clip: t('evidence.typeClip'),
   };
   return labels[type] || type;
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', {
+  return new Date(d).toLocaleDateString(locale.value, {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });

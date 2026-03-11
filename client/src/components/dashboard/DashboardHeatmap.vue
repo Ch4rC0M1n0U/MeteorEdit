@@ -2,7 +2,7 @@
   <div class="dash-card glass-card dash-heatmap-card">
     <h3 class="dash-card-title mono">
       <v-icon size="16" class="mr-1">mdi-calendar-blank-outline</v-icon>
-      Contribution (6 mois)
+      {{ $t('dashboard.contribution6months') }}
     </h3>
     <div class="heatmap-container">
       <div class="heatmap-grid">
@@ -17,13 +17,13 @@
         </div>
       </div>
       <div class="heatmap-legend">
-        <span class="heatmap-legend-label mono">Moins</span>
+        <span class="heatmap-legend-label mono">{{ $t('dashboard.less') }}</span>
         <div class="heatmap-cell heatmap-0" />
         <div class="heatmap-cell heatmap-1" />
         <div class="heatmap-cell heatmap-2" />
         <div class="heatmap-cell heatmap-3" />
         <div class="heatmap-cell heatmap-4" />
-        <span class="heatmap-legend-label mono">Plus</span>
+        <span class="heatmap-legend-label mono">{{ $t('dashboard.more') }}</span>
       </div>
     </div>
   </div>
