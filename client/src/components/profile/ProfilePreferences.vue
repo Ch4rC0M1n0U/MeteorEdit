@@ -80,14 +80,14 @@
         <v-select v-model="prefs.language" :items="languageOptions" density="compact" hide-details>
           <template #selection="{ item }">
             <div class="lang-selection">
-              <span class="lang-flag">{{ getLangFlag(item.value) }}</span>
+              <span class="lang-flag" v-html="getLangFlag(item.value)"></span>
               <span>{{ item.title }}</span>
             </div>
           </template>
           <template #item="{ item, props: itemProps }">
             <v-list-item v-bind="itemProps">
               <template #prepend>
-                <span class="lang-flag mr-2">{{ getLangFlag(item.value) }}</span>
+                <span class="lang-flag mr-2" v-html="getLangFlag(item.value)"></span>
               </template>
             </v-list-item>
           </template>
@@ -156,13 +156,13 @@ const autoSaveOptions = computed(() => [
 ]);
 
 const LANG_FLAGS: Record<string, string> = {
-  fr: '🇫🇷',
-  en: '🇬🇧',
-  nl: '🇳🇱',
+  fr: '<svg viewBox="0 0 30 20" width="20" height="14" style="border-radius:2px;vertical-align:middle"><rect fill="#002654" width="10" height="20"/><rect fill="#fff" x="10" width="10" height="20"/><rect fill="#CE1126" x="20" width="10" height="20"/></svg>',
+  en: '<svg viewBox="0 0 30 20" width="20" height="14" style="border-radius:2px;vertical-align:middle"><rect fill="#012169" width="30" height="20"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#fff" stroke-width="3"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#C8102E" stroke-width="1.5"/><path d="M15,0 V20 M0,10 H30" stroke="#fff" stroke-width="5"/><path d="M15,0 V20 M0,10 H30" stroke="#C8102E" stroke-width="3"/></svg>',
+  nl: '<svg viewBox="0 0 30 20" width="20" height="14" style="border-radius:2px;vertical-align:middle"><rect fill="#AE1C28" width="30" height="7"/><rect fill="#fff" y="7" width="30" height="7"/><rect fill="#21468B" y="14" width="30" height="7"/></svg>',
 };
 
 function getLangFlag(code: string): string {
-  return LANG_FLAGS[code] ?? '🌐';
+  return LANG_FLAGS[code] ?? '<svg viewBox="0 0 20 20" width="16" height="16" style="vertical-align:middle"><circle cx="10" cy="10" r="9" fill="none" stroke="#888" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="10" fill="#888">?</text></svg>';
 }
 
 const languageOptions = [
