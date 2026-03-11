@@ -2,13 +2,13 @@
   <div v-if="!dossierStore.currentDossier" class="home-page">
     <div class="home-header fade-in">
       <div>
-        <h1 class="home-title mono">Mes dossiers</h1>
-        <p class="home-subtitle">{{ dossierStore.dossiers.length }} dossier{{ dossierStore.dossiers.length > 1 ? 's' : '' }}</p>
+        <h1 class="home-title mono">{{ $t('home.myDossiers') }}</h1>
+        <p class="home-subtitle">{{ $t('home.dossierCount', { count: dossierStore.dossiers.length }) }}</p>
       </div>
       <div class="home-header-actions">
-        <button class="home-import-btn" @click="triggerImport" title="Importer un dossier JSON">
+        <button class="home-import-btn" @click="triggerImport" :title="$t('home.importJson')">
           <v-icon size="16" class="mr-1">mdi-upload-outline</v-icon>
-          <span class="mono">Importer</span>
+          <span class="mono">{{ $t('home.import') }}</span>
         </button>
         <CreateDossierDialog />
       </div>
@@ -18,7 +18,7 @@
     <v-progress-linear v-if="dossierStore.loading" indeterminate color="primary" class="mb-4" style="border-radius: 4px;" />
 
     <div v-if="favoriteDossiers.length" class="favorites-section fade-in">
-      <h2 class="section-title mono"><v-icon size="18" class="mr-1">mdi-star</v-icon> Favoris</h2>
+      <h2 class="section-title mono"><v-icon size="18" class="mr-1">mdi-star</v-icon> {{ $t('home.favorites') }}</h2>
       <div class="dossier-grid">
         <DossierCard
           v-for="dossier in favoriteDossiers"
@@ -47,8 +47,8 @@
 
     <div v-else-if="!dossierStore.loading" class="home-empty fade-in">
       <v-icon size="48" color="primary" class="mb-4">mdi-folder-open-outline</v-icon>
-      <h3 class="mono">Aucun dossier</h3>
-      <p class="text-muted">Creez votre premier dossier pour commencer.</p>
+      <h3 class="mono">{{ $t('home.noDossiers') }}</h3>
+      <p class="text-muted">{{ $t('home.noDossiersHint') }}</p>
     </div>
 
     <UserDashboard @open-dossier="handleOpen" />
@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../stores/dossier';
 import { useConfirm } from '../composables/useConfirm';
 import api from '../services/api';
@@ -67,6 +68,7 @@ import CreateDossierDialog from '../components/dossier/CreateDossierDialog.vue';
 import DossierView from '../components/dossier/DossierView.vue';
 import UserDashboard from '../components/dashboard/UserDashboard.vue';
 
+const { t } = useI18n();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const importInputRef = ref<HTMLInputElement | null>(null);
@@ -102,7 +104,7 @@ async function handleImport(e: Event) {
     const text = await file.text();
     const data = JSON.parse(text);
     if (!data.dossier?.title) {
-      await confirm({ title: 'Import invalide', message: 'Fichier JSON invalide : le champ "dossier.title" est manquant.', confirmText: 'OK', cancelText: '' });
+      await confirm({ title: t('home.invalidImport'), message: t('home.invalidImportMsg'), confirmText: t('common.ok'), cancelText: '' });
       return;
     }
     const { data: newDossier } = await api.post('/dossiers/import/json', data);
@@ -110,15 +112,15 @@ async function handleImport(e: Event) {
     dossierStore.openDossier(newDossier._id);
   } catch (err) {
     console.error('Import failed:', err);
-    await confirm({ title: 'Erreur', message: 'Erreur lors de l\'import du fichier JSON.', confirmText: 'OK', cancelText: '', variant: 'danger' });
+    await confirm({ title: t('common.error'), message: t('home.importError'), confirmText: t('common.ok'), cancelText: '', variant: 'danger' });
   }
 }
 
 async function handleDelete(id: string) {
   const ok = await confirm({
-    title: 'Supprimer le dossier',
-    message: 'Supprimer ce dossier et tout son contenu ? Cette action est irreversible.',
-    confirmText: 'Supprimer',
+    title: t('home.deleteDossier'),
+    message: t('home.deleteDossierConfirm'),
+    confirmText: t('common.delete'),
     variant: 'danger',
   });
   if (ok) dossierStore.deleteDossier(id);

@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-robot-outline</v-icon>
         Intelligence Artificielle
       </h2>
-      <p class="admin-section-subtitle">Configuration d'Ollama pour la generation de rapports</p>
+      <p class="admin-section-subtitle">{{ $t('admin.aiSubtitle') }}</p>
     </div>
 
     <!-- Connection settings -->
@@ -15,17 +15,17 @@
           <v-icon size="24">mdi-cog-outline</v-icon>
         </div>
         <div>
-          <h3 class="ai-card-title mono">Configuration</h3>
-          <p class="ai-card-desc">Parametres de connexion a Ollama</p>
+          <h3 class="ai-card-title mono">{{ $t('admin.aiConfig') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.aiConfigDesc') }}</p>
         </div>
         <span :class="['plugin-status', connectionOk ? 'plugin-status--active' : 'plugin-status--inactive']">
-          {{ connectionOk ? 'Connecte' : 'Non connecte' }}
+          {{ connectionOk ? $t('admin.connected') : $t('admin.notConnected') }}
         </span>
       </div>
 
       <div class="ai-fields">
         <div class="ai-field">
-          <label class="ai-label mono">URL Ollama</label>
+          <label class="ai-label mono">{{ $t('admin.ollamaUrl') }}</label>
           <div class="ai-field-row">
             <v-text-field
               v-model="form.baseUrl"
@@ -35,21 +35,21 @@
             />
             <button class="ai-test-btn" @click="testConnection" :disabled="testing">
               <v-icon size="14" class="mr-1">mdi-connection</v-icon>
-              {{ testing ? 'Test...' : 'Tester' }}
+              {{ testing ? $t('admin.testing') : $t('admin.test') }}
             </button>
           </div>
         </div>
 
         <div class="ai-field">
-          <label class="ai-label mono">Activer l'IA</label>
+          <label class="ai-label mono">{{ $t('admin.enableAI') }}</label>
           <div class="ai-toggle-row">
             <v-switch v-model="form.enabled" hide-details color="var(--me-accent)" density="compact" />
-            <span class="ai-toggle-label">{{ form.enabled ? 'Active' : 'Desactive' }}</span>
+            <span class="ai-toggle-label">{{ form.enabled ? $t('admin.aiEnabled') : $t('admin.aiDisabled') }}</span>
           </div>
         </div>
 
         <div class="ai-field" v-if="installedModels.length > 0">
-          <label class="ai-label mono">Modele selectionne</label>
+          <label class="ai-label mono">{{ $t('admin.selectedModel') }}</label>
           <v-select
             v-model="form.selectedModel"
             :items="installedModels"
@@ -57,7 +57,7 @@
             item-value="name"
             density="compact"
             hide-details
-            placeholder="Selectionner un modele"
+            :placeholder="$t('admin.selectModelPlaceholder')"
           />
         </div>
       </div>
@@ -65,7 +65,7 @@
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
           <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
-          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+          {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
       </div>
     </div>
@@ -77,30 +77,30 @@
           <v-icon size="24">mdi-text-box-edit-outline</v-icon>
         </div>
         <div>
-          <h3 class="ai-card-title mono">Prompt de generation</h3>
-          <p class="ai-card-desc">Template du prompt envoye a l'IA pour generer les rapports</p>
+          <h3 class="ai-card-title mono">{{ $t('admin.generationPrompt') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.generationPromptDesc') }}</p>
         </div>
       </div>
 
       <div class="ai-fields">
         <div class="ai-field">
-          <label class="ai-label mono">Variables disponibles</label>
+          <label class="ai-label mono">{{ $t('admin.availableVariables') }}</label>
           <div class="ai-prompt-vars">
             <span v-for="v in promptVariables" :key="v.key" class="ai-prompt-var-chip" :title="v.desc" @click="insertVariable(v.key)">
               {{ v.key }}
             </span>
           </div>
-          <p class="ai-prompt-vars-hint">Cliquez sur une variable pour l'inserer dans le prompt</p>
+          <p class="ai-prompt-vars-hint">{{ $t('admin.clickToInsert') }}</p>
         </div>
 
         <div class="ai-field">
-          <label class="ai-label mono">Prompt</label>
+          <label class="ai-label mono">{{ $t('admin.prompt') }}</label>
           <textarea
             ref="promptTextarea"
             v-model="form.reportPrompt"
             class="ai-prompt-textarea"
             rows="16"
-            placeholder="Entrez le prompt pour la generation de rapport..."
+            :placeholder="$t('admin.promptPlaceholder')"
           />
         </div>
 
@@ -115,7 +115,7 @@
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
           <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
-          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+          {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
       </div>
     </div>
@@ -127,8 +127,8 @@
           <v-icon size="24">mdi-file-document-multiple-outline</v-icon>
         </div>
         <div>
-          <h3 class="ai-card-title mono">Templates de rapport</h3>
-          <p class="ai-card-desc">Gerer les templates de prompt pour la generation de rapports IA</p>
+          <h3 class="ai-card-title mono">{{ $t('admin.reportTemplates') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.reportTemplatesDesc') }}</p>
         </div>
         <button class="ai-test-btn" @click="openCreateTemplate">
           <v-icon size="14" class="mr-1">mdi-plus</v-icon>
@@ -139,25 +139,25 @@
       <!-- Template form (create/edit) -->
       <div v-if="tplFormOpen" class="ai-tpl-form">
         <div class="ai-field">
-          <label class="ai-label mono">Titre</label>
+          <label class="ai-label mono">{{ $t('admin.templateTitleLabel') }}</label>
           <v-text-field
             v-model="tplForm.title"
             density="compact"
             hide-details
-            placeholder="Titre du template"
+            :placeholder="$t('admin.templateTitle')"
           />
         </div>
         <div class="ai-field">
-          <label class="ai-label mono">Description</label>
+          <label class="ai-label mono">{{ $t('admin.templateDescription') }}</label>
           <v-text-field
             v-model="tplForm.description"
             density="compact"
             hide-details
-            placeholder="Description courte (optionnel)"
+            :placeholder="$t('admin.templateDescPlaceholder')"
           />
         </div>
         <div class="ai-field">
-          <label class="ai-label mono">Variables disponibles</label>
+          <label class="ai-label mono">{{ $t('admin.availableVariables') }}</label>
           <div class="ai-prompt-vars">
             <span v-for="v in promptVariables" :key="v.key" class="ai-prompt-var-chip" :title="v.desc" @click="insertTplVariable(v.key)">
               {{ v.key }}
@@ -165,27 +165,27 @@
           </div>
         </div>
         <div class="ai-field">
-          <label class="ai-label mono">Prompt</label>
+          <label class="ai-label mono">{{ $t('admin.templatePrompt') }}</label>
           <textarea
             ref="tplPromptTextarea"
             v-model="tplForm.prompt"
             class="ai-prompt-textarea"
             rows="12"
-            placeholder="Prompt du template..."
+            :placeholder="$t('admin.templatePromptPlaceholder')"
           />
         </div>
         <div class="ai-field">
-          <label class="ai-label mono">Partage</label>
+          <label class="ai-label mono">{{ $t('admin.templateSharing') }}</label>
           <div class="ai-toggle-row">
             <v-switch v-model="tplForm.isShared" hide-details color="var(--me-accent)" density="compact" />
-            <span class="ai-toggle-label">{{ tplForm.isShared ? 'Visible par tous les utilisateurs' : 'Prive (vous uniquement)' }}</span>
+            <span class="ai-toggle-label">{{ tplForm.isShared ? $t('admin.sharedAll') : $t('admin.privateOnly') }}</span>
           </div>
         </div>
         <div class="ai-tpl-form-actions">
-          <button class="me-btn-ghost" @click="tplFormOpen = false">Annuler</button>
+          <button class="me-btn-ghost" @click="tplFormOpen = false">{{ $t('common.cancel') }}</button>
           <button class="me-btn-primary" @click="saveTemplate" :disabled="tplSaving || !tplForm.title.trim() || !tplForm.prompt.trim()">
             <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
-            {{ tplSaving ? 'Enregistrement...' : (tplEditingId ? 'Mettre a jour' : 'Creer') }}
+            {{ tplSaving ? $t('admin.savingSettings') : (tplEditingId ? $t('admin.update') : $t('common.create')) }}
           </button>
         </div>
       </div>
@@ -195,17 +195,17 @@
         <div class="ai-tpl-item" v-for="tpl in reportTemplates" :key="tpl._id">
           <div class="ai-tpl-info">
             <span class="ai-tpl-name mono">{{ tpl.title }}</span>
-            <span class="ai-tpl-desc">{{ tpl.description || 'Aucune description' }}</span>
+            <span class="ai-tpl-desc">{{ tpl.description || $t('admin.noDescription') }}</span>
             <div class="ai-tpl-badges">
-              <span v-if="tpl.isShared" class="ai-tpl-badge ai-tpl-badge--shared">Partage</span>
-              <span v-else class="ai-tpl-badge ai-tpl-badge--private">Prive</span>
+              <span v-if="tpl.isShared" class="ai-tpl-badge ai-tpl-badge--shared">{{ $t('admin.shared') }}</span>
+              <span v-else class="ai-tpl-badge ai-tpl-badge--private">{{ $t('admin.private') }}</span>
             </div>
           </div>
           <div class="ai-tpl-actions">
-            <button class="ai-model-select-btn" @click="editTemplate(tpl)" title="Modifier">
+            <button class="ai-model-select-btn" @click="editTemplate(tpl)" :title="$t('common.edit')">
               <v-icon size="14">mdi-pencil-outline</v-icon>
             </button>
-            <button class="ai-model-delete-btn" @click="deleteTemplate(tpl._id)" title="Supprimer">
+            <button class="ai-model-delete-btn" @click="deleteTemplate(tpl._id)" :title="$t('common.delete')">
               <v-icon size="14">mdi-delete-outline</v-icon>
             </button>
           </div>
@@ -214,13 +214,13 @@
 
       <div v-else-if="!tplFormOpen && !loadingTemplates" class="ai-empty">
         <v-icon size="32" class="mb-2" color="var(--me-text-muted)">mdi-file-document-outline</v-icon>
-        <p>Aucun template personnalise</p>
-        <p class="ai-empty-hint">Le template par defaut (ci-dessus) sera utilise</p>
+        <p>{{ $t('admin.noCustomTemplates') }}</p>
+        <p class="ai-empty-hint">{{ $t('admin.defaultTemplateUsed') }}</p>
       </div>
 
       <div class="ai-loading" v-if="loadingTemplates">
         <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
-        <span>Chargement des templates...</span>
+        <span>{{ $t('admin.loadingTemplates') }}</span>
       </div>
     </div>
 
@@ -231,29 +231,29 @@
           <v-icon size="24">mdi-brain</v-icon>
         </div>
         <div>
-          <h3 class="ai-card-title mono">Modeles</h3>
-          <p class="ai-card-desc">Gerer les modeles installes dans Ollama</p>
+          <h3 class="ai-card-title mono">{{ $t('admin.models') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.modelsDesc') }}</p>
         </div>
       </div>
 
       <!-- Pull new model -->
       <div class="ai-pull-section">
-        <label class="ai-label mono">Telecharger un modele</label>
+        <label class="ai-label mono">{{ $t('admin.downloadModel') }}</label>
         <div class="ai-field-row">
           <v-text-field
             v-model="pullModelName"
             density="compact"
             hide-details
-            placeholder="ex: mistral:7b-instruct-v0.3-q4_K_M"
+            :placeholder="$t('admin.modelPlaceholder')"
             :disabled="pulling"
           />
           <button class="me-btn-primary" @click="pullModel" :disabled="pulling || !pullModelName.trim()">
             <v-icon size="14" class="mr-1">mdi-download</v-icon>
-            Telecharger
+            {{ $t('admin.download') }}
           </button>
         </div>
         <div class="ai-suggestions">
-          <span class="ai-suggestion-label">Suggestions:</span>
+          <span class="ai-suggestion-label">{{ $t('admin.suggestionsLabel') }}</span>
           <button v-for="s in suggestedModels" :key="s.name" class="ai-suggestion-chip" @click="pullModelName = s.name" :disabled="pulling">
             {{ s.label }}
           </button>
@@ -267,7 +267,7 @@
             <v-icon size="16" class="mr-1 ai-progress-spin">mdi-loading</v-icon>
             <span class="ai-progress-label mono">{{ pullProgressLabel }}</span>
           </div>
-          <button class="ai-cancel-btn" @click="cancelPull" title="Annuler le telechargement">
+          <button class="ai-cancel-btn" @click="cancelPull" :title="$t('admin.cancelDownload')">
             <v-icon size="14" class="mr-1">mdi-close-circle-outline</v-icon>
             Annuler
           </button>
@@ -300,15 +300,15 @@
               class="ai-model-select-btn"
               v-if="form.selectedModel !== model.name"
               @click="form.selectedModel = model.name"
-              title="Selectionner"
+              :title="$t('admin.select')"
             >
               <v-icon size="14">mdi-check-circle-outline</v-icon>
             </button>
             <span v-else class="ai-model-selected">
               <v-icon size="14" color="var(--me-accent)">mdi-check-circle</v-icon>
-              Actif
+              {{ $t('admin.activeModel') }}
             </span>
-            <button class="ai-model-delete-btn" @click="removeModel(model.name)" title="Supprimer">
+            <button class="ai-model-delete-btn" @click="removeModel(model.name)" :title="$t('common.delete')">
               <v-icon size="14">mdi-delete-outline</v-icon>
             </button>
           </div>
@@ -317,13 +317,13 @@
 
       <div class="ai-empty" v-else-if="!loadingModels && !pulling">
         <v-icon size="32" class="mb-2" color="var(--me-text-muted)">mdi-brain</v-icon>
-        <p>Aucun modele installe</p>
-        <p class="ai-empty-hint">Telechargez un modele pour commencer</p>
+        <p>{{ $t('admin.noModelsInstalled') }}</p>
+        <p class="ai-empty-hint">{{ $t('admin.downloadToStart') }}</p>
       </div>
 
       <div class="ai-loading" v-if="loadingModels">
         <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
-        <span>Chargement des modeles...</span>
+        <span>{{ $t('admin.loadingModels') }}</span>
       </div>
     </div>
 
@@ -334,22 +334,22 @@
           <v-icon size="24">mdi-information-outline</v-icon>
         </div>
         <div>
-          <h3 class="ai-card-title mono">Recommandations</h3>
-          <p class="ai-card-desc">Modeles recommandes pour VPS sans GPU</p>
+          <h3 class="ai-card-title mono">{{ $t('admin.recommendations') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.recommendationsDesc') }}</p>
         </div>
       </div>
       <div class="ai-info-content">
         <div class="ai-info-item">
           <strong class="mono">mistral:7b-instruct-v0.3-q4_K_M</strong>
-          <p>Bon equilibre performance/qualite. ~4 Go RAM. Excellent en francais.</p>
+          <p>{{ $t('admin.recMistralDesc') }}</p>
         </div>
         <div class="ai-info-item">
           <strong class="mono">phi3:mini</strong>
-          <p>Tres leger (~2.3 Go RAM). Plus rapide mais moins bon en francais.</p>
+          <p>{{ $t('admin.recPhi3Desc') }}</p>
         </div>
         <div class="ai-info-item">
           <strong class="mono">gemma2:2b</strong>
-          <p>Ultra-leger (~1.5 Go RAM). Pour les VPS tres limites.</p>
+          <p>{{ $t('admin.recGemma2Desc') }}</p>
         </div>
       </div>
     </div>
@@ -358,7 +358,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
+
+const { t } = useI18n();
 
 const saving = ref(false);
 const testing = ref(false);
@@ -436,18 +439,18 @@ Note: toutes les recherches reprises dans ce rapport ont ete realisees en source
 Ce rapport est clos le {{date}}.
 {{signature}}`;
 
-const promptVariables = [
-  { key: '{{title}}', desc: 'Titre du dossier' },
-  { key: '{{description}}', desc: 'Description du dossier' },
-  { key: '{{status}}', desc: 'Statut du dossier' },
-  { key: '{{objectives}}', desc: 'Objectifs du dossier' },
-  { key: '{{judicialFacts}}', desc: 'Faits judiciaires' },
-  { key: '{{entities}}', desc: 'Liste des entites' },
-  { key: '{{investigator}}', desc: 'Informations enqueteur du dossier' },
-  { key: '{{notes}}', desc: 'Contenu des notes' },
-  { key: '{{date}}', desc: 'Date du jour (format FR)' },
-  { key: '{{signature}}', desc: 'Signature de l\'utilisateur (depuis le profil)' },
-];
+const promptVariables = computed(() => [
+  { key: '{{title}}', desc: t('admin.varTitle') || 'Titre du dossier' },
+  { key: '{{description}}', desc: t('admin.varDescription') || 'Description du dossier' },
+  { key: '{{status}}', desc: t('admin.varStatus') || 'Statut du dossier' },
+  { key: '{{objectives}}', desc: t('admin.varObjectives') || 'Objectifs du dossier' },
+  { key: '{{judicialFacts}}', desc: t('admin.varJudicialFacts') || 'Faits judiciaires' },
+  { key: '{{entities}}', desc: t('admin.varEntities') || 'Liste des entites' },
+  { key: '{{investigator}}', desc: t('admin.varInvestigator') || 'Informations enqueteur du dossier' },
+  { key: '{{notes}}', desc: t('admin.varNotes') || 'Contenu des notes' },
+  { key: '{{date}}', desc: t('admin.varDate') || 'Date du jour (format FR)' },
+  { key: '{{signature}}', desc: t('admin.varSignature') || 'Signature de l\'utilisateur (depuis le profil)' },
+]);
 
 const form = reactive({
   baseUrl: 'http://localhost:11434',
@@ -458,12 +461,12 @@ const form = reactive({
 
 const installedModels = ref<Array<{ name: string; size: number; modified_at: string }>>([]);
 
-const suggestedModels = [
-  { name: 'mistral:7b-instruct-v0.3-q4_K_M', label: 'Mistral 7B (recommande)' },
+const suggestedModels = computed(() => [
+  { name: 'mistral:7b-instruct-v0.3-q4_K_M', label: 'Mistral 7B (' + t('admin.recommended') + ')' },
   { name: 'phi3:mini', label: 'Phi-3 Mini' },
   { name: 'gemma2:2b', label: 'Gemma 2 2B' },
   { name: 'llama3.2:3b', label: 'Llama 3.2 3B' },
-];
+]);
 
 const pullStatusColor = computed(() => pullError.value ? '#f87171' : '#34d399');
 const pullStatusIcon = computed(() => pullError.value ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline');
@@ -554,8 +557,8 @@ async function pullModel() {
   pullPercent.value = 0;
   pullDownloaded.value = 0;
   pullTotal.value = 0;
-  pullStatusText.value = 'Connexion...';
-  pullProgressLabel.value = `Telechargement de ${pullModelName.value}`;
+  pullStatusText.value = t('admin.connecting');
+  pullProgressLabel.value = t('admin.downloading', { model: pullModelName.value });
 
   pullAbortController = new AbortController();
   const token = localStorage.getItem('accessToken');
@@ -596,12 +599,12 @@ async function pullModel() {
             pullPercent.value = event.percent;
             pullDownloaded.value = event.completed;
             pullTotal.value = event.total;
-            pullStatusText.value = event.status || 'Telechargement...';
+            pullStatusText.value = event.status || t('admin.downloadProgress');
           } else if (event.type === 'status') {
             pullStatusText.value = event.status || '';
             if (event.status?.includes('verifying') || event.status?.includes('writing')) {
               pullPercent.value = 100;
-              pullStatusText.value = 'Finalisation...';
+              pullStatusText.value = t('admin.finalizing');
             }
           } else if (event.type === 'done') {
             pullStatus.value = event.message;
@@ -622,7 +625,7 @@ async function pullModel() {
     }
   } catch (err: any) {
     if (err.name === 'AbortError') {
-      pullStatus.value = 'Telechargement annule';
+      pullStatus.value = t('admin.downloadCancelled');
       pullError.value = true;
     } else {
       pullStatus.value = `Erreur: ${err.message}`;

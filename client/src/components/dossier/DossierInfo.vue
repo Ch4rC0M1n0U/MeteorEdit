@@ -1,10 +1,10 @@
 <template>
   <div class="dossier-info">
     <div class="di-header fade-in">
-      <h2 class="di-title mono">Informations du dossier</h2>
+      <h2 class="di-title mono">{{ $t('dossier.info') }}</h2>
       <button v-if="!editing" class="me-btn-primary" @click="startEdit">
         <v-icon size="16" class="mr-1">mdi-pencil-outline</v-icon>
-        Modifier
+        {{ $t('common.edit') }}
       </button>
     </div>
 
@@ -15,7 +15,7 @@
         <div class="di-icon-display">
           <div v-if="dossierLogoUrl" class="di-logo-wrap">
             <img :src="dossierLogoUrl" alt="Logo" class="di-logo-img" />
-            <button v-if="isOwner" class="di-logo-remove" @click="removeLogo" title="Supprimer le logo">
+            <button v-if="isOwner" class="di-logo-remove" @click="removeLogo" :title="$t('dossier.deleteLogo')">
               <v-icon size="12">mdi-close</v-icon>
             </button>
           </div>
@@ -24,11 +24,11 @@
           <div class="di-icon-actions" v-if="isOwner">
             <button class="me-btn-small" @click="showIconPicker = !showIconPicker">
               <v-icon size="14" class="mr-1">mdi-palette-outline</v-icon>
-              Icone
+              {{ $t('dossier.icon') }}
             </button>
             <button class="me-btn-small" @click="triggerLogoInput">
               <v-icon size="14" class="mr-1">mdi-image-outline</v-icon>
-              Logo
+              {{ $t('dossier.logo') }}
             </button>
             <input ref="logoInput" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden @change="handleLogoUpload" />
           </div>
@@ -47,7 +47,7 @@
           </div>
           <button v-if="form.icon" class="di-icon-clear" @click="selectIcon(null)">
             <v-icon size="12" class="mr-1">mdi-close</v-icon>
-            Retirer l'icone
+            {{ $t('dossier.removeIcon') }}
           </button>
         </div>
       </div>
@@ -55,32 +55,32 @@
       <div class="di-section">
         <div class="di-row">
           <div class="di-field">
-            <span class="di-label mono">Titre</span>
+            <span class="di-label mono">{{ $t('common.title') }}</span>
             <span class="di-value">{{ form.title || '—' }}</span>
           </div>
           <div class="di-field" style="max-width: 200px;">
-            <span class="di-label mono">Statut</span>
+            <span class="di-label mono">{{ $t('common.status') }}</span>
             <span class="di-status-badge" :class="`di-status-${form.status}`">{{ statusLabel }}</span>
           </div>
         </div>
         <div class="di-field" v-if="form.objectives">
-          <span class="di-label mono">Objectifs de la recherche</span>
+          <span class="di-label mono">{{ $t('dossier.objectives') }}</span>
           <span class="di-value di-value-block">{{ form.objectives }}</span>
         </div>
         <div class="di-field" v-if="form.judicialFacts">
-          <span class="di-label mono">Faits judiciaires</span>
+          <span class="di-label mono">{{ $t('dossier.judicialFacts') }}</span>
           <span class="di-value di-value-block">{{ form.judicialFacts }}</span>
         </div>
         <div class="di-field" v-if="form.description">
-          <span class="di-label mono">Description / Synthese</span>
+          <span class="di-label mono">{{ $t('dossier.synthesis') }}</span>
           <span class="di-value di-value-block">{{ form.description }}</span>
         </div>
         <div class="di-field di-tags-field">
-          <span class="di-label mono">Tags</span>
+          <span class="di-label mono">{{ $t('dossier.tags') }}</span>
           <v-combobox
             v-model="localTags"
             :items="availableTags"
-            label="Tags"
+            :label="$t('dossier.tags')"
             multiple
             chips
             closable-chips
@@ -95,16 +95,16 @@
       <div class="di-section">
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
-          Enqueteur
+          {{ $t('dossier.investigator') }}
         </h3>
         <div class="di-row">
-          <div class="di-field"><span class="di-label mono">Nom</span><span class="di-value">{{ form.investigator.name || '—' }}</span></div>
-          <div class="di-field"><span class="di-label mono">Service</span><span class="di-value">{{ form.investigator.service || '—' }}</span></div>
+          <div class="di-field"><span class="di-label mono">{{ $t('common.name') }}</span><span class="di-value">{{ form.investigator.name || '—' }}</span></div>
+          <div class="di-field"><span class="di-label mono">{{ $t('dossier.service') }}</span><span class="di-value">{{ form.investigator.service || '—' }}</span></div>
         </div>
         <div class="di-row-3">
-          <div class="di-field"><span class="di-label mono">Unite</span><span class="di-value">{{ form.investigator.unit || '—' }}</span></div>
-          <div class="di-field"><span class="di-label mono">Telephone</span><span class="di-value">{{ form.investigator.phone || '—' }}</span></div>
-          <div class="di-field"><span class="di-label mono">Email</span><span class="di-value">{{ form.investigator.email || '—' }}</span></div>
+          <div class="di-field"><span class="di-label mono">{{ $t('dossier.unit') }}</span><span class="di-value">{{ form.investigator.unit || '—' }}</span></div>
+          <div class="di-field"><span class="di-label mono">{{ $t('dossier.phone') }}</span><span class="di-value">{{ form.investigator.phone || '—' }}</span></div>
+          <div class="di-field"><span class="di-label mono">{{ $t('common.email') }}</span><span class="di-value">{{ form.investigator.email || '—' }}</span></div>
         </div>
       </div>
 
@@ -113,20 +113,20 @@
         <div class="di-section-header">
           <h3 class="di-section-title mono">
             <v-icon size="16" class="mr-2">mdi-account-group-outline</v-icon>
-            Entites
+            {{ $t('dossier.entities') }}
             <span v-if="form.entities.length" class="di-count">{{ form.entities.length }}</span>
           </h3>
           <button class="me-btn-small" @click="openEntityDialog()">
             <v-icon size="14" class="mr-1">mdi-plus</v-icon>
-            Ajouter
+            {{ $t('common.add') }}
           </button>
         </div>
         <div v-if="form.entities.length" class="di-entity-list">
           <div class="di-entity-list-header mono">
-            <span class="di-el-col-type">Type</span>
-            <span class="di-el-col-name">Nom</span>
-            <span class="di-el-col-desc">Description</span>
-            <span class="di-el-col-actions">Actions</span>
+            <span class="di-el-col-type">{{ $t('common.type') }}</span>
+            <span class="di-el-col-name">{{ $t('common.name') }}</span>
+            <span class="di-el-col-desc">{{ $t('common.description') }}</span>
+            <span class="di-el-col-actions">{{ $t('common.actions') }}</span>
           </div>
           <div v-for="(entity, i) in form.entities" :key="i" class="di-entity-row">
             <span class="di-el-col-type">
@@ -136,22 +136,22 @@
             <span class="di-el-col-name">{{ entity.name }}</span>
             <span class="di-el-col-desc" :title="entity.description">{{ entity.description || '—' }}</span>
             <span class="di-el-col-actions">
-              <button class="di-el-btn" @click="copyEntity(entity.name, i)" :title="'Copier ' + entity.name">
+              <button class="di-el-btn" @click="copyEntity(entity.name, i)" :title="$t('dossier.copyEntity') + ' ' + entity.name">
                 <v-icon size="15">{{ copiedIndex === i ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
               </button>
-              <button class="di-el-btn" @click="enrichEntityAI(i)" :title="'Enrichir avec IA'" :disabled="enrichingIndex === i">
+              <button class="di-el-btn" @click="enrichEntityAI(i)" :title="$t('dossier.enrichAI')" :disabled="enrichingIndex === i">
                 <v-icon size="15" :class="{ 'spin': enrichingIndex === i }">{{ enrichingIndex === i ? 'mdi-loading' : 'mdi-robot-outline' }}</v-icon>
               </button>
-              <button class="di-el-btn" @click="openEditEntity(i)" title="Modifier">
+              <button class="di-el-btn" @click="openEditEntity(i)" :title="$t('common.edit')">
                 <v-icon size="15">mdi-pencil-outline</v-icon>
               </button>
-              <button class="di-el-btn di-el-btn-danger" @click="removeEntity(i)" title="Supprimer">
+              <button class="di-el-btn di-el-btn-danger" @click="removeEntity(i)" :title="$t('common.delete')">
                 <v-icon size="15">mdi-trash-can-outline</v-icon>
               </button>
             </span>
           </div>
         </div>
-        <div v-else class="di-empty mono">Aucune entite</div>
+        <div v-else class="di-empty mono">{{ $t('dossier.noEntities') }}</div>
       </div>
 
       <!-- CHIFFREMENT E2E -->
@@ -159,7 +159,7 @@
         <div class="di-section-header">
           <h3 class="di-section-title mono">
             <v-icon size="16" class="mr-2">mdi-lock-outline</v-icon>
-            Chiffrement E2E
+            {{ $t('dossier.encryption') }}
           </h3>
           <div class="di-encryption-toggle">
             <v-switch
@@ -175,21 +175,21 @@
         </div>
         <p v-if="encryptionEnabled" class="di-encryption-info mono">
           <v-icon size="14" class="mr-1" color="success">mdi-shield-check-outline</v-icon>
-          Le contenu sensible de ce dossier est chiffre de bout en bout. Le serveur ne peut pas lire les donnees.
+          {{ $t('dossier.encryptionActive') }}
         </p>
         <p v-else class="di-encryption-info mono">
           <v-icon size="14" class="mr-1" color="warning">mdi-shield-off-outline</v-icon>
-          Le chiffrement E2E n'est pas actif. Activez-le pour proteger les donnees sensibles.
+          {{ $t('dossier.encryptionInactive') }}
         </p>
         <p v-if="!encryptionStore.isUnlocked && encryptionStore.hasKeys" class="di-encryption-warning mono">
           <v-icon size="14" class="mr-1" color="error">mdi-key-alert</v-icon>
-          Cles de chiffrement verrouillees. Reconnectez-vous pour les deverrouiller.
+          {{ $t('dossier.keysLocked') }}
         </p>
         <p v-if="!encryptionStore.hasKeys" class="di-encryption-warning mono">
           <v-icon size="14" class="mr-1" color="warning">mdi-key-plus</v-icon>
-          Aucune cle de chiffrement.
+          {{ $t('dossier.noKeys') }}
           <button class="di-gen-keys-btn" @click="generateEncryptionKeys" :disabled="generatingKeys">
-            {{ generatingKeys ? 'Generation...' : 'Generer les cles' }}
+            {{ generatingKeys ? $t('dossier.generating') : $t('dossier.generateKeys') }}
           </button>
         </p>
       </div>
@@ -198,7 +198,7 @@
       <div class="di-section" v-if="dossierStore.currentDossier">
         <div class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-account-multiple-outline</v-icon>
-          Collaborateurs
+          {{ $t('dossier.collaborators') }}
           <span v-if="collaboratorDetails.length" class="di-count">{{ collaboratorDetails.length }}</span>
         </div>
 
@@ -208,18 +208,18 @@
             <span class="collab-name">{{ collab.firstName }} {{ collab.lastName }}</span>
             <span class="collab-email mono">{{ collab.email }}</span>
           </div>
-          <button v-if="isOwner" class="collab-remove" @click="removeCollaborator(collab._id)" title="Retirer">
+          <button v-if="isOwner" class="collab-remove" @click="removeCollaborator(collab._id)" :title="$t('dossier.remove')">
             <v-icon size="14">mdi-close</v-icon>
           </button>
         </div>
 
-        <div v-if="!collaboratorDetails.length" class="di-empty mono">Aucun collaborateur</div>
+        <div v-if="!collaboratorDetails.length" class="di-empty mono">{{ $t('dossier.noCollaborators') }}</div>
 
         <div v-if="isOwner" class="collab-add">
           <div class="collab-search-wrapper">
             <v-text-field
               v-model="userSearchQuery"
-              label="Ajouter un collaborateur..."
+              :label="$t('dossier.addCollaborator')"
               density="compact"
               variant="outlined"
               hide-details
@@ -242,7 +242,7 @@
               </div>
             </div>
             <div v-else-if="userSearchQuery.length >= 2 && !searchingUsers" class="collab-search-results glass-card">
-              <div class="collab-search-empty">Aucun utilisateur trouvé</div>
+              <div class="collab-search-empty">{{ $t('dossier.noUserFound') }}</div>
             </div>
           </div>
         </div>
@@ -253,35 +253,35 @@
     <v-form v-else @submit.prevent="handleSave" class="di-form fade-in">
       <div class="di-section">
         <div class="di-row">
-          <v-text-field v-model="form.title" label="Titre du dossier" />
-          <v-select v-model="form.status" :items="statusOptions" label="Statut" style="max-width: 200px;" />
+          <v-text-field v-model="form.title" :label="$t('dossier.dossierTitle')" />
+          <v-select v-model="form.status" :items="statusOptions" :label="$t('common.status')" style="max-width: 200px;" />
         </div>
-        <v-textarea v-model="form.objectives" label="Objectifs de la recherche" rows="3" class="mb-1" />
-        <v-textarea v-model="form.judicialFacts" label="Faits judiciaires" rows="3" class="mb-1" />
-        <v-textarea v-model="form.description" label="Description / Synthese" rows="3" />
+        <v-textarea v-model="form.objectives" :label="$t('dossier.objectives')" rows="3" class="mb-1" />
+        <v-textarea v-model="form.judicialFacts" :label="$t('dossier.judicialFacts')" rows="3" class="mb-1" />
+        <v-textarea v-model="form.description" :label="$t('dossier.synthesis')" rows="3" />
       </div>
 
       <div class="di-section">
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
-          Enqueteur
+          {{ $t('dossier.investigator') }}
         </h3>
         <div class="di-row">
-          <v-text-field v-model="form.investigator.name" label="Nom" />
-          <v-text-field v-model="form.investigator.service" label="Service" />
+          <v-text-field v-model="form.investigator.name" :label="$t('common.name')" />
+          <v-text-field v-model="form.investigator.service" :label="$t('dossier.service')" />
         </div>
         <div class="di-row-3">
-          <v-text-field v-model="form.investigator.unit" label="Unite" />
-          <v-text-field v-model="form.investigator.phone" label="Telephone" />
-          <v-text-field v-model="form.investigator.email" label="Email" />
+          <v-text-field v-model="form.investigator.unit" :label="$t('dossier.unit')" />
+          <v-text-field v-model="form.investigator.phone" :label="$t('dossier.phone')" />
+          <v-text-field v-model="form.investigator.email" :label="$t('common.email')" />
         </div>
       </div>
 
       <div class="di-actions">
-        <button type="button" class="me-btn-ghost" @click="cancelEdit">Annuler</button>
+        <button type="button" class="me-btn-ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
         <button type="submit" class="me-btn-primary">
           <v-icon size="16" class="mr-1">mdi-content-save-outline</v-icon>
-          Sauvegarder
+          {{ $t('common.save') }}
         </button>
       </div>
     </v-form>
@@ -290,25 +290,25 @@
     <v-dialog v-model="entityDialog" max-width="440">
       <div class="glass-card dialog-card">
         <div class="dialog-header">
-          <h3 class="mono">{{ editingEntityIndex !== null ? 'Modifier l\'entite' : 'Ajouter une entite' }}</h3>
+          <h3 class="mono">{{ editingEntityIndex !== null ? $t('dossier.editEntity') : $t('dossier.addEntity') }}</h3>
           <button class="me-close-btn" @click="entityDialog = false">
             <v-icon size="18">mdi-close</v-icon>
           </button>
         </div>
         <div class="dialog-body">
-          <v-text-field v-model="newEntity.name" label="Nom de l'entite" autofocus class="mb-2" />
+          <v-text-field v-model="newEntity.name" :label="$t('dossier.entityName')" autofocus class="mb-2" />
           <v-select
             v-model="newEntity.type"
             :items="entityTypes"
-            label="Type"
+            :label="$t('common.type')"
             class="mb-2"
           />
-          <v-text-field v-model="newEntity.description" label="Description (optionnel)" />
+          <v-text-field v-model="newEntity.description" :label="$t('dossier.entityDescOptional')" />
         </div>
         <div class="dialog-footer">
-          <button class="me-btn-ghost" @click="entityDialog = false">Annuler</button>
+          <button class="me-btn-ghost" @click="entityDialog = false">{{ $t('common.cancel') }}</button>
           <button class="me-btn-primary" @click="saveEntity" :disabled="!newEntity.name.trim() || !newEntity.type">
-            {{ editingEntityIndex !== null ? 'Enregistrer' : 'Ajouter' }}
+            {{ editingEntityIndex !== null ? $t('common.save') : $t('common.add') }}
           </button>
         </div>
       </div>
@@ -318,6 +318,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useEncryptionStore } from '../../stores/encryption';
@@ -326,6 +327,7 @@ import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
 
+const { t } = useI18n();
 const { prompt: customPrompt, confirm: customConfirm } = useConfirm();
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
@@ -344,31 +346,31 @@ const dossierLogoUrl = computed(() => {
   return d?.logoPath ? `${SERVER_URL}/${d.logoPath}` : null;
 });
 
-const statusOptions = [
-  { title: 'Ouvert', value: 'open' },
-  { title: 'En cours', value: 'in_progress' },
-  { title: 'Clos', value: 'closed' },
-];
+const statusOptions = computed(() => [
+  { title: t('dossier.statusOpen'), value: 'open' },
+  { title: t('dossier.statusInProgress'), value: 'in_progress' },
+  { title: t('dossier.statusClosed'), value: 'closed' },
+]);
 
-const entityTypes = [
-  'Identite',
-  'Telephone',
-  'Email',
-  'Snapchat',
-  'Facebook',
-  'Instagram',
-  'Twitter / X',
-  'TikTok',
-  'Discord',
-  'Telegram',
-  'LinkedIn',
-  'Adresse IP',
-  'Adresse postale',
-  'Vehicule',
-  'IBAN / Compte',
-  'Pseudo',
-  'Autre',
-];
+const entityTypes = computed(() => [
+  t('dossier.entityTypes.identity'),
+  t('dossier.entityTypes.phone'),
+  t('dossier.entityTypes.email'),
+  t('dossier.entityTypes.snapchat'),
+  t('dossier.entityTypes.facebook'),
+  t('dossier.entityTypes.instagram'),
+  t('dossier.entityTypes.twitter'),
+  t('dossier.entityTypes.tiktok'),
+  t('dossier.entityTypes.discord'),
+  t('dossier.entityTypes.telegram'),
+  t('dossier.entityTypes.linkedin'),
+  t('dossier.entityTypes.ip'),
+  t('dossier.entityTypes.address'),
+  t('dossier.entityTypes.vehicle'),
+  t('dossier.entityTypes.iban'),
+  t('dossier.entityTypes.pseudo'),
+  t('dossier.entityTypes.other'),
+]);
 
 const localTags = ref<string[]>([]);
 const availableTags = ref<string[]>([]);
@@ -388,9 +390,9 @@ const newEntity = reactive({ name: '', type: '', description: '' });
 
 const statusLabel = computed(() => {
   switch (form.status) {
-    case 'open': return 'Ouvert';
-    case 'in_progress': return 'En cours';
-    case 'closed': return 'Clos';
+    case 'open': return t('dossier.statusOpen');
+    case 'in_progress': return t('dossier.statusInProgress');
+    case 'closed': return t('dossier.statusClosed');
     default: return form.status;
   }
 });
@@ -591,10 +593,10 @@ async function generateEncryptionKeys() {
   try {
     // Prompt user for password to protect the private key
     const password = await customPrompt({
-      title: 'Chiffrement E2E',
-      message: 'Entrez votre mot de passe pour proteger vos cles de chiffrement :',
-      promptLabel: 'Mot de passe',
-      confirmText: 'Generer les cles',
+      title: t('dossier.encryption'),
+      message: t('dossier.encryptionPasswordPrompt'),
+      promptLabel: t('dossier.encryptionPasswordLabel'),
+      confirmText: t('dossier.encryptionConfirmGenerate'),
       promptType: 'password',
     });
     if (!password) return;
@@ -616,12 +618,12 @@ async function toggleEncryption(newValue: boolean | null) {
       // Enable encryption
       if (!encryptionStore.hasKeys) {
         encryptionEnabled.value = false;
-        await customConfirm({ title: 'Chiffrement', message: 'Vous devez d\'abord generer vos cles de chiffrement.', confirmText: 'OK', cancelText: '' });
+        await customConfirm({ title: t('dossier.encryption'), message: t('dossier.encryptionNeedKeys'), confirmText: t('common.ok'), cancelText: '' });
         return;
       }
       if (!encryptionStore.isUnlocked) {
         encryptionEnabled.value = false;
-        await customConfirm({ title: 'Chiffrement', message: 'Vos cles de chiffrement sont verrouillees. Reconnectez-vous.', confirmText: 'OK', cancelText: '' });
+        await customConfirm({ title: t('dossier.encryption'), message: t('dossier.encryptionNeedUnlock'), confirmText: t('common.ok'), cancelText: '' });
         return;
       }
 
@@ -668,7 +670,7 @@ async function toggleEncryption(newValue: boolean | null) {
       // Disable encryption - decrypt all content first
       if (!encryptionStore.isUnlocked) {
         encryptionEnabled.value = true;
-        await customConfirm({ title: 'Chiffrement', message: 'Vos cles de chiffrement sont verrouillees. Reconnectez-vous pour desactiver le chiffrement.', confirmText: 'OK', cancelText: '' });
+        await customConfirm({ title: t('dossier.encryption'), message: t('dossier.encryptionDisableNeedUnlock'), confirmText: t('common.ok'), cancelText: '' });
         return;
       }
 

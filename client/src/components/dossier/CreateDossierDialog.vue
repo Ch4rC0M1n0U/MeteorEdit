@@ -3,13 +3,13 @@
     <template #activator="{ props }">
       <button v-bind="props" class="me-btn-primary">
         <v-icon size="18" class="mr-1">mdi-plus</v-icon>
-        Nouveau dossier
+        {{ $t('dossier.newDossier') }}
       </button>
     </template>
 
     <div class="glass-card dialog-card">
       <div class="dialog-header">
-        <h3 class="mono">Nouveau dossier</h3>
+        <h3 class="mono">{{ $t('dossier.newDossier') }}</h3>
         <button class="me-close-btn" @click="dialog = false">
           <v-icon size="18">mdi-close</v-icon>
         </button>
@@ -17,7 +17,7 @@
       <div class="dialog-body">
         <!-- Icon picker -->
         <div class="icon-picker-section">
-          <span class="icon-picker-label mono">Icone du dossier</span>
+          <span class="icon-picker-label mono">{{ $t('dossier.dossierIcon') }}</span>
           <div class="icon-picker-grid">
             <button
               v-for="ic in dossierIcons"
@@ -30,12 +30,12 @@
             </button>
           </div>
         </div>
-        <v-text-field v-model="title" label="Titre du dossier" autofocus class="mb-2" />
-        <v-textarea v-model="description" label="Description" rows="3" />
+        <v-text-field v-model="title" :label="$t('dossier.dossierTitle')" autofocus class="mb-2" />
+        <v-textarea v-model="description" :label="$t('common.description')" rows="3" />
       </div>
       <div class="dialog-footer">
-        <button class="me-btn-ghost" @click="dialog = false">Annuler</button>
-        <button class="me-btn-primary" @click="handleCreate" :disabled="!title.trim()">Creer</button>
+        <button class="me-btn-ghost" @click="dialog = false">{{ $t('common.cancel') }}</button>
+        <button class="me-btn-primary" @click="handleCreate" :disabled="!title.trim()">{{ $t('common.create') }}</button>
       </div>
     </div>
   </v-dialog>

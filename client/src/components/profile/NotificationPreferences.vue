@@ -3,7 +3,7 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-bell-cog-outline</v-icon>
-        Notifications
+        {{ $t('profile.notifications') }}
       </h2>
     </div>
 
@@ -13,16 +13,16 @@
       <!-- Global toggles -->
       <div class="sec-option">
         <div>
-          <p class="sec-label">Ne pas deranger</p>
-          <p class="sec-desc">Desactive les notifications push en temps reel</p>
+          <p class="sec-label">{{ $t('notifications.doNotDisturb') }}</p>
+          <p class="sec-desc">{{ $t('notifications.doNotDisturbDesc') }}</p>
         </div>
         <v-switch v-model="prefs.doNotDisturb" color="warning" hide-details @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Son de notification</p>
-          <p class="sec-desc">Jouer un son lors de la reception d'une notification</p>
+          <p class="sec-label">{{ $t('notifications.soundLabel') }}</p>
+          <p class="sec-desc">{{ $t('notifications.soundDesc') }}</p>
         </div>
         <v-switch v-model="prefs.soundEnabled" color="primary" hide-details @update:model-value="save" />
       </div>
@@ -30,60 +30,68 @@
       <div class="sec-divider" style="margin: 16px 0;" />
 
       <!-- Per-type preferences -->
-      <h3 class="sec-card-title mono mb-3">Par type de notification</h3>
+      <h3 class="sec-card-title mono mb-3">{{ $t('notifications.perType') }}</h3>
       <div class="notif-type-grid">
         <div class="notif-type-header" />
-        <div class="notif-type-header mono">In-app</div>
-        <div class="notif-type-header mono">Email</div>
+        <div class="notif-type-header mono">{{ $t('notifications.inApp') }}</div>
+        <div class="notif-type-header mono">{{ $t('notifications.emailChannel') }}</div>
 
-        <template v-for="t in notifTypes" :key="t.key">
+        <template v-for="nt in notifTypes" :key="nt.key">
           <div class="notif-type-label">
-            <v-icon size="16" class="mr-1">{{ t.icon }}</v-icon>
-            {{ t.label }}
+            <v-icon size="16" class="mr-1">{{ nt.icon }}</v-icon>
+            {{ nt.label }}
           </div>
           <div class="notif-type-toggle">
-            <v-switch v-model="prefs.inApp[t.key]" color="primary" density="compact" hide-details @update:model-value="save" />
+            <v-switch v-model="prefs.inApp[nt.key]" color="primary" density="compact" hide-details @update:model-value="save" />
           </div>
           <div class="notif-type-toggle">
-            <v-switch v-model="prefs.email[t.key]" color="primary" density="compact" hide-details @update:model-value="save" />
+            <v-switch v-model="prefs.email[nt.key]" color="primary" density="compact" hide-details @update:model-value="save" />
           </div>
         </template>
       </div>
     </div>
 
     <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      Preferences enregistrees
+      {{ $t('notifications.preferencesSaved') }}
     </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 
+const { t } = useI18n();
 const loading = ref(true);
 const saved = ref(false);
 
-const notifTypes = [
-  { key: 'collaborator.added', label: 'Ajout collaborateur', icon: 'mdi-account-plus-outline' },
-  { key: 'collaborator.removed', label: 'Retrait collaborateur', icon: 'mdi-account-minus-outline' },
-  { key: 'dossier.updated', label: 'Dossier modifie', icon: 'mdi-folder-edit-outline' },
-  { key: 'dossier.shared', label: 'Dossier partage', icon: 'mdi-folder-account-outline' },
-  { key: 'node.updated', label: 'Element modifie', icon: 'mdi-note-edit-outline' },
-  { key: 'mention', label: 'Mention', icon: 'mdi-at' },
-  { key: 'task.assigned', label: 'Tache assignee', icon: 'mdi-checkbox-marked-outline' },
-  { key: 'task.deadline', label: 'Rappel deadline', icon: 'mdi-clock-alert-outline' },
-  { key: 'task.completed', label: 'Tache terminee', icon: 'mdi-check-circle-outline' },
-  { key: 'comment.reply', label: 'Reponse commentaire', icon: 'mdi-comment-outline' },
-  { key: 'system.announcement', label: 'Annonce systeme', icon: 'mdi-bullhorn-outline' },
+const notifTypes = computed(() => [
+  { key: 'collaborator.added', label: t('notifications.types.collaboratorAdded'), icon: 'mdi-account-plus-outline' },
+  { key: 'collaborator.removed', label: t('notifications.types.collaboratorRemoved'), icon: 'mdi-account-minus-outline' },
+  { key: 'dossier.updated', label: t('notifications.types.dossierUpdated'), icon: 'mdi-folder-edit-outline' },
+  { key: 'dossier.shared', label: t('notifications.types.dossierShared'), icon: 'mdi-folder-account-outline' },
+  { key: 'node.updated', label: t('notifications.types.nodeUpdated'), icon: 'mdi-note-edit-outline' },
+  { key: 'mention', label: t('notifications.types.mention'), icon: 'mdi-at' },
+  { key: 'task.assigned', label: t('notifications.types.taskAssigned'), icon: 'mdi-checkbox-marked-outline' },
+  { key: 'task.deadline', label: t('notifications.types.taskDeadline'), icon: 'mdi-clock-alert-outline' },
+  { key: 'task.completed', label: t('notifications.types.taskCompleted'), icon: 'mdi-check-circle-outline' },
+  { key: 'comment.reply', label: t('notifications.types.commentReply'), icon: 'mdi-comment-outline' },
+  { key: 'system.announcement', label: t('notifications.types.systemAnnouncement'), icon: 'mdi-bullhorn-outline' },
+]);
+
+const notifTypeKeys = [
+  'collaborator.added', 'collaborator.removed', 'dossier.updated', 'dossier.shared',
+  'node.updated', 'mention', 'task.assigned', 'task.deadline', 'task.completed',
+  'comment.reply', 'system.announcement',
 ];
 
 const defaultPrefs = () => {
   const inApp: Record<string, boolean> = {};
   const email: Record<string, boolean> = {};
-  for (const t of notifTypes) {
-    inApp[t.key] = true;
-    email[t.key] = false;
+  for (const key of notifTypeKeys) {
+    inApp[key] = true;
+    email[key] = false;
   }
   return { inApp, email, doNotDisturb: false, soundEnabled: true };
 };

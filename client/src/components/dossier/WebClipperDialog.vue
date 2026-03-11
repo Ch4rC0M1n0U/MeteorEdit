@@ -3,7 +3,7 @@
     <div class="wc-dialog glass-card">
       <div class="wc-header">
         <v-icon size="20" class="wc-header-icon">mdi-web</v-icon>
-        <span>Web Clipper</span>
+        <span>{{ $t('dossier.webClipper') }}</span>
         <button class="wc-close" @click="model = false">
           <v-icon size="18">mdi-close</v-icon>
         </button>
@@ -11,21 +11,21 @@
 
       <div class="wc-body">
         <div class="wc-field">
-          <label class="wc-label">URL *</label>
-          <input v-model="url" class="wc-input" placeholder="https://example.com/article" />
+          <label class="wc-label">{{ $t('clipper.urlLabel') }}</label>
+          <input v-model="url" class="wc-input" :placeholder="$t('clipper.urlPlaceholder')" />
         </div>
         <div class="wc-field">
-          <label class="wc-label">Titre *</label>
-          <input v-model="title" class="wc-input" placeholder="Titre de la capture" />
+          <label class="wc-label">{{ $t('clipper.titleLabel') }}</label>
+          <input v-model="title" class="wc-input" :placeholder="$t('clipper.titlePlaceholder')" />
         </div>
         <div class="wc-field">
-          <label class="wc-label">Contenu</label>
-          <textarea v-model="content" class="wc-input wc-textarea" rows="6" placeholder="Collez le texte ou HTML ici..." />
+          <label class="wc-label">{{ $t('clipper.contentLabel') }}</label>
+          <textarea v-model="content" class="wc-input wc-textarea" rows="6" :placeholder="$t('clipper.contentPlaceholder')" />
         </div>
         <div class="wc-field">
-          <label class="wc-label">Dossier parent (optionnel)</label>
+          <label class="wc-label">{{ $t('clipper.parentFolder') }}</label>
           <select v-model="parentId" class="wc-input">
-            <option value="">Racine du dossier</option>
+            <option value="">{{ $t('clipper.rootFolder') }}</option>
             <option v-for="folder in folders" :key="folder._id" :value="folder._id">
               {{ folder.title }}
             </option>
@@ -36,10 +36,10 @@
         <div class="wc-bookmarklet">
           <div class="wc-bookmarklet-label">
             <v-icon size="14">mdi-bookmark-outline</v-icon>
-            Bookmarklet
+            {{ $t('clipper.bookmarklet') }}
           </div>
           <p class="wc-bookmarklet-hint">
-            Glissez ce lien dans votre barre de favoris pour capturer depuis n'importe quelle page :
+            {{ $t('clipper.bookmarkletHint') }}
           </p>
           <a
             class="wc-bookmarklet-link"
@@ -48,17 +48,17 @@
             draggable="true"
           >
             <v-icon size="14">mdi-lightning-bolt</v-icon>
-            Clipper MeteorEdit
+            {{ $t('clipper.bookmarkletLink') }}
           </a>
         </div>
       </div>
 
       <div class="wc-footer">
-        <button class="wc-btn wc-btn--cancel" @click="model = false">Annuler</button>
+        <button class="wc-btn wc-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
         <button class="wc-btn wc-btn--clip" @click="clip" :disabled="!url.trim() || !title.trim() || clipping">
           <v-icon v-if="clipping" size="14" class="spin">mdi-loading</v-icon>
           <v-icon v-else size="14">mdi-content-cut</v-icon>
-          {{ clipping ? 'Capture...' : 'Capturer' }}
+          {{ clipping ? $t('clipper.clipping') : $t('clipper.clip') }}
         </button>
       </div>
     </div>
@@ -67,9 +67,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 
+const { t } = useI18n();
 const model = defineModel<boolean>({ default: false });
 
 const dossierStore = useDossierStore();
@@ -88,8 +90,11 @@ const bookmarkletCode = computed(() => {
   const baseUrl = window.location.origin;
   const dossierId = dossierStore.currentDossier?._id || '';
   const token = localStorage.getItem('accessToken') || '';
+  const successMsg = t('clipper.captureSuccess');
+  const errorMsg = t('clipper.captureError');
+  const connErrorMsg = t('clipper.connectionError');
   // Bookmarklet captures page title, url, selected text or body text
-  return `javascript:void((function(){var d=document,s=d.getSelection().toString()||d.body.innerText.substring(0,10000),t=d.title,u=d.location.href;fetch('${baseUrl}/api/clip',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer ${token}'},body:JSON.stringify({dossierId:'${dossierId}',title:t,url:u,content:'<p>'+s+'</p>',textContent:s})}).then(function(r){if(r.ok)alert('Capture reussie !');else alert('Erreur de capture');}).catch(function(){alert('Erreur de connexion');})})())`;
+  return `javascript:void((function(){var d=document,s=d.getSelection().toString()||d.body.innerText.substring(0,10000),t=d.title,u=d.location.href;fetch('${baseUrl}/api/clip',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer ${token}'},body:JSON.stringify({dossierId:'${dossierId}',title:t,url:u,content:'<p>'+s+'</p>',textContent:s})}).then(function(r){if(r.ok)alert('${successMsg}');else alert('${errorMsg}');}).catch(function(){alert('${connErrorMsg}');})})())`;
 });
 
 watch(model, (open) => {
@@ -110,7 +115,7 @@ async function clip() {
       parentId: parentId.value || null,
       title: title.value.trim(),
       url: url.value.trim(),
-      content: content.value || `<p>Contenu capturé depuis ${url.value}</p>`,
+      content: content.value || `<p>${t('clipper.capturedFrom', { url: url.value })}</p>`,
       textContent: content.value.replace(/<[^>]+>/g, ' ').substring(0, 50000),
     });
     // Add node to store

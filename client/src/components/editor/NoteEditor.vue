@@ -3,10 +3,10 @@
     <div class="ne-toolbar" v-if="editor">
       <!-- Undo / Redo -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn" @click="editor.chain().focus().undo().run()" :disabled="!editor.can().undo()" title="Annuler (Ctrl+Z)">
+        <button class="ne-btn" @click="editor.chain().focus().undo().run()" :disabled="!editor.can().undo()" :title="$t('editor.undo')">
           <v-icon size="18">mdi-undo</v-icon>
         </button>
-        <button class="ne-btn" @click="editor.chain().focus().redo().run()" :disabled="!editor.can().redo()" title="Retablir (Ctrl+Y)">
+        <button class="ne-btn" @click="editor.chain().focus().redo().run()" :disabled="!editor.can().redo()" :title="$t('editor.redo')">
           <v-icon size="18">mdi-redo</v-icon>
         </button>
       </div>
@@ -15,19 +15,19 @@
 
       <!-- Text style -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn" :class="{ active: editor.isActive('bold') }" @click="editor.chain().focus().toggleBold().run()" title="Gras (Ctrl+B)">
+        <button class="ne-btn" :class="{ active: editor.isActive('bold') }" @click="editor.chain().focus().toggleBold().run()" :title="$t('editor.bold')">
           <v-icon size="18">mdi-format-bold</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('italic') }" @click="editor.chain().focus().toggleItalic().run()" title="Italique (Ctrl+I)">
+        <button class="ne-btn" :class="{ active: editor.isActive('italic') }" @click="editor.chain().focus().toggleItalic().run()" :title="$t('editor.italic')">
           <v-icon size="18">mdi-format-italic</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('underline') }" @click="editor.chain().focus().toggleUnderline().run()" title="Souligne (Ctrl+U)">
+        <button class="ne-btn" :class="{ active: editor.isActive('underline') }" @click="editor.chain().focus().toggleUnderline().run()" :title="$t('editor.underline')">
           <v-icon size="18">mdi-format-underline</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('strike') }" @click="editor.chain().focus().toggleStrike().run()" title="Barre">
+        <button class="ne-btn" :class="{ active: editor.isActive('strike') }" @click="editor.chain().focus().toggleStrike().run()" :title="$t('editor.strike')">
           <v-icon size="18">mdi-format-strikethrough</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('code') }" @click="editor.chain().focus().toggleCode().run()" title="Code inline">
+        <button class="ne-btn" :class="{ active: editor.isActive('code') }" @click="editor.chain().focus().toggleCode().run()" :title="$t('editor.inlineCode')">
           <v-icon size="18">mdi-code-tags</v-icon>
         </button>
       </div>
@@ -36,10 +36,10 @@
 
       <!-- Subscript / Superscript -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn" :class="{ active: editor.isActive('subscript') }" @click="editor.chain().focus().toggleSubscript().run()" title="Indice">
+        <button class="ne-btn" :class="{ active: editor.isActive('subscript') }" @click="editor.chain().focus().toggleSubscript().run()" :title="$t('editor.subscript')">
           <v-icon size="18">mdi-format-subscript</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('superscript') }" @click="editor.chain().focus().toggleSuperscript().run()" title="Exposant">
+        <button class="ne-btn" :class="{ active: editor.isActive('superscript') }" @click="editor.chain().focus().toggleSuperscript().run()" :title="$t('editor.superscript')">
           <v-icon size="18">mdi-format-superscript</v-icon>
         </button>
       </div>
@@ -48,13 +48,13 @@
 
       <!-- Headings -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 1 }) }" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()" title="Titre 1">
+        <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 1 }) }" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()" :title="$t('editor.heading1')">
           <span class="mono">H1</span>
         </button>
-        <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 2 }) }" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" title="Titre 2">
+        <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 2 }) }" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" :title="$t('editor.heading2')">
           <span class="mono">H2</span>
         </button>
-        <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 3 }) }" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()" title="Titre 3">
+        <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 3 }) }" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()" :title="$t('editor.heading3')">
           <span class="mono">H3</span>
         </button>
       </div>
@@ -64,20 +64,20 @@
       <!-- Text color & Highlight -->
       <div class="ne-toolbar-group">
         <div class="ne-color-wrap">
-          <button class="ne-btn" :class="{ active: editor.isActive('textStyle') }" title="Couleur du texte">
+          <button class="ne-btn" :class="{ active: editor.isActive('textStyle') }" :title="$t('editor.textColor')">
             <v-icon size="18">mdi-format-color-text</v-icon>
             <span class="ne-color-bar" :style="{ background: currentTextColor }" />
           </button>
-          <input type="color" class="ne-color-input" :value="currentTextColor" @input="setTextColor($event)" title="Choisir couleur">
+          <input type="color" class="ne-color-input" :value="currentTextColor" @input="setTextColor($event)" :title="$t('editor.chooseColor')">
         </div>
         <div class="ne-color-wrap">
-          <button class="ne-btn" :class="{ active: editor.isActive('highlight') }" title="Surlignage">
+          <button class="ne-btn" :class="{ active: editor.isActive('highlight') }" :title="$t('editor.highlight')">
             <v-icon size="18">mdi-marker</v-icon>
             <span class="ne-color-bar" :style="{ background: currentHighlight }" />
           </button>
-          <input type="color" class="ne-color-input" :value="currentHighlight" @input="setHighlight($event)" title="Choisir surlignage">
+          <input type="color" class="ne-color-input" :value="currentHighlight" @input="setHighlight($event)" :title="$t('editor.chooseHighlight')">
         </div>
-        <button class="ne-btn" @click="editor.chain().focus().unsetAllMarks().run()" title="Effacer le formatage">
+        <button class="ne-btn" @click="editor.chain().focus().unsetAllMarks().run()" :title="$t('editor.clearFormatting')">
           <v-icon size="18">mdi-format-clear</v-icon>
         </button>
       </div>
@@ -86,16 +86,16 @@
 
       <!-- Alignment -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'left' }) }" @click="editor.chain().focus().setTextAlign('left').run()" title="Aligner a gauche">
+        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'left' }) }" @click="editor.chain().focus().setTextAlign('left').run()" :title="$t('editor.alignLeft')">
           <v-icon size="18">mdi-format-align-left</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'center' }) }" @click="editor.chain().focus().setTextAlign('center').run()" title="Centrer">
+        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'center' }) }" @click="editor.chain().focus().setTextAlign('center').run()" :title="$t('editor.alignCenter')">
           <v-icon size="18">mdi-format-align-center</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'right' }) }" @click="editor.chain().focus().setTextAlign('right').run()" title="Aligner a droite">
+        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'right' }) }" @click="editor.chain().focus().setTextAlign('right').run()" :title="$t('editor.alignRight')">
           <v-icon size="18">mdi-format-align-right</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'justify' }) }" @click="editor.chain().focus().setTextAlign('justify').run()" title="Justifier">
+        <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'justify' }) }" @click="editor.chain().focus().setTextAlign('justify').run()" :title="$t('editor.justify')">
           <v-icon size="18">mdi-format-align-justify</v-icon>
         </button>
       </div>
@@ -104,16 +104,16 @@
 
       <!-- Lists -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn" :class="{ active: editor.isActive('bulletList') }" @click="editor.chain().focus().toggleBulletList().run()" title="Liste a puces">
+        <button class="ne-btn" :class="{ active: editor.isActive('bulletList') }" @click="editor.chain().focus().toggleBulletList().run()" :title="$t('editor.bulletList')">
           <v-icon size="18">mdi-format-list-bulleted</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('orderedList') }" @click="editor.chain().focus().toggleOrderedList().run()" title="Liste numerotee">
+        <button class="ne-btn" :class="{ active: editor.isActive('orderedList') }" @click="editor.chain().focus().toggleOrderedList().run()" :title="$t('editor.orderedList')">
           <v-icon size="18">mdi-format-list-numbered</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('taskList') }" @click="editor.chain().focus().toggleTaskList().run()" title="Liste de taches">
+        <button class="ne-btn" :class="{ active: editor.isActive('taskList') }" @click="editor.chain().focus().toggleTaskList().run()" :title="$t('editor.taskList')">
           <v-icon size="18">mdi-checkbox-marked-outline</v-icon>
         </button>
-        <button class="ne-btn" :class="{ active: editor.isActive('blockquote') }" @click="editor.chain().focus().toggleBlockquote().run()" title="Citation">
+        <button class="ne-btn" :class="{ active: editor.isActive('blockquote') }" @click="editor.chain().focus().toggleBlockquote().run()" :title="$t('editor.blockquote')">
           <v-icon size="18">mdi-format-quote-close</v-icon>
         </button>
       </div>
@@ -122,19 +122,19 @@
 
       <!-- Insert -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn" @click="insertLink" title="Inserer un lien (Ctrl+K)">
+        <button class="ne-btn" @click="insertLink" :title="$t('editor.insertLink')">
           <v-icon size="18">mdi-link-variant</v-icon>
         </button>
-        <button class="ne-btn" @click="triggerImageUpload" title="Inserer image">
+        <button class="ne-btn" @click="triggerImageUpload" :title="$t('editor.insertImage')">
           <v-icon size="18">mdi-image-plus</v-icon>
         </button>
-        <button class="ne-btn" @click="insertTable" title="Tableau">
+        <button class="ne-btn" @click="insertTable" :title="$t('editor.table')">
           <v-icon size="18">mdi-table</v-icon>
         </button>
-        <button class="ne-btn" @click="editor.chain().focus().toggleCodeBlock().run()" :class="{ active: editor.isActive('codeBlock') }" title="Bloc de code">
+        <button class="ne-btn" @click="editor.chain().focus().toggleCodeBlock().run()" :class="{ active: editor.isActive('codeBlock') }" :title="$t('editor.codeBlock')">
           <v-icon size="18">mdi-code-braces</v-icon>
         </button>
-        <button class="ne-btn" @click="editor.chain().focus().setHorizontalRule().run()" title="Separateur">
+        <button class="ne-btn" @click="editor.chain().focus().setHorizontalRule().run()" :title="$t('editor.separator')">
           <v-icon size="18">mdi-minus</v-icon>
         </button>
       </div>
@@ -143,11 +143,11 @@
 
       <!-- Comments & Templates -->
       <div class="ne-toolbar-group">
-        <button class="ne-btn ne-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" title="Commentaires">
+        <button class="ne-btn ne-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" :title="$t('editor.comments')">
           <v-icon size="18">mdi-comment-text-outline</v-icon>
           <span v-if="commentCount" class="ne-comment-badge">{{ commentCount }}</span>
         </button>
-        <button class="ne-btn" @click="saveAsTemplate" title="Sauvegarder comme modele">
+        <button class="ne-btn" @click="saveAsTemplate" :title="$t('editor.saveAsTemplate')">
           <v-icon size="18">mdi-content-save-check-outline</v-icon>
         </button>
       </div>
@@ -177,6 +177,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useConfirm } from '../../composables/useConfirm';
 import { useEditor, EditorContent, Extension } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
@@ -206,6 +207,8 @@ import { useTemplateStore } from '../../stores/template';
 import CommentSidebar from './CommentSidebar.vue';
 import { createMentionExtension } from './mentionExtension';
 
+const { t } = useI18n();
+
 const props = defineProps<{ modelValue: any; nodeId: string }>();
 const emit = defineEmits<{ 'update:modelValue': [value: any] }>();
 
@@ -234,7 +237,7 @@ function hashColor(str: string): string {
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   return `hsl(${Math.abs(hash) % 360}, 70%, 60%)`;
 }
-const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : 'Anonyme';
+const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.lastName}` : t('editor.anonymous');
 const userAvatarUrl = authStore.user?.avatarPath ? `${SERVER_URL}/${authStore.user.avatarPath}` : null;
 provider.awareness.setLocalStateField('user', {
   name: userName,
@@ -287,11 +290,11 @@ async function insertLink() {
   if (!editor.value) return;
   const prev = editor.value.getAttributes('link').href || '';
   const url = await promptDialog({
-    title: 'Inserer un lien',
-    message: 'Saisissez l\'URL du lien :',
-    promptLabel: 'URL',
+    title: t('editor.insertLinkTitle'),
+    message: t('editor.insertLinkPrompt'),
+    promptLabel: t('editor.url'),
     promptDefault: prev,
-    confirmText: 'Inserer',
+    confirmText: t('common.insert'),
   });
   if (url === null) return;
   if (url === '') {
@@ -342,7 +345,7 @@ const editor = useEditor({
     TableCell,
     TableHeader,
     Link.configure({ openOnClick: false }),
-    Placeholder.configure({ placeholder: 'Commencez a ecrire...' }),
+    Placeholder.configure({ placeholder: t('editor.placeholder') }),
     Underline,
     TextStyle,
     Color,
@@ -458,11 +461,11 @@ provider.on('sync', (isSynced: boolean) => {
 async function saveAsTemplate() {
   if (!editor.value) return;
   const title = await promptDialog({
-    title: 'Sauvegarder comme modele',
-    message: 'Donnez un nom a ce modele :',
-    promptLabel: 'Nom du modele',
+    title: t('editor.saveAsTemplate'),
+    message: t('editor.templateNamePrompt'),
+    promptLabel: t('editor.templateName'),
     promptDefault: '',
-    confirmText: 'Sauvegarder',
+    confirmText: t('common.save'),
   });
   if (!title) return;
   try {

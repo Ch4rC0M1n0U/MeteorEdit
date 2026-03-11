@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-cog-outline</v-icon>
         Parametres par defaut
       </h2>
-      <p class="admin-section-subtitle">Configuration par defaut des dossiers et de la retention</p>
+      <p class="admin-section-subtitle">{{ $t('admin.defaultsSubtitle') }}</p>
     </div>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -14,12 +14,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-folder-plus-outline</v-icon>
-        <h3 class="sec-card-title mono">Nouveaux dossiers</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.newDossiers') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Chiffrement E2E par defaut</p>
-          <p class="sec-desc">Activer automatiquement le chiffrement de bout en bout pour les nouveaux dossiers</p>
+          <p class="sec-label">{{ $t('admin.e2eDefault') }}</p>
+          <p class="sec-desc">{{ $t('admin.e2eDefaultDesc') }}</p>
         </div>
         <v-switch v-model="form.defaultEncryptionEnabled" color="primary" hide-details @update:model-value="save" />
       </div>
@@ -29,12 +29,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-database-clock-outline</v-icon>
-        <h3 class="sec-card-title mono">Retention des donnees</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.dataRetention') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Purge automatique de la corbeille (jours)</p>
-          <p class="sec-desc">0 = desactive. Les elements dans la corbeille seront supprimes definitivement apres ce delai.</p>
+          <p class="sec-label">{{ $t('admin.trashPurgeDays') }}</p>
+          <p class="sec-desc">{{ $t('admin.trashPurgeDaysDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.trashAutoDeleteDays"
@@ -57,7 +57,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const loading = ref(true);
 const saved = ref(false);

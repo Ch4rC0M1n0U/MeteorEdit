@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-backup-restore</v-icon>
         Sauvegarde & Restauration
       </h2>
-      <p class="admin-section-subtitle">Export et import de la base de donnees</p>
+      <p class="admin-section-subtitle">{{ $t('admin.backupSubtitle') }}</p>
     </div>
 
     <v-alert v-if="error" type="error" variant="tonal" closable class="mb-4" @click:close="error = ''">
@@ -20,15 +20,14 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-cloud-download-outline</v-icon>
-        <h3 class="sec-card-title mono">Exporter une sauvegarde</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.exportBackup') }}</h3>
       </div>
       <p class="sec-desc mb-4">
-        Telechargez une copie complete de la base de donnees au format JSON.
-        Inclut les utilisateurs, dossiers, notes et parametres.
+        {{ $t('admin.exportBackupDesc') }}
       </p>
       <button class="me-btn-primary" @click="exportBackup" :disabled="exporting">
         <v-icon size="14" class="mr-1">mdi-download</v-icon>
-        {{ exporting ? 'Export en cours...' : 'Exporter' }}
+        {{ exporting ? $t('admin.exportInProgress') : $t('admin.backupExport') }}
       </button>
     </div>
 
@@ -36,23 +35,22 @@
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-cloud-upload-outline</v-icon>
-        <h3 class="sec-card-title mono">Restaurer une sauvegarde</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.restoreBackup') }}</h3>
       </div>
       <p class="sec-desc mb-2">
-        <strong style="color: var(--me-error);">Attention :</strong> la restauration remplacera
-        TOUTES les donnees actuelles. Cette action est irreversible.
+        <strong style="color: var(--me-error);">{{ $t('admin.restoreWarningStrong') }}</strong> {{ $t('admin.restoreWarningText') }}
       </p>
       <div class="upload-zone" @dragover.prevent @drop.prevent="dropBackup">
         <div v-if="backupFile" class="upload-preview">
           <v-icon size="24" color="var(--me-accent)">mdi-file-code-outline</v-icon>
           <span class="upload-file-name">{{ backupFile.name }}</span>
-          <button class="upload-remove-btn" @click="backupFile = null" title="Retirer le fichier">
+          <button class="upload-remove-btn" @click="backupFile = null" :title="$t('admin.removeFile')">
             <v-icon size="14">mdi-close</v-icon>
           </button>
         </div>
         <div v-else class="upload-placeholder" @click="triggerFileInput">
           <v-icon size="28" color="var(--me-text-muted)">mdi-cloud-upload-outline</v-icon>
-          <span>Glisser ou cliquer pour ajouter un fichier .json</span>
+          <span>{{ $t('admin.dragOrClickJson') }}</span>
         </div>
         <input ref="fileInput" type="file" accept=".json,application/json" hidden @change="handleFileSelect" />
       </div>
@@ -63,7 +61,7 @@
           :disabled="!backupFile || restoring"
         >
           <v-icon size="14" class="mr-1">mdi-upload</v-icon>
-          {{ restoring ? 'Restauration en cours...' : 'Restaurer' }}
+          {{ restoring ? $t('admin.restoreInProgress') : $t('admin.backupRestore') }}
         </button>
       </div>
     </div>
@@ -72,10 +70,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useConfirm } from '../../composables/useConfirm';
 
 const { confirm } = useConfirm();
+const { t } = useI18n();
 
 const error = ref('');
 const success = ref('');
@@ -112,7 +112,7 @@ async function exportBackup() {
     a.click();
     window.URL.revokeObjectURL(url);
   } catch {
-    error.value = 'Erreur lors de l\'export';
+    error.value = t('admin.exportError');
   } finally {
     exporting.value = false;
   }
@@ -122,9 +122,9 @@ async function restoreBackup() {
   if (!backupFile.value) return;
 
   const ok = await confirm({
-    title: 'Restauration',
-    message: 'Cette action va remplacer TOUTES les donnees actuelles par celles de la sauvegarde. Cette operation est irreversible. Continuer ?',
-    confirmText: 'Restaurer',
+    title: t('admin.restorationTitle'),
+    message: t('admin.restorationConfirm'),
+    confirmText: t('admin.backupRestore'),
     variant: 'danger',
   });
   if (!ok) return;
@@ -138,10 +138,10 @@ async function restoreBackup() {
     await api.post('/admin/backup/import', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    success.value = 'Restauration terminee avec succes. Rechargez la page pour voir les changements.';
+    success.value = t('admin.restoreSuccess');
     backupFile.value = null;
   } catch {
-    error.value = 'Erreur lors de la restauration';
+    error.value = t('admin.restoreError');
   } finally {
     restoring.value = false;
   }

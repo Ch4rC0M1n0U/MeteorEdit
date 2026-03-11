@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-scissors-cutting</v-icon>
         Web Clipper
       </h2>
-      <p class="admin-section-subtitle">Configuration des captures de pages web</p>
+      <p class="admin-section-subtitle">{{ $t('admin.clipperSubtitle') }}</p>
     </div>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -14,12 +14,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-scissors-cutting</v-icon>
-        <h3 class="sec-card-title mono">Parametres du Web Clipper</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.clipperSettings') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Timeout (ms)</p>
-          <p class="sec-desc">Delai d'attente maximum pour la capture d'une page</p>
+          <p class="sec-label">{{ $t('admin.clipperTimeout') }}</p>
+          <p class="sec-desc">{{ $t('admin.clipperTimeoutDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.clipperTimeoutMs"
@@ -35,8 +35,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Qualite JPEG (%)</p>
-          <p class="sec-desc">Qualite de compression des captures (10-100)</p>
+          <p class="sec-label">{{ $t('admin.clipperQuality') }}</p>
+          <p class="sec-desc">{{ $t('admin.clipperQualityDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.clipperQuality"
@@ -52,8 +52,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">User-Agent personnalise</p>
-          <p class="sec-desc">Laisser vide pour utiliser le User-Agent par defaut de Puppeteer</p>
+          <p class="sec-label">{{ $t('admin.clipperUserAgent') }}</p>
+          <p class="sec-desc">{{ $t('admin.clipperUserAgentDesc') }}</p>
         </div>
         <v-text-field
           v-model="form.clipperUserAgent"
@@ -65,8 +65,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Proxy HTTP(S)</p>
-          <p class="sec-desc">Proxy pour les captures (ex: http://proxy:8080). Laisser vide pour connexion directe</p>
+          <p class="sec-label">{{ $t('admin.clipperProxy') }}</p>
+          <p class="sec-desc">{{ $t('admin.clipperProxyDesc') }}</p>
         </div>
         <v-text-field
           v-model="form.clipperProxy"
@@ -85,7 +85,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const loading = ref(true);
 const saved = ref(false);

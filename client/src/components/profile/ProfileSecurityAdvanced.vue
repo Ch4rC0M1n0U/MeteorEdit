@@ -3,7 +3,7 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-shield-check-outline</v-icon>
-        Securite avancee
+        {{ $t('securityAdvanced.title') }}
       </h2>
     </div>
 
@@ -11,7 +11,7 @@
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <h3 class="branding-card-title mono">
         <v-icon size="16" class="mr-1">mdi-speedometer</v-icon>
-        Score de securite
+        {{ $t('securityAdvanced.securityScore') }}
       </h3>
       <div class="score-container">
         <div class="score-bar-wrapper">
@@ -39,14 +39,14 @@
     <div class="branding-card glass-card fade-in fade-in-delay-2">
       <h3 class="branding-card-title mono">
         <v-icon size="16" class="mr-1">mdi-history</v-icon>
-        Historique de connexion (7 jours)
+        {{ $t('securityAdvanced.loginHistory') }}
       </h3>
       <div v-if="historyLoading" class="section-loading">
         <v-progress-circular indeterminate size="24" color="primary" />
-        <span class="mono">Chargement...</span>
+        <span class="mono">{{ $t('common.loading') }}</span>
       </div>
       <div v-else-if="loginHistory.length === 0" class="section-empty mono">
-        Aucune connexion enregistree
+        {{ $t('activity.noActivity') }}
       </div>
       <div v-else class="history-list">
         <div v-for="(entry, i) in loginHistory" :key="i" class="history-item">
@@ -66,14 +66,14 @@
     <div class="branding-card glass-card fade-in fade-in-delay-3">
       <h3 class="branding-card-title mono">
         <v-icon size="16" class="mr-1">mdi-devices</v-icon>
-        Sessions actives
+        {{ $t('securityAdvanced.activeSessions') }}
       </h3>
       <div v-if="sessionsLoading" class="section-loading">
         <v-progress-circular indeterminate size="24" color="primary" />
-        <span class="mono">Chargement...</span>
+        <span class="mono">{{ $t('common.loading') }}</span>
       </div>
       <div v-else-if="sessions.length === 0" class="section-empty mono">
-        Aucune session active
+        {{ $t('activity.noActivity') }}
       </div>
       <div v-else class="sessions-list">
         <div v-for="(session, i) in sessions" :key="i" class="session-card">
@@ -89,7 +89,7 @@
                   variant="tonal"
                   class="ml-2"
                 >
-                  Session actuelle
+                  {{ $t('securityAdvanced.currentSession') }}
                 </v-chip>
               </div>
               <span class="session-card-ip mono">{{ session.ip }}</span>
@@ -104,10 +104,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import { useEncryptionStore } from '../../stores/encryption';
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const encryptionStore = useEncryptionStore();
 
@@ -121,10 +123,10 @@ interface ScoreItem {
 }
 
 const scoreItems = computed<ScoreItem[]>(() => [
-  { label: 'Mot de passe defini', ok: true },
-  { label: '2FA activee', ok: !!authStore.user?.twoFactorEnabled },
-  { label: 'Cles de chiffrement configurees', ok: hasEncryptionKeys.value },
-  { label: 'Mot de passe change recemment (< 90j)', ok: passwordChangedRecently.value },
+  { label: t('securityAdvanced.passwordDefined'), ok: true },
+  { label: t('securityAdvanced.twoFaActive'), ok: !!authStore.user?.twoFactorEnabled },
+  { label: t('securityAdvanced.encryptionKeys'), ok: hasEncryptionKeys.value },
+  { label: t('securityAdvanced.recentPassword'), ok: passwordChangedRecently.value },
 ]);
 
 const securityScore = computed(() => {

@@ -3,7 +3,7 @@
     <div class="cs-header">
       <h3 class="cs-title mono">
         <v-icon size="18" class="mr-1">mdi-comment-text-outline</v-icon>
-        Commentaires
+        {{ $t('editor.comments') }}
         <span v-if="comments.length" class="cs-count">{{ comments.length }}</span>
       </h3>
       <button class="cs-close" @click="$emit('update:modelValue', false)">
@@ -15,7 +15,7 @@
       <textarea
         v-model="newComment"
         class="cs-input"
-        placeholder="Ajouter un commentaire..."
+        :placeholder="$t('editor.addComment')"
         rows="2"
         @keydown.ctrl.enter="postComment"
       />
@@ -25,8 +25,8 @@
     </div>
 
     <div class="cs-list" ref="listRef">
-      <div v-if="loading" class="cs-empty">Chargement...</div>
-      <div v-else-if="!comments.length" class="cs-empty">Aucun commentaire</div>
+      <div v-if="loading" class="cs-empty">{{ $t('common.loading') }}</div>
+      <div v-else-if="!comments.length" class="cs-empty">{{ $t('comments.noComments') }}</div>
       <div v-for="c in comments" :key="c._id" class="cs-comment">
         <div class="cs-comment-header">
           <img v-if="c.user?.avatarUrl" :src="c.user.avatarUrl" class="cs-avatar cs-avatar-img" :alt="c.user.name" />
@@ -41,7 +41,7 @@
             v-if="c.canDelete"
             class="cs-delete"
             @click="removeComment(c._id)"
-            title="Supprimer"
+            :title="$t('common.delete')"
           >
             <v-icon size="14">mdi-delete-outline</v-icon>
           </button>
@@ -54,9 +54,12 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import { connectSocket } from '../../services/socket';
+
+const { t } = useI18n();
 import type { Socket } from 'socket.io-client';
 
 interface CommentData {
@@ -95,18 +98,18 @@ function formatTime(dateStr: string): string {
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "a l'instant";
-  if (mins < 60) return `il y a ${mins}min`;
+  if (mins < 1) return t('comments.justNow');
+  if (mins < 60) return t('comments.minutesAgo', { min: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `il y a ${hours}h`;
+  if (hours < 24) return t('comments.hoursAgo', { hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `il y a ${days}j`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  if (days < 7) return t('comments.daysAgo', { days });
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
 function mapComment(raw: any): CommentData {
   const userId = raw.userId;
-  const name = userId ? `${userId.firstName} ${userId.lastName}` : 'Inconnu';
+  const name = userId ? `${userId.firstName} ${userId.lastName}` : t('comments.unknown');
   const avatarPath = userId?.avatarPath;
   return {
     _id: raw._id,

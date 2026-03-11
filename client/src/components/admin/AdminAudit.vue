@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-shield-check</v-icon>
         Journal d'audit
       </h2>
-      <p class="admin-section-subtitle">Suivi detaille de toutes les actions</p>
+      <p class="admin-section-subtitle">{{ $t('admin.auditSubtitle') }}</p>
     </div>
 
     <!-- KPI Cards -->
@@ -14,22 +14,22 @@
         <div class="kpi-icon"><v-icon size="24">mdi-calendar-today</v-icon></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.today }}</span>
-          <span class="kpi-label">Actions aujourd'hui</span>
+          <span class="kpi-label">{{ $t('admin.actionsToday') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card">
         <div class="kpi-icon"><v-icon size="24">mdi-calendar-week</v-icon></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.week }}</span>
-          <span class="kpi-label">Actions cette semaine</span>
+          <span class="kpi-label">{{ $t('admin.actionsThisWeek') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card">
         <div class="kpi-icon"><v-icon size="24">mdi-account-star</v-icon></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ topUserName }}</span>
-          <span class="kpi-label">Utilisateur le plus actif</span>
-          <span class="kpi-sub mono" v-if="topUserCount">{{ topUserCount }} actions</span>
+          <span class="kpi-label">{{ $t('admin.mostActiveUser') }}</span>
+          <span class="kpi-sub mono" v-if="topUserCount">{{ topUserCount }} {{ $t('admin.actions') }}</span>
         </div>
       </div>
     </div>
@@ -42,7 +42,7 @@
       <v-select
         v-model="filterUser"
         :items="userItems"
-        label="Utilisateur"
+        :label="$t('admin.user')"
         density="compact"
         clearable
         hide-details
@@ -52,7 +52,7 @@
       <v-select
         v-model="filterAction"
         :items="actionItems"
-        label="Action"
+        :label="$t('admin.action')"
         density="compact"
         clearable
         hide-details
@@ -62,7 +62,7 @@
       <v-select
         v-model="filterTargetType"
         :items="targetTypeItems"
-        label="Type cible"
+        :label="$t('admin.targetType')"
         density="compact"
         clearable
         hide-details
@@ -73,7 +73,7 @@
         v-model="filterSearch"
         type="text"
         class="al-date-input mono"
-        placeholder="Rechercher..."
+        :placeholder="$t('admin.searchPlaceholder')"
         style="min-width: 160px;"
       />
       <button class="me-btn-ghost" @click="exportCSV" title="Exporter CSV">
@@ -89,12 +89,12 @@
         <thead>
           <tr>
             <th style="width: 36px;"></th>
-            <th>Date</th>
-            <th>Utilisateur</th>
-            <th>Action</th>
-            <th>Cible</th>
-            <th>IP</th>
-            <th>Details</th>
+            <th>{{ $t('admin.date') }}</th>
+            <th>{{ $t('admin.user') }}</th>
+            <th>{{ $t('admin.action') }}</th>
+            <th>{{ $t('admin.target') }}</th>
+            <th>{{ $t('admin.ip') }}</th>
+            <th>{{ $t('admin.details') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -110,7 +110,7 @@
                 <template v-if="log.userId">
                   {{ log.userId.firstName }} {{ log.userId.lastName }}
                 </template>
-                <span v-else class="at-badge at-badge-default">supprime</span>
+                <span v-else class="at-badge at-badge-default">{{ $t('admin.deleted') }}</span>
               </td>
               <td>
                 <span :class="['at-badge', getBadgeClass(log.action)]">
@@ -127,28 +127,28 @@
                 <div class="audit-expanded-content">
                   <div class="audit-meta-grid">
                     <div class="audit-meta-item">
-                      <span class="audit-meta-label">Action</span>
+                      <span class="audit-meta-label">{{ $t('admin.action') }}</span>
                       <span class="audit-meta-value mono">{{ log.action }}</span>
                     </div>
                     <div class="audit-meta-item">
-                      <span class="audit-meta-label">Type cible</span>
+                      <span class="audit-meta-label">{{ $t('admin.targetType') }}</span>
                       <span class="audit-meta-value mono">{{ log.targetType }}</span>
                     </div>
                     <div class="audit-meta-item">
-                      <span class="audit-meta-label">ID cible</span>
+                      <span class="audit-meta-label">{{ $t('admin.targetId') }}</span>
                       <span class="audit-meta-value mono">{{ log.targetId || '-' }}</span>
                     </div>
                     <div class="audit-meta-item">
-                      <span class="audit-meta-label">IP</span>
+                      <span class="audit-meta-label">{{ $t('admin.ip') }}</span>
                       <span class="audit-meta-value mono">{{ log.ip || '-' }}</span>
                     </div>
                     <div class="audit-meta-item" v-if="log.userAgent">
-                      <span class="audit-meta-label">User Agent</span>
+                      <span class="audit-meta-label">{{ $t('admin.userAgent') }}</span>
                       <span class="audit-meta-value mono audit-ua">{{ log.userAgent }}</span>
                     </div>
                   </div>
                   <div class="audit-meta-json" v-if="log.metadata && Object.keys(log.metadata).length > 0">
-                    <span class="audit-meta-label">Metadata</span>
+                    <span class="audit-meta-label">{{ $t('admin.metadata') }}</span>
                     <pre class="mono">{{ JSON.stringify(log.metadata, null, 2) }}</pre>
                   </div>
                 </div>
@@ -156,7 +156,7 @@
             </tr>
           </template>
           <tr v-if="!loading && logs.length === 0">
-            <td colspan="7" style="text-align: center; padding: 24px;">Aucun evenement</td>
+            <td colspan="7" style="text-align: center; padding: 24px;">{{ $t('admin.noEvents') }}</td>
           </tr>
         </tbody>
       </table>
@@ -170,7 +170,7 @@
         <button class="me-btn-ghost" :disabled="page >= totalPages" @click="goPage(page + 1)">
           <v-icon size="16">mdi-chevron-right</v-icon>
         </button>
-        <span class="mono audit-total-info">{{ total }} resultats</span>
+        <span class="mono audit-total-info">{{ total }} {{ $t('admin.results') }}</span>
       </div>
     </div>
   </div>
@@ -178,6 +178,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 
 interface LogUser {
@@ -211,6 +212,8 @@ interface UserItem {
   lastName: string;
   email: string;
 }
+
+const { t } = useI18n();
 
 const actionMap: Record<string, { label: string; icon: string }> = {
   'auth.login': { label: 'Connexion', icon: 'mdi-login' },
@@ -291,12 +294,12 @@ const actionItems = computed(() => {
   }));
 });
 
-const targetTypeItems = [
-  { title: 'Dossier', value: 'dossier' },
-  { title: 'Utilisateur', value: 'user' },
-  { title: 'Systeme', value: 'system' },
-  { title: 'Noeud', value: 'node' },
-];
+const targetTypeItems = computed(() => [
+  { title: t('common.dossier'), value: 'dossier' },
+  { title: t('admin.user'), value: 'user' },
+  { title: t('common.system'), value: 'system' },
+  { title: t('common.node'), value: 'node' },
+]);
 
 const logs = ref<AuditLog[]>([]);
 const total = ref(0);

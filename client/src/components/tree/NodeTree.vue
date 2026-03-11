@@ -6,11 +6,11 @@
       @click="dossierStore.selectNode(null)"
     >
       <v-icon size="18">mdi-information-outline</v-icon>
-      <span>Info dossier</span>
+      <span>{{ $t('tree.dossierInfo') }}</span>
     </button>
 
     <div class="nt-section-label">
-      <span>Contenu</span>
+      <span>{{ $t('tree.content') }}</span>
     </div>
 
     <div
@@ -35,41 +35,41 @@
       <template #activator="{ props }">
         <button v-bind="props" class="nt-add-btn">
           <v-icon size="16" class="mr-1">mdi-plus</v-icon>
-          <span class="mono">Ajouter</span>
+          <span class="mono">{{ $t('tree.add') }}</span>
         </button>
       </template>
       <div class="glass-card nt-add-menu">
         <button class="nt-add-option" @click="$emit('create', 'folder', null)">
           <v-icon size="16">mdi-folder-plus-outline</v-icon>
-          <span>Dossier</span>
+          <span>{{ $t('tree.folder') }}</span>
         </button>
         <button class="nt-add-option" @click="$emit('create', 'note', null)">
           <v-icon size="16">mdi-note-plus-outline</v-icon>
-          <span>Note</span>
+          <span>{{ $t('tree.note') }}</span>
         </button>
         <button class="nt-add-option" @click="$emit('create', 'mindmap', null)">
           <v-icon size="16">mdi-vector-polyline</v-icon>
-          <span>Mind Map</span>
+          <span>{{ $t('tree.mindmap') }}</span>
         </button>
         <button class="nt-add-option" @click="$emit('create', 'map', null)">
           <v-icon size="16">mdi-map-outline</v-icon>
-          <span>Carte</span>
+          <span>{{ $t('tree.map') }}</span>
         </button>
         <button class="nt-add-option" @click="$emit('create', 'dataset', null)">
           <v-icon size="16">mdi-table</v-icon>
-          <span>Dataset</span>
+          <span>{{ $t('tree.dataset') }}</span>
         </button>
       </div>
     </v-menu>
 
     <!-- Corbeille -->
     <div class="nt-section-label" style="margin-top: 8px;">
-      <span>Autres</span>
+      <span>{{ $t('tree.others') }}</span>
     </div>
 
     <button class="nt-trash-header" @click="trashOpen = !trashOpen">
       <v-icon size="16">mdi-delete-outline</v-icon>
-      <span>Corbeille</span>
+      <span>{{ $t('tree.trash') }}</span>
       <span v-if="trashRootNodes.length" class="nt-trash-badge">{{ trashRootNodes.length }}</span>
       <v-icon size="14" class="nt-trash-chevron">{{ trashOpen ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
     </button>
@@ -78,17 +78,17 @@
       <div v-for="node in trashRootNodes" :key="node._id" class="nt-trash-item">
         <v-icon size="14" class="nt-trash-item-icon">{{ trashIcon(node.type) }}</v-icon>
         <span class="nt-trash-item-title">{{ node.title }}</span>
-        <button class="nt-trash-action" @click="handleRestore(node._id)" title="Restaurer">
+        <button class="nt-trash-action" @click="handleRestore(node._id)" :title="$t('common.restore')">
           <v-icon size="14">mdi-restore</v-icon>
         </button>
-        <button class="nt-trash-action nt-trash-action-danger" @click="handlePurge(node._id, node.title)" title="Supprimer definitivement">
+        <button class="nt-trash-action nt-trash-action-danger" @click="handlePurge(node._id, node.title)" :title="$t('tree.deletePermanently')">
           <v-icon size="14">mdi-delete-forever-outline</v-icon>
         </button>
       </div>
     </div>
 
     <div v-if="trashOpen && !trashRootNodes.length" class="nt-trash-empty">
-      <span>Corbeille vide</span>
+      <span>{{ $t('tree.emptyTrash') }}</span>
     </div>
 
     <button
@@ -97,17 +97,20 @@
       @click="handleEmptyTrash"
     >
       <v-icon size="14" class="mr-1">mdi-delete-sweep-outline</v-icon>
-      <span class="mono">Vider la corbeille</span>
+      <span class="mono">{{ $t('tree.clearTrash') }}</span>
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
 import NodeTreeItem from './NodeTreeItem.vue';
+
+const { t } = useI18n();
 
 const emit = defineEmits<{ create: [type: string, parentId: string | null]; duplicate: [nodeId: string]; fileDrop: [files: FileList, parentId: string | null] }>();
 
@@ -195,9 +198,9 @@ async function handleRestore(nodeId: string) {
 
 async function handlePurge(nodeId: string, title: string) {
   const ok = await confirm({
-    title: 'Suppression definitive',
-    message: `Supprimer definitivement "${title}" ? Cette action est irreversible.`,
-    confirmText: 'Supprimer',
+    title: t('tree.permanentDelete'),
+    message: t('tree.permanentDeleteConfirm', { title }),
+    confirmText: t('common.delete'),
     variant: 'danger',
   });
   if (ok) await dossierStore.purgeNode(nodeId);
@@ -205,9 +208,9 @@ async function handlePurge(nodeId: string, title: string) {
 
 async function handleEmptyTrash() {
   const ok = await confirm({
-    title: 'Vider la corbeille',
-    message: 'Tous les elements seront supprimes definitivement. Cette action est irreversible.',
-    confirmText: 'Vider',
+    title: t('tree.clearTrash'),
+    message: t('tree.clearTrashConfirmMessage'),
+    confirmText: t('tree.clearTrashConfirmButton'),
     variant: 'danger',
   });
   if (ok) await dossierStore.emptyTrashAction();

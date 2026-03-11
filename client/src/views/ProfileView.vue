@@ -4,7 +4,7 @@
       <div class="admin-sidebar-header">
         <h2 class="admin-sidebar-title mono">
           <v-icon size="18" class="mr-2">mdi-account-cog-outline</v-icon>
-          Mon compte
+          {{ t('profile.myAccount') }}
         </h2>
       </div>
       <nav class="admin-nav">
@@ -36,8 +36,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import ProfileInfo from '../components/profile/ProfileInfo.vue';
 import ProfileSecurity from '../components/profile/ProfileSecurity.vue';
 import ProfileSecurityAdvanced from '../components/profile/ProfileSecurityAdvanced.vue';
@@ -49,6 +50,7 @@ import ProfileShortcuts from '../components/profile/ProfileShortcuts.vue';
 import ProfileActivity from '../components/profile/ProfileActivity.vue';
 
 const route = useRoute();
+const { t } = useI18n();
 const activeSection = ref('info');
 
 interface NavItem {
@@ -58,24 +60,24 @@ interface NavItem {
   icon?: string;
 }
 
-const navItems: NavItem[] = [
-  { type: 'group', label: 'Profil' },
-  { id: 'info', label: 'Mon profil', icon: 'mdi-account-outline' },
-  { id: 'template', label: 'Template rapport', icon: 'mdi-file-document-edit-outline' },
+const navItems = computed<NavItem[]>(() => [
+  { type: 'group', label: t('profile.myProfile') },
+  { id: 'info', label: t('profile.myProfile'), icon: 'mdi-account-outline' },
+  { id: 'template', label: t('profile.templateReport'), icon: 'mdi-file-document-edit-outline' },
 
-  { type: 'group', label: 'Securite' },
-  { id: 'security', label: 'Mot de passe & 2FA', icon: 'mdi-shield-lock-outline' },
-  { id: 'security-advanced', label: 'Sessions & score', icon: 'mdi-shield-check-outline' },
+  { type: 'group', label: t('profile.security') },
+  { id: 'security', label: t('profile.passwordAnd2FA'), icon: 'mdi-shield-lock-outline' },
+  { id: 'security-advanced', label: t('profile.sessionsAndScore'), icon: 'mdi-shield-check-outline' },
 
-  { type: 'group', label: 'Parametres' },
-  { id: 'preferences', label: 'Preferences', icon: 'mdi-cog-outline' },
-  { id: 'notifications', label: 'Notifications', icon: 'mdi-bell-cog-outline' },
-  { id: 'shortcuts', label: 'Raccourcis clavier', icon: 'mdi-keyboard-outline' },
+  { type: 'group', label: t('profile.settings') },
+  { id: 'preferences', label: t('profile.preferences'), icon: 'mdi-cog-outline' },
+  { id: 'notifications', label: t('profile.notifications'), icon: 'mdi-bell-cog-outline' },
+  { id: 'shortcuts', label: t('profile.keyboardShortcuts'), icon: 'mdi-keyboard-outline' },
 
-  { type: 'group', label: 'Donnees' },
-  { id: 'activity', label: 'Journal d\'activite', icon: 'mdi-history' },
-  { id: 'data', label: 'Mes donnees', icon: 'mdi-database-outline' },
-];
+  { type: 'group', label: t('profile.data') },
+  { id: 'activity', label: t('profile.activityLog'), icon: 'mdi-history' },
+  { id: 'data', label: t('profile.myData'), icon: 'mdi-database-outline' },
+]);
 
 onMounted(() => {
   if (route.query.section && typeof route.query.section === 'string') {

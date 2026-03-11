@@ -11,20 +11,20 @@
             <v-icon size="48" color="white">mdi-shield-search</v-icon>
           </div>
           <h1 class="login-brand-title mono">{{ brandingStore.appName }}</h1>
-          <p class="login-brand-tagline">{{ brandingStore.loginMessage || 'Plateforme d\'investigation OSINT' }}</p>
+          <p class="login-brand-tagline">{{ brandingStore.loginMessage || $t('auth.osintPlatform') }}</p>
         </div>
         <div class="login-left-features">
           <div class="login-feature">
             <v-icon size="20">mdi-folder-search-outline</v-icon>
-            <span>Gestion de dossiers d'investigation</span>
+            <span>{{ $t('auth.features.dossierManagement') }}</span>
           </div>
           <div class="login-feature">
             <v-icon size="20">mdi-account-group-outline</v-icon>
-            <span>Collaboration en temps reel</span>
+            <span>{{ $t('auth.features.realTimeCollab') }}</span>
           </div>
           <div class="login-feature">
             <v-icon size="20">mdi-map-marker-radius-outline</v-icon>
-            <span>Cartographie et visualisation</span>
+            <span>{{ $t('auth.features.mapping') }}</span>
           </div>
         </div>
       </div>
@@ -43,8 +43,8 @@
 
       <div class="login-right-inner fade-in">
         <div class="login-form-header">
-          <h2 class="login-form-title">Connexion</h2>
-          <p class="login-form-subtitle">Accedez a votre espace d'investigation</p>
+          <h2 class="login-form-title">{{ $t('auth.login') }}</h2>
+          <p class="login-form-subtitle">{{ $t('auth.loginSubtitle') }}</p>
         </div>
 
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4" closable @click:close="error = ''">
@@ -52,21 +52,21 @@
         </v-alert>
 
         <v-form v-if="!show2FA" @submit.prevent="handleLogin" :disabled="authStore.loading">
-          <label class="login-field-label">Email</label>
+          <label class="login-field-label">{{ $t('auth.email') }}</label>
           <v-text-field
             v-model="email"
             type="email"
-            placeholder="nom@exemple.com"
+            :placeholder="$t('auth.emailPlaceholder')"
             prepend-inner-icon="mdi-email-outline"
             variant="outlined"
             density="comfortable"
             required
             class="mb-3"
           />
-          <label class="login-field-label">Mot de passe</label>
+          <label class="login-field-label">{{ $t('auth.password') }}</label>
           <v-text-field
             v-model="password"
-            placeholder="Entrez votre mot de passe"
+            :placeholder="$t('auth.passwordPlaceholder')"
             :type="showPassword ? 'text' : 'password'"
             prepend-inner-icon="mdi-lock-outline"
             :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
@@ -84,7 +84,7 @@
             class="btn-accent login-submit-btn"
           >
             <v-icon start size="18">mdi-login-variant</v-icon>
-            Se connecter
+            {{ $t('auth.loginAction') }}
           </v-btn>
         </v-form>
 
@@ -92,10 +92,10 @@
           <div class="tfa-icon-wrap">
             <v-icon size="32" color="var(--me-accent)">mdi-shield-key-outline</v-icon>
           </div>
-          <p class="tfa-login-text mono">Entrez le code de votre application d'authentification</p>
+          <p class="tfa-login-text mono">{{ $t('auth.twoFaPrompt') }}</p>
           <v-text-field
             v-model="tfaCode"
-            label="Code 2FA"
+            :label="$t('auth.twoFaCode')"
             maxlength="8"
             autofocus
             variant="outlined"
@@ -105,17 +105,17 @@
             class="mb-4"
           />
           <v-btn type="button" block size="large" :loading="authStore.loading" class="btn-accent login-submit-btn" @click="handle2FA">
-            Verifier
+            {{ $t('auth.verify') }}
           </v-btn>
           <button class="tfa-back-btn" @click="show2FA = false; tempToken = ''">
             <v-icon size="14" class="mr-1">mdi-arrow-left</v-icon>
-            Retour
+            {{ $t('common.back') }}
           </button>
         </div>
 
         <div v-if="brandingStore.registrationEnabled" class="login-footer">
-          <span class="text-muted">Pas encore de compte ?</span>
-          <router-link to="/register" class="login-link">S'inscrire</router-link>
+          <span class="text-muted">{{ $t('auth.noAccount') }}</span>
+          <router-link to="/register" class="login-link">{{ $t('auth.register') }}</router-link>
         </div>
       </div>
     </div>
@@ -125,9 +125,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
 import { useBrandingStore } from '../stores/branding';
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const brandingStore = useBrandingStore();
 const router = useRouter();
@@ -151,7 +153,7 @@ async function handleLogin() {
     }
     router.push('/');
   } catch (e: any) {
-    error.value = e.response?.data?.message || 'Erreur de connexion';
+    error.value = e.response?.data?.message || t('auth.loginError');
   }
 }
 
@@ -161,7 +163,7 @@ async function handle2FA() {
     await authStore.validate2FA(tempToken.value, tfaCode.value);
     router.push('/');
   } catch (e: any) {
-    error.value = e.response?.data?.message || 'Code invalide';
+    error.value = e.response?.data?.message || t('auth.invalidCode');
   }
 }
 </script>

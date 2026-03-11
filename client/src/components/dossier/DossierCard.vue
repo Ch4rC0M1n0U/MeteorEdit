@@ -6,10 +6,10 @@
         <span class="dc-status-label mono">{{ statusLabel }}</span>
       </div>
       <div class="dc-actions">
-        <button class="dc-fav" :class="{ 'dc-fav--active': isFav }" @click.stop="$emit('toggle-favorite', dossier._id)" :title="isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'">
+        <button class="dc-fav" :class="{ 'dc-fav--active': isFav }" @click.stop="$emit('toggle-favorite', dossier._id)" :title="isFav ? $t('home.removeFromFavorites') : $t('home.addToFavorites')">
           <v-icon size="16">{{ isFav ? 'mdi-star' : 'mdi-star-outline' }}</v-icon>
         </button>
-        <button class="dc-delete" @click.stop="$emit('delete', dossier._id)" title="Supprimer">
+        <button class="dc-delete" @click.stop="$emit('delete', dossier._id)" :title="$t('common.delete')">
           <v-icon size="16">mdi-trash-can-outline</v-icon>
         </button>
       </div>
@@ -19,7 +19,7 @@
       <v-icon v-else-if="dossier.icon" size="22" class="dc-icon">{{ dossier.icon }}</v-icon>
       <v-icon v-else size="22" class="dc-icon dc-icon-default">mdi-folder-outline</v-icon>
       <h3 class="dc-title">{{ dossier.title }}</h3>
-      <v-icon v-if="dossier.isEncrypted" size="16" class="dc-lock" title="Chiffrement E2E actif">mdi-lock-outline</v-icon>
+      <v-icon v-if="dossier.isEncrypted" size="16" class="dc-lock" :title="$t('home.e2eActive')">mdi-lock-outline</v-icon>
     </div>
     <div v-if="dossier.tags?.length" class="dc-tags">
       <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>

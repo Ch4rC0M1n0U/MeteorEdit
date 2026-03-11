@@ -4,7 +4,7 @@
       <div class="admin-sidebar-header">
         <h2 class="admin-sidebar-title mono">
           <v-icon size="18" class="mr-2">mdi-shield-account</v-icon>
-          Administration
+          {{ $t('admin.title') }}
         </h2>
       </div>
       <nav class="admin-nav">
@@ -44,7 +44,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import AdminDashboard from '../components/admin/AdminDashboard.vue';
 import AdminUsers from '../components/admin/AdminUsers.vue';
 import AdminBranding from '../components/admin/AdminBranding.vue';
@@ -59,27 +60,29 @@ import AdminAudit from '../components/admin/AdminAudit.vue';
 import AdminPlugins from '../components/admin/AdminPlugins.vue';
 import AdminAI from '../components/admin/AdminAI.vue';
 
+const { t } = useI18n();
+
 const activeSection = ref('dashboard');
 
-const navItems: Array<{ type: 'group'; label: string; id?: undefined; icon?: undefined } | { type: 'item'; id: string; label: string; icon: string }> = [
-  { type: 'group', label: 'General' },
-  { type: 'item', id: 'dashboard', label: 'Dashboard', icon: 'mdi-view-dashboard-outline' },
-  { type: 'item', id: 'users', label: 'Utilisateurs', icon: 'mdi-account-group-outline' },
-  { type: 'item', id: 'audit', label: 'Journal d\'audit', icon: 'mdi-shield-check' },
-  { type: 'group', label: 'Configuration' },
-  { type: 'item', id: 'branding', label: 'Apparence', icon: 'mdi-palette-outline' },
-  { type: 'item', id: 'security', label: 'Securite', icon: 'mdi-shield-lock-outline' },
-  { type: 'item', id: 'storage', label: 'Stockage', icon: 'mdi-harddisk' },
-  { type: 'item', id: 'defaults', label: 'Parametres par defaut', icon: 'mdi-cog-outline' },
-  { type: 'item', id: 'network', label: 'Reseau & Annonces', icon: 'mdi-lan' },
-  { type: 'group', label: 'Services' },
-  { type: 'item', id: 'email', label: 'Email / SMTP', icon: 'mdi-email-outline' },
-  { type: 'item', id: 'clipper', label: 'Web Clipper', icon: 'mdi-scissors-cutting' },
-  { type: 'item', id: 'ai', label: 'Intelligence artificielle', icon: 'mdi-robot-outline' },
-  { type: 'item', id: 'plugins', label: 'Plugins', icon: 'mdi-puzzle-outline' },
-  { type: 'group', label: 'Maintenance' },
-  { type: 'item', id: 'backup', label: 'Sauvegarde', icon: 'mdi-backup-restore' },
-];
+const navItems = computed(() => [
+  { type: 'group' as const, label: t('admin.general') },
+  { type: 'item' as const, id: 'dashboard', label: t('admin.dashboard'), icon: 'mdi-view-dashboard-outline' },
+  { type: 'item' as const, id: 'users', label: t('admin.users'), icon: 'mdi-account-group-outline' },
+  { type: 'item' as const, id: 'audit', label: t('admin.auditLog'), icon: 'mdi-shield-check' },
+  { type: 'group' as const, label: t('admin.configuration') },
+  { type: 'item' as const, id: 'branding', label: t('admin.appearance'), icon: 'mdi-palette-outline' },
+  { type: 'item' as const, id: 'security', label: t('admin.security'), icon: 'mdi-shield-lock-outline' },
+  { type: 'item' as const, id: 'storage', label: t('admin.storage'), icon: 'mdi-harddisk' },
+  { type: 'item' as const, id: 'defaults', label: t('admin.defaults'), icon: 'mdi-cog-outline' },
+  { type: 'item' as const, id: 'network', label: t('admin.networkAnnouncements'), icon: 'mdi-lan' },
+  { type: 'group' as const, label: t('admin.services') },
+  { type: 'item' as const, id: 'email', label: t('admin.emailSmtp'), icon: 'mdi-email-outline' },
+  { type: 'item' as const, id: 'clipper', label: t('admin.webClipper'), icon: 'mdi-scissors-cutting' },
+  { type: 'item' as const, id: 'ai', label: t('admin.ai'), icon: 'mdi-robot-outline' },
+  { type: 'item' as const, id: 'plugins', label: t('admin.plugins'), icon: 'mdi-puzzle-outline' },
+  { type: 'group' as const, label: t('admin.maintenance') },
+  { type: 'item' as const, id: 'backup', label: t('admin.backup'), icon: 'mdi-backup-restore' },
+]);
 </script>
 
 <style scoped>

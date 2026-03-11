@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-lan</v-icon>
         Reseau & Annonces
       </h2>
-      <p class="admin-section-subtitle">CORS, origines autorisees et banniere d'annonce</p>
+      <p class="admin-section-subtitle">{{ $t('admin.networkSubtitle') }}</p>
     </div>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -14,17 +14,17 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-web</v-icon>
-        <h3 class="sec-card-title mono">CORS / Origines autorisees</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.corsOrigins') }}</h3>
       </div>
       <div class="sec-option">
         <div style="flex: 1;">
-          <p class="sec-label">Origines autorisees</p>
-          <p class="sec-desc">Liste des domaines autorises, separes par des virgules. * = tout autoriser</p>
+          <p class="sec-label">{{ $t('admin.allowedOriginsLabel') }}</p>
+          <p class="sec-desc">{{ $t('admin.allowedOriginsDesc') }}</p>
         </div>
       </div>
       <v-text-field
         v-model="form.allowedOrigins"
-        label="Origines autorisees"
+        :label="$t('admin.allowedOriginsLabel')"
         density="compact"
         hide-details
         class="mt-3"
@@ -36,12 +36,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-bullhorn-outline</v-icon>
-        <h3 class="sec-card-title mono">Banniere d'annonce</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.announcementBanner') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Activer la banniere</p>
-          <p class="sec-desc">Affiche un bandeau d'annonce visible par tous les utilisateurs</p>
+          <p class="sec-label">{{ $t('admin.enableBanner') }}</p>
+          <p class="sec-desc">{{ $t('admin.enableBannerDesc') }}</p>
         </div>
         <v-switch v-model="form.announcementEnabled" color="primary" hide-details @update:model-value="save" />
       </div>
@@ -49,13 +49,13 @@
         <div class="sec-divider" />
         <div class="sec-option">
           <div style="flex: 1;">
-            <p class="sec-label">Message</p>
-            <p class="sec-desc">Texte affiche dans la banniere</p>
+            <p class="sec-label">{{ $t('admin.message') }}</p>
+            <p class="sec-desc">{{ $t('admin.messageDesc') }}</p>
           </div>
         </div>
         <v-text-field
           v-model="form.announcementMessage"
-          label="Message"
+          :label="$t('admin.message')"
           density="compact"
           hide-details
           class="mt-3"
@@ -64,8 +64,8 @@
         <div class="sec-divider" />
         <div class="sec-option">
           <div>
-            <p class="sec-label">Type</p>
-            <p class="sec-desc">Apparence de la banniere</p>
+            <p class="sec-label">{{ $t('admin.bannerType') }}</p>
+            <p class="sec-desc">{{ $t('admin.bannerTypeDesc') }}</p>
           </div>
           <v-select
             v-model="form.announcementVariant"
@@ -87,7 +87,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const loading = ref(true);
 const saved = ref(false);

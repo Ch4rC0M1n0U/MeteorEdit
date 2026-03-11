@@ -7,7 +7,7 @@
           v-model="query"
           type="text"
           class="me-search-input mono"
-          placeholder="Rechercher..."
+          :placeholder="$t('common.search')"
           @focus="isFocused = true; showResults = true"
           @blur="hideResults"
         />
@@ -17,10 +17,10 @@
         class="me-filter-toggle"
         :class="{ active: filtersOpen }"
         @click="filtersOpen = !filtersOpen"
-        title="Filtres"
+        :title="$t('search.filters')"
       >
         <v-icon size="16">mdi-filter-variant</v-icon>
-        <span class="mono">Filtres</span>
+        <span class="mono">{{ $t('search.filters') }}</span>
         <span v-if="activeFilterCount > 0" class="me-filter-badge">{{ activeFilterCount }}</span>
       </button>
     </div>
@@ -28,14 +28,14 @@
     <!-- Filter panel -->
     <div v-if="filtersOpen" class="me-filter-panel glass-card">
       <div class="me-filter-panel-header">
-        <span class="me-filter-panel-title mono">Filtres</span>
+        <span class="me-filter-panel-title mono">{{ $t('search.filters') }}</span>
         <button class="me-filter-close" @click="filtersOpen = false">
           <v-icon size="16">mdi-close</v-icon>
         </button>
       </div>
       <div class="me-filter-grid">
         <div class="me-filter-group">
-          <div class="me-filter-label mono">Statut</div>
+          <div class="me-filter-label mono">{{ $t('common.status') }}</div>
           <div class="me-filter-chips">
             <button
               v-for="s in statusOptions"
@@ -47,7 +47,7 @@
         </div>
 
         <div class="me-filter-group">
-          <div class="me-filter-label mono">Type de noeud</div>
+          <div class="me-filter-label mono">{{ $t('search.nodeType') }}</div>
           <div class="me-filter-chips">
             <button
               v-for="t in nodeTypeOptions"
@@ -59,7 +59,7 @@
         </div>
 
         <div class="me-filter-group">
-          <div class="me-filter-label mono">Tags</div>
+          <div class="me-filter-label mono">{{ $t('dossier.tags') }}</div>
           <v-combobox
             v-model="filters.tags"
             :items="availableTags"
@@ -68,27 +68,27 @@
             closable-chips
             density="compact"
             variant="outlined"
-            placeholder="Ajouter un tag..."
+            :placeholder="$t('search.addTag')"
             hide-details
             class="me-filter-combobox"
           />
         </div>
 
         <div class="me-filter-group">
-          <div class="me-filter-label mono">Periode</div>
+          <div class="me-filter-label mono">{{ $t('search.period') }}</div>
           <div class="me-filter-dates">
             <input
               v-model="filters.dateFrom"
               type="date"
               class="me-date-input mono"
-              placeholder="Du"
+              :placeholder="$t('search.from')"
             />
             <span class="me-date-sep">—</span>
             <input
               v-model="filters.dateTo"
               type="date"
               class="me-date-input mono"
-              placeholder="Au"
+              :placeholder="$t('search.to')"
             />
           </div>
         </div>
@@ -96,7 +96,7 @@
 
       <button class="me-filter-reset" @click="resetFilters">
         <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
-        Reinitialiser
+        {{ $t('search.reset') }}
       </button>
     </div>
 
@@ -121,7 +121,7 @@
     >
       <div v-if="results.dossiers.length" class="me-search-section">
         <div class="me-search-section-label mono">
-          Dossiers
+          {{ $t('search.dossiers') }}
           <span class="me-search-count">({{ results.dossiersTotal ?? results.dossiers.length }})</span>
         </div>
         <button
@@ -140,7 +140,7 @@
 
       <div v-if="results.nodes.length" class="me-search-section">
         <div class="me-search-section-label mono">
-          Notes
+          {{ $t('search.notes') }}
           <span class="me-search-count">({{ results.nodesTotal ?? results.nodes.length }})</span>
         </div>
         <button
@@ -160,7 +160,7 @@
         @mousedown.prevent="loadMore"
       >
         <v-icon size="14" class="mr-1">mdi-chevron-down</v-icon>
-        Charger plus
+        {{ $t('search.loadMore') }}
       </button>
     </div>
   </div>
@@ -168,8 +168,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
+
+const { t } = useI18n();
 
 const dossierStore = useDossierStore();
 const searchRef = ref<HTMLElement | null>(null);
@@ -199,18 +202,18 @@ const results = reactive<{
   nodes: [],
 });
 
-const statusOptions = [
-  { label: 'Ouvert', value: 'open' },
-  { label: 'En cours', value: 'in_progress' },
-  { label: 'Ferm\u00E9', value: 'closed' },
-];
+const statusOptions = computed(() => [
+  { label: t('dossier.statusOpen'), value: 'open' },
+  { label: t('dossier.statusInProgress'), value: 'in_progress' },
+  { label: t('dossier.statusClosed'), value: 'closed' },
+]);
 
-const nodeTypeOptions = [
-  { label: 'Dossier', value: 'folder' },
-  { label: 'Note', value: 'note' },
-  { label: 'Mindmap', value: 'mindmap' },
-  { label: 'Document', value: 'document' },
-];
+const nodeTypeOptions = computed(() => [
+  { label: t('nodeTypes.folder'), value: 'folder' },
+  { label: t('nodeTypes.note'), value: 'note' },
+  { label: t('nodeTypes.mindmap'), value: 'mindmap' },
+  { label: t('nodeTypes.document'), value: 'document' },
+]);
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -233,21 +236,21 @@ const activeFilterCount = computed(() => {
 const activeFilterChips = computed(() => {
   const chips: { key: string; label: string }[] = [];
   if (filters.status) {
-    const opt = statusOptions.find(s => s.value === filters.status);
-    chips.push({ key: 'status', label: `Statut: ${opt?.label ?? filters.status}` });
+    const opt = statusOptions.value.find(s => s.value === filters.status);
+    chips.push({ key: 'status', label: `${t('common.status')}: ${opt?.label ?? filters.status}` });
   }
   if (filters.nodeType) {
-    const opt = nodeTypeOptions.find(t => t.value === filters.nodeType);
-    chips.push({ key: 'nodeType', label: `Type: ${opt?.label ?? filters.nodeType}` });
+    const opt = nodeTypeOptions.value.find(nt => nt.value === filters.nodeType);
+    chips.push({ key: 'nodeType', label: `${t('common.type')}: ${opt?.label ?? filters.nodeType}` });
   }
   if (filters.tags.length) {
     chips.push({ key: 'tags', label: `Tags: ${filters.tags.join(', ')}` });
   }
   if (filters.dateFrom) {
-    chips.push({ key: 'dateFrom', label: `Depuis: ${filters.dateFrom}` });
+    chips.push({ key: 'dateFrom', label: `${t('search.from')}: ${filters.dateFrom}` });
   }
   if (filters.dateTo) {
-    chips.push({ key: 'dateTo', label: `Jusqu'a: ${filters.dateTo}` });
+    chips.push({ key: 'dateTo', label: `${t('search.to')}: ${filters.dateTo}` });
   }
   return chips;
 });

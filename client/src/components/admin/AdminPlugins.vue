@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-puzzle-outline</v-icon>
         Plugins
       </h2>
-      <p class="admin-section-subtitle">Configuration des services externes</p>
+      <p class="admin-section-subtitle">{{ $t('admin.pluginsSubtitle') }}</p>
     </div>
 
     <div class="plugins-grid fade-in fade-in-delay-1">
@@ -17,16 +17,16 @@
           </div>
           <div>
             <h3 class="plugin-card-title mono">Mapbox</h3>
-            <p class="plugin-card-desc">Cartographie interactive pour les dossiers</p>
+            <p class="plugin-card-desc">{{ $t('admin.mapboxDesc') }}</p>
           </div>
           <span :class="['plugin-status', form.mapbox.apiKey ? 'plugin-status--active' : 'plugin-status--inactive']">
-            {{ form.mapbox.apiKey ? 'Actif' : 'Non configure' }}
+            {{ form.mapbox.apiKey ? $t('admin.activeModel') : $t('admin.notConfigured') }}
           </span>
         </div>
 
         <div class="plugin-fields">
           <div class="plugin-field">
-            <label class="plugin-label mono">Cle API</label>
+            <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
             <div class="api-key-row">
               <v-text-field
                 v-model="form.mapbox.apiKey"
@@ -35,14 +35,14 @@
                 :type="showApiKey ? 'text' : 'password'"
                 placeholder="pk.eyJ..."
               />
-              <button class="plugin-toggle-btn" @click="showApiKey = !showApiKey" :title="showApiKey ? 'Masquer' : 'Afficher'">
+              <button class="plugin-toggle-btn" @click="showApiKey = !showApiKey" :title="showApiKey ? $t('admin.hide') : $t('admin.show')">
                 <v-icon size="16">{{ showApiKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
               </button>
             </div>
           </div>
 
           <div class="plugin-field">
-            <label class="plugin-label mono">Style par defaut</label>
+            <label class="plugin-label mono">{{ $t('admin.defaultStyle') }}</label>
             <v-select
               v-model="form.mapbox.defaultStyle"
               :items="mapStyles"
@@ -55,7 +55,7 @@
 
           <div class="plugin-field-row">
             <div class="plugin-field" style="flex: 1;">
-              <label class="plugin-label mono">Centre (longitude)</label>
+              <label class="plugin-label mono">{{ $t('admin.centerLongitude') }}</label>
               <v-text-field
                 v-model.number="form.mapbox.defaultCenter[0]"
                 density="compact"
@@ -65,7 +65,7 @@
               />
             </div>
             <div class="plugin-field" style="flex: 1;">
-              <label class="plugin-label mono">Centre (latitude)</label>
+              <label class="plugin-label mono">{{ $t('admin.centerLatitude') }}</label>
               <v-text-field
                 v-model.number="form.mapbox.defaultCenter[1]"
                 density="compact"
@@ -75,7 +75,7 @@
               />
             </div>
             <div class="plugin-field" style="flex: 0.5;">
-              <label class="plugin-label mono">Zoom</label>
+              <label class="plugin-label mono">{{ $t('admin.zoom') }}</label>
               <v-text-field
                 v-model.number="form.mapbox.defaultZoom"
                 density="compact"
@@ -93,7 +93,7 @@
     <div class="plugins-actions fade-in fade-in-delay-2">
       <button class="me-btn-primary" @click="save" :disabled="saving">
         <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
-        {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
       </button>
     </div>
   </div>
@@ -101,7 +101,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const saving = ref(false);
 const showApiKey = ref(false);

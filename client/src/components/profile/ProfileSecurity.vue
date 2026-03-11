@@ -3,21 +3,21 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-shield-lock-outline</v-icon>
-        Securite
+        {{ $t('profile.security') }}
       </h2>
     </div>
 
     <!-- Password change -->
     <div class="branding-card glass-card fade-in fade-in-delay-1">
-      <h3 class="branding-card-title mono">Changer le mot de passe</h3>
+      <h3 class="branding-card-title mono">{{ $t('profile.changePassword') }}</h3>
       <v-alert v-if="pwMessage" :type="pwSuccess ? 'success' : 'error'" variant="tonal" class="mb-4" closable @click:close="pwMessage = ''">
         {{ pwMessage }}
       </v-alert>
-      <v-text-field v-model="pwForm.currentPassword" label="Mot de passe actuel" type="password" density="compact" hide-details class="mb-3" />
-      <v-text-field v-model="pwForm.newPassword" label="Nouveau mot de passe (min. 8)" type="password" density="compact" hide-details class="mb-3" />
-      <v-text-field v-model="pwForm.confirmPassword" label="Confirmer" type="password" density="compact" hide-details class="mb-4" />
+      <v-text-field v-model="pwForm.currentPassword" :label="$t('profile.currentPassword')" type="password" density="compact" hide-details class="mb-3" />
+      <v-text-field v-model="pwForm.newPassword" :label="$t('profile.newPassword')" type="password" density="compact" hide-details class="mb-3" />
+      <v-text-field v-model="pwForm.confirmPassword" :label="$t('profile.confirmPassword')" type="password" density="compact" hide-details class="mb-4" />
       <div class="branding-actions">
-        <button class="me-btn-primary" @click="changePassword" :disabled="pwSaving">Changer</button>
+        <button class="me-btn-primary" @click="changePassword" :disabled="pwSaving">{{ $t('profile.change') }}</button>
       </div>
     </div>
 
@@ -25,13 +25,13 @@
     <div class="branding-card glass-card fade-in fade-in-delay-2">
       <div class="tfa-header">
         <div>
-          <h3 class="branding-card-title mono">Authentification a deux facteurs (2FA)</h3>
+          <h3 class="branding-card-title mono">{{ $t('profile.twoFA') }}</h3>
           <p class="branding-card-desc">
-            {{ authStore.user?.twoFactorEnabled ? 'Active — votre compte est protege' : 'Desactive — activez pour plus de securite' }}
+            {{ authStore.user?.twoFactorEnabled ? $t('profile.twoFAActive') : $t('profile.twoFAInactive') }}
           </p>
           <p v-if="require2FAEnforced" class="tfa-enforced mono">
             <v-icon size="14" class="mr-1">mdi-alert-outline</v-icon>
-            2FA obligatoire (politique administrateur)
+            {{ $t('profile.twoFARequired') }}
           </p>
         </div>
         <span :class="['status-dot', authStore.user?.twoFactorEnabled ? 'status-dot--active' : 'status-dot--error']" />
@@ -41,20 +41,20 @@
       <div v-if="!authStore.user?.twoFactorEnabled && !setupData">
         <button class="me-btn-primary" @click="startSetup">
           <v-icon size="14" class="mr-1">mdi-qrcode</v-icon>
-          Activer la 2FA
+          {{ $t('profile.enable2FA') }}
         </button>
       </div>
 
       <!-- QR Code display -->
       <div v-if="setupData" class="tfa-setup">
-        <p class="tfa-step mono">1. Scannez le QR code avec Google Authenticator ou Authy</p>
+        <p class="tfa-step mono">1. {{ $t('profile.scanQR') }}</p>
         <img :src="setupData.qrCode" alt="QR Code" class="tfa-qr" />
-        <p class="tfa-step mono">Ou entrez ce code manuellement :</p>
+        <p class="tfa-step mono">{{ $t('profile.manualCode') }}</p>
         <code class="tfa-secret">{{ setupData.secret }}</code>
-        <p class="tfa-step mono mt-4">2. Entrez le code a 6 chiffres pour confirmer</p>
+        <p class="tfa-step mono mt-4">2. {{ $t('profile.enter6Digits') }}</p>
         <div class="tfa-verify-row">
-          <v-text-field v-model="verifyCode" label="Code" density="compact" hide-details maxlength="6" class="tfa-code-input" />
-          <button class="me-btn-primary" @click="verifySetup" :disabled="verifyCode.length < 6">Confirmer</button>
+          <v-text-field v-model="verifyCode" :label="$t('profile.code')" density="compact" hide-details maxlength="6" class="tfa-code-input" />
+          <button class="me-btn-primary" @click="verifySetup" :disabled="verifyCode.length < 6">{{ $t('common.confirm') }}</button>
         </div>
         <v-alert v-if="tfaError" type="error" variant="tonal" class="mt-3" closable @click:close="tfaError = ''">{{ tfaError }}</v-alert>
       </div>
@@ -62,12 +62,12 @@
       <!-- Backup codes -->
       <div v-if="backupCodes.length" class="tfa-backup">
         <v-alert type="warning" variant="tonal" class="mb-3">
-          Sauvegardez ces codes de recuperation. Ils ne seront plus affiches.
+          {{ $t('profile.backupCodes') }}
         </v-alert>
         <div class="tfa-backup-grid">
           <code v-for="code in backupCodes" :key="code" class="tfa-backup-code">{{ code }}</code>
         </div>
-        <button class="me-btn-ghost mt-3" @click="backupCodes = []">J'ai sauvegarde mes codes</button>
+        <button class="me-btn-ghost mt-3" @click="backupCodes = []">{{ $t('profile.codesSaved') }}</button>
       </div>
 
       <!-- Disable -->
@@ -75,14 +75,14 @@
         <div v-if="!showDisable">
           <button class="me-btn-ghost" @click="showDisable = true" :disabled="require2FAEnforced">
             <v-icon size="14" class="mr-1">mdi-shield-off-outline</v-icon>
-            Desactiver la 2FA
+            {{ $t('profile.disable2FA') }}
           </button>
         </div>
         <div v-else class="tfa-disable">
-          <v-text-field v-model="disablePassword" label="Mot de passe pour confirmer" type="password" density="compact" hide-details class="mb-3" />
+          <v-text-field v-model="disablePassword" :label="$t('profile.passwordToConfirm')" type="password" density="compact" hide-details class="mb-3" />
           <div class="branding-actions">
-            <button class="me-btn-ghost" @click="showDisable = false">Annuler</button>
-            <button class="me-btn-primary" style="background: var(--me-error);" @click="disable2FA">Desactiver</button>
+            <button class="me-btn-ghost" @click="showDisable = false">{{ $t('common.cancel') }}</button>
+            <button class="me-btn-primary" style="background: var(--me-error);" @click="disable2FA">{{ $t('profile.disable') }}</button>
           </div>
           <v-alert v-if="tfaError" type="error" variant="tonal" class="mt-3" closable @click:close="tfaError = ''">{{ tfaError }}</v-alert>
         </div>
@@ -93,9 +93,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 
 // Password
@@ -106,20 +108,20 @@ const pwSaving = ref(false);
 
 async function changePassword() {
   if (pwForm.newPassword !== pwForm.confirmPassword) {
-    pwMessage.value = 'Les mots de passe ne correspondent pas';
+    pwMessage.value = t('profile.passwordMismatch');
     pwSuccess.value = false;
     return;
   }
   pwSaving.value = true;
   try {
     await api.put('/auth/password', { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
-    pwMessage.value = 'Mot de passe modifie';
+    pwMessage.value = t('profile.passwordChanged');
     pwSuccess.value = true;
     pwForm.currentPassword = '';
     pwForm.newPassword = '';
     pwForm.confirmPassword = '';
   } catch (e: any) {
-    pwMessage.value = e.response?.data?.message || 'Erreur';
+    pwMessage.value = e.response?.data?.message || t('common.error');
     pwSuccess.value = false;
   } finally {
     pwSaving.value = false;
@@ -148,7 +150,7 @@ async function startSetup() {
     setupData.value = { qrCode: data.qrCode, secret: data.secret };
     backupCodes.value = data.backupCodes;
   } catch (e: any) {
-    tfaError.value = e.response?.data?.message || 'Erreur';
+    tfaError.value = e.response?.data?.message || t('common.error');
   }
 }
 
@@ -159,7 +161,7 @@ async function verifySetup() {
     verifyCode.value = '';
     await authStore.fetchMe();
   } catch (e: any) {
-    tfaError.value = e.response?.data?.message || 'Code invalide';
+    tfaError.value = e.response?.data?.message || t('profile.invalidCode');
   }
 }
 
@@ -171,7 +173,7 @@ async function disable2FA() {
     tfaError.value = '';
     await authStore.fetchMe();
   } catch (e: any) {
-    tfaError.value = e.response?.data?.message || 'Erreur';
+    tfaError.value = e.response?.data?.message || t('common.error');
   }
 }
 </script>

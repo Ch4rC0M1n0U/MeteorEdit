@@ -14,7 +14,7 @@
     </div>
 
     <div class="me-appbar-right">
-      <button class="me-icon-btn" @click="themeStore.toggle()" :title="themeStore.isDark ? 'Mode clair' : 'Mode sombre'">
+      <button class="me-icon-btn" @click="themeStore.toggle()" :title="themeStore.isDark ? t('nav.lightMode') : t('nav.darkMode')">
         <v-icon size="20">{{ themeStore.isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
       </button>
 
@@ -38,24 +38,24 @@
           <div class="me-dropdown-divider" />
           <router-link v-if="authStore.isAdmin" to="/admin" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-shield-account</v-icon>
-            Administration
+            {{ t('nav.admin') }}
           </router-link>
           <router-link to="/profile?section=preferences" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-cog-outline</v-icon>
-            Preferences
+            {{ t('nav.preferences') }}
           </router-link>
           <router-link to="/templates" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-file-document-check-outline</v-icon>
-            Mes modeles
+            {{ t('nav.templates') }}
           </router-link>
           <router-link to="/help" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-help-circle-outline</v-icon>
-            Aide
+            {{ t('nav.help') }}
           </router-link>
           <div class="me-dropdown-divider" />
           <button class="me-dropdown-item me-dropdown-item--danger" @click="handleLogout">
             <v-icon size="16" class="mr-2">mdi-logout</v-icon>
-            Deconnexion
+            {{ t('auth.logout') }}
           </button>
         </div>
       </v-menu>
@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
@@ -80,6 +81,7 @@ const themeStore = useThemeStore();
 const dossierStore = useDossierStore();
 const brandingStore = useBrandingStore();
 const router = useRouter();
+const { t } = useI18n();
 
 const initials = computed(() => {
   const f = authStore.user?.firstName?.[0] || '';

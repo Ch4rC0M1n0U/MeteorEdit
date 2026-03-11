@@ -3,7 +3,7 @@
     <div class="es-dialog glass-card">
       <div class="es-header">
         <v-icon size="20" class="es-header-icon">mdi-download-outline</v-icon>
-        <span>Exporter le dossier</span>
+        <span>{{ $t('dossier.exportDossier') }}</span>
         <button class="es-close" @click="model = false">
           <v-icon size="18">mdi-close</v-icon>
         </button>
@@ -13,36 +13,36 @@
         <div class="es-actions-top">
           <button class="es-link-btn" @click="selectAll">
             <v-icon size="14">mdi-checkbox-multiple-marked-outline</v-icon>
-            Tout selectionner
+            {{ $t('dossier.selectAll') }}
           </button>
           <button class="es-link-btn" @click="deselectAll">
             <v-icon size="14">mdi-checkbox-multiple-blank-outline</v-icon>
-            Tout deselectionner
+            {{ $t('dossier.deselectAll') }}
           </button>
         </div>
 
         <div class="es-tree">
           <!-- Root nodes (no parent) -->
-          <template v-for="node in rootNodes" :key="node._id">
-            <ExportNodeItem
-              :node="node"
-              :children-map="childrenMap"
-              :selected-ids="selectedIds"
-              :depth="0"
-              @toggle="toggleNode"
-            />
-          </template>
-          <div v-if="!allNodes.length" class="es-empty">Aucun element a exporter</div>
+          <ExportNodeItem
+            v-for="node in rootNodes"
+            :key="node._id"
+            :node="node"
+            :children-map="childrenMap"
+            :selected-ids="selectedIds"
+            :depth="0"
+            @toggle="toggleNode"
+          />
+          <div v-if="!allNodes.length" class="es-empty">{{ $t('dossier.noElements') }}</div>
         </div>
       </div>
 
       <div class="es-footer">
-        <span class="es-count mono">{{ selectedIds.size }} / {{ allNodes.length }} selectionnes</span>
+        <span class="es-count mono">{{ $t('dossier.selectedCount', { count: selectedIds.size, total: allNodes.length }) }}</span>
         <div class="es-footer-btns">
-          <button class="es-btn es-btn--cancel" @click="model = false">Annuler</button>
+          <button class="es-btn es-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
           <button class="es-btn es-btn--print" @click="doExport('print')" :disabled="selectedIds.size === 0">
             <v-icon size="14">mdi-printer-outline</v-icon>
-            Imprimer
+            {{ $t('common.print') }}
           </button>
           <button class="es-btn es-btn--pdf" @click="doExport('pdf')" :disabled="selectedIds.size === 0">
             <v-icon size="14">mdi-file-pdf-box</v-icon>

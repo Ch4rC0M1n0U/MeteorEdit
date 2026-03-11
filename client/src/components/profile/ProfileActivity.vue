@@ -3,7 +3,7 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-history</v-icon>
-        Journal d'activite
+        {{ $t('activity.title') }}
       </h2>
     </div>
 
@@ -15,7 +15,7 @@
           :items="actionGroups"
           item-title="label"
           item-value="value"
-          label="Filtrer par type"
+          :label="$t('activity.filterByType')"
           density="compact"
           hide-details
           multiple
@@ -26,7 +26,7 @@
         />
         <button class="me-btn-ghost" @click="exportCsv" :disabled="exporting">
           <v-icon size="14" class="mr-1">mdi-download-outline</v-icon>
-          {{ exporting ? 'Export...' : 'Export CSV' }}
+          {{ exporting ? $t('activity.exporting') : $t('activity.exportCsv') }}
         </button>
       </div>
     </div>
@@ -39,7 +39,7 @@
 
       <div v-else-if="activities.length === 0" class="activity-empty">
         <v-icon size="40" class="mb-2" style="opacity: 0.3">mdi-clock-outline</v-icon>
-        <p>Aucune activite sur les 7 derniers jours</p>
+        <p>{{ $t('activity.noActivity') }}</p>
       </div>
 
       <div v-else class="activity-list">
@@ -68,11 +68,11 @@
       <div v-if="activities.length > 0" class="activity-pagination">
         <button class="me-btn-ghost" :disabled="page <= 1" @click="page--; fetchActivities()">
           <v-icon size="14">mdi-chevron-left</v-icon>
-          Precedent
+          {{ $t('activity.previous') }}
         </button>
-        <span class="activity-page mono">Page {{ page }}</span>
+        <span class="activity-page mono">{{ $t('activity.page', { page }) }}</span>
         <button class="me-btn-ghost" :disabled="activities.length < limit" @click="page++; fetchActivities()">
-          Suivant
+          {{ $t('activity.next') }}
           <v-icon size="14">mdi-chevron-right</v-icon>
         </button>
       </div>
@@ -81,8 +81,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../../services/api'
+
+const { t } = useI18n()
 
 interface ActivityItem {
   _id: string
@@ -92,37 +95,58 @@ interface ActivityItem {
   createdAt: string
 }
 
-const ACTION_MAP: Record<string, { icon: string; label: string; color: string }> = {
-  'login': { icon: 'mdi-login-variant', label: 'Connexion', color: '#4fc3f7' },
-  'dossier.create': { icon: 'mdi-folder-plus-outline', label: 'Dossier cree', color: '#81c784' },
-  'dossier.update': { icon: 'mdi-folder-edit-outline', label: 'Dossier modifie', color: '#fff176' },
-  'dossier.delete': { icon: 'mdi-folder-remove-outline', label: 'Dossier supprime', color: '#e57373' },
-  'node.create': { icon: 'mdi-file-plus-outline', label: 'Element cree', color: '#81c784' },
-  'node.delete': { icon: 'mdi-file-remove-outline', label: 'Element supprime', color: '#e57373' },
-  'node.restore': { icon: 'mdi-file-restore-outline', label: 'Element restaure', color: '#4fc3f7' },
-  'collaborator.add': { icon: 'mdi-account-plus-outline', label: 'Collaborateur ajoute', color: '#81c784' },
-  'collaborator.remove': { icon: 'mdi-account-minus-outline', label: 'Collaborateur retire', color: '#e57373' },
-  'comment.create': { icon: 'mdi-comment-plus-outline', label: 'Commentaire ajoute', color: '#81c784' },
-  'comment.delete': { icon: 'mdi-comment-remove-outline', label: 'Commentaire supprime', color: '#e57373' },
-  'snapshot.create': { icon: 'mdi-history', label: 'Snapshot cree', color: '#ce93d8' },
-  'snapshot.restore': { icon: 'mdi-backup-restore', label: 'Snapshot restaure', color: '#4fc3f7' },
-  'profile.update': { icon: 'mdi-account-edit-outline', label: 'Profil modifie', color: '#fff176' },
-  'profile.avatar_upload': { icon: 'mdi-camera-outline', label: 'Avatar modifie', color: '#fff176' },
-  'profile.password_change': { icon: 'mdi-lock-reset', label: 'Mot de passe change', color: '#ffb74d' },
-  '2fa.enable': { icon: 'mdi-shield-check-outline', label: '2FA active', color: '#81c784' },
-  '2fa.disable': { icon: 'mdi-shield-off-outline', label: '2FA desactive', color: '#e57373' },
+const ACTION_MAP: Record<string, { icon: string; color: string }> = {
+  'login': { icon: 'mdi-login-variant', color: '#4fc3f7' },
+  'dossier.create': { icon: 'mdi-folder-plus-outline', color: '#81c784' },
+  'dossier.update': { icon: 'mdi-folder-edit-outline', color: '#fff176' },
+  'dossier.delete': { icon: 'mdi-folder-remove-outline', color: '#e57373' },
+  'node.create': { icon: 'mdi-file-plus-outline', color: '#81c784' },
+  'node.delete': { icon: 'mdi-file-remove-outline', color: '#e57373' },
+  'node.restore': { icon: 'mdi-file-restore-outline', color: '#4fc3f7' },
+  'collaborator.add': { icon: 'mdi-account-plus-outline', color: '#81c784' },
+  'collaborator.remove': { icon: 'mdi-account-minus-outline', color: '#e57373' },
+  'comment.create': { icon: 'mdi-comment-plus-outline', color: '#81c784' },
+  'comment.delete': { icon: 'mdi-comment-remove-outline', color: '#e57373' },
+  'snapshot.create': { icon: 'mdi-history', color: '#ce93d8' },
+  'snapshot.restore': { icon: 'mdi-backup-restore', color: '#4fc3f7' },
+  'profile.update': { icon: 'mdi-account-edit-outline', color: '#fff176' },
+  'profile.avatar_upload': { icon: 'mdi-camera-outline', color: '#fff176' },
+  'profile.password_change': { icon: 'mdi-lock-reset', color: '#ffb74d' },
+  '2fa.enable': { icon: 'mdi-shield-check-outline', color: '#81c784' },
+  '2fa.disable': { icon: 'mdi-shield-off-outline', color: '#e57373' },
 }
 
-const actionGroups = [
-  { label: 'Connexion', value: 'login' },
-  { label: 'Dossiers', value: 'dossier.*' },
-  { label: 'Elements', value: 'node.*' },
-  { label: 'Collaborateurs', value: 'collaborator.*' },
-  { label: 'Commentaires', value: 'comment.*' },
-  { label: 'Snapshots', value: 'snapshot.*' },
-  { label: 'Profil', value: 'profile.*' },
-  { label: 'Securite', value: '2fa.*' },
-]
+const ACTION_LABEL_KEY_MAP: Record<string, string> = {
+  'login': 'activity.actions.login',
+  'dossier.create': 'activity.actions.dossierCreate',
+  'dossier.update': 'activity.actions.dossierUpdate',
+  'dossier.delete': 'activity.actions.dossierDelete',
+  'node.create': 'activity.actions.nodeCreate',
+  'node.delete': 'activity.actions.nodeDelete',
+  'node.restore': 'activity.actions.nodeRestore',
+  'collaborator.add': 'activity.actions.collaboratorAdd',
+  'collaborator.remove': 'activity.actions.collaboratorRemove',
+  'comment.create': 'activity.actions.commentCreate',
+  'comment.delete': 'activity.actions.commentDelete',
+  'snapshot.create': 'activity.actions.snapshotCreate',
+  'snapshot.restore': 'activity.actions.snapshotRestore',
+  'profile.update': 'activity.actions.profileUpdate',
+  'profile.avatar_upload': 'activity.actions.avatarUpload',
+  'profile.password_change': 'activity.actions.passwordChange',
+  '2fa.enable': 'activity.actions.twoFaEnable',
+  '2fa.disable': 'activity.actions.twoFaDisable',
+}
+
+const actionGroups = computed(() => [
+  { label: t('activity.groups.login'), value: 'login' },
+  { label: t('activity.groups.dossiers'), value: 'dossier.*' },
+  { label: t('activity.groups.elements'), value: 'node.*' },
+  { label: t('activity.groups.collaborators'), value: 'collaborator.*' },
+  { label: t('activity.groups.comments'), value: 'comment.*' },
+  { label: t('activity.groups.snapshots'), value: 'snapshot.*' },
+  { label: t('activity.groups.profile'), value: 'profile.*' },
+  { label: t('activity.groups.security'), value: '2fa.*' },
+])
 
 const activities = ref<ActivityItem[]>([])
 const loading = ref(false)
@@ -136,7 +160,7 @@ function getActionIcon(action: string): string {
 }
 
 function getActionLabel(action: string): string {
-  return ACTION_MAP[action]?.label ?? action
+  return ACTION_LABEL_KEY_MAP[action] ? t(ACTION_LABEL_KEY_MAP[action]) : action
 }
 
 function getActionColor(action: string): string {
@@ -149,11 +173,11 @@ function formatTime(dateStr: string): string {
   const diffMs = now.getTime() - d.getTime()
   const diffMin = Math.floor(diffMs / 60000)
 
-  if (diffMin < 1) return "A l'instant"
-  if (diffMin < 60) return `Il y a ${diffMin} min`
+  if (diffMin < 1) return t('activity.justNow')
+  if (diffMin < 60) return t('activity.minutesAgo', { min: diffMin })
 
   const diffH = Math.floor(diffMin / 60)
-  if (diffH < 24) return `Il y a ${diffH}h`
+  if (diffH < 24) return t('activity.hoursAgo', { hours: diffH })
 
   const day = d.getDate().toString().padStart(2, '0')
   const month = (d.getMonth() + 1).toString().padStart(2, '0')

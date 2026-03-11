@@ -11,20 +11,20 @@
             <v-icon size="48" color="white">mdi-shield-search</v-icon>
           </div>
           <h1 class="login-brand-title mono">{{ brandingStore.appName }}</h1>
-          <p class="login-brand-tagline">{{ brandingStore.loginMessage || 'Plateforme d\'investigation OSINT' }}</p>
+          <p class="login-brand-tagline">{{ brandingStore.loginMessage || $t('auth.osintPlatform') }}</p>
         </div>
         <div class="login-left-features">
           <div class="login-feature">
             <v-icon size="20">mdi-folder-search-outline</v-icon>
-            <span>Gestion de dossiers d'investigation</span>
+            <span>{{ $t('auth.features.dossierManagement') }}</span>
           </div>
           <div class="login-feature">
             <v-icon size="20">mdi-account-group-outline</v-icon>
-            <span>Collaboration en temps reel</span>
+            <span>{{ $t('auth.features.realTimeCollab') }}</span>
           </div>
           <div class="login-feature">
             <v-icon size="20">mdi-map-marker-radius-outline</v-icon>
-            <span>Cartographie et visualisation</span>
+            <span>{{ $t('auth.features.mapping') }}</span>
           </div>
         </div>
       </div>
@@ -43,12 +43,12 @@
 
       <div class="login-right-inner fade-in">
         <div class="login-form-header">
-          <h2 class="login-form-title">Creer un compte</h2>
-          <p class="login-form-subtitle">Rejoignez la plateforme d'investigation</p>
+          <h2 class="login-form-title">{{ $t('auth.registerTitle') }}</h2>
+          <p class="login-form-subtitle">{{ $t('auth.registerSubtitle') }}</p>
         </div>
 
         <v-alert v-if="success" type="success" variant="tonal" class="mb-4">
-          Compte cree. Un administrateur doit activer votre compte.
+          {{ $t('auth.accountCreated') }}
         </v-alert>
 
         <v-alert v-if="error" type="error" variant="tonal" class="mb-4" closable @click:close="error = ''">
@@ -58,20 +58,20 @@
         <v-form v-if="!success" @submit.prevent="handleRegister" :disabled="authStore.loading">
           <div class="d-flex ga-3 mb-3">
             <div style="flex: 1">
-              <label class="login-field-label">Prenom</label>
-              <v-text-field v-model="firstName" placeholder="Jean" prepend-inner-icon="mdi-account-outline" variant="outlined" density="comfortable" required />
+              <label class="login-field-label">{{ $t('auth.firstName') }}</label>
+              <v-text-field v-model="firstName" :placeholder="$t('auth.firstNamePlaceholder')" prepend-inner-icon="mdi-account-outline" variant="outlined" density="comfortable" required />
             </div>
             <div style="flex: 1">
-              <label class="login-field-label">Nom</label>
-              <v-text-field v-model="lastName" placeholder="Dupont" variant="outlined" density="comfortable" required />
+              <label class="login-field-label">{{ $t('auth.lastName') }}</label>
+              <v-text-field v-model="lastName" :placeholder="$t('auth.lastNamePlaceholder')" variant="outlined" density="comfortable" required />
             </div>
           </div>
-          <label class="login-field-label">Email</label>
-          <v-text-field v-model="email" type="email" placeholder="nom@exemple.com" prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable" required class="mb-3" />
-          <label class="login-field-label">Mot de passe</label>
+          <label class="login-field-label">{{ $t('auth.email') }}</label>
+          <v-text-field v-model="email" type="email" :placeholder="$t('auth.emailPlaceholder')" prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable" required class="mb-3" />
+          <label class="login-field-label">{{ $t('auth.password') }}</label>
           <v-text-field
             v-model="password"
-            placeholder="Min. 8 caracteres"
+            :placeholder="$t('auth.passwordMin')"
             :type="showPassword ? 'text' : 'password'"
             prepend-inner-icon="mdi-lock-outline"
             :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
@@ -89,13 +89,13 @@
             class="btn-accent login-submit-btn"
           >
             <v-icon start size="18">mdi-account-plus-outline</v-icon>
-            S'inscrire
+            {{ $t('auth.register') }}
           </v-btn>
         </v-form>
 
         <div class="login-footer">
-          <span class="text-muted">Deja un compte ?</span>
-          <router-link to="/login" class="login-link">Se connecter</router-link>
+          <span class="text-muted">{{ $t('auth.hasAccount') }}</span>
+          <router-link to="/login" class="login-link">{{ $t('auth.loginAction') }}</router-link>
         </div>
       </div>
     </div>
@@ -104,9 +104,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
 import { useBrandingStore } from '../stores/branding';
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const brandingStore = useBrandingStore();
 
@@ -124,7 +126,7 @@ async function handleRegister() {
     await authStore.register(email.value, password.value, firstName.value, lastName.value);
     success.value = true;
   } catch (e: any) {
-    error.value = e.response?.data?.message || 'Erreur lors de l\'inscription';
+    error.value = e.response?.data?.message || t('auth.registerError');
   }
 }
 </script>

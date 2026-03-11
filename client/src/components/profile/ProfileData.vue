@@ -3,7 +3,7 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-database-outline</v-icon>
-        Mes donnees
+        {{ $t('data.title') }}
       </h2>
     </div>
 
@@ -11,7 +11,7 @@
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <h3 class="branding-card-title mono">
         <v-icon size="18" class="mr-2">mdi-harddisk</v-icon>
-        Espace de stockage
+        {{ $t('data.storage') }}
       </h3>
       <div v-if="storageLoading" class="storage-loading">
         <v-progress-circular indeterminate size="24" width="2" />
@@ -25,9 +25,9 @@
           class="mb-3"
         />
         <p class="storage-text mono">
-          {{ formatBytes(storage.used) }} utilises / {{ storage.files }} fichier{{ storage.files !== 1 ? 's' : '' }}
+          {{ $t('data.used', { size: formatBytes(storage.used), files: storage.files }) }}
         </p>
-        <p class="storage-subtext">Limite d'affichage : {{ formatBytes(MAX_STORAGE) }}</p>
+        <p class="storage-subtext">{{ $t('data.storageLimit', { size: formatBytes(MAX_STORAGE) }) }}</p>
       </div>
     </div>
 
@@ -35,16 +35,16 @@
     <div class="branding-card glass-card fade-in fade-in-delay-2">
       <h3 class="branding-card-title mono">
         <v-icon size="18" class="mr-2">mdi-shield-account-outline</v-icon>
-        Export de donnees (RGPD)
+        {{ $t('data.rgpdExport') }}
       </h3>
       <p class="branding-card-desc">
-        Telechargez une copie de toutes vos donnees personnelles conformement au RGPD.
+        {{ $t('data.rgpdDesc') }}
       </p>
       <div class="branding-actions mt-3">
         <button class="me-btn-primary" @click="exportData" :disabled="exporting">
           <v-progress-circular v-if="exporting" indeterminate size="14" width="2" class="mr-2" />
           <v-icon v-else size="16" class="mr-1">mdi-download</v-icon>
-          {{ exporting ? 'Export en cours...' : 'Exporter mes donnees' }}
+          {{ exporting ? $t('data.exporting') : $t('data.exportData') }}
         </button>
       </div>
       <v-alert v-if="exportError" type="error" variant="tonal" class="mt-3" closable @click:close="exportError = ''">
@@ -56,15 +56,15 @@
     <div class="branding-card glass-card fade-in fade-in-delay-3 danger-zone">
       <h3 class="branding-card-title mono danger-title">
         <v-icon size="18" class="mr-2" color="error">mdi-alert-octagon-outline</v-icon>
-        Zone dangereuse
+        {{ $t('data.dangerZone') }}
       </h3>
       <p class="branding-card-desc">
-        La suppression de votre compte est irreversible. Toutes vos donnees, dossiers et fichiers seront definitivement supprimes.
+        {{ $t('data.dangerDesc') }}
       </p>
       <div class="branding-actions mt-3">
         <button class="me-btn-danger" @click="showDeleteDialog = true">
           <v-icon size="16" class="mr-1">mdi-trash-can-outline</v-icon>
-          Supprimer mon compte
+          {{ $t('data.deleteAccount') }}
         </button>
       </div>
     </div>
@@ -74,17 +74,17 @@
       <div class="glass-card dialog-card">
         <h3 class="dialog-title mono">
           <v-icon size="20" class="mr-2" color="error">mdi-alert-outline</v-icon>
-          Confirmer la suppression
+          {{ $t('data.deleteConfirmTitle') }}
         </h3>
         <v-alert type="error" variant="tonal" class="mb-4">
-          Cette action est irreversible. Tous vos dossiers, notes, fichiers et donnees personnelles seront definitivement supprimes.
+          {{ $t('data.deleteConfirmAlert') }}
         </v-alert>
         <p class="dialog-desc mb-3">
-          Pour confirmer, veuillez entrer votre mot de passe :
+          {{ $t('data.deleteConfirmPrompt') }}
         </p>
         <v-text-field
           v-model="deletePassword"
-          label="Mot de passe"
+          :label="$t('auth.password')"
           type="password"
           density="compact"
           hide-details
@@ -95,10 +95,10 @@
           {{ deleteError }}
         </v-alert>
         <div class="dialog-actions">
-          <button class="me-btn-ghost" @click="cancelDelete" :disabled="deleting">Annuler</button>
+          <button class="me-btn-ghost" @click="cancelDelete" :disabled="deleting">{{ $t('common.cancel') }}</button>
           <button class="me-btn-danger" @click="deleteAccount" :disabled="!deletePassword || deleting">
             <v-progress-circular v-if="deleting" indeterminate size="14" width="2" class="mr-2" />
-            {{ deleting ? 'Suppression...' : 'Supprimer definitivement' }}
+            {{ deleting ? $t('data.deleting') : $t('data.deletePermanently') }}
           </button>
         </div>
       </div>
@@ -108,7 +108,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const MAX_STORAGE = 500 * 1024 * 1024; // 500 Mo
 
@@ -163,7 +166,7 @@ async function exportData() {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   } catch {
-    exportError.value = 'Erreur lors de l\'export. Veuillez reessayer.';
+    exportError.value = t('data.exportError');
   } finally {
     exporting.value = false;
   }
@@ -190,7 +193,7 @@ async function deleteAccount() {
     localStorage.clear();
     window.location.href = '/login';
   } catch (err: any) {
-    deleteError.value = err.response?.data?.message || 'Erreur lors de la suppression. Verifiez votre mot de passe.';
+    deleteError.value = err.response?.data?.message || t('data.deleteError');
   } finally {
     deleting.value = false;
   }

@@ -5,14 +5,14 @@
         <v-icon size="20" class="mr-2">mdi-palette-outline</v-icon>
         Parametres du site
       </h2>
-      <p class="admin-section-subtitle">Personnalisation de l'apparence</p>
+      <p class="admin-section-subtitle">{{ $t('admin.appearanceCustomization') }}</p>
     </div>
 
     <div class="branding-grid fade-in fade-in-delay-1">
       <!-- App Name -->
       <div class="branding-card glass-card">
-        <h3 class="branding-card-title mono">Nom de l'application</h3>
-        <p class="branding-card-desc">Affiche dans la barre de titre et l'en-tete</p>
+        <h3 class="branding-card-title mono">{{ $t('admin.appName') }}</h3>
+        <p class="branding-card-desc">{{ $t('admin.appNameDesc') }}</p>
         <v-text-field
           v-model="form.appName"
           density="compact"
@@ -23,8 +23,8 @@
 
       <!-- Accent Color -->
       <div class="branding-card glass-card">
-        <h3 class="branding-card-title mono">Couleur d'accent</h3>
-        <p class="branding-card-desc">Couleur principale de l'interface</p>
+        <h3 class="branding-card-title mono">{{ $t('admin.accentColor') }}</h3>
+        <p class="branding-card-desc">{{ $t('admin.accentColorDesc') }}</p>
         <div class="color-picker-row">
           <input type="color" v-model="form.accentColor" class="color-input" />
           <v-text-field
@@ -40,8 +40,8 @@
 
       <!-- Login Message -->
       <div class="branding-card glass-card">
-        <h3 class="branding-card-title mono">Message de connexion</h3>
-        <p class="branding-card-desc">Texte affiche sous le nom sur la page de connexion</p>
+        <h3 class="branding-card-title mono">{{ $t('admin.loginMessage') }}</h3>
+        <p class="branding-card-desc">{{ $t('admin.loginMessageDesc') }}</p>
         <v-text-field
           v-model="form.loginMessage"
           density="compact"
@@ -52,18 +52,18 @@
 
       <!-- Logo Upload -->
       <div class="branding-card glass-card">
-        <h3 class="branding-card-title mono">Logo</h3>
-        <p class="branding-card-desc">Image PNG affichee dans l'en-tete et la page de connexion</p>
+        <h3 class="branding-card-title mono">{{ $t('admin.logo') }}</h3>
+        <p class="branding-card-desc">{{ $t('admin.logoDesc') }}</p>
         <div class="upload-zone" @dragover.prevent @drop.prevent="dropLogo">
           <div v-if="brandingStore.logoUrl" class="upload-preview">
             <img :src="brandingStore.logoUrl" alt="Logo" class="upload-preview-img" />
-            <button class="upload-remove-btn" @click="removeLogo" title="Supprimer le logo">
+            <button class="upload-remove-btn" @click="removeLogo" :title="$t('common.delete')">
               <v-icon size="14">mdi-close</v-icon>
             </button>
           </div>
           <div v-else class="upload-placeholder" @click="triggerLogoInput">
             <v-icon size="28" color="var(--me-text-muted)">mdi-cloud-upload-outline</v-icon>
-            <span>Glisser ou cliquer pour ajouter</span>
+            <span>{{ $t('admin.dragOrClick') }}</span>
           </div>
           <input ref="logoInput" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden @change="handleLogoSelect" />
         </div>
@@ -71,18 +71,18 @@
 
       <!-- Login Background Upload -->
       <div class="branding-card glass-card">
-        <h3 class="branding-card-title mono">Image de fond (connexion)</h3>
-        <p class="branding-card-desc">Image affichee dans le panneau gauche de la page de connexion</p>
+        <h3 class="branding-card-title mono">{{ $t('admin.loginBackground') }}</h3>
+        <p class="branding-card-desc">{{ $t('admin.loginBackgroundDesc') }}</p>
         <div class="upload-zone upload-zone-bg" @dragover.prevent @drop.prevent="dropLoginBg">
           <div v-if="brandingStore.loginBackgroundUrl" class="upload-preview">
             <img :src="brandingStore.loginBackgroundUrl" alt="Login Background" class="upload-preview-img upload-preview-bg" />
-            <button class="upload-remove-btn" @click="removeLoginBg" title="Supprimer l'image de fond">
+            <button class="upload-remove-btn" @click="removeLoginBg" :title="$t('common.delete')">
               <v-icon size="14">mdi-close</v-icon>
             </button>
           </div>
           <div v-else class="upload-placeholder" @click="triggerLoginBgInput">
             <v-icon size="28" color="var(--me-text-muted)">mdi-image-outline</v-icon>
-            <span>Glisser ou cliquer pour ajouter</span>
+            <span>{{ $t('admin.dragOrClick') }}</span>
           </div>
           <input ref="loginBgInput" type="file" accept="image/png,image/jpeg,image/webp" hidden @change="handleLoginBgSelect" />
         </div>
@@ -90,18 +90,18 @@
 
       <!-- Favicon Upload -->
       <div class="branding-card glass-card">
-        <h3 class="branding-card-title mono">Favicon</h3>
-        <p class="branding-card-desc">Icone affichee dans l'onglet du navigateur</p>
+        <h3 class="branding-card-title mono">{{ $t('admin.favicon') }}</h3>
+        <p class="branding-card-desc">{{ $t('admin.faviconDesc') }}</p>
         <div class="upload-zone" @dragover.prevent @drop.prevent="dropFavicon">
           <div v-if="brandingStore.faviconUrl" class="upload-preview">
             <img :src="brandingStore.faviconUrl" alt="Favicon" class="upload-preview-img upload-preview-favicon" />
-            <button class="upload-remove-btn" @click="removeFavicon" title="Supprimer le favicon">
+            <button class="upload-remove-btn" @click="removeFavicon" :title="$t('common.delete')">
               <v-icon size="14">mdi-close</v-icon>
             </button>
           </div>
           <div v-else class="upload-placeholder" @click="triggerFaviconInput">
             <v-icon size="28" color="var(--me-text-muted)">mdi-emoticon-outline</v-icon>
-            <span>Glisser ou cliquer pour ajouter</span>
+            <span>{{ $t('admin.dragOrClick') }}</span>
           </div>
           <input ref="faviconInput" type="file" accept="image/png,image/x-icon,image/svg+xml" hidden @change="handleFaviconSelect" />
         </div>
@@ -112,11 +112,11 @@
     <div class="branding-actions fade-in fade-in-delay-2">
       <button class="me-btn-ghost" @click="resetDefaults">
         <v-icon size="14" class="mr-1">mdi-restore</v-icon>
-        Reinitialiser
+        {{ $t('admin.resetToDefaults') }}
       </button>
       <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
         <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
-        {{ saving ? 'Sauvegarde...' : 'Sauvegarder' }}
+        {{ saving ? $t('admin.saving') : $t('common.save') }}
       </button>
     </div>
   </div>
@@ -124,10 +124,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useBrandingStore } from '../../stores/branding';
 
 const brandingStore = useBrandingStore();
+const { t } = useI18n();
 
 const form = reactive({
   appName: '',

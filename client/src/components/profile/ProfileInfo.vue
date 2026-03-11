@@ -3,13 +3,13 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-account-outline</v-icon>
-        Mon profil
+        {{ $t('profile.myProfile') }}
       </h2>
     </div>
 
     <!-- Avatar -->
     <div class="branding-card glass-card fade-in fade-in-delay-1">
-      <h3 class="branding-card-title mono">Avatar</h3>
+      <h3 class="branding-card-title mono">{{ $t('profile.avatar') }}</h3>
       <div class="avatar-section">
         <div class="avatar-preview">
           <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-img" />
@@ -18,11 +18,11 @@
         <div class="avatar-actions">
           <button class="me-btn-primary" @click="triggerAvatarInput">
             <v-icon size="14" class="mr-1">mdi-camera-outline</v-icon>
-            Changer
+            {{ $t('profile.change') }}
           </button>
           <button v-if="avatarUrl" class="me-btn-ghost" @click="removeAvatar">
             <v-icon size="14" class="mr-1">mdi-delete-outline</v-icon>
-            Supprimer
+            {{ $t('common.delete') }}
           </button>
         </div>
         <input ref="avatarInput" type="file" accept="image/png,image/jpeg" hidden @change="handleAvatarSelect" />
@@ -31,15 +31,15 @@
 
     <!-- Info form -->
     <div class="branding-card glass-card fade-in fade-in-delay-2">
-      <h3 class="branding-card-title mono">Informations personnelles</h3>
+      <h3 class="branding-card-title mono">{{ $t('profile.personalInfo') }}</h3>
       <div class="form-grid">
-        <v-text-field v-model="form.firstName" label="Prenom" density="compact" hide-details />
-        <v-text-field v-model="form.lastName" label="Nom" density="compact" hide-details />
+        <v-text-field v-model="form.firstName" :label="$t('profile.firstName')" density="compact" hide-details />
+        <v-text-field v-model="form.lastName" :label="$t('profile.lastName')" density="compact" hide-details />
       </div>
-      <v-text-field v-model="form.email" label="Email" type="email" density="compact" hide-details class="mt-4" />
+      <v-text-field v-model="form.email" :label="$t('common.email')" type="email" density="compact" hide-details class="mt-4" />
       <div class="branding-actions mt-4">
         <button class="me-btn-primary" @click="saveProfile" :disabled="saving">
-          {{ saving ? 'Sauvegarde...' : 'Sauvegarder' }}
+          {{ saving ? $t('profile.saving') : $t('common.save') }}
         </button>
       </div>
     </div>
@@ -48,21 +48,21 @@
     <div class="branding-card glass-card fade-in fade-in-delay-3">
       <h3 class="branding-card-title mono">
         <v-icon size="16" class="mr-1">mdi-pen</v-icon>
-        Signature de rapport
+        {{ $t('profile.reportSignature') }}
       </h3>
-      <p class="sig-desc">Ces informations seront utilisees pour signer les rapports OSINT generes.</p>
+      <p class="sig-desc">{{ $t('profile.reportSignatureDesc') }}</p>
 
       <div class="sig-form">
-        <v-text-field v-model="sigForm.title" label="Grade / Titre" density="compact" hide-details placeholder="ex: 1INP/APJ" />
-        <v-text-field v-model="sigForm.name" label="Nom complet" density="compact" hide-details placeholder="ex: DUPONT Jean" />
-        <v-text-field v-model="sigForm.service" label="Service" density="compact" hide-details placeholder="ex: PJF - DJF/Bru" />
-        <v-text-field v-model="sigForm.unit" label="Unite" density="compact" hide-details placeholder="ex: OA-DR5" />
-        <v-text-field v-model="sigForm.email" label="Email professionnel" density="compact" hide-details placeholder="ex: service@police.belgium.eu" />
+        <v-text-field v-model="sigForm.title" :label="$t('profile.signatureTitle')" density="compact" hide-details placeholder="ex: 1INP/APJ" />
+        <v-text-field v-model="sigForm.name" :label="$t('profile.signatureFullName')" density="compact" hide-details placeholder="ex: DUPONT Jean" />
+        <v-text-field v-model="sigForm.service" :label="$t('profile.signatureService')" density="compact" hide-details placeholder="ex: PJF - DJF/Bru" />
+        <v-text-field v-model="sigForm.unit" :label="$t('profile.signatureUnit')" density="compact" hide-details placeholder="ex: OA-DR5" />
+        <v-text-field v-model="sigForm.email" :label="$t('profile.signatureProfEmail')" density="compact" hide-details placeholder="ex: service@police.belgium.eu" />
       </div>
 
       <div class="branding-actions mt-4">
         <button class="me-btn-primary" @click="saveSignature" :disabled="savingSig">
-          {{ savingSig ? 'Sauvegarde...' : 'Sauvegarder' }}
+          {{ savingSig ? $t('profile.saving') : $t('common.save') }}
         </button>
       </div>
     </div>
@@ -71,9 +71,9 @@
     <div class="branding-card glass-card fade-in fade-in-delay-4">
       <h3 class="branding-card-title mono">
         <v-icon size="16" class="mr-1">mdi-draw</v-icon>
-        Signature manuscrite
+        {{ $t('profile.handwrittenSignature') }}
       </h3>
-      <p class="sig-desc">Dessinez votre signature ou importez une image. Elle sera integree aux rapports PDF.</p>
+      <p class="sig-desc">{{ $t('profile.handwrittenSignatureDesc') }}</p>
 
       <!-- Tabs: Draw / Upload -->
       <div class="sig-tabs">
@@ -82,14 +82,14 @@
           @click="sigMode = 'draw'"
         >
           <v-icon size="14" class="mr-1">mdi-draw</v-icon>
-          Dessiner
+          {{ $t('profile.drawTab') }}
         </button>
         <button
           :class="['sig-tab', sigMode === 'upload' && 'sig-tab--active']"
           @click="sigMode = 'upload'"
         >
           <v-icon size="14" class="mr-1">mdi-image-outline</v-icon>
-          Importer une image
+          {{ $t('profile.uploadTab') }}
         </button>
       </div>
 
@@ -108,11 +108,11 @@
         <div class="sig-draw-actions">
           <button class="me-btn-ghost" @click="clearDrawCanvas">
             <v-icon size="14" class="mr-1">mdi-eraser</v-icon>
-            Effacer
+            {{ $t('profile.erase') }}
           </button>
           <button class="me-btn-primary" @click="saveDrawnSignature" :disabled="savingSigImg">
             <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
-            {{ savingSigImg ? 'Sauvegarde...' : 'Sauvegarder' }}
+            {{ savingSigImg ? $t('profile.saving') : $t('common.save') }}
           </button>
         </div>
       </div>
@@ -121,30 +121,30 @@
       <div v-if="sigMode === 'upload'" class="sig-upload-section">
         <div class="sig-upload-zone" @click="triggerSigImageInput" @dragover.prevent @drop.prevent="handleSigImageDrop">
           <v-icon size="32" color="var(--me-text-muted)">mdi-cloud-upload-outline</v-icon>
-          <p>Cliquez ou glissez une image ici</p>
-          <p class="sig-upload-hint">PNG ou JPG, fond transparent recommande</p>
+          <p>{{ $t('profile.clickOrDrop') }}</p>
+          <p class="sig-upload-hint">{{ $t('profile.pngJpgRecommended') }}</p>
         </div>
         <input ref="sigImageInput" type="file" accept="image/png,image/jpeg" hidden @change="handleSigImageSelect" />
       </div>
 
       <!-- Current signature image preview -->
       <div v-if="signatureImageUrl" class="sig-image-preview-section">
-        <h4 class="sig-preview-title mono">Signature actuelle</h4>
+        <h4 class="sig-preview-title mono">{{ $t('profile.currentSignature') }}</h4>
         <div class="sig-protected" @contextmenu.prevent @dragstart.prevent @selectstart.prevent>
           <img :src="signatureImageUrl" alt="Signature" class="sig-image-preview" draggable="false" />
           <div class="sig-watermark">
-            <span v-for="i in 6" :key="i">CONFIDENTIEL</span>
+            <span v-for="i in 6" :key="i">{{ $t('profile.confidential') }}</span>
           </div>
         </div>
         <div class="sig-image-actions">
           <button class="me-btn-ghost-danger" @click="deleteSignatureImage">
             <v-icon size="14" class="mr-1">mdi-delete-outline</v-icon>
-            Supprimer la signature manuscrite
+            {{ $t('profile.deleteHandwrittenSignature') }}
           </button>
         </div>
         <p class="sig-protected-hint">
           <v-icon size="12" class="mr-1">mdi-shield-lock-outline</v-icon>
-          Signature protegee contre la capture d'ecran
+          {{ $t('profile.signatureProtected') }}
         </p>
       </div>
     </div>
@@ -153,9 +153,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const avatarInput = ref<HTMLInputElement | null>(null);
 const sigImageInput = ref<HTMLInputElement | null>(null);

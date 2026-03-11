@@ -3,13 +3,13 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-keyboard-outline</v-icon>
-        Raccourcis clavier
+        {{ $t('shortcuts.title') }}
       </h2>
     </div>
 
     <div
       v-for="(section, idx) in sections"
-      :key="section.title"
+      :key="section.titleKey"
       class="branding-card glass-card fade-in"
       :class="`fade-in-delay-${idx + 1}`"
     >
@@ -33,60 +33,58 @@
 </template>
 
 <script setup lang="ts">
-interface Shortcut {
-  keys: string
-  desc: string
-}
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-interface ShortcutSection {
-  title: string
-  icon: string
-  shortcuts: Shortcut[]
-}
+const { t } = useI18n()
 
-const sections: ShortcutSection[] = [
+const sections = computed(() => [
   {
-    title: 'Navigation',
+    titleKey: 'navigation',
+    title: t('shortcuts.navigation'),
     icon: 'mdi-compass-outline',
     shortcuts: [
-      { keys: 'Ctrl + K', desc: 'Recherche rapide' },
-      { keys: 'Ctrl + B', desc: 'Toggle sidebar' },
-      { keys: 'Ctrl + H', desc: 'Accueil' },
+      { keys: 'Ctrl + K', desc: t('shortcuts.quickSearch') },
+      { keys: 'Ctrl + B', desc: t('shortcuts.toggleSidebar') },
+      { keys: 'Ctrl + H', desc: t('shortcuts.home') },
     ],
   },
   {
-    title: 'Editeur',
+    titleKey: 'editor',
+    title: t('shortcuts.editor'),
     icon: 'mdi-file-edit-outline',
     shortcuts: [
-      { keys: 'Ctrl + S', desc: 'Sauvegarder' },
-      { keys: 'Ctrl + Z', desc: 'Annuler' },
-      { keys: 'Ctrl + Shift + Z', desc: 'Retablir' },
-      { keys: 'Ctrl + B', desc: 'Gras' },
-      { keys: 'Ctrl + I', desc: 'Italique' },
-      { keys: 'Ctrl + U', desc: 'Souligne' },
-      { keys: 'Ctrl + Shift + 1', desc: 'Titre 1' },
-      { keys: 'Ctrl + Shift + 2', desc: 'Titre 2' },
-      { keys: 'Ctrl + Shift + 3', desc: 'Titre 3' },
+      { keys: 'Ctrl + S', desc: t('shortcuts.save') },
+      { keys: 'Ctrl + Z', desc: t('shortcuts.undo') },
+      { keys: 'Ctrl + Shift + Z', desc: t('shortcuts.redo') },
+      { keys: 'Ctrl + B', desc: t('shortcuts.bold') },
+      { keys: 'Ctrl + I', desc: t('shortcuts.italic') },
+      { keys: 'Ctrl + U', desc: t('shortcuts.underline') },
+      { keys: 'Ctrl + Shift + 1', desc: t('shortcuts.heading1') },
+      { keys: 'Ctrl + Shift + 2', desc: t('shortcuts.heading2') },
+      { keys: 'Ctrl + Shift + 3', desc: t('shortcuts.heading3') },
     ],
   },
   {
-    title: 'Dossiers',
+    titleKey: 'dossiers',
+    title: t('shortcuts.dossiers'),
     icon: 'mdi-folder-outline',
     shortcuts: [
-      { keys: 'Ctrl + N', desc: 'Nouveau node' },
-      { keys: 'Delete', desc: 'Supprimer selection' },
-      { keys: 'F2', desc: 'Renommer' },
+      { keys: 'Ctrl + N', desc: t('shortcuts.newNode') },
+      { keys: 'Delete', desc: t('shortcuts.deleteSelection') },
+      { keys: 'F2', desc: t('shortcuts.rename') },
     ],
   },
   {
-    title: 'General',
+    titleKey: 'general',
+    title: t('shortcuts.general'),
     icon: 'mdi-cog-outline',
     shortcuts: [
-      { keys: 'Ctrl + ,', desc: 'Preferences' },
-      { keys: 'Escape', desc: 'Fermer dialogue/panel' },
+      { keys: 'Ctrl + ,', desc: t('shortcuts.openPreferences') },
+      { keys: 'Escape', desc: t('shortcuts.closeDialog') },
     ],
   },
-]
+])
 </script>
 
 <style scoped>

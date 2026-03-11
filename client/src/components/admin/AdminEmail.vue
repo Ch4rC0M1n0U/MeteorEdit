@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-email-outline</v-icon>
         Email / SMTP
       </h2>
-      <p class="admin-section-subtitle">Configuration de l'envoi d'emails</p>
+      <p class="admin-section-subtitle">{{ $t('admin.emailSubtitle') }}</p>
     </div>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -14,12 +14,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-email-outline</v-icon>
-        <h3 class="sec-card-title mono">Configuration SMTP</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.smtpConfig') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Serveur SMTP</p>
-          <p class="sec-desc">Adresse du serveur (ex: smtp.gmail.com)</p>
+          <p class="sec-label">{{ $t('admin.smtpServerLabel') }}</p>
+          <p class="sec-desc">{{ $t('admin.smtpServerDesc') }}</p>
         </div>
         <v-text-field
           v-model="form.smtpHost"
@@ -33,8 +33,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Port</p>
-          <p class="sec-desc">Port du serveur SMTP (587, 465, 25)</p>
+          <p class="sec-label">{{ $t('admin.smtpPort') }}</p>
+          <p class="sec-desc">{{ $t('admin.smtpPortDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.smtpPort"
@@ -50,16 +50,16 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Connexion securisee (TLS/SSL)</p>
-          <p class="sec-desc">Utiliser le chiffrement pour la connexion</p>
+          <p class="sec-label">{{ $t('admin.secureTlsLabel') }}</p>
+          <p class="sec-desc">{{ $t('admin.secureTlsDesc') }}</p>
         </div>
         <v-switch v-model="form.smtpSecure" color="primary" hide-details @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Identifiant</p>
-          <p class="sec-desc">Nom d'utilisateur ou email pour l'authentification</p>
+          <p class="sec-label">{{ $t('admin.smtpUserLabel') }}</p>
+          <p class="sec-desc">{{ $t('admin.smtpUserDesc') }}</p>
         </div>
         <v-text-field
           v-model="form.smtpUser"
@@ -72,8 +72,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Mot de passe</p>
-          <p class="sec-desc">Mot de passe du compte SMTP</p>
+          <p class="sec-label">{{ $t('admin.smtpPasswordLabel') }}</p>
+          <p class="sec-desc">{{ $t('admin.smtpPasswordDesc') }}</p>
         </div>
         <v-text-field
           v-model="form.smtpPass"
@@ -87,8 +87,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Expediteur (From)</p>
-          <p class="sec-desc">Adresse email d'envoi (ex: noreply@monapp.fr)</p>
+          <p class="sec-label">{{ $t('admin.senderFrom') }}</p>
+          <p class="sec-desc">{{ $t('admin.senderFromDesc') }}</p>
         </div>
         <v-text-field
           v-model="form.smtpFrom"
@@ -102,8 +102,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Tester la configuration</p>
-          <p class="sec-desc">Envoie un email de test pour verifier les parametres</p>
+          <p class="sec-label">{{ $t('admin.testConfig') }}</p>
+          <p class="sec-desc">{{ $t('admin.testConfigDesc') }}</p>
         </div>
         <v-btn
           class="me-btn-ghost"
@@ -130,7 +130,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const loading = ref(true);
 const saved = ref(false);
@@ -180,7 +183,7 @@ async function testEmail() {
     await api.post('/admin/settings/test-email');
     testSuccess.value = true;
   } catch (err: any) {
-    testErrorMessage.value = err?.response?.data?.message || 'Echec de l\'envoi de l\'email de test';
+    testErrorMessage.value = err?.response?.data?.message || t('admin.testEmailError');
     testError.value = true;
   } finally {
     testing.value = false;

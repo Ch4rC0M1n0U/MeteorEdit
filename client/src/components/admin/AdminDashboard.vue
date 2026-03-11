@@ -3,7 +3,7 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-view-dashboard-outline</v-icon>
-        Dashboard
+        {{ $t('admin.dashboard') }}
       </h2>
     </div>
 
@@ -15,30 +15,30 @@
         <div class="kpi-icon"><v-icon size="24">mdi-account-group-outline</v-icon></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.totalUsers }}</span>
-          <span class="kpi-label">Utilisateurs</span>
-          <span class="kpi-sub mono">{{ stats.activeUsers }} actifs</span>
+          <span class="kpi-label">{{ $t('admin.users') }}</span>
+          <span class="kpi-sub mono">{{ stats.activeUsers }} {{ $t('admin.actives') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card kpi-card--live">
         <div class="kpi-icon"><v-icon size="24">mdi-access-point</v-icon></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ onlineCount }}</span>
-          <span class="kpi-label">En ligne</span>
-          <span class="kpi-sub"><span class="status-dot status-dot--active" /> temps reel</span>
+          <span class="kpi-label">{{ $t('admin.online') }}</span>
+          <span class="kpi-sub"><span class="status-dot status-dot--active" /> {{ $t('admin.realtime') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card">
         <div class="kpi-icon"><v-icon size="24">mdi-folder-multiple-outline</v-icon></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.totalDossiers }}</span>
-          <span class="kpi-label">Dossiers</span>
+          <span class="kpi-label">{{ $t('admin.dossiers') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card">
         <div class="kpi-icon"><v-icon size="24">mdi-calendar-week</v-icon></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.weeklyDossiers }}</span>
-          <span class="kpi-label">Cette semaine</span>
+          <span class="kpi-label">{{ $t('admin.thisWeek') }}</span>
         </div>
       </div>
     </div>
@@ -46,11 +46,11 @@
     <!-- Charts row -->
     <div class="charts-row fade-in fade-in-delay-2">
       <div class="chart-card glass-card">
-        <h3 class="chart-title mono">Connexions (30 jours)</h3>
+        <h3 class="chart-title mono">{{ $t('admin.logins30Days') }}</h3>
         <Line v-if="loginChartData" :data="loginChartData" :options="lineOptions" />
       </div>
       <div class="chart-card glass-card">
-        <h3 class="chart-title mono">Dossiers par utilisateur</h3>
+        <h3 class="chart-title mono">{{ $t('admin.dossiersPerUser') }}</h3>
         <Bar v-if="dossierChartData" :data="dossierChartData" :options="barOptions" />
       </div>
     </div>
@@ -58,14 +58,14 @@
     <!-- Bottom row -->
     <div class="bottom-row fade-in fade-in-delay-3">
       <div class="chart-card glass-card chart-card--small">
-        <h3 class="chart-title mono">Statuts des dossiers</h3>
+        <h3 class="chart-title mono">{{ $t('admin.dossierStatuses') }}</h3>
         <Doughnut v-if="statusChartData" :data="statusChartData" :options="doughnutOptions" />
       </div>
       <div class="chart-card glass-card chart-card--wide">
-        <h3 class="chart-title mono">Dernieres connexions</h3>
+        <h3 class="chart-title mono">{{ $t('admin.recentLogins') }}</h3>
         <table class="recent-table">
           <thead>
-            <tr><th>Utilisateur</th><th>Date</th><th>IP</th></tr>
+            <tr><th>{{ $t('admin.user') }}</th><th>{{ $t('admin.date') }}</th><th>{{ $t('admin.ip') }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="log in stats.recentLogins" :key="log._id">
@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -91,6 +92,8 @@ import api from '../../services/api';
 import { getSocket } from '../../services/socket';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
+
+const { t } = useI18n();
 
 const loading = ref(true);
 const onlineCount = ref(0);
@@ -174,13 +177,13 @@ const dossierChartData = computed(() => {
   };
 });
 
-const statusLabels: Record<string, string> = { open: 'Ouvert', in_progress: 'En cours', closed: 'Ferme' };
+const statusLabels = computed<Record<string, string>>(() => ({ open: t('admin.statusOpen'), in_progress: t('admin.statusInProgress'), closed: t('admin.statusClosed') }));
 const statusColors = ['#38bdf8', '#fbbf24', '#34d399'];
 
 const statusChartData = computed(() => {
   if (!stats.value.statusDistribution?.length) return null;
   return {
-    labels: stats.value.statusDistribution.map((d: any) => statusLabels[d._id] || d._id),
+    labels: stats.value.statusDistribution.map((d: any) => statusLabels.value[d._id] || d._id),
     datasets: [{
       data: stats.value.statusDistribution.map((d: any) => d.count),
       backgroundColor: statusColors,

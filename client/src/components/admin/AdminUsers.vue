@@ -3,9 +3,9 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-account-group-outline</v-icon>
-        Utilisateurs
+        {{ $t('admin.users') }}
       </h2>
-      <p class="admin-section-subtitle">{{ users.length }} utilisateur{{ users.length > 1 ? 's' : '' }}</p>
+      <p class="admin-section-subtitle">{{ $t('admin.userCount', { count: users.length }) }}</p>
     </div>
 
     <div class="admin-table-wrap glass-card fade-in fade-in-delay-1">
@@ -13,13 +13,13 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Utilisateur</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Statut</th>
-            <th>2FA</th>
-            <th>Derniere connexion</th>
-            <th>Actions</th>
+            <th>{{ $t('admin.user') }}</th>
+            <th>{{ $t('common.email') }}</th>
+            <th>{{ $t('admin.role') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('admin.twoFA') }}</th>
+            <th>{{ $t('admin.lastLogin') }}</th>
+            <th>{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -36,26 +36,26 @@
             </td>
             <td>
               <span :class="['status-dot', user.isActive ? 'status-dot--active' : 'status-dot--error']" />
-              <span class="ml-2">{{ user.isActive ? 'Actif' : 'Inactif' }}</span>
+              <span class="ml-2">{{ user.isActive ? $t('admin.active') : $t('admin.inactive') }}</span>
             </td>
             <td>
               <span :class="['at-badge', user.twoFactorEnabled ? 'at-badge-success' : 'at-badge-default']">
-                {{ user.twoFactorEnabled ? 'Active' : 'Non' }}
+                {{ user.twoFactorEnabled ? $t('admin.enabled') : $t('admin.notEnabled') }}
               </span>
             </td>
             <td class="mono at-date">{{ user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-' }}</td>
             <td>
               <div class="at-actions">
-                <button class="at-action-btn" @click="openEdit(user)" title="Modifier">
+                <button class="at-action-btn" @click="openEdit(user)" :title="$t('common.edit')">
                   <v-icon size="16">mdi-pencil-outline</v-icon>
                 </button>
-                <button class="at-action-btn" @click="toggleActive(user)" :title="user.isActive ? 'Desactiver' : 'Activer'">
+                <button class="at-action-btn" @click="toggleActive(user)" :title="user.isActive ? $t('admin.deactivate') : $t('admin.activate')">
                   <v-icon size="16">{{ user.isActive ? 'mdi-account-off-outline' : 'mdi-account-check-outline' }}</v-icon>
                 </button>
-                <button class="at-action-btn" @click="toggleRole(user)" :title="user.role === 'admin' ? 'Retirer admin' : 'Promouvoir admin'">
+                <button class="at-action-btn" @click="toggleRole(user)" :title="user.role === 'admin' ? $t('admin.demoteAdmin') : $t('admin.promoteAdmin')">
                   <v-icon size="16">mdi-shield-account-outline</v-icon>
                 </button>
-                <button class="at-action-btn at-action-danger" @click="handleDelete(user)" title="Supprimer">
+                <button class="at-action-btn at-action-danger" @click="handleDelete(user)" :title="$t('common.delete')">
                   <v-icon size="16">mdi-trash-can-outline</v-icon>
                 </button>
               </div>
@@ -69,7 +69,7 @@
     <v-dialog v-model="editDialog" max-width="520" persistent>
       <div class="edit-dialog glass-card">
         <div class="edit-dialog-header">
-          <h3 class="mono">Modifier l'utilisateur</h3>
+          <h3 class="mono">{{ $t('admin.editUser') }}</h3>
           <button class="at-action-btn" @click="editDialog = false">
             <v-icon size="18">mdi-close</v-icon>
           </button>
@@ -77,39 +77,39 @@
 
         <div class="edit-dialog-body">
           <div class="form-grid">
-            <v-text-field v-model="editForm.firstName" label="Prenom" density="compact" hide-details />
-            <v-text-field v-model="editForm.lastName" label="Nom" density="compact" hide-details />
+            <v-text-field v-model="editForm.firstName" :label="$t('admin.firstName')" density="compact" hide-details />
+            <v-text-field v-model="editForm.lastName" :label="$t('admin.lastName')" density="compact" hide-details />
           </div>
-          <v-text-field v-model="editForm.email" label="Email" type="email" density="compact" hide-details class="mt-3" />
-          <v-select v-model="editForm.role" :items="roleOptions" label="Role" density="compact" hide-details class="mt-3" />
-          <v-switch v-model="editForm.isActive" label="Compte actif" color="primary" hide-details class="mt-3" />
+          <v-text-field v-model="editForm.email" :label="$t('common.email')" type="email" density="compact" hide-details class="mt-3" />
+          <v-select v-model="editForm.role" :items="roleOptions" :label="$t('admin.role')" density="compact" hide-details class="mt-3" />
+          <v-switch v-model="editForm.isActive" :label="$t('admin.activeAccount')" color="primary" hide-details class="mt-3" />
 
           <v-alert v-if="editError" type="error" variant="tonal" class="mt-3" closable @click:close="editError = ''">{{ editError }}</v-alert>
           <v-alert v-if="editSuccess" type="success" variant="tonal" class="mt-3" closable @click:close="editSuccess = ''">{{ editSuccess }}</v-alert>
 
           <!-- Admin actions -->
           <div class="edit-section mt-4">
-            <h4 class="edit-section-title mono">Actions administrateur</h4>
+            <h4 class="edit-section-title mono">{{ $t('admin.adminActions') }}</h4>
 
             <div class="admin-action-row">
               <div>
-                <p class="admin-action-label">Reinitialiser le mot de passe</p>
-                <p class="admin-action-desc">Genere un mot de passe temporaire</p>
+                <p class="admin-action-label">{{ $t('admin.resetPassword') }}</p>
+                <p class="admin-action-desc">{{ $t('admin.resetPasswordHint') }}</p>
               </div>
               <button class="me-btn-ghost" @click="handleResetPassword">
                 <v-icon size="14" class="mr-1">mdi-lock-reset</v-icon>
-                Reinitialiser
+                {{ $t('admin.reset') }}
               </button>
             </div>
 
             <div class="admin-action-row" v-if="editingUser?.twoFactorEnabled">
               <div>
-                <p class="admin-action-label">Reinitialiser la 2FA</p>
-                <p class="admin-action-desc">Desactive la 2FA de cet utilisateur</p>
+                <p class="admin-action-label">{{ $t('admin.reset2FA') }}</p>
+                <p class="admin-action-desc">{{ $t('admin.reset2FAHint') }}</p>
               </div>
               <button class="me-btn-ghost" @click="handleReset2FA">
                 <v-icon size="14" class="mr-1">mdi-shield-off-outline</v-icon>
-                Reinitialiser
+                {{ $t('admin.reset') }}
               </button>
             </div>
           </div>
@@ -117,17 +117,17 @@
           <!-- Temp password display -->
           <div v-if="tempPassword" class="temp-password-box mt-3">
             <v-alert type="info" variant="tonal">
-              <p class="mono" style="font-size: 13px;">Mot de passe temporaire :</p>
+              <p class="mono" style="font-size: 13px;">{{ $t('admin.tempPassword') }}</p>
               <code class="temp-password-code">{{ tempPassword }}</code>
-              <p style="font-size: 11px; margin-top: 4px; color: var(--me-text-muted);">Communiquez ce mot de passe a l'utilisateur. Il ne sera plus affiche.</p>
+              <p style="font-size: 11px; margin-top: 4px; color: var(--me-text-muted);">{{ $t('admin.tempPasswordHint') }}</p>
             </v-alert>
           </div>
         </div>
 
         <div class="edit-dialog-footer">
-          <button class="me-btn-ghost" @click="editDialog = false">Annuler</button>
+          <button class="me-btn-ghost" @click="editDialog = false">{{ $t('common.cancel') }}</button>
           <button class="me-btn-primary" @click="saveEdit" :disabled="editSaving">
-            {{ editSaving ? 'Sauvegarde...' : 'Sauvegarder' }}
+            {{ editSaving ? $t('admin.saving') : $t('common.save') }}
           </button>
         </div>
       </div>
@@ -136,11 +136,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useConfirm } from '../../composables/useConfirm';
 
 const { confirm } = useConfirm();
+const { t } = useI18n();
 
 interface AdminUser {
   _id: string;
@@ -172,10 +174,10 @@ const editForm = reactive({
   isActive: true,
 });
 
-const roleOptions = [
-  { title: 'Utilisateur', value: 'user' },
-  { title: 'Administrateur', value: 'admin' },
-];
+const roleOptions = computed(() => [
+  { title: t('admin.userRole'), value: 'user' },
+  { title: t('admin.adminRole'), value: 'admin' },
+]);
 
 async function fetchUsers() {
   loading.value = true;
@@ -209,7 +211,7 @@ async function saveEdit() {
     const idx = users.value.findIndex(u => u._id === editingUser.value!._id);
     if (idx >= 0) users.value[idx] = data;
     editingUser.value = data;
-    editSuccess.value = 'Modifications sauvegardees';
+    editSuccess.value = t('admin.modificationsSaved');
   } catch (e: any) {
     editError.value = e.response?.data?.message || 'Erreur';
   } finally {
@@ -220,16 +222,16 @@ async function saveEdit() {
 async function handleResetPassword() {
   if (!editingUser.value) return;
   const ok = await confirm({
-    title: 'Reinitialiser le mot de passe',
-    message: `Generer un nouveau mot de passe temporaire pour ${editingUser.value.firstName} ${editingUser.value.lastName} ?`,
-    confirmText: 'Reinitialiser',
+    title: t('admin.resetPassword'),
+    message: t('admin.resetPasswordConfirm', { name: `${editingUser.value.firstName} ${editingUser.value.lastName}` }),
+    confirmText: t('admin.reset'),
     variant: 'danger',
   });
   if (!ok) return;
   try {
     const { data } = await api.post(`/admin/users/${editingUser.value._id}/reset-password`);
     tempPassword.value = data.tempPassword;
-    editSuccess.value = 'Mot de passe reinitialise';
+    editSuccess.value = t('admin.passwordResetSuccess');
   } catch (e: any) {
     editError.value = e.response?.data?.message || 'Erreur';
   }
@@ -238,9 +240,9 @@ async function handleResetPassword() {
 async function handleReset2FA() {
   if (!editingUser.value) return;
   const ok = await confirm({
-    title: 'Reinitialiser la 2FA',
-    message: `Desactiver la 2FA pour ${editingUser.value.firstName} ${editingUser.value.lastName} ?`,
-    confirmText: 'Reinitialiser',
+    title: t('admin.reset2FA'),
+    message: t('admin.reset2FAConfirm', { name: `${editingUser.value.firstName} ${editingUser.value.lastName}` }),
+    confirmText: t('admin.reset'),
     variant: 'danger',
   });
   if (!ok) return;
@@ -249,7 +251,7 @@ async function handleReset2FA() {
     editingUser.value.twoFactorEnabled = false;
     const idx = users.value.findIndex(u => u._id === editingUser.value!._id);
     if (idx >= 0) users.value[idx].twoFactorEnabled = false;
-    editSuccess.value = '2FA reinitialise';
+    editSuccess.value = t('admin.twoFAResetSuccess');
   } catch (e: any) {
     editError.value = e.response?.data?.message || 'Erreur';
   }
@@ -270,9 +272,9 @@ async function toggleRole(user: AdminUser) {
 
 async function handleDelete(user: AdminUser) {
   const ok = await confirm({
-    title: 'Supprimer utilisateur',
-    message: `Supprimer l'utilisateur ${user.firstName} ${user.lastName} ? Cette action est irreversible.`,
-    confirmText: 'Supprimer',
+    title: t('admin.deleteUser'),
+    message: t('admin.deleteUserConfirm', { name: `${user.firstName} ${user.lastName}` }),
+    confirmText: t('common.delete'),
     variant: 'danger',
   });
   if (ok) {

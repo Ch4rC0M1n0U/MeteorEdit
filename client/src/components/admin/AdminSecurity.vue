@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-shield-lock-outline</v-icon>
         Securite
       </h2>
-      <p class="admin-section-subtitle">Politiques de securite et controle d'acces</p>
+      <p class="admin-section-subtitle">{{ $t('admin.securitySubtitle') }}</p>
     </div>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -14,19 +14,19 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-wrench-outline</v-icon>
-        <h3 class="sec-card-title mono">Mode maintenance</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.maintenanceMode') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Activer le mode maintenance</p>
-          <p class="sec-desc">Bloque l'acces au site pour tous les utilisateurs non-admin</p>
+          <p class="sec-label">{{ $t('admin.enableMaintenance') }}</p>
+          <p class="sec-desc">{{ $t('admin.enableMaintenanceDesc') }}</p>
         </div>
         <v-switch v-model="form.maintenanceMode" color="warning" hide-details @update:model-value="save" />
       </div>
       <v-text-field
         v-if="form.maintenanceMode"
         v-model="form.maintenanceMessage"
-        label="Message de maintenance"
+        :label="$t('admin.maintenanceMessage')"
         density="compact"
         hide-details
         class="mt-3"
@@ -38,28 +38,28 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-account-lock-outline</v-icon>
-        <h3 class="sec-card-title mono">Controle d'acces</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.accessControl') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Inscriptions ouvertes</p>
-          <p class="sec-desc">Autoriser les nouveaux utilisateurs a s'inscrire</p>
+          <p class="sec-label">{{ $t('admin.openRegistration') }}</p>
+          <p class="sec-desc">{{ $t('admin.openRegistrationDesc') }}</p>
         </div>
         <v-switch v-model="form.registrationEnabled" color="primary" hide-details @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">2FA obligatoire</p>
-          <p class="sec-desc">Tous les utilisateurs doivent activer l'authentification a deux facteurs</p>
+          <p class="sec-label">{{ $t('admin.require2FA') }}</p>
+          <p class="sec-desc">{{ $t('admin.require2FADesc') }}</p>
         </div>
         <v-switch v-model="form.require2FA" color="primary" hide-details @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Duree de session (minutes)</p>
-          <p class="sec-desc">Deconnexion automatique apres inactivite</p>
+          <p class="sec-label">{{ $t('admin.sessionDuration') }}</p>
+          <p class="sec-desc">{{ $t('admin.sessionDurationDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.sessionTimeoutMinutes"
@@ -78,12 +78,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-form-textbox-password</v-icon>
-        <h3 class="sec-card-title mono">Politique de mot de passe</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.passwordPolicy') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Longueur minimale</p>
-          <p class="sec-desc">Nombre minimum de caracteres requis</p>
+          <p class="sec-label">{{ $t('admin.minLength') }}</p>
+          <p class="sec-desc">{{ $t('admin.minLengthDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.passwordMinLength"
@@ -99,24 +99,24 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Majuscule requise</p>
-          <p class="sec-desc">Au moins une lettre majuscule (A-Z)</p>
+          <p class="sec-label">{{ $t('admin.requireUppercase') }}</p>
+          <p class="sec-desc">{{ $t('admin.requireUppercaseDesc') }}</p>
         </div>
         <v-switch v-model="form.passwordRequireUppercase" color="primary" hide-details @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Chiffre requis</p>
-          <p class="sec-desc">Au moins un chiffre (0-9)</p>
+          <p class="sec-label">{{ $t('admin.requireNumber') }}</p>
+          <p class="sec-desc">{{ $t('admin.requireNumberDesc') }}</p>
         </div>
         <v-switch v-model="form.passwordRequireNumber" color="primary" hide-details @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Caractere special requis</p>
-          <p class="sec-desc">Au moins un caractere special (!@#$...)</p>
+          <p class="sec-label">{{ $t('admin.requireSpecial') }}</p>
+          <p class="sec-desc">{{ $t('admin.requireSpecialDesc') }}</p>
         </div>
         <v-switch v-model="form.passwordRequireSpecial" color="primary" hide-details @update:model-value="save" />
       </div>
@@ -126,12 +126,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-lock-alert-outline</v-icon>
-        <h3 class="sec-card-title mono">Protection anti brute-force</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.bruteForceProtection') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Tentatives max avant verrouillage</p>
-          <p class="sec-desc">0 = pas de limite</p>
+          <p class="sec-label">{{ $t('admin.maxAttempts') }}</p>
+          <p class="sec-desc">{{ $t('admin.maxAttemptsDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.maxLoginAttempts"
@@ -147,8 +147,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Duree de verrouillage (minutes)</p>
-          <p class="sec-desc">Temps d'attente apres trop de tentatives echouees</p>
+          <p class="sec-label">{{ $t('admin.lockoutDuration') }}</p>
+          <p class="sec-desc">{{ $t('admin.lockoutDurationDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.lockoutDurationMinutes"
@@ -171,7 +171,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const loading = ref(true);
 const saved = ref(false);

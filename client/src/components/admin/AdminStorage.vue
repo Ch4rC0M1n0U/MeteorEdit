@@ -5,7 +5,7 @@
         <v-icon size="20" class="mr-2">mdi-harddisk</v-icon>
         Stockage
       </h2>
-      <p class="admin-section-subtitle">Gestion des uploads et de l'espace disque</p>
+      <p class="admin-section-subtitle">{{ $t('admin.storageSubtitle') }}</p>
     </div>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
@@ -14,12 +14,12 @@
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-upload-outline</v-icon>
-        <h3 class="sec-card-title mono">Limites d'upload</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.uploadLimits') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Taille max par fichier (MB)</p>
-          <p class="sec-desc">Limite de taille pour chaque fichier uploade</p>
+          <p class="sec-label">{{ $t('admin.maxFileSizeMB') }}</p>
+          <p class="sec-desc">{{ $t('admin.maxFileSizeDesc') }}</p>
         </div>
         <v-text-field
           v-model.number="form.maxFileSizeMB"
@@ -35,8 +35,8 @@
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Types de fichiers autorises</p>
-          <p class="sec-desc">Types MIME et extensions separes par des virgules</p>
+          <p class="sec-label">{{ $t('admin.allowedFileTypes') }}</p>
+          <p class="sec-desc">{{ $t('admin.allowedFileTypesDesc') }}</p>
         </div>
         <v-text-field
           v-model="form.allowedFileTypes"
@@ -53,28 +53,28 @@
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-chart-pie</v-icon>
-        <h3 class="sec-card-title mono">Utilisation du stockage</h3>
+        <h3 class="sec-card-title mono">{{ $t('admin.storageUsage') }}</h3>
       </div>
       <div class="sec-option">
         <div>
-          <p class="sec-label">Fichiers totaux</p>
-          <p class="sec-desc">Nombre de fichiers stockes sur le serveur</p>
+          <p class="sec-label">{{ $t('admin.totalFiles') }}</p>
+          <p class="sec-desc">{{ $t('admin.totalFilesDesc') }}</p>
         </div>
         <span class="storage-value mono">{{ storageInfo.totalFiles }}</span>
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Espace utilise</p>
-          <p class="sec-desc">Taille totale des fichiers uploades</p>
+          <p class="sec-label">{{ $t('admin.usedSpace') }}</p>
+          <p class="sec-desc">{{ $t('admin.usedSpaceDesc') }}</p>
         </div>
         <span class="storage-value mono">{{ formatBytes(storageInfo.totalSize) }}</span>
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
         <div>
-          <p class="sec-label">Nettoyer les fichiers orphelins</p>
-          <p class="sec-desc">Supprimer les fichiers qui ne sont plus references par aucun dossier</p>
+          <p class="sec-label">{{ $t('admin.cleanOrphans') }}</p>
+          <p class="sec-desc">{{ $t('admin.cleanOrphansDesc') }}</p>
         </div>
         <v-btn
           variant="outlined"
@@ -83,7 +83,7 @@
           prepend-icon="mdi-broom"
           disabled
         >
-          Nettoyer
+          {{ $t('admin.clean') }}
         </v-btn>
       </div>
     </div>
@@ -96,7 +96,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+
+const { t } = useI18n();
 
 const loading = ref(true);
 const saved = ref(false);
