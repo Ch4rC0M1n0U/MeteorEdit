@@ -130,8 +130,8 @@
           </div>
           <div v-for="(entity, i) in form.entities" :key="i" class="di-entity-row">
             <span class="di-el-col-type">
-              <v-icon size="16" :title="entity.type" class="di-el-type-icon">{{ entityIcon(entity.type) }}</v-icon>
-              <span class="di-el-type-label mono">{{ entity.type }}</span>
+              <v-icon size="16" :title="entityTypeLabel(entity.type)" class="di-el-type-icon">{{ entityIcon(entity.type) }}</v-icon>
+              <span class="di-el-type-label mono">{{ entityTypeLabel(entity.type) }}</span>
             </span>
             <span class="di-el-col-name">{{ entity.name }}</span>
             <span class="di-el-col-desc" :title="entity.description">{{ entity.description || '—' }}</span>
@@ -300,6 +300,8 @@
           <v-select
             v-model="newEntity.type"
             :items="entityTypes"
+            item-value="value"
+            item-title="title"
             :label="$t('common.type')"
             class="mb-2"
           />
@@ -352,25 +354,26 @@ const statusOptions = computed(() => [
   { title: t('dossier.statusClosed'), value: 'closed' },
 ]);
 
-const entityTypes = computed(() => [
-  t('dossier.entityTypes.identity'),
-  t('dossier.entityTypes.phone'),
-  t('dossier.entityTypes.email'),
-  t('dossier.entityTypes.snapchat'),
-  t('dossier.entityTypes.facebook'),
-  t('dossier.entityTypes.instagram'),
-  t('dossier.entityTypes.twitter'),
-  t('dossier.entityTypes.tiktok'),
-  t('dossier.entityTypes.discord'),
-  t('dossier.entityTypes.telegram'),
-  t('dossier.entityTypes.linkedin'),
-  t('dossier.entityTypes.ip'),
-  t('dossier.entityTypes.address'),
-  t('dossier.entityTypes.vehicle'),
-  t('dossier.entityTypes.iban'),
-  t('dossier.entityTypes.pseudo'),
-  t('dossier.entityTypes.other'),
-]);
+const ENTITY_TYPE_KEYS = [
+  'identity', 'phone', 'email', 'snapchat', 'facebook', 'instagram',
+  'twitter', 'tiktok', 'discord', 'telegram', 'linkedin',
+  'ip', 'address', 'vehicle', 'iban', 'pseudo', 'other',
+] as const;
+
+const entityTypes = computed(() =>
+  ENTITY_TYPE_KEYS.map(key => ({
+    value: key,
+    title: t(`dossier.entityTypes.${key}`),
+  }))
+);
+
+function entityTypeLabel(type: string): string {
+  const key = legacyTypeToKey[type] || type;
+  if (ENTITY_TYPE_KEYS.includes(key as any)) {
+    return t(`dossier.entityTypes.${key}`);
+  }
+  return type;
+}
 
 const localTags = ref<string[]>([]);
 const availableTags = ref<string[]>([]);
@@ -494,27 +497,44 @@ async function handleSave() {
 }
 
 const entityIconMap: Record<string, string> = {
-  'Identite': 'mdi-card-account-details-outline',
-  'Telephone': 'mdi-phone-outline',
-  'Email': 'mdi-email-outline',
-  'Snapchat': 'mdi-snapchat',
-  'Facebook': 'mdi-facebook',
-  'Instagram': 'mdi-instagram',
-  'Twitter / X': 'mdi-twitter',
-  'TikTok': 'mdi-music-note-outline',
-  'Discord': 'mdi-message-outline',
-  'Telegram': 'mdi-send-outline',
-  'LinkedIn': 'mdi-linkedin',
-  'Adresse IP': 'mdi-ip-network-outline',
-  'Adresse postale': 'mdi-map-marker-outline',
-  'Vehicule': 'mdi-car-outline',
-  'IBAN / Compte': 'mdi-bank-outline',
-  'Pseudo': 'mdi-at',
-  'Autre': 'mdi-dots-horizontal',
+  'identity': 'mdi-card-account-details-outline',
+  'phone': 'mdi-phone-outline',
+  'email': 'mdi-email-outline',
+  'snapchat': 'mdi-snapchat',
+  'facebook': 'mdi-facebook',
+  'instagram': 'mdi-instagram',
+  'twitter': 'mdi-twitter',
+  'tiktok': 'mdi-music-note-outline',
+  'discord': 'mdi-message-outline',
+  'telegram': 'mdi-send-outline',
+  'linkedin': 'mdi-linkedin',
+  'ip': 'mdi-ip-network-outline',
+  'address': 'mdi-map-marker-outline',
+  'vehicle': 'mdi-car-outline',
+  'iban': 'mdi-bank-outline',
+  'pseudo': 'mdi-at',
+  'other': 'mdi-dots-horizontal',
+};
+
+// Legacy French labels to key mapping (for entities stored before i18n fix)
+const legacyTypeToKey: Record<string, string> = {
+  'Identite': 'identity', 'Identité': 'identity', 'Identity': 'identity',
+  'Telephone': 'phone', 'Téléphone': 'phone', 'Phone': 'phone',
+  'Email': 'email',
+  'Snapchat': 'snapchat', 'Facebook': 'facebook', 'Instagram': 'instagram',
+  'Twitter / X': 'twitter', 'TikTok': 'tiktok', 'Discord': 'discord',
+  'Telegram': 'telegram', 'LinkedIn': 'linkedin',
+  'Adresse IP': 'ip', 'IP address': 'ip',
+  'Adresse postale': 'address', 'Postal address': 'address',
+  'Vehicule': 'vehicle', 'Véhicule': 'vehicle', 'Vehicle': 'vehicle',
+  'IBAN / Compte': 'iban', 'IBAN / Account': 'iban',
+  'Pseudo': 'pseudo', 'Username': 'pseudo',
+  'Autre': 'other', 'Other': 'other',
 };
 
 function entityIcon(type: string): string {
-  return entityIconMap[type] || 'mdi-tag-outline';
+  const key = legacyTypeToKey[type] || type;
+  return entityIconMap[key] || 'mdi-tag-outline';
 }
 
 function openEntityDialog() {

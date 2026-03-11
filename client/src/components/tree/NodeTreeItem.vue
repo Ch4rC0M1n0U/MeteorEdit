@@ -48,28 +48,28 @@
         </template>
         <div class="glass-card nti-context-menu">
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'folder', node._id)">
-            <v-icon size="14">mdi-folder-plus-outline</v-icon> Sous-dossier
+            <v-icon size="14">mdi-folder-plus-outline</v-icon> {{ $t('tree.subfolder') }}
           </button>
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'note', node._id)">
-            <v-icon size="14">mdi-note-plus-outline</v-icon> Note
+            <v-icon size="14">mdi-note-plus-outline</v-icon> {{ $t('tree.note') }}
           </button>
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'mindmap', node._id)">
-            <v-icon size="14">mdi-vector-polyline</v-icon> Mind map
+            <v-icon size="14">mdi-vector-polyline</v-icon> {{ $t('tree.mindmap') }}
           </button>
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'map', node._id)">
-            <v-icon size="14">mdi-map-outline</v-icon> Carte
+            <v-icon size="14">mdi-map-outline</v-icon> {{ $t('tree.map') }}
           </button>
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'dataset', node._id)">
-            <v-icon size="14">mdi-table</v-icon> Dataset
+            <v-icon size="14">mdi-table</v-icon> {{ $t('tree.dataset') }}
           </button>
           <button class="nti-ctx-item" @click="showMenu = false; startRename()">
-            <v-icon size="14">mdi-pencil-outline</v-icon> Renommer
+            <v-icon size="14">mdi-pencil-outline</v-icon> {{ $t('tree.rename') }}
           </button>
           <button class="nti-ctx-item" @click="showMenu = false; $emit('duplicate', node._id)">
-            <v-icon size="14">mdi-content-copy</v-icon> Dupliquer
+            <v-icon size="14">mdi-content-copy</v-icon> {{ $t('tree.duplicate') }}
           </button>
           <button class="nti-ctx-item nti-ctx-danger" @click="handleDelete">
-            <v-icon size="14">mdi-trash-can-outline</v-icon> Supprimer
+            <v-icon size="14">mdi-trash-can-outline</v-icon> {{ $t('common.delete') }}
           </button>
         </div>
       </v-menu>
@@ -90,6 +90,7 @@
 
 <script setup lang="ts">
 import { computed, ref, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
@@ -99,6 +100,7 @@ import EvidenceBadge from '../evidence/EvidenceBadge.vue';
 const props = defineProps<{ node: DossierNode; allNodes: DossierNode[] }>();
 defineEmits<{ create: [type: string, parentId: string]; duplicate: [nodeId: string] }>();
 
+const { t } = useI18n();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const showMenu = ref(false);
@@ -151,9 +153,9 @@ const children = computed(() =>
 
 async function handleDelete() {
   const ok = await confirm({
-    title: 'Supprimer',
-    message: `Envoyer "${props.node.title}" dans la corbeille ?`,
-    confirmText: 'Supprimer',
+    title: t('common.delete'),
+    message: t('tree.moveToTrashConfirm', { title: props.node.title }),
+    confirmText: t('common.delete'),
     variant: 'danger',
   });
   if (ok) dossierStore.deleteNode(props.node._id);

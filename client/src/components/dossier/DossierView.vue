@@ -16,7 +16,7 @@
         <div class="dv-sidebar-actions">
           <v-menu>
             <template #activator="{ props: menuProps }">
-              <button v-bind="menuProps" class="dv-action-btn" title="Exporter">
+              <button v-bind="menuProps" class="dv-action-btn" :title="$t('dossier.export')">
                 <v-icon size="16">mdi-download-outline</v-icon>
               </button>
             </template>
@@ -27,12 +27,12 @@
               </button>
               <button class="dv-export-option" @click="exportSelectOpen = true">
                 <v-icon size="16">mdi-file-export-outline</v-icon>
-                <span>Exporter / Imprimer</span>
+                <span>{{ $t('dossier.exportPrint') }}</span>
               </button>
               <div v-if="aiEnabled" class="dv-export-divider" />
               <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect">
                 <v-icon size="16">mdi-robot-outline</v-icon>
-                <span>Generer rapport IA</span>
+                <span>{{ $t('dossier.generateAiReport') }}</span>
               </button>
             </div>
           </v-menu>
@@ -40,7 +40,7 @@
             v-if="dossierStore.selectedNode && ['note', 'mindmap', 'map'].includes(dossierStore.selectedNode.type)"
             class="dv-action-btn"
             @click="openSnapshots"
-            title="Historique des versions"
+            :title="$t('dossier.versionHistory')"
           >
             <v-icon size="16">mdi-history</v-icon>
           </button>
@@ -48,14 +48,14 @@
             v-if="dossierStore.selectedNode?.fileHash"
             class="dv-action-btn"
             @click="evidencePanelOpen = true"
-            title="Integrite de la preuve"
+            :title="$t('dossier.evidenceIntegrity')"
           >
             <v-icon size="16">mdi-shield-check-outline</v-icon>
           </button>
           <button class="dv-action-btn" @click="webClipperOpen = true" title="Web Clipper">
             <v-icon size="16">mdi-web</v-icon>
           </button>
-          <button v-if="aiEnabled" class="dv-action-btn" @click="runSummary" :disabled="summarizing" title="Resume IA">
+          <button v-if="aiEnabled" class="dv-action-btn" @click="runSummary" :disabled="summarizing" :title="$t('dossier.aiSummaryTitle')">
             <v-icon size="16" :class="{ 'ai-spin': summarizing }">{{ summarizing ? 'mdi-loading' : 'mdi-robot-outline' }}</v-icon>
           </button>
         </div>
@@ -74,22 +74,22 @@
             </template>
           </v-tooltip>
         </div>
-        <span class="dv-collab-label">{{ dossierStore.activeCollaborators.length }} en ligne</span>
+        <span class="dv-collab-label">{{ $t('dossier.online', { count: dossierStore.activeCollaborators.length }) }}</span>
       </div>
 
       <!-- Quick nav -->
       <div class="dv-sidebar-nav">
         <button class="dv-nav-item" :class="{ active: sidebarTab === 'tree' }" @click="sidebarTab = 'tree'">
           <v-icon size="18">mdi-file-tree-outline</v-icon>
-          <span>Arborescence</span>
+          <span>{{ $t('dossier.tree') }}</span>
         </button>
         <button class="dv-nav-item" :class="{ active: sidebarTab === 'tasks' }" @click="sidebarTab = 'tasks'">
           <v-icon size="18">mdi-checkbox-marked-outline</v-icon>
-          <span>Taches</span>
+          <span>{{ $t('dossier.tasks') }}</span>
         </button>
         <button class="dv-nav-item" :class="{ active: sidebarTab === 'evidence' }" @click="sidebarTab = 'evidence'">
           <v-icon size="18">mdi-shield-check-outline</v-icon>
-          <span>Integrite</span>
+          <span>{{ $t('dossier.integrity') }}</span>
         </button>
       </div>
 
@@ -116,7 +116,7 @@
           class="dv-focus-btn"
           :class="{ 'dv-focus-btn--active': focusMode }"
           @click="toggleFocusMode"
-          :title="focusMode ? 'Quitter le mode focus (Esc)' : 'Mode focus'"
+          :title="focusMode ? $t('dossier.exitFocusMode') : $t('dossier.focusMode')"
         >
           <v-icon size="18">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
         </button>
@@ -145,7 +145,7 @@
               class="ex-tb-btn"
               :class="{ active: focusMode }"
               @click="toggleFocusMode"
-              :title="focusMode ? 'Quitter le mode focus (Esc)' : 'Mode focus'"
+              :title="focusMode ? $t('dossier.exitFocusMode') : $t('dossier.focusMode')"
             >
               <v-icon size="16">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
             </button>
@@ -182,7 +182,7 @@
               class="dv-action-btn"
               :class="{ 'dv-action-btn--active': annotatorOpen }"
               @click="annotatorOpen = !annotatorOpen"
-              title="Annoter l'image"
+              :title="$t('dossier.annotateImage')"
             >
               <v-icon size="16">mdi-draw</v-icon>
             </button>
@@ -191,7 +191,7 @@
               :href="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
               target="_blank"
               class="dv-action-btn"
-              title="Ouvrir le fichier"
+              :title="$t('dossier.openFile')"
             >
               <v-icon size="16">mdi-open-in-new</v-icon>
             </a>
@@ -222,10 +222,10 @@
             class="dv-doc-download-btn"
           >
             <v-icon size="14" class="mr-1">mdi-download</v-icon>
-            Telecharger
+            {{ $t('dossier.download') }}
           </a>
         </div>
-        <p v-else class="text-muted" style="padding: 16px;">Aucun fichier attache.</p>
+        <p v-else class="text-muted" style="padding: 16px;">{{ $t('dossier.noFileAttached') }}</p>
       </div>
 
       <div v-else-if="dossierStore.selectedNode.type === 'folder'" class="dv-content-panel">
@@ -233,7 +233,7 @@
           <v-icon size="20" class="mr-2">mdi-folder-outline</v-icon>
           <h2>{{ dossierStore.selectedNode.title }}</h2>
         </div>
-        <p class="text-muted">Dossier</p>
+        <p class="text-muted">{{ $t('dossier.folderLabel') }}</p>
       </div>
     </main>
 
@@ -265,7 +265,7 @@
         <div class="dialog-header">
           <h3 class="mono">
             <v-icon size="18" class="mr-1">mdi-robot-outline</v-icon>
-            Resume IA
+            {{ $t('dossier.aiSummaryTitle') }}
           </h3>
           <button class="me-close-btn" @click="summaryDialog = false">
             <v-icon size="18">mdi-close</v-icon>
@@ -274,15 +274,15 @@
         <div class="dialog-body" style="max-height: 400px; overflow-y: auto;">
           <div v-if="summarizing" style="text-align: center; padding: 32px;">
             <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
-            <p style="margin-top: 12px; color: var(--me-text-muted); font-size: 13px;">Generation du resume...</p>
+            <p style="margin-top: 12px; color: var(--me-text-muted); font-size: 13px;">{{ $t('dossier.generatingSummary') }}</p>
           </div>
           <pre v-else class="ai-summary-text">{{ summaryContent }}</pre>
         </div>
         <div class="dialog-footer">
-          <button class="me-btn-ghost" @click="summaryDialog = false">Fermer</button>
+          <button class="me-btn-ghost" @click="summaryDialog = false">{{ $t('common.close') }}</button>
           <button v-if="summaryContent" class="me-btn-primary" @click="copySummary">
             <v-icon size="14" class="mr-1">mdi-content-copy</v-icon>
-            Copier
+            {{ $t('dossier.copy') }}
           </button>
         </div>
       </div>
@@ -293,7 +293,7 @@
   <v-dialog v-model="snapshotDialog" max-width="480">
     <div class="glass-card dialog-card">
       <div class="dialog-header">
-        <h3 class="mono">Historique des versions</h3>
+        <h3 class="mono">{{ $t('dossier.versionHistory') }}</h3>
         <button class="me-close-btn" @click="snapshotDialog = false">
           <v-icon size="18">mdi-close</v-icon>
         </button>
@@ -302,28 +302,28 @@
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
           <v-text-field
             v-model="snapshotLabel"
-            label="Label (optionnel)"
+            :label="$t('dossier.labelOptional')"
             density="compact"
             hide-details
           />
           <button class="me-btn-primary" @click="createSnap" style="white-space: nowrap;">
             <v-icon size="14" class="mr-1">mdi-camera-outline</v-icon>
-            Sauvegarder
+            {{ $t('common.save') }}
           </button>
         </div>
         <div v-if="!snapshots.length" style="text-align: center; padding: 24px; color: var(--me-text-muted); font-size: 13px;">
-          Aucune version sauvegardee
+          {{ $t('dossier.noSavedVersions') }}
         </div>
         <div v-for="snap in snapshots" :key="snap._id" class="snap-item">
           <div class="snap-info">
-            <span class="snap-label">{{ snap.label || 'Version sans label' }}</span>
+            <span class="snap-label">{{ snap.label || $t('dossier.versionNoLabel') }}</span>
             <span class="snap-date mono">{{ formatDate(snap.createdAt) }}</span>
           </div>
           <div class="snap-actions">
-            <button class="snap-action-btn" @click="restoreSnap(snap._id)" title="Restaurer">
+            <button class="snap-action-btn" @click="restoreSnap(snap._id)" :title="$t('common.restore')">
               <v-icon size="14">mdi-restore</v-icon>
             </button>
-            <button class="snap-action-btn snap-action-danger" @click="deleteSnap(snap._id)" title="Supprimer">
+            <button class="snap-action-btn snap-action-danger" @click="deleteSnap(snap._id)" :title="$t('common.delete')">
               <v-icon size="14">mdi-delete-outline</v-icon>
             </button>
           </div>
@@ -338,7 +338,7 @@
       <div class="dialog-header">
         <h3 class="mono">
           <v-icon size="18" class="mr-1">mdi-file-document-edit-outline</v-icon>
-          Choisir un template
+          {{ $t('dossier.chooseTemplate') }}
         </h3>
         <button class="me-close-btn" @click="aiTemplateSelectDialog = false">
           <v-icon size="18">mdi-close</v-icon>
@@ -347,7 +347,7 @@
       <div class="dialog-body">
         <div v-if="aiLoadingTemplates" class="ai-tpl-loading">
           <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
-          <span>Chargement...</span>
+          <span>{{ $t('common.loading') }}</span>
         </div>
         <div v-else class="ai-tpl-list">
           <button
@@ -355,8 +355,8 @@
             @click="aiSelectedTemplateId = null"
           >
             <div class="ai-tpl-item-info">
-              <span class="ai-tpl-item-title mono">Template par defaut</span>
-              <span class="ai-tpl-item-desc">Prompt systeme configure dans les parametres</span>
+              <span class="ai-tpl-item-title mono">{{ $t('dossier.defaultTemplate') }}</span>
+              <span class="ai-tpl-item-desc">{{ $t('dossier.defaultTemplateDesc') }}</span>
             </div>
             <v-icon v-if="aiSelectedTemplateId === null" size="16" color="var(--me-accent)">mdi-check-circle</v-icon>
           </button>
@@ -368,18 +368,18 @@
           >
             <div class="ai-tpl-item-info">
               <span class="ai-tpl-item-title mono">{{ tpl.title }}</span>
-              <span class="ai-tpl-item-desc">{{ tpl.description || 'Aucune description' }}</span>
-              <span v-if="tpl.isShared" class="ai-tpl-shared-badge mono">Partage</span>
+              <span class="ai-tpl-item-desc">{{ tpl.description || $t('dossier.noDescription') }}</span>
+              <span v-if="tpl.isShared" class="ai-tpl-shared-badge mono">{{ $t('dossier.shared') }}</span>
             </div>
             <v-icon v-if="aiSelectedTemplateId === tpl._id" size="16" color="var(--me-accent)">mdi-check-circle</v-icon>
           </button>
         </div>
       </div>
       <div class="dialog-footer">
-        <button class="me-btn-ghost" @click="aiTemplateSelectDialog = false">Annuler</button>
+        <button class="me-btn-ghost" @click="aiTemplateSelectDialog = false">{{ $t('common.cancel') }}</button>
         <button class="me-btn-primary" @click="generateAiReport(aiSelectedTemplateId)" :disabled="aiLoadingTemplates">
           <v-icon size="14" class="mr-1">mdi-robot-outline</v-icon>
-          Generer
+          {{ $t('dossier.generate') }}
         </button>
       </div>
     </div>
@@ -391,7 +391,7 @@
       <div class="dialog-header">
         <h3 class="mono">
           <v-icon size="18" class="mr-1">mdi-robot-outline</v-icon>
-          Rapport genere par IA
+          {{ $t('dossier.aiReportTitle') }}
         </h3>
         <button class="me-close-btn" @click="closeAiReport" :disabled="aiGenerating">
           <v-icon size="18">mdi-close</v-icon>
@@ -418,12 +418,12 @@
       <div class="dialog-body ai-report-body" ref="aiReportBodyRef">
         <div v-if="aiGenerating && !aiReportContent" class="ai-generating">
           <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
-          <p>Preparation du rapport...</p>
+          <p>{{ $t('dossier.preparingReport') }}</p>
         </div>
 
         <div v-if="aiReportContent" class="ai-report-content">
           <div class="ai-report-meta mono">
-            <span>Modele: {{ aiReportModel }}</span>
+            <span>{{ $t('dossier.model') }}: {{ aiReportModel }}</span>
             <span v-if="aiTokenCount" class="ml-auto">{{ aiTokenCount }} tokens</span>
           </div>
           <pre class="ai-report-text">{{ aiReportContent }}<span v-if="aiGenerating" class="ai-cursor">|</span></pre>
@@ -438,10 +438,10 @@
       <div class="dialog-footer">
         <button v-if="aiGenerating" class="ai-cancel-gen-btn" @click="cancelAiReport">
           <v-icon size="14" class="mr-1">mdi-stop-circle-outline</v-icon>
-          Arreter la generation
+          {{ $t('dossier.stopGeneration') }}
         </button>
         <div v-else class="ai-footer-actions">
-          <button class="me-btn-ghost" @click="closeAiReport">Fermer</button>
+          <button class="me-btn-ghost" @click="closeAiReport">{{ $t('common.close') }}</button>
           <button v-if="aiReportContent" class="me-btn-primary" @click="downloadAiReportAsPdf">
             <v-icon size="14" class="mr-1">mdi-file-pdf-box</v-icon>
             PDF
@@ -459,16 +459,16 @@
   <v-dialog v-model="createDialog" max-width="480">
     <div class="glass-card dialog-card">
       <div class="dialog-header">
-        <h3 class="mono">Nouveau {{ createType }}</h3>
+        <h3 class="mono">{{ $t('dossier.newNode', { type: createType }) }}</h3>
         <button class="me-close-btn" @click="createDialog = false">
           <v-icon size="18">mdi-close</v-icon>
         </button>
       </div>
       <div class="dialog-body">
-        <v-text-field v-model="createTitle" label="Titre" autofocus @keyup.enter="confirmCreate" />
+        <v-text-field v-model="createTitle" :label="$t('common.title')" autofocus @keyup.enter="confirmCreate" />
         <!-- Template selection for notes -->
         <div v-if="createType === 'note' && templateStore.templates.length" class="template-select-section">
-          <span class="template-select-label mono">Utiliser un modele</span>
+          <span class="template-select-label mono">{{ $t('dossier.useTemplate') }}</span>
           <div class="template-select-list">
             <button
               :class="['template-select-item', { 'template-select-item--active': !selectedTemplateId }]"
@@ -476,7 +476,7 @@
               type="button"
             >
               <v-icon size="16" class="mr-1">mdi-file-outline</v-icon>
-              <span>Note vierge</span>
+              <span>{{ $t('dossier.blankNote') }}</span>
             </button>
             <button
               v-for="tpl in templateStore.templates"
@@ -493,8 +493,8 @@
         </div>
       </div>
       <div class="dialog-footer">
-        <button class="me-btn-ghost" @click="createDialog = false">Annuler</button>
-        <button class="me-btn-primary" @click="confirmCreate" :disabled="!createTitle.trim()">Creer</button>
+        <button class="me-btn-ghost" @click="createDialog = false">{{ $t('common.cancel') }}</button>
+        <button class="me-btn-primary" @click="confirmCreate" :disabled="!createTitle.trim()">{{ $t('common.create') }}</button>
       </div>
     </div>
   </v-dialog>
@@ -503,6 +503,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
@@ -524,6 +525,8 @@ import ExportSelectDialog from './ExportSelectDialog.vue';
 import DatasetEditor from '../dataset/DatasetEditor.vue';
 import EvidencePanel from '../evidence/EvidencePanel.vue';
 import DossierEvidenceView from '../evidence/DossierEvidenceView.vue';
+
+const { t } = useI18n();
 
 const webClipperOpen = ref(false);
 const exportSelectOpen = ref(false);
@@ -1050,9 +1053,9 @@ async function createSnap() {
 
 async function restoreSnap(snapshotId: string) {
   const ok = await confirmDialog({
-    title: 'Restaurer cette version',
-    message: 'Le contenu actuel sera remplace par cette version. Voulez-vous creer une sauvegarde avant ?',
-    confirmText: 'Restaurer',
+    title: t('dossier.restoreVersionTitle'),
+    message: t('dossier.restoreVersionMessage'),
+    confirmText: t('common.restore'),
     variant: 'warning',
   });
   if (!ok) return;
@@ -1060,7 +1063,7 @@ async function restoreSnap(snapshotId: string) {
     // Create a backup first
     if (dossierStore.selectedNode) {
       await api.post(`/nodes/${dossierStore.selectedNode._id}/snapshots`, {
-        label: `Sauvegarde auto avant restauration`,
+        label: t('dossier.autoBackupLabel'),
       });
     }
     const { data } = await api.post(`/snapshots/${snapshotId}/restore`);
@@ -1076,9 +1079,9 @@ async function restoreSnap(snapshotId: string) {
 
 async function deleteSnap(snapshotId: string) {
   const ok = await confirmDialog({
-    title: 'Supprimer la version',
-    message: 'Cette version sera supprimee definitivement.',
-    confirmText: 'Supprimer',
+    title: t('dossier.deleteVersionTitle'),
+    message: t('dossier.deleteVersionMessage'),
+    confirmText: t('common.delete'),
     variant: 'danger',
   });
   if (!ok) return;
