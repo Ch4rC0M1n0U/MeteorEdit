@@ -54,6 +54,13 @@ export interface IInvestigator {
   email: string;
 }
 
+export interface ILinkedDocument {
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  uploadedAt: Date;
+}
+
 export interface IDossier extends Document {
   title: string;
   description: string;
@@ -65,6 +72,13 @@ export interface IDossier extends Document {
   judicialFacts: string;
   tags: string[];
   investigator: IInvestigator;
+  classification: 'priority' | 'routine';
+  isUrgent: boolean;
+  isEmbargo: boolean;
+  magistrate: string;
+  isFirstRequest: boolean;
+  dossierLanguage: 'fr' | 'nl';
+  linkedDocuments: ILinkedDocument[];
   owner: Types.ObjectId;
   collaborators: Types.ObjectId[];
   encryptionKeys: { userId: Types.ObjectId; encryptedKey: string }[];

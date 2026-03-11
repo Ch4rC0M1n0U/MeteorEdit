@@ -17,6 +17,14 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface LinkedDocument {
+  _id: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
 export interface Dossier {
   _id: string;
   title: string;
@@ -29,6 +37,13 @@ export interface Dossier {
   judicialFacts: string;
   tags: string[];
   investigator: Investigator;
+  classification: 'priority' | 'routine';
+  isUrgent: boolean;
+  isEmbargo: boolean;
+  magistrate: string;
+  isFirstRequest: boolean;
+  dossierLanguage: 'fr' | 'nl';
+  linkedDocuments: LinkedDocument[];
   owner: string;
   collaborators: (string | CollaboratorUser)[];
   encryptionKeys: { userId: string; encryptedKey: string }[];

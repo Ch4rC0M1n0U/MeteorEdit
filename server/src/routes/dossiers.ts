@@ -4,6 +4,7 @@ import {
   listDossiers, createDossier, getDossier,
   updateDossier, deleteDossier, updateCollaborators, getTags,
   uploadDossierLogo, deleteDossierLogo,
+  uploadLinkedDocument, deleteLinkedDocument,
 } from '../controllers/dossierController';
 import { getUserDashboard, getTaskStats } from '../controllers/dashboardController';
 import { upload } from '../config/upload';
@@ -365,4 +366,6 @@ router.patch('/:id/collaborators', updateCollaborators);
  */
 router.post('/:id/logo', upload.single('logo'), uploadDossierLogo);
 router.delete('/:id/logo', deleteDossierLogo);
+router.post('/:id/documents', upload.single('document'), uploadLinkedDocument);
+router.delete('/:id/documents/:docId', deleteLinkedDocument);
 export default router;

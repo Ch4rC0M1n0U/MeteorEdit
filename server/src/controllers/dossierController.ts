@@ -192,3 +192,50 @@ export async function deleteDossierLogo(req: AuthRequest, res: Response): Promis
     res.status(500).json({ message: 'Server error' });
   }
 }
+
+export async function uploadLinkedDocument(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    const userId = req.user!.userId;
+    if (dossier.owner.toString() !== userId && !dossier.collaborators.some(c => c.toString() === userId)) {
+      res.status(403).json({ message: 'Access denied' }); return;
+    }
+    if (!req.file) { res.status(400).json({ message: 'No file provided' }); return; }
+    dossier.linkedDocuments.push({
+      fileName: req.file.originalname,
+      filePath: `uploads/${req.file.filename}`,
+      fileSize: req.file.size,
+      uploadedAt: new Date(),
+    } as any);
+    await dossier.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'linked_document_upload', fileName: req.file.originalname }, ip, req.headers['user-agent'] || '');
+    res.json(dossier);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function deleteLinkedDocument(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    const userId = req.user!.userId;
+    if (dossier.owner.toString() !== userId && !dossier.collaborators.some(c => c.toString() === userId)) {
+      res.status(403).json({ message: 'Access denied' }); return;
+    }
+    const docId = req.params.docId;
+    const doc = dossier.linkedDocuments.find((d: any) => d._id.toString() === docId);
+    if (!doc) { res.status(404).json({ message: 'Document not found' }); return; }
+    const filePath = path.resolve(process.env.UPLOAD_DIR || './uploads', doc.filePath.replace(/^uploads\//, ''));
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    dossier.linkedDocuments = dossier.linkedDocuments.filter((d: any) => d._id.toString() !== docId) as any;
+    await dossier.save();
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'linked_document_delete', fileName: doc.fileName }, ip, req.headers['user-agent'] || '');
+    res.json(dossier);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}

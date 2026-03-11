@@ -92,6 +92,78 @@
         </div>
       </div>
 
+      <!-- CLASSIFICATION & MAGISTRAT -->
+      <div class="di-section">
+        <h3 class="di-section-title mono">
+          <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
+          {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
+        </h3>
+        <div class="di-row">
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.classification') }}</span>
+            <span class="di-classification-badge" :class="`di-class-${form.classification}`">{{ classificationLabel }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.magistrate') }}</span>
+            <span class="di-value">{{ form.magistrate || '—' }}</span>
+          </div>
+        </div>
+        <div class="di-row di-flags-row">
+          <span v-if="form.isUrgent" class="di-flag-badge di-flag-urgent">
+            <v-icon size="14" class="mr-1">mdi-alert-circle-outline</v-icon>
+            {{ $t('dossier.isUrgent') }}
+          </span>
+          <span v-if="form.isEmbargo" class="di-flag-badge di-flag-embargo">
+            <v-icon size="14" class="mr-1">mdi-lock-clock</v-icon>
+            {{ $t('dossier.isEmbargo') }}
+          </span>
+        </div>
+        <div class="di-row-3">
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.isFirstRequest') }}</span>
+            <span class="di-value">{{ form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest') }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.dossierLanguage') }}</span>
+            <span class="di-value">{{ form.dossierLanguage === 'nl' ? $t('dossier.langNl') : $t('dossier.langFr') }}</span>
+          </div>
+          <div class="di-field"></div>
+        </div>
+      </div>
+
+      <!-- DOCUMENTS LIES -->
+      <div class="di-section">
+        <div class="di-section-header">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-paperclip</v-icon>
+            {{ $t('dossier.linkedDocuments') }}
+            <span v-if="form.linkedDocuments.length" class="di-count">{{ form.linkedDocuments.length }}</span>
+          </h3>
+          <button class="me-btn-small" @click="triggerDocInput">
+            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+            {{ $t('dossier.addDocument') }}
+          </button>
+          <input ref="docInput" type="file" hidden @change="handleDocUpload" />
+        </div>
+        <div v-if="form.linkedDocuments.length" class="di-doc-list">
+          <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
+            <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
+            <div class="di-doc-info">
+              <a :href="`${SERVER_URL}/${doc.filePath}`" target="_blank" class="di-doc-name">{{ doc.fileName }}</a>
+              <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
+            </div>
+            <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
+              <v-icon size="14">mdi-trash-can-outline</v-icon>
+            </button>
+          </div>
+        </div>
+        <div v-else class="di-empty mono">{{ $t('dossier.noLinkedDocuments') }}</div>
+        <div v-if="uploadingDoc" class="di-uploading mono">
+          <v-progress-circular indeterminate size="16" width="2" class="mr-2" />
+          {{ $t('dossier.uploading') }}
+        </div>
+      </div>
+
       <div class="di-section">
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
@@ -263,6 +335,33 @@
 
       <div class="di-section">
         <h3 class="di-section-title mono">
+          <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
+          {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
+        </h3>
+        <div class="di-row">
+          <v-select v-model="form.classification" :items="classificationOptions" :label="$t('dossier.classification')" />
+          <v-text-field v-model="form.magistrate" :label="$t('dossier.magistrate')" />
+        </div>
+        <div class="di-row">
+          <v-checkbox v-model="form.isUrgent" :label="$t('dossier.isUrgent')" color="error" density="compact" hide-details />
+          <v-checkbox v-model="form.isEmbargo" :label="$t('dossier.isEmbargo')" color="warning" density="compact" hide-details />
+        </div>
+        <div class="di-row">
+          <v-select v-model="form.dossierLanguage" :items="dossierLanguageOptions" :label="$t('dossier.dossierLanguage')" style="max-width: 200px;" />
+          <div class="di-switch-field">
+            <v-switch
+              v-model="form.isFirstRequest"
+              :label="form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest')"
+              color="primary"
+              density="compact"
+              hide-details
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="di-section">
+        <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
           {{ $t('dossier.investigator') }}
         </h3>
@@ -378,6 +477,9 @@ function entityTypeLabel(type: string): string {
 const localTags = ref<string[]>([]);
 const availableTags = ref<string[]>([]);
 
+const uploadingDoc = ref(false);
+const docInput = ref<HTMLInputElement | null>(null);
+
 const form = reactive({
   title: '',
   description: '',
@@ -387,6 +489,13 @@ const form = reactive({
   judicialFacts: '',
   investigator: { name: '', service: '', unit: '', phone: '', email: '' },
   entities: [] as { name: string; type: string; description: string }[],
+  classification: 'routine' as 'priority' | 'routine',
+  isUrgent: false,
+  isEmbargo: false,
+  magistrate: '',
+  isFirstRequest: true,
+  dossierLanguage: 'fr' as 'fr' | 'nl',
+  linkedDocuments: [] as { _id: string; fileName: string; filePath: string; fileSize: number; uploadedAt: string }[],
 });
 
 const newEntity = reactive({ name: '', type: '', description: '' });
@@ -400,6 +509,22 @@ const statusLabel = computed(() => {
   }
 });
 
+const classificationLabel = computed(() => {
+  return form.classification === 'priority'
+    ? t('dossier.classificationPriority')
+    : t('dossier.classificationRoutine');
+});
+
+const classificationOptions = computed(() => [
+  { title: t('dossier.classificationPriority'), value: 'priority' },
+  { title: t('dossier.classificationRoutine'), value: 'routine' },
+]);
+
+const dossierLanguageOptions = computed(() => [
+  { title: t('dossier.langFr'), value: 'fr' },
+  { title: t('dossier.langNl'), value: 'nl' },
+]);
+
 function loadFromDossier() {
   const d = dossierStore.currentDossier;
   if (d) {
@@ -411,6 +536,13 @@ function loadFromDossier() {
     form.judicialFacts = d.judicialFacts;
     form.investigator = { ...d.investigator };
     form.entities = (d.entities || []).map((e: any) => ({ ...e }));
+    form.classification = d.classification || 'routine';
+    form.isUrgent = !!d.isUrgent;
+    form.isEmbargo = !!d.isEmbargo;
+    form.magistrate = d.magistrate || '';
+    form.isFirstRequest = d.isFirstRequest !== undefined ? d.isFirstRequest : true;
+    form.dossierLanguage = d.dossierLanguage || 'fr';
+    form.linkedDocuments = (d.linkedDocuments || []).map((doc: any) => ({ ...doc }));
   }
 }
 
@@ -454,6 +586,66 @@ async function removeLogo() {
   } catch (err) {
     console.error('Failed to remove logo:', err);
   }
+}
+
+// --- Documents liés ---
+function triggerDocInput() { docInput.value?.click(); }
+
+async function handleDocUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file || !dossierStore.currentDossier) return;
+  uploadingDoc.value = true;
+  const fd = new FormData();
+  fd.append('document', file);
+  try {
+    const { data } = await api.post(`/dossiers/${dossierStore.currentDossier._id}/documents`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    syncDossierInList(data);
+    loadFromDossier();
+  } catch (err) {
+    console.error('Failed to upload document:', err);
+  } finally {
+    uploadingDoc.value = false;
+    if (docInput.value) docInput.value.value = '';
+  }
+}
+
+async function handleDeleteDoc(doc: { _id: string; fileName: string }) {
+  if (!dossierStore.currentDossier) return;
+  const confirmed = await customConfirm({
+    title: t('dossier.deleteDocument'),
+    message: t('dossier.deleteDocumentConfirm'),
+    confirmText: t('common.delete'),
+  });
+  if (!confirmed) return;
+  try {
+    const { data } = await api.delete(`/dossiers/${dossierStore.currentDossier._id}/documents/${doc._id}`);
+    syncDossierInList(data);
+    loadFromDossier();
+  } catch (err) {
+    console.error('Failed to delete document:', err);
+  }
+}
+
+function docIcon(fileName: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const map: Record<string, string> = {
+    pdf: 'mdi-file-pdf-box',
+    doc: 'mdi-file-word-box', docx: 'mdi-file-word-box',
+    xls: 'mdi-file-excel-box', xlsx: 'mdi-file-excel-box',
+    ppt: 'mdi-file-powerpoint-box', pptx: 'mdi-file-powerpoint-box',
+    jpg: 'mdi-file-image', jpeg: 'mdi-file-image', png: 'mdi-file-image', gif: 'mdi-file-image', webp: 'mdi-file-image',
+    zip: 'mdi-folder-zip', rar: 'mdi-folder-zip', '7z': 'mdi-folder-zip',
+    txt: 'mdi-file-document-outline', csv: 'mdi-file-delimited',
+  };
+  return map[ext] || 'mdi-file-outline';
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 watch(() => dossierStore.currentDossier, loadFromDossier, { immediate: true });
@@ -1316,5 +1508,109 @@ async function removeCollaborator(userId: string) {
 .di-gen-keys-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Classification badges */
+.di-classification-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: fit-content;
+}
+.di-class-priority {
+  background: rgba(96, 165, 250, 0.15);
+  color: var(--me-info, #60a5fa);
+}
+.di-class-routine {
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--me-success);
+}
+
+/* Flag badges (urgent, embargo) */
+.di-flags-row {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.di-flag-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.di-flag-urgent {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--me-error);
+}
+.di-flag-embargo {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--me-warning);
+}
+
+/* Documents liés */
+.di-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.di-doc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--me-radius-xs);
+  transition: background 0.12s;
+}
+.di-doc-row:hover {
+  background: var(--me-accent-glow);
+}
+.di-doc-row:hover .di-el-btn {
+  opacity: 1;
+}
+.di-doc-icon {
+  color: var(--me-accent);
+  flex-shrink: 0;
+}
+.di-doc-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.di-doc-name {
+  font-size: 13px;
+  color: var(--me-accent);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.di-doc-name:hover {
+  text-decoration: underline;
+}
+.di-doc-meta {
+  font-size: 10px;
+  color: var(--me-text-muted);
+}
+.di-uploading {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--me-text-muted);
+  padding: 8px 0;
+}
+
+/* Edit mode switch */
+.di-switch-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 </style>
