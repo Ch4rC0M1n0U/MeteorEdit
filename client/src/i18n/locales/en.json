@@ -858,5 +858,52 @@
     "mindmap": "Mindmap",
     "map": "Map",
     "dataset": "Dataset"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "dossiers": "Cases",
+    "owner": "Owner",
+    "collaborations": "Collaborations",
+    "elements": "Elements",
+    "overview": "Overview",
+    "statistics": "Statistics",
+    "activityTab": "Activity",
+    "recentlyModifiedDossiers": "Recently modified cases",
+    "dossierStatuses": "Case statuses",
+    "elementTypes": "Element types",
+    "activity7days": "Activity (7 days)",
+    "noRecentActivity": "No recent activity",
+    "recentActivity": "Recent activity",
+    "noActivityThisWeek": "No activity this week",
+    "nodeTypes": {
+      "folders": "Folders",
+      "notes": "Notes",
+      "mindmaps": "Mindmaps",
+      "documents": "Documents",
+      "maps": "Maps"
+    },
+    "actions": {
+      "login": "Login",
+      "dossierCreate": "Case created",
+      "dossierUpdate": "Case modified",
+      "dossierDelete": "Case deleted",
+      "nodeCreate": "Element created",
+      "nodeDelete": "Element deleted",
+      "nodeRestore": "Element restored",
+      "nodePurge": "Element purged",
+      "emptyTrash": "Trash emptied",
+      "collaboratorAdd": "Collaborator added",
+      "collaboratorRemove": "Collaborator removed",
+      "commentCreate": "Comment added",
+      "commentDelete": "Comment deleted",
+      "snapshotCreate": "Snapshot created",
+      "snapshotRestore": "Snapshot restored",
+      "snapshotDelete": "Snapshot deleted",
+      "profileUpdate": "Profile updated",
+      "avatarUpload": "Avatar updated",
+      "passwordChange": "Password changed",
+      "twoFaEnable": "2FA enabled",
+      "twoFaDisable": "2FA disabled"
+    }
   }
 }

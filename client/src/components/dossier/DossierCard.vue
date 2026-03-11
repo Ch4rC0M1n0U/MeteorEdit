@@ -26,15 +26,18 @@
     </div>
     <p v-if="dossier.description" class="dc-desc">{{ dossier.description }}</p>
     <div class="dc-footer mono">
-      <span>{{ new Date(dossier.updatedAt).toLocaleDateString('fr-FR') }}</span>
+      <span>{{ new Date(dossier.updatedAt).toLocaleDateString(locale) }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { Dossier } from '../../types';
 import { SERVER_URL } from '../../services/api';
+
+const { t, locale } = useI18n();
 
 const props = defineProps<{ dossier: Dossier; isFav?: boolean }>();
 defineEmits<{ open: [id: string]; delete: [id: string]; 'toggle-favorite': [id: string] }>();
@@ -54,9 +57,9 @@ const statusDot = computed(() => {
 
 const statusLabel = computed(() => {
   switch (props.dossier.status) {
-    case 'open': return 'Ouvert';
-    case 'in_progress': return 'En cours';
-    case 'closed': return 'Clos';
+    case 'open': return t('dossier.statusOpen');
+    case 'in_progress': return t('dossier.statusInProgress');
+    case 'closed': return t('dossier.statusClosed');
     default: return props.dossier.status;
   }
 });

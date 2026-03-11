@@ -3,7 +3,7 @@
     <div class="dash-header">
       <h2 class="dash-title mono">
         <v-icon size="20" class="mr-2">mdi-view-dashboard-outline</v-icon>
-        Tableau de bord
+        {{ $t('dashboard.title') }}
       </h2>
     </div>
 
@@ -16,28 +16,28 @@
           <div class="dash-kpi-icon"><v-icon size="22">mdi-folder-multiple-outline</v-icon></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.totalDossiers }}</span>
-            <span class="dash-kpi-label">Dossiers</span>
+            <span class="dash-kpi-label">{{ $t('dashboard.dossiers') }}</span>
           </div>
         </div>
         <div class="dash-kpi glass-card">
           <div class="dash-kpi-icon"><v-icon size="22">mdi-folder-account-outline</v-icon></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.ownedDossiers }}</span>
-            <span class="dash-kpi-label">Proprietaire</span>
+            <span class="dash-kpi-label">{{ $t('dashboard.owner') }}</span>
           </div>
         </div>
         <div class="dash-kpi glass-card">
           <div class="dash-kpi-icon"><v-icon size="22">mdi-account-group-outline</v-icon></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.collabDossiers }}</span>
-            <span class="dash-kpi-label">Collaborations</span>
+            <span class="dash-kpi-label">{{ $t('dashboard.collaborations') }}</span>
           </div>
         </div>
         <div class="dash-kpi glass-card">
           <div class="dash-kpi-icon"><v-icon size="22">mdi-file-tree-outline</v-icon></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.totalNodes }}</span>
-            <span class="dash-kpi-label">Elements</span>
+            <span class="dash-kpi-label">{{ $t('dashboard.elements') }}</span>
           </div>
         </div>
       </div>
@@ -46,20 +46,20 @@
       <v-tabs v-model="activeTab" color="primary" density="compact" class="dash-tabs mb-4">
         <v-tab value="overview">
           <v-icon size="16" start>mdi-home-outline</v-icon>
-          Apercu
+          {{ $t('dashboard.overview') }}
         </v-tab>
         <v-tab value="stats">
           <v-icon size="16" start>mdi-chart-bar</v-icon>
-          Statistiques
+          {{ $t('dashboard.statistics') }}
         </v-tab>
         <v-tab value="activity">
           <v-icon size="16" start>mdi-history</v-icon>
-          Activite
+          {{ $t('dashboard.activityTab') }}
         </v-tab>
       </v-tabs>
 
       <v-tabs-window v-model="activeTab">
-        <!-- Tab: Apercu -->
+        <!-- Tab: Overview -->
         <v-tabs-window-item value="overview">
           <DashboardQuickAccess
             :last-accessed="stats.lastAccessedNodes || []"
@@ -69,7 +69,7 @@
 
           <div v-if="stats.recentDossiers?.length" class="dash-recent fade-in">
             <div class="dash-card glass-card">
-              <h3 class="dash-card-title mono">Dossiers recemment modifies</h3>
+              <h3 class="dash-card-title mono">{{ $t('dashboard.recentlyModifiedDossiers') }}</h3>
               <div class="dash-recent-list">
                 <div v-for="d in stats.recentDossiers" :key="d._id" class="dash-recent-item" @click="$emit('openDossier', d._id)">
                   <span :class="['status-dot', `status-dot--${statusDot(d.status)}`]" />
@@ -81,7 +81,7 @@
           </div>
         </v-tabs-window-item>
 
-        <!-- Tab: Statistiques -->
+        <!-- Tab: Statistics -->
         <v-tabs-window-item value="stats">
           <DashboardStats
             :node-counts-by-type="stats.nodeCountsByType || []"
@@ -94,7 +94,7 @@
 
           <div class="dash-content-row fade-in">
             <div class="dash-card glass-card dash-card--chart">
-              <h3 class="dash-card-title mono">Statuts des dossiers</h3>
+              <h3 class="dash-card-title mono">{{ $t('dashboard.dossierStatuses') }}</h3>
               <div class="dash-status-bars">
                 <div v-for="s in statusItems" :key="s.key" class="dash-status-item">
                   <div class="dash-status-head">
@@ -108,7 +108,7 @@
                 </div>
               </div>
 
-              <h3 class="dash-card-title mono mt-16">Types d'elements</h3>
+              <h3 class="dash-card-title mono mt-16">{{ $t('dashboard.elementTypes') }}</h3>
               <div class="dash-node-types">
                 <div v-for="n in nodeTypeItems" :key="n.type" class="dash-node-type">
                   <v-icon size="16" class="dash-node-icon">{{ n.icon }}</v-icon>
@@ -120,16 +120,16 @@
           </div>
         </v-tabs-window-item>
 
-        <!-- Tab: Activite -->
+        <!-- Tab: Activity -->
         <v-tabs-window-item value="activity">
           <div class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
-            <h3 class="dash-card-title mono">Activite (7 jours)</h3>
+            <h3 class="dash-card-title mono">{{ $t('dashboard.activity7days') }}</h3>
             <Line v-if="activityChartData" :data="activityChartData" :options="lineOptions" />
-            <p v-else class="dash-empty-text">Aucune activite recente</p>
+            <p v-else class="dash-empty-text">{{ $t('dashboard.noRecentActivity') }}</p>
           </div>
 
           <div class="dash-card glass-card fade-in">
-            <h3 class="dash-card-title mono">Activite recente</h3>
+            <h3 class="dash-card-title mono">{{ $t('dashboard.recentActivity') }}</h3>
             <div v-if="stats.recentActivity?.length" class="dash-activity-list">
               <div v-for="act in stats.recentActivity" :key="act._id" class="dash-activity-item">
                 <v-icon size="14" class="dash-act-icon">{{ actionIcon(act.action) }}</v-icon>
@@ -138,7 +138,7 @@
                 <span class="dash-act-time mono">{{ formatTime(act.timestamp) }}</span>
               </div>
             </div>
-            <p v-else class="dash-empty-text">Aucune activite cette semaine</p>
+            <p v-else class="dash-empty-text">{{ $t('dashboard.noActivityThisWeek') }}</p>
           </div>
         </v-tabs-window-item>
       </v-tabs-window>
@@ -148,6 +148,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Line } from 'vue-chartjs';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -159,6 +160,8 @@ import DashboardHeatmap from './DashboardHeatmap.vue';
 import DashboardStats from './DashboardStats.vue';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler);
+
+const { t } = useI18n();
 
 const emit = defineEmits<{ openDossier: [id: string] }>();
 
@@ -190,23 +193,23 @@ const statusItems = computed(() => {
   const c = stats.value.statusCounts || {};
   const total = (c.open || 0) + (c.in_progress || 0) + (c.closed || 0);
   return [
-    { key: 'open', label: 'Ouvert', dot: 'active', color: '#38bdf8', count: c.open || 0, pct: total ? ((c.open || 0) / total * 100) : 0 },
-    { key: 'in_progress', label: 'En cours', dot: 'warning', color: '#fbbf24', count: c.in_progress || 0, pct: total ? ((c.in_progress || 0) / total * 100) : 0 },
-    { key: 'closed', label: 'Clos', dot: 'error', color: '#34d399', count: c.closed || 0, pct: total ? ((c.closed || 0) / total * 100) : 0 },
+    { key: 'open', label: t('dossier.statusOpen'), dot: 'active', color: '#38bdf8', count: c.open || 0, pct: total ? ((c.open || 0) / total * 100) : 0 },
+    { key: 'in_progress', label: t('dossier.statusInProgress'), dot: 'warning', color: '#fbbf24', count: c.in_progress || 0, pct: total ? ((c.in_progress || 0) / total * 100) : 0 },
+    { key: 'closed', label: t('dossier.statusClosed'), dot: 'error', color: '#34d399', count: c.closed || 0, pct: total ? ((c.closed || 0) / total * 100) : 0 },
   ];
 });
 
-const nodeTypeMap: Record<string, { label: string; icon: string }> = {
-  folder: { label: 'Dossiers', icon: 'mdi-folder-outline' },
-  note: { label: 'Notes', icon: 'mdi-note-text-outline' },
-  mindmap: { label: 'Mindmaps', icon: 'mdi-graph-outline' },
-  document: { label: 'Documents', icon: 'mdi-file-document-outline' },
-  map: { label: 'Cartes', icon: 'mdi-map-outline' },
-};
+const nodeTypeMap = computed<Record<string, { label: string; icon: string }>>(() => ({
+  folder: { label: t('dashboard.nodeTypes.folders'), icon: 'mdi-folder-outline' },
+  note: { label: t('dashboard.nodeTypes.notes'), icon: 'mdi-note-text-outline' },
+  mindmap: { label: t('dashboard.nodeTypes.mindmaps'), icon: 'mdi-graph-outline' },
+  document: { label: t('dashboard.nodeTypes.documents'), icon: 'mdi-file-document-outline' },
+  map: { label: t('dashboard.nodeTypes.maps'), icon: 'mdi-map-outline' },
+}));
 
 const nodeTypeItems = computed(() => {
   const counts = stats.value.nodeCountsByType || [];
-  return Object.entries(nodeTypeMap).map(([type, meta]) => {
+  return Object.entries(nodeTypeMap.value).map(([type, meta]) => {
     const found = counts.find((n: any) => n._id === type);
     return { type, label: meta.label, icon: meta.icon, count: found?.count || 0 };
   });
@@ -243,28 +246,28 @@ const activityChartData = computed(() => {
   };
 });
 
-const actionLabels: Record<string, string> = {
-  'login': 'Connexion',
-  'dossier.create': 'Dossier cree',
-  'dossier.update': 'Dossier modifie',
-  'dossier.delete': 'Dossier supprime',
-  'node.create': 'Element cree',
-  'node.delete': 'Element supprime',
-  'node.restore': 'Element restaure',
-  'node.purge': 'Element purge',
-  'node.empty_trash': 'Corbeille videe',
-  'collaborator.add': 'Collaborateur ajoute',
-  'collaborator.remove': 'Collaborateur retire',
-  'comment.create': 'Commentaire ajoute',
-  'comment.delete': 'Commentaire supprime',
-  'snapshot.create': 'Snapshot cree',
-  'snapshot.restore': 'Snapshot restaure',
-  'snapshot.delete': 'Snapshot supprime',
-  'profile.update': 'Profil modifie',
-  'profile.avatar_upload': 'Avatar modifie',
-  'profile.password_change': 'Mot de passe modifie',
-  '2fa.enable': '2FA active',
-  '2fa.disable': '2FA desactive',
+const actionLabelKeys: Record<string, string> = {
+  'login': 'dashboard.actions.login',
+  'dossier.create': 'dashboard.actions.dossierCreate',
+  'dossier.update': 'dashboard.actions.dossierUpdate',
+  'dossier.delete': 'dashboard.actions.dossierDelete',
+  'node.create': 'dashboard.actions.nodeCreate',
+  'node.delete': 'dashboard.actions.nodeDelete',
+  'node.restore': 'dashboard.actions.nodeRestore',
+  'node.purge': 'dashboard.actions.nodePurge',
+  'node.empty_trash': 'dashboard.actions.emptyTrash',
+  'collaborator.add': 'dashboard.actions.collaboratorAdd',
+  'collaborator.remove': 'dashboard.actions.collaboratorRemove',
+  'comment.create': 'dashboard.actions.commentCreate',
+  'comment.delete': 'dashboard.actions.commentDelete',
+  'snapshot.create': 'dashboard.actions.snapshotCreate',
+  'snapshot.restore': 'dashboard.actions.snapshotRestore',
+  'snapshot.delete': 'dashboard.actions.snapshotDelete',
+  'profile.update': 'dashboard.actions.profileUpdate',
+  'profile.avatar_upload': 'dashboard.actions.avatarUpload',
+  'profile.password_change': 'dashboard.actions.passwordChange',
+  '2fa.enable': 'dashboard.actions.twoFaEnable',
+  '2fa.disable': 'dashboard.actions.twoFaDisable',
 };
 
 const actionIcons: Record<string, string> = {
@@ -292,7 +295,8 @@ const actionIcons: Record<string, string> = {
 };
 
 function actionLabel(action: string): string {
-  return actionLabels[action] || action;
+  const key = actionLabelKeys[action];
+  return key ? t(key) : action;
 }
 
 function actionIcon(action: string): string {

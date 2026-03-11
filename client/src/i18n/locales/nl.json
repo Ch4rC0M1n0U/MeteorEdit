@@ -858,5 +858,52 @@
     "mindmap": "Mindmap",
     "map": "Kaart",
     "dataset": "Dataset"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "dossiers": "Dossiers",
+    "owner": "Eigenaar",
+    "collaborations": "Samenwerkingen",
+    "elements": "Elementen",
+    "overview": "Overzicht",
+    "statistics": "Statistieken",
+    "activityTab": "Activiteit",
+    "recentlyModifiedDossiers": "Recent gewijzigde dossiers",
+    "dossierStatuses": "Dossierstatussen",
+    "elementTypes": "Elementtypen",
+    "activity7days": "Activiteit (7 dagen)",
+    "noRecentActivity": "Geen recente activiteit",
+    "recentActivity": "Recente activiteit",
+    "noActivityThisWeek": "Geen activiteit deze week",
+    "nodeTypes": {
+      "folders": "Mappen",
+      "notes": "Notities",
+      "mindmaps": "Mindmaps",
+      "documents": "Documenten",
+      "maps": "Kaarten"
+    },
+    "actions": {
+      "login": "Inloggen",
+      "dossierCreate": "Dossier aangemaakt",
+      "dossierUpdate": "Dossier gewijzigd",
+      "dossierDelete": "Dossier verwijderd",
+      "nodeCreate": "Element aangemaakt",
+      "nodeDelete": "Element verwijderd",
+      "nodeRestore": "Element hersteld",
+      "nodePurge": "Element gewist",
+      "emptyTrash": "Prullenbak geleegd",
+      "collaboratorAdd": "Medewerker toegevoegd",
+      "collaboratorRemove": "Medewerker verwijderd",
+      "commentCreate": "Opmerking toegevoegd",
+      "commentDelete": "Opmerking verwijderd",
+      "snapshotCreate": "Snapshot aangemaakt",
+      "snapshotRestore": "Snapshot hersteld",
+      "snapshotDelete": "Snapshot verwijderd",
+      "profileUpdate": "Profiel bijgewerkt",
+      "avatarUpload": "Avatar bijgewerkt",
+      "passwordChange": "Wachtwoord gewijzigd",
+      "twoFaEnable": "2FA ingeschakeld",
+      "twoFaDisable": "2FA uitgeschakeld"
+    }
   }
 }

@@ -858,5 +858,52 @@
     "mindmap": "Mindmap",
     "map": "Carte",
     "dataset": "Dataset"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "dossiers": "Dossiers",
+    "owner": "Propriétaire",
+    "collaborations": "Collaborations",
+    "elements": "Éléments",
+    "overview": "Aperçu",
+    "statistics": "Statistiques",
+    "activityTab": "Activité",
+    "recentlyModifiedDossiers": "Dossiers récemment modifiés",
+    "dossierStatuses": "Statuts des dossiers",
+    "elementTypes": "Types d'éléments",
+    "activity7days": "Activité (7 jours)",
+    "noRecentActivity": "Aucune activité récente",
+    "recentActivity": "Activité récente",
+    "noActivityThisWeek": "Aucune activité cette semaine",
+    "nodeTypes": {
+      "folders": "Dossiers",
+      "notes": "Notes",
+      "mindmaps": "Mindmaps",
+      "documents": "Documents",
+      "maps": "Cartes"
+    },
+    "actions": {
+      "login": "Connexion",
+      "dossierCreate": "Dossier créé",
+      "dossierUpdate": "Dossier modifié",
+      "dossierDelete": "Dossier supprimé",
+      "nodeCreate": "Élément créé",
+      "nodeDelete": "Élément supprimé",
+      "nodeRestore": "Élément restauré",
+      "nodePurge": "Élément purgé",
+      "emptyTrash": "Corbeille vidée",
+      "collaboratorAdd": "Collaborateur ajouté",
+      "collaboratorRemove": "Collaborateur retiré",
+      "commentCreate": "Commentaire ajouté",
+      "commentDelete": "Commentaire supprimé",
+      "snapshotCreate": "Snapshot créé",
+      "snapshotRestore": "Snapshot restauré",
+      "snapshotDelete": "Snapshot supprimé",
+      "profileUpdate": "Profil modifié",
+      "avatarUpload": "Avatar modifié",
+      "passwordChange": "Mot de passe modifié",
+      "twoFaEnable": "2FA activé",
+      "twoFaDisable": "2FA désactivé"
+    }
   }
 }
