@@ -33,7 +33,13 @@ async function cleanupNodeFiles(node: any): Promise<void> {
 async function checkDossierAccess(dossierId: string, userId: string): Promise<boolean> {
   const dossier = await Dossier.findById(dossierId);
   if (!dossier) return false;
+  // Embargo dossiers: only owner/collaborators, no admin bypass
   return dossier.owner.toString() === userId || dossier.collaborators.map(c => c.toString()).includes(userId);
+}
+
+async function isDossierEmbargo(dossierId: string): Promise<boolean> {
+  const dossier = await Dossier.findById(dossierId).select('isEmbargo').lean();
+  return !!dossier?.isEmbargo;
 }
 
 export async function getNodes(req: AuthRequest, res: Response): Promise<void> {
@@ -68,9 +74,11 @@ export async function createNode(req: AuthRequest, res: Response): Promise<void>
       dossierId,
       order,
     });
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.create', 'dossier', dossierId, { nodeId: node._id.toString(), type: node.type, title: node.title }, ip, ua);
+    if (!(await isDossierEmbargo(dossierId))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.create', 'dossier', dossierId, { nodeId: node._id.toString(), type: node.type, title: node.title }, ip, ua);
+    }
     res.status(201).json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -93,9 +101,11 @@ export async function updateNode(req: AuthRequest, res: Response): Promise<void>
       node.contentText = extractTextFromTipTap(req.body.content);
     }
     await node.save();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.update', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip, ua);
+    if (!(await isDossierEmbargo(node.dossierId.toString()))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.update', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip, ua);
+    }
     res.json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -126,9 +136,11 @@ export async function deleteNode(req: AuthRequest, res: Response): Promise<void>
     await softDeleteRecursive(node._id.toString());
     node.deletedAt = now;
     await node.save();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.delete', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip, ua);
+    if (!(await isDossierEmbargo(node.dossierId.toString()))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.delete', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip, ua);
+    }
     res.json({ message: 'Node moved to trash' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -181,9 +193,11 @@ export async function restoreNode(req: AuthRequest, res: Response): Promise<void
     }
     node.deletedAt = null;
     await node.save();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.restore', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip, ua);
+    if (!(await isDossierEmbargo(node.dossierId.toString()))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.restore', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title }, ip, ua);
+    }
     res.json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -214,9 +228,11 @@ export async function purgeNode(req: AuthRequest, res: Response): Promise<void> 
     await hardDeleteRecursive(node._id.toString());
     await cleanupNodeFiles(node);
     await node.deleteOne();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.purge', 'dossier', nodeDossierId, { nodeId: req.params.nodeId, title: nodeTitle }, ip, ua);
+    if (!(await isDossierEmbargo(nodeDossierId))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.purge', 'dossier', nodeDossierId, { nodeId: req.params.nodeId, title: nodeTitle }, ip, ua);
+    }
     res.json({ message: 'Node permanently deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -235,9 +251,11 @@ export async function emptyTrash(req: AuthRequest, res: Response): Promise<void>
       await cleanupNodeFiles(n);
     }
     await DossierNode.deleteMany({ dossierId, deletedAt: { $ne: null } });
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.empty_trash', 'dossier', dossierId, {}, ip, ua);
+    if (!(await isDossierEmbargo(dossierId))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.empty_trash', 'dossier', dossierId, {}, ip, ua);
+    }
     res.json({ message: 'Trash emptied' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -301,9 +319,11 @@ export async function moveNode(req: AuthRequest, res: Response): Promise<void> {
       if (ops.length) await Promise.all(ops);
     }
 
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.move', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title, oldParentId, newParentId }, ip, ua);
+    if (!(await isDossierEmbargo(node.dossierId.toString()))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.move', 'dossier', node.dossierId.toString(), { nodeId: node._id.toString(), title: node.title, oldParentId, newParentId }, ip, ua);
+    }
     res.json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -415,9 +435,11 @@ export async function duplicateNode(req: AuthRequest, res: Response): Promise<vo
       mapData: node.mapData,
     });
 
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(req.user!.userId, 'node.duplicate', 'dossier', node.dossierId.toString(), { nodeId: duplicate._id.toString(), sourceNodeId: node._id.toString(), title: duplicate.title }, ip, ua);
+    if (!(await isDossierEmbargo(node.dossierId.toString()))) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(req.user!.userId, 'node.duplicate', 'dossier', node.dossierId.toString(), { nodeId: duplicate._id.toString(), sourceNodeId: node._id.toString(), title: duplicate.title }, ip, ua);
+    }
     res.status(201).json(duplicate);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

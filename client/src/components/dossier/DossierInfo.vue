@@ -344,7 +344,7 @@
         </div>
         <div class="di-row">
           <v-checkbox v-model="form.isUrgent" :label="$t('dossier.isUrgent')" color="error" density="compact" hide-details />
-          <v-checkbox v-model="form.isEmbargo" :label="$t('dossier.isEmbargo')" color="warning" density="compact" hide-details />
+          <v-checkbox :model-value="form.isEmbargo" :label="$t('dossier.isEmbargo')" color="warning" density="compact" hide-details @update:model-value="toggleEmbargo" />
         </div>
         <div class="di-row">
           <v-select v-model="form.dossierLanguage" :items="dossierLanguageOptions" :label="$t('dossier.dossierLanguage')" style="max-width: 200px;" />
@@ -679,6 +679,44 @@ function startEdit() {
 function cancelEdit() {
   loadFromDossier();
   editing.value = false;
+}
+
+async function toggleEmbargo(newValue: boolean | null) {
+  if (!dossierStore.currentDossier) return;
+  const dossierId = dossierStore.currentDossier._id;
+
+  if (newValue) {
+    // Activation de l'embargo : afficher la modal d'avertissement
+    const confirmed = await customConfirm({
+      title: t('dossier.embargoWarningTitle'),
+      message: t('dossier.embargoWarningMessage'),
+      confirmText: t('dossier.embargoConfirm'),
+    });
+    if (!confirmed) return;
+    form.isEmbargo = true;
+
+    // Sauvegarder isEmbargo immédiatement en base AVANT le chiffrement
+    await dossierStore.updateDossier(dossierId, { isEmbargo: true });
+
+    // Auto-activer le chiffrement si pas encore actif
+    if (!encryptionEnabled.value) {
+      if (encryptionStore.hasKeys && encryptionStore.isUnlocked) {
+        await toggleEncryption(true);
+      }
+    }
+  } else {
+    // Désactivation de l'embargo
+    const confirmed = await customConfirm({
+      title: t('dossier.embargoDisableTitle'),
+      message: t('dossier.embargoDisableMessage'),
+      confirmText: t('dossier.embargoDisableConfirm'),
+    });
+    if (!confirmed) return;
+    form.isEmbargo = false;
+
+    // Sauvegarder immédiatement
+    await dossierStore.updateDossier(dossierId, { isEmbargo: false });
+  }
 }
 
 async function handleSave() {

@@ -366,9 +366,11 @@ export async function generateReport(req: AuthRequest, res: Response) {
       }
     }
 
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(userId, 'ai.generate_report', 'dossier', dossierId, { model: config.selectedModel, title: dossier.title }, ip, ua);
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(userId, 'ai.generate_report', 'dossier', dossierId, { model: config.selectedModel, title: dossier.title }, ip, ua);
+    }
 
     sendEvent({
       type: 'done',
@@ -442,9 +444,11 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
     dossier.entities![entityIndex].description = enrichedDescription;
     await dossier.save();
 
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(userId, 'entity.enrich', 'dossier', dossierId, { entityName: entity.name, entityType: entity.type }, ip, ua);
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(userId, 'entity.enrich', 'dossier', dossierId, { entityName: entity.name, entityType: entity.type }, ip, ua);
+    }
 
     res.json({ description: enrichedDescription });
   } catch (err: any) {
@@ -520,9 +524,11 @@ Fournis un resume structure en points cles (bullet points). Sois concis mais com
     if (!response.ok) throw new Error(`Ollama status ${response.status}`);
     const data = await response.json() as { response?: string };
 
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(userId, 'ai.summarize', nodeId ? 'node' : 'dossier', nodeId || dossierId, { title: targetTitle }, ip, ua);
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(userId, 'ai.summarize', nodeId ? 'node' : 'dossier', nodeId || dossierId, { title: targetTitle }, ip, ua);
+    }
 
     res.json({ summary: data.response?.trim() || '' });
   } catch (err: any) {

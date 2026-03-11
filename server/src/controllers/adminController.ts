@@ -2,8 +2,15 @@ import { Response } from 'express';
 import crypto from 'crypto';
 import User from '../models/User';
 import ActivityLog from '../models/ActivityLog';
+import Dossier from '../models/Dossier';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
+
+/** Get IDs of all embargo dossiers to exclude from audit logs */
+async function getEmbargoDossierIds(): Promise<string[]> {
+  const embargoDossiers = await Dossier.find({ isEmbargo: true }).select('_id').lean();
+  return embargoDossiers.map(d => d._id.toString());
+}
 
 export async function listUsers(_req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -121,7 +128,12 @@ export async function getAuditLogs(req: AuthRequest, res: Response): Promise<voi
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 30));
     const skip = (page - 1) * limit;
 
+    // Exclude logs related to embargo dossiers
+    const embargoIds = await getEmbargoDossierIds();
     const filter: any = {};
+    if (embargoIds.length > 0) {
+      filter.targetId = { $nin: embargoIds };
+    }
     if (req.query.userId) filter.userId = req.query.userId;
     if (req.query.action) filter.action = req.query.action;
     if (req.query.targetType) filter.targetType = req.query.targetType;
@@ -166,17 +178,21 @@ export async function getAuditStats(_req: AuthRequest, res: Response): Promise<v
     const weekStart = new Date(todayStart);
     weekStart.setDate(weekStart.getDate() - 7);
 
+    // Exclude embargo dossier logs from stats
+    const embargoIds = await getEmbargoDossierIds();
+    const embargoFilter = embargoIds.length > 0 ? { targetId: { $nin: embargoIds } } : {};
+
     const [todayCount, weekCount, topUsersRaw, topActionsRaw] = await Promise.all([
-      ActivityLog.countDocuments({ timestamp: { $gte: todayStart } }),
-      ActivityLog.countDocuments({ timestamp: { $gte: weekStart } }),
+      ActivityLog.countDocuments({ timestamp: { $gte: todayStart }, ...embargoFilter }),
+      ActivityLog.countDocuments({ timestamp: { $gte: weekStart }, ...embargoFilter }),
       ActivityLog.aggregate([
-        { $match: { timestamp: { $gte: weekStart } } },
+        { $match: { timestamp: { $gte: weekStart }, ...embargoFilter } },
         { $group: { _id: '$userId', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 },
       ]),
       ActivityLog.aggregate([
-        { $match: { timestamp: { $gte: weekStart } } },
+        { $match: { timestamp: { $gte: weekStart }, ...embargoFilter } },
         { $group: { _id: '$action', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 10 },

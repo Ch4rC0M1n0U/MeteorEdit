@@ -12,6 +12,11 @@ async function checkAccess(dossierId: string, userId: string): Promise<boolean> 
   return dossier.owner.toString() === userId || dossier.collaborators.map(c => c.toString()).includes(userId);
 }
 
+async function isDossierEmbargo(dossierId: string): Promise<boolean> {
+  const dossier = await Dossier.findById(dossierId).select('isEmbargo').lean();
+  return !!dossier?.isEmbargo;
+}
+
 export async function listTasks(req: AuthRequest, res: Response): Promise<void> {
   const dossierId = req.params.dossierId as string;
   if (!(await checkAccess(dossierId, req.user!.userId))) {
@@ -48,8 +53,10 @@ export async function createTask(req: AuthRequest, res: Response): Promise<void>
     { path: 'createdBy', select: 'firstName lastName' },
   ]);
 
-  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-  await logActivity(userId, 'task.create', 'dossier', dossierId, { taskId: task._id.toString(), title }, ip);
+  if (!(await isDossierEmbargo(dossierId))) {
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'task.create', 'dossier', dossierId, { taskId: task._id.toString(), title }, ip);
+  }
 
   if (assigneeId && assigneeId !== userId) {
     const creator = await User.findById(userId);
@@ -96,8 +103,10 @@ export async function updateTask(req: AuthRequest, res: Response): Promise<void>
     { path: 'createdBy', select: 'firstName lastName' },
   ]);
 
-  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-  await logActivity(userId, 'task.update', 'dossier', task.dossierId.toString(), { taskId, changes: req.body }, ip);
+  if (!(await isDossierEmbargo(task.dossierId.toString()))) {
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'task.update', 'dossier', task.dossierId.toString(), { taskId, changes: req.body }, ip);
+  }
 
   // Notify new assignee if changed
   const newAssignee = task.assigneeId?.toString() || null;
@@ -139,8 +148,10 @@ export async function deleteTask(req: AuthRequest, res: Response): Promise<void>
     return;
   }
 
-  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-  await logActivity(userId, 'task.delete', 'dossier', task.dossierId.toString(), { taskId, title: task.title }, ip);
+  if (!(await isDossierEmbargo(task.dossierId.toString()))) {
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'task.delete', 'dossier', task.dossierId.toString(), { taskId, title: task.title }, ip);
+  }
 
   await task.deleteOne();
   res.json({ ok: true });

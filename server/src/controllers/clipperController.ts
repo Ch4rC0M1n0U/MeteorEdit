@@ -480,9 +480,12 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
       });
     }
 
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    const ua = req.headers['user-agent'] || '';
-    await logActivity(userId, 'clip.create', 'dossier', dossierId, { nodeId: node._id.toString(), url, title }, ip, ua);
+    const dossierDoc = await Dossier.findById(dossierId).select('isEmbargo').lean();
+    if (!dossierDoc?.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      await logActivity(userId, 'clip.create', 'dossier', dossierId, { nodeId: node._id.toString(), url, title }, ip, ua);
+    }
 
     res.status(201).json(node);
   } catch (error) {

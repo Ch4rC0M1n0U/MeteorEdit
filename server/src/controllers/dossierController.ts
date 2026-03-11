@@ -8,6 +8,11 @@ import { logActivity } from '../utils/activityLogger';
 import { createNotification } from '../utils/notifier';
 import User from '../models/User';
 
+/** Check if user is owner or collaborator of a dossier */
+function isOwnerOrCollaborator(dossier: any, userId: string): boolean {
+  return dossier.owner.toString() === userId || dossier.collaborators.some((c: any) => (c._id || c).toString() === userId);
+}
+
 export async function listDossiers(req: AuthRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -26,8 +31,10 @@ export async function createDossier(req: AuthRequest, res: Response): Promise<vo
       ...req.body,
       owner: req.user!.userId,
     });
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.create', 'dossier', dossier._id.toString(), { title: dossier.title }, ip, req.headers['user-agent'] || '');
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(req.user!.userId, 'dossier.create', 'dossier', dossier._id.toString(), { title: dossier.title }, ip, req.headers['user-agent'] || '');
+    }
     res.status(201).json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -42,8 +49,8 @@ export async function getDossier(req: AuthRequest, res: Response): Promise<void>
       return;
     }
     const userId = req.user!.userId;
-    const collabIds = dossier.collaborators.map((c: any) => (c._id || c).toString());
-    if (dossier.owner.toString() !== userId && !collabIds.includes(userId)) {
+    // Embargo: only owner/collaborators can access, even admin is blocked
+    if (!isOwnerOrCollaborator(dossier, userId)) {
       res.status(403).json({ message: 'Access denied' });
       return;
     }
@@ -66,8 +73,10 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
     }
     Object.assign(dossier, req.body);
     await dossier.save();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title }, ip, req.headers['user-agent'] || '');
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title }, ip, req.headers['user-agent'] || '');
+    }
     if (dossier.collaborators.length > 0) {
       const actor = await User.findById(req.user!.userId).select('firstName lastName');
       const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Un utilisateur';
@@ -95,10 +104,13 @@ export async function deleteDossier(req: AuthRequest, res: Response): Promise<vo
       res.status(403).json({ message: 'Only owner can delete dossier' });
       return;
     }
+    const wasEmbargo = dossier.isEmbargo;
     await DossierNode.deleteMany({ dossierId: dossier._id });
     await dossier.deleteOne();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.delete', 'dossier', req.params.id as string, { title: dossier.title }, ip, req.headers['user-agent'] || '');
+    if (!wasEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(req.user!.userId, 'dossier.delete', 'dossier', req.params.id as string, { title: dossier.title }, ip, req.headers['user-agent'] || '');
+    }
     res.json({ message: 'Dossier deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -120,12 +132,14 @@ export async function updateCollaborators(req: AuthRequest, res: Response): Prom
     dossier.collaborators = req.body.collaborators || [];
     await dossier.save();
     const currentCollabs = dossier.collaborators.map(c => c.toString());
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const added = currentCollabs.filter(c => !previousCollabs.includes(c));
     const removed = previousCollabs.filter(c => !currentCollabs.includes(c));
-    const ua = req.headers['user-agent'] || '';
-    for (const uid of added) await logActivity(req.user!.userId, 'collaborator.add', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip, ua);
-    for (const uid of removed) await logActivity(req.user!.userId, 'collaborator.remove', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip, ua);
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      const ua = req.headers['user-agent'] || '';
+      for (const uid of added) await logActivity(req.user!.userId, 'collaborator.add', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip, ua);
+      for (const uid of removed) await logActivity(req.user!.userId, 'collaborator.remove', 'dossier', dossier._id.toString(), { collaboratorId: uid }, ip, ua);
+    }
     const actor = await User.findById(req.user!.userId).select('firstName lastName');
     const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Un utilisateur';
     for (const uid of added) {
@@ -166,8 +180,10 @@ export async function uploadDossierLogo(req: AuthRequest, res: Response): Promis
     dossier.logoPath = `uploads/${req.file.filename}`;
     dossier.icon = null;
     await dossier.save();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_upload' }, ip, req.headers['user-agent'] || '');
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_upload' }, ip, req.headers['user-agent'] || '');
+    }
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -185,8 +201,10 @@ export async function deleteDossierLogo(req: AuthRequest, res: Response): Promis
       dossier.logoPath = null;
       await dossier.save();
     }
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_delete' }, ip, req.headers['user-agent'] || '');
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'logo_delete' }, ip, req.headers['user-agent'] || '');
+    }
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -209,8 +227,10 @@ export async function uploadLinkedDocument(req: AuthRequest, res: Response): Pro
       uploadedAt: new Date(),
     } as any);
     await dossier.save();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'linked_document_upload', fileName: req.file.originalname }, ip, req.headers['user-agent'] || '');
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'linked_document_upload', fileName: req.file.originalname }, ip, req.headers['user-agent'] || '');
+    }
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -232,8 +252,10 @@ export async function deleteLinkedDocument(req: AuthRequest, res: Response): Pro
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     dossier.linkedDocuments = dossier.linkedDocuments.filter((d: any) => d._id.toString() !== docId) as any;
     await dossier.save();
-    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'linked_document_delete', fileName: doc.fileName }, ip, req.headers['user-agent'] || '');
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'linked_document_delete', fileName: doc.fileName }, ip, req.headers['user-agent'] || '');
+    }
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
