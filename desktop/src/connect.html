@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MeteorEdit — Connexion</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -33,7 +33,7 @@
       position: relative;
       z-index: 1;
       display: flex;
-      height: 100vh;
+      height: calc(100vh - 36px);
     }
 
     /* Left panel — branding */
@@ -272,16 +272,48 @@
       flex-shrink: 0;
     }
 
-    /* Window controls area (drag region) */
+    /* Custom titlebar */
     .titlebar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      height: 32px;
+      height: 36px;
       -webkit-app-region: drag;
       z-index: 100;
+      background: rgba(15, 15, 26, 0.95);
+      display: flex;
+      align-items: center;
+      padding-left: 12px;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
+
+    .titlebar-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #635BFF 0%, #4840CC 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .titlebar-icon svg {
+      width: 12px;
+      height: 12px;
+      fill: white;
+    }
+
+    .titlebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 0.01em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
 
     /* Hints */
     .hints {
@@ -309,7 +341,14 @@
   </style>
 </head>
 <body>
-  <div class="titlebar"></div>
+  <div class="titlebar">
+    <div class="titlebar-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+      </svg>
+    </div>
+    <span class="titlebar-title">MeteorEdit</span>
+  </div>
   <div class="bg-gradient"></div>
 
   <div class="layout">

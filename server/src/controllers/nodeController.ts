@@ -112,6 +112,26 @@ export async function updateNode(req: AuthRequest, res: Response): Promise<void>
   }
 }
 
+export async function viewNode(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const node = await DossierNode.findById(req.params.nodeId).select('dossierId title type').lean();
+    if (!node) {
+      res.status(404).json({ message: 'Node not found' });
+      return;
+    }
+    if (!(await checkDossierAccess(node.dossierId.toString(), req.user!.userId))) {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(req.user!.userId, 'node.view', 'node', node._id.toString(), { dossierId: node.dossierId.toString(), type: node.type, title: node.title }, ip, ua);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function deleteNode(req: AuthRequest, res: Response): Promise<void> {
   try {
     const node = await DossierNode.findById(req.params.nodeId);

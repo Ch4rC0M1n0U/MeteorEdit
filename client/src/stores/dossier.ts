@@ -396,6 +396,9 @@ export const useDossierStore = defineStore('dossier', () => {
 
   function selectNode(node: DossierNode | null) {
     selectedNode.value = node;
+    if (node?._id) {
+      api.post(`/nodes/${node._id}/view`).catch(() => {});
+    }
   }
 
   // Fallback: used when Yjs collaboration is not available.

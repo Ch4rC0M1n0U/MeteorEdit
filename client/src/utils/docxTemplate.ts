@@ -8,8 +8,8 @@ import {
   type ParagraphChild,
 } from 'docx';
 import { saveAs } from 'file-saver';
-import type { PdfTemplateConfig, FontFamily } from './pdfTemplate';
-import { loadPdfTemplate, loadImageAsDataUrl, resolveLogoUrl } from './pdfTemplate';
+import type { PdfTemplateConfig, FontFamily } from './pdfmakeRenderer';
+import { loadPdfTemplate, loadImageAsDataUrl, resolveLogoUrl } from './pdfmakeRenderer';
 import type { ContentBlock } from './contentBlocks';
 import { blocksToPlainText } from './contentBlocks';
 

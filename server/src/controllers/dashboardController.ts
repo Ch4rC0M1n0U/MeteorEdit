@@ -60,7 +60,7 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
 
     // --- Last accessed nodes ---
     const nodeActions = await ActivityLog.find({
-      userId, action: { $in: ['node.create', 'node.update'] }, timestamp: { $gte: sevenDaysAgo },
+      userId, action: { $in: ['node.create', 'node.update', 'node.view'] }, timestamp: { $gte: sevenDaysAgo },
     }).sort({ timestamp: -1 }).limit(20).lean();
 
     const seenNodeIds = new Set<string>();

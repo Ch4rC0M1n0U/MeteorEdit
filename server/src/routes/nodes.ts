@@ -4,7 +4,7 @@ import { upload } from '../config/upload';
 import {
   getNodes, createNode, updateNode,
   deleteNode, moveNode, duplicateNode, uploadFile, uploadImage, deleteUploadedFile, mentionUser,
-  getTrash, restoreNode, purgeNode, emptyTrash,
+  getTrash, restoreNode, purgeNode, emptyTrash, viewNode,
 } from '../controllers/nodeController';
 import { getComments, createComment, deleteComment, getCommentCount } from '../controllers/commentController';
 
@@ -193,6 +193,7 @@ router.delete('/dossiers/:id/trash', emptyTrash);
  *         description: Noeud non trouve
  */
 router.put('/nodes/:nodeId', updateNode);
+router.post('/nodes/:nodeId/view', viewNode);
 router.delete('/nodes/:nodeId', deleteNode);
 
 /**

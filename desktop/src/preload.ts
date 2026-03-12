@@ -28,4 +28,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => { ipcRenderer.removeListener('update-downloaded', handler); };
   },
   installUpdate: (): void => ipcRenderer.send('install-update'),
+  setTitleBarOverlay: (options: { color: string; symbolColor: string; height: number }): void =>
+    ipcRenderer.send('set-titlebar-overlay', options),
 });

@@ -25,6 +25,12 @@ function createWindow(): void {
     title: 'MeteorEdit',
     icon: path.join(__dirname, '..', 'resources', 'icon.ico'),
     autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#0f0f1a',
+      symbolColor: '#e0e0e0',
+      height: 36,
+    },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -56,6 +62,126 @@ function createWindow(): void {
     if (!isQuitting && store.get('minimizeToTray') && mainWindow) {
       event.preventDefault();
       mainWindow.hide();
+    }
+  });
+
+  // Inject custom titlebar into remote pages
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (!mainWindow) return;
+    const currentUrl = mainWindow.webContents.getURL();
+    // Only inject into remote server pages, not connect.html (which has its own titlebar)
+    if (currentUrl.startsWith('http')) {
+      mainWindow.webContents.insertCSS(`
+        .me-desktop-titlebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 36px;
+          background: var(--me-bg-surface, #111827);
+          display: flex;
+          align-items: center;
+          padding-left: 12px;
+          gap: 10px;
+          -webkit-app-region: drag;
+          z-index: 99999;
+          border-bottom: 1px solid var(--me-border, rgba(99,179,237,0.12));
+          font-family: var(--me-font-mono, 'JetBrains Mono'), monospace;
+          transition: background 0.2s, border-color 0.2s;
+        }
+        .me-desktop-titlebar * {
+          -webkit-app-region: drag;
+        }
+        .me-desktop-titlebar-icon {
+          width: 18px;
+          height: 18px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          overflow: hidden;
+        }
+        .me-desktop-titlebar-icon svg {
+          width: 12px;
+          height: 12px;
+          fill: var(--me-accent, #38bdf8);
+        }
+        .me-desktop-titlebar-icon img {
+          width: 18px;
+          height: 18px;
+          object-fit: contain;
+          border-radius: 3px;
+        }
+        .me-desktop-titlebar-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--me-text-primary, #e2e8f0);
+          opacity: 0.7;
+          letter-spacing: 0.01em;
+          transition: color 0.2s;
+        }
+        #app {
+          margin-top: 36px !important;
+          height: calc(100% - 36px) !important;
+        }
+      `);
+      mainWindow.webContents.executeJavaScript(`
+        (function() {
+          if (document.querySelector('.me-desktop-titlebar')) return;
+
+          const tb = document.createElement('div');
+          tb.className = 'me-desktop-titlebar';
+          tb.innerHTML = '<div class="me-desktop-titlebar-icon" id="me-tb-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></div><span class="me-desktop-titlebar-title" id="me-tb-title"></span>';
+          document.body.prepend(tb);
+
+          // Update title from document.title (set by branding store)
+          function updateTitle() {
+            const el = document.getElementById('me-tb-title');
+            if (el) el.textContent = document.title || 'MeteorEdit';
+          }
+          updateTitle();
+          new MutationObserver(updateTitle).observe(
+            document.querySelector('title') || document.head,
+            { childList: true, subtree: true, characterData: true }
+          );
+
+          // Update logo from branding (check for logo img in AppBar)
+          let logoFound = false;
+          function updateLogo() {
+            if (logoFound) return;
+            const iconEl = document.getElementById('me-tb-icon');
+            if (!iconEl) return;
+            const appBarLogo = document.querySelector('img.me-appbar-logo');
+            if (appBarLogo && appBarLogo.src) {
+              logoFound = true;
+              iconEl.style.background = 'none';
+              iconEl.innerHTML = '';
+              const img = document.createElement('img');
+              img.src = appBarLogo.src;
+              iconEl.appendChild(img);
+            }
+          }
+          setTimeout(updateLogo, 2000);
+          setTimeout(updateLogo, 4000);
+
+          // Sync titlebar overlay colors with theme
+          function syncOverlayTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+            const style = getComputedStyle(document.documentElement);
+            const bg = style.getPropertyValue('--me-bg-surface').trim() || (isDark ? '#111827' : '#ffffff');
+            const sym = isDark ? '#e2e8f0' : '#0f172a';
+            if (window.electronAPI && window.electronAPI.setTitleBarOverlay) {
+              window.electronAPI.setTitleBarOverlay({ color: bg, symbolColor: sym, height: 36 });
+            }
+          }
+          syncOverlayTheme();
+          new MutationObserver(syncOverlayTheme).observe(
+            document.documentElement,
+            { attributes: true, attributeFilter: ['data-theme'] }
+          );
+        })();
+      `);
     }
   });
 
@@ -98,6 +224,12 @@ function registerIpcHandlers(): void {
 
   ipcMain.on('install-update', () => {
     autoUpdater.quitAndInstall();
+  });
+
+  ipcMain.on('set-titlebar-overlay', (_event, options: { color: string; symbolColor: string; height: number }) => {
+    if (mainWindow) {
+      mainWindow.setTitleBarOverlay(options);
+    }
   });
 }
 

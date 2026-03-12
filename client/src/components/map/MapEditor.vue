@@ -158,6 +158,7 @@
           <v-icon size="16">mdi-format-list-bulleted</v-icon>
           <span v-if="markers.length + drawings.length + entities.length" class="me-marker-badge">{{ markers.length + drawings.length + entities.length }}</span>
         </button>
+        <slot name="toolbar-end" />
       </div>
     </div>
 
@@ -2176,7 +2177,7 @@ watch(() => props.nodeId, (_newId, oldId) => {
   border-left: 1px solid var(--me-border);
   transform: translateX(100%);
   transition: transform 0.25s ease;
-  z-index: 10;
+  z-index: 60;
   display: flex;
   flex-direction: column;
 }

@@ -37,7 +37,13 @@
       </div>
 
       <div class="es-footer">
-        <span class="es-count mono">{{ $t('dossier.selectedCount', { count: selectedIds.size, total: allNodes.length }) }}</span>
+        <div class="es-footer-left">
+          <span class="es-count mono">{{ $t('dossier.selectedCount', { count: selectedIds.size, total: allNodes.length }) }}</span>
+          <label class="es-toc-check">
+            <input type="checkbox" v-model="includeToc" />
+            <span>{{ $t('dossier.includeToc') }}</span>
+          </label>
+        </div>
         <div class="es-footer-btns">
           <button class="es-btn es-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
           <button class="es-btn es-btn--print" @click="doExport('print')" :disabled="selectedIds.size === 0">
@@ -69,7 +75,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  export: [format: 'pdf' | 'docx' | 'print', selectedIds: string[]];
+  export: [format: 'pdf' | 'docx' | 'print', selectedIds: string[], includeToc: boolean];
 }>();
 
 const NODE_ICONS: Record<string, string> = {
@@ -82,6 +88,7 @@ const NODE_ICONS: Record<string, string> = {
 };
 
 const selectedIds = ref<Set<string>>(new Set());
+const includeToc = ref(true);
 
 const allNodes = computed(() => props.nodes.filter(n => !n.deletedAt));
 
@@ -158,7 +165,7 @@ function toggleNode(nodeId: string) {
 }
 
 function doExport(format: 'pdf' | 'docx' | 'print') {
-  emit('export', format, Array.from(selectedIds.value));
+  emit('export', format, Array.from(selectedIds.value), includeToc.value);
   model.value = false;
 }
 
@@ -251,7 +258,13 @@ const ExportNodeItem = defineComponent({
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 18px; border-top: 1px solid var(--me-border);
 }
+.es-footer-left { display: flex; flex-direction: column; gap: 4px; }
 .es-count { font-size: 12px; color: var(--me-text-muted); }
+.es-toc-check {
+  display: flex; align-items: center; gap: 6px; font-size: 12px;
+  color: var(--me-text-secondary); cursor: pointer; user-select: none;
+}
+.es-toc-check input { accent-color: var(--me-accent); cursor: pointer; }
 .es-footer-btns { display: flex; gap: 8px; }
 
 .es-btn {
