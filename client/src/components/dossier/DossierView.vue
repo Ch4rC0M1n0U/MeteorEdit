@@ -520,7 +520,12 @@ import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
-import { loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, createPdfBuilder, cleanControlChars, type PdfBuilder } from '../../utils/pdfTemplate';
+import {
+  loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, cleanControlChars,
+  blocksToContent, resolveBlockImages, buildDocDefinition, generatePdfBlob,
+  renderHeading, type TocEntry as PdfTocEntry, type PdfBuildOptions,
+} from '../../utils/pdfmakeRenderer';
+import type { Content } from 'pdfmake/interfaces';
 import { generateDocx, type DocxExportData } from '../../utils/docxTemplate';
 import { convertTipTapToBlocks } from '../../utils/contentBlocks';
 import { tiptapJsonToHtml } from '../../utils/tiptapToHtml';
@@ -831,19 +836,19 @@ function closeAiReport() {
 async function downloadAiReportAsPdf() {
   if (!aiReportContent.value || !dossierStore.currentDossier) return;
   try {
-    const { jsPDF } = await import('jspdf');
     const dossier = dossierStore.currentDossier;
     const tpl = loadPdfTemplate();
     const logos = await loadTemplateLogos(tpl, SERVER_URL);
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const b = await createPdfBuilder(doc, tpl, logos);
 
     const infoLines: string[] = [];
     infoLines.push(`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`);
     if (aiReportModel.value) infoLines.push(cleanControlChars(`Mod\u00E8le: ${aiReportModel.value}`));
-    if (dossier.investigator) infoLines.push(cleanControlChars(`Enqu\u00EAteur: ${dossier.investigator}`));
-    b.drawReportHeader(cleanControlChars(dossier.title), infoLines);
+    if (dossier.investigator) {
+      const invName = typeof dossier.investigator === 'string' ? dossier.investigator : dossier.investigator?.name || '';
+      if (invName) infoLines.push(cleanControlChars(`Enqu\u00EAteur: ${invName}`));
+    }
 
+    // Parse AI markdown into sections and build pdfmake content
     const aiText = aiReportContent.value;
     const sectionRegex = /^#{1,3}\s+(.+)$/gm;
     const sections: Array<{ title: string; body: string }> = [];
@@ -866,18 +871,41 @@ async function downloadAiReportAsPdf() {
       sections.push({ title: '', body: aiText });
     }
 
+    const pdfContent: Content[] = [];
     for (const section of sections) {
-      if (section.title) b.addSectionTitle(cleanControlChars(section.title));
+      if (section.title) {
+        pdfContent.push(renderHeading(cleanControlChars(section.title), 'h2', tpl));
+      }
       if (section.body) {
         for (const para of section.body.split(/\n\s*\n/)) {
           const trimmed = para.trim();
-          if (trimmed) b.addBody(cleanControlChars(trimmed));
+          if (trimmed) {
+            pdfContent.push({
+              text: cleanControlChars(trimmed),
+              fontSize: tpl.body.fontSize,
+              color: tpl.body.color,
+              margin: [0, 0, 0, 3] as [number, number, number, number],
+            });
+          }
         }
       }
     }
 
-    await addSignatureBlock(b);
-    const blob = b.finalize();
+    // Signature
+    const sigData = getSignatureData();
+    const signatureImage = sigData.image ? await sigData.image : undefined;
+
+    const opts: PdfBuildOptions = {
+      dossierTitle: cleanControlChars(dossier.title),
+      infoLines,
+      content: pdfContent,
+      closingCity: sigData.city,
+      signatureImage,
+      signatureLines: sigData.lines,
+    };
+
+    const docDef = buildDocDefinition(tpl, logos, opts);
+    const blob = await generatePdfBlob(docDef);
     downloadBlob(blob, `Rapport_OSINT_IA_${dossier.title}.pdf`);
     aiReportDialog.value = false;
   } catch (err) {
@@ -928,7 +956,10 @@ async function downloadAiReportAsDocx() {
     const aiInfoLines: string[] = [];
     aiInfoLines.push(`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`);
     if (aiReportModel.value) aiInfoLines.push(`Mod\u00E8le: ${aiReportModel.value}`);
-    if (dossier.investigator) aiInfoLines.push(`Enqu\u00EAteur: ${dossier.investigator}`);
+    if (dossier.investigator) {
+      const invName = typeof dossier.investigator === 'string' ? dossier.investigator : dossier.investigator?.name || '';
+      if (invName) aiInfoLines.push(`Enqu\u00EAteur: ${invName}`);
+    }
 
     const data: DocxExportData = {
       dossierTitle: dossier.title,
@@ -1354,45 +1385,23 @@ function printDossier(selectedNodeIds?: string[]) {
   };
 }
 
-async function addSignatureBlock(b: PdfBuilder) {
-  const { doc } = b;
-  const rightX = b.pageW - b.margin;
-  const closingDate = new Date().toLocaleDateString('fr-FR');
-
-  b.checkPage(60);
-  b.y += 10;
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  const city = (authStore.user as any)?.signature?.city || 'Bruxelles';
-  doc.text(`${city}, le ${closingDate}`, rightX, b.y, { align: 'right' });
-  b.y += 8;
-
-  // Signature image
-  const sigImgPath = (authStore.user as any)?.signatureImagePath;
-  if (sigImgPath) {
-    try {
-      const imgData = await loadImageAsDataUrl(`${SERVER_URL}/${sigImgPath}`);
-      if (imgData) {
-        b.checkPage(35);
-        doc.addImage(imgData, 'PNG', rightX - 50, b.y, 50, 20);
-        b.y += 24;
-      }
-    } catch { /* skip */ }
-  }
-
-  // Signature text
+function getSignatureData(): { city?: string; image?: Promise<string | undefined>; lines: string[] } {
   const sig = (authStore.user as any)?.signature;
-  if (sig?.name) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    if (sig.title) { doc.text(sig.title, rightX, b.y, { align: 'right' }); b.y += 5; }
-    doc.text(sig.name, rightX, b.y, { align: 'right' }); b.y += 5;
-    doc.setFont('helvetica', 'normal');
-    if (sig.service) { doc.text(sig.service, rightX, b.y, { align: 'right' }); b.y += 5; }
-    if (sig.unit) { doc.text(sig.unit, rightX, b.y, { align: 'right' }); b.y += 5; }
-    if (sig.email) { doc.text(sig.email, rightX, b.y, { align: 'right' }); b.y += 5; }
+  const sigImgPath = (authStore.user as any)?.signatureImagePath;
+  const city = sig?.city || 'Bruxelles';
+  const lines: string[] = [];
+  if (sig?.title) lines.push(sig.title);
+  if (sig?.name) lines.push(sig.name);
+  if (sig?.service) lines.push(sig.service);
+  if (sig?.unit) lines.push(sig.unit);
+  if (sig?.email) lines.push(sig.email);
+
+  let imagePromise: Promise<string | undefined> | undefined;
+  if (sigImgPath) {
+    imagePromise = loadImageAsDataUrl(`${SERVER_URL}/${sigImgPath}`).catch(() => undefined);
   }
+
+  return { city, image: imagePromise, lines };
 }
 
 // ── Section numbering ──────────────────────────────────────────────
@@ -1454,7 +1463,12 @@ function buildDossierInfoLines(dossier: any): string[] {
   const lines: string[] = [];
   lines.push(new Date().toLocaleDateString('fr-FR'));
   if (dossier.status) lines.push(`Statut: ${dossier.status}`);
-  if (dossier.investigator) lines.push(`Enqu\u00EAteur: ${dossier.investigator}`);
+  if (dossier.investigator) {
+    const invName = typeof dossier.investigator === 'string'
+      ? dossier.investigator
+      : dossier.investigator?.name || '';
+    if (invName) lines.push(`Enqu\u00EAteur: ${invName}`);
+  }
   if ((dossier as any).magistrate) lines.push(`Magistrat: ${(dossier as any).magistrate}`);
   if ((dossier as any).classification) lines.push(`Classification: ${(dossier as any).classification}`);
   if (dossier.entities?.length) {
@@ -1463,109 +1477,105 @@ function buildDossierInfoLines(dossier: any): string[] {
   return lines;
 }
 
-// Walk node tree recursively for PDF export
-async function walkTreePdf(
+// Walk node tree recursively for PDF export (pdfmake content)
+async function walkTreeContent(
   allNodes: any[],
   parentId: string | null,
   depth: number,
-  b: PdfBuilder,
   counter: SectionCounter,
-) {
+  tpl: any,
+): Promise<Content[]> {
   const children = allNodes
     .filter((n: any) => n.parentId === parentId && !n.deletedAt)
     .sort((a: any, b: any) => a.order - b.order);
 
   const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
+  const content: Content[] = [];
 
   for (const node of children) {
     if (node.type === 'folder') {
       const num = nextSectionNumber(counter, hl);
-      b.addHeading(`${num} ${cleanControlChars(node.title)}`, hl);
-      await walkTreePdf(allNodes, node._id, depth + 1, b, counter);
+      content.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, hl, tpl));
+      const subContent = await walkTreeContent(allNodes, node._id, depth + 1, counter, tpl);
+      content.push(...subContent);
     } else if (node.type === 'note') {
       const num = nextSectionNumber(counter, hl);
-      b.addHeading(`${num} ${cleanControlChars(node.title)}`, hl);
+      content.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, hl, tpl));
       if (node.content) {
         const blocks = convertTipTapToBlocks(node.content);
-        await b.renderBlocks(blocks);
+        await resolveBlockImages(blocks);
+        content.push(...blocksToContent(blocks));
       }
     }
   }
+  return content;
 }
 
 async function exportPDF(selectedNodeIds?: string[], includeToc = false) {
   if (!dossierStore.currentDossier) return;
   try {
-    const { jsPDF } = await import('jspdf');
     const dossier = dossierStore.currentDossier;
     const allNodes = dossierStore.nodes;
     const nodes = selectedNodeIds ? allNodes.filter(n => selectedNodeIds.includes(n._id)) : allNodes;
     const tpl = loadPdfTemplate();
     const logos = await loadTemplateLogos(tpl, SERVER_URL);
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const b = await createPdfBuilder(doc, tpl, logos);
-
-    // Title + info
-    b.drawReportHeader(cleanControlChars(dossier.title), buildDossierInfoLines(dossier).map(cleanControlChars));
 
     // Collect orphans for both TOC and rendering
     const nodeIds = new Set(nodes.map((n: any) => n._id));
     const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt)
       .sort((a: any, b: any) => a.order - b.order);
 
-    // Table of contents (without page numbers)
+    // TOC entries
+    let tocEntries: PdfTocEntry[] | undefined;
     if (includeToc) {
       const tocCounter: SectionCounter = [0, 0, 0];
-      const tocEntries = collectTocEntries(nodes, null, 1, tocCounter);
-      // Also collect orphan entries for TOC
+      const rawToc = collectTocEntries(nodes, null, 1, tocCounter);
       for (const node of orphans) {
         if (node.type === 'folder' || node.type === 'note') {
           const num = nextSectionNumber(tocCounter, 'h1');
-          tocEntries.push({ title: `${num} ${cleanControlChars(node.title)}`, level: 'h1', number: num });
+          rawToc.push({ title: `${num} ${cleanControlChars(node.title)}`, level: 'h1', number: num });
         }
       }
-
-      if (tocEntries.length > 0) {
-        b.addHeading('Table des matières', 'h1');
-        const fontSize = tpl.body.fontSize;
-        const lh = tpl.spacing?.lineHeight || 1.4;
-        const lineH = fontSize * 0.3528 * lh;
-
-        for (const entry of tocEntries) {
-          const indent = entry.level === 'h1' ? 0 : entry.level === 'h2' ? 8 : 16;
-          const isBold = entry.level === 'h1';
-          b.checkPage(lineH + 2);
-          doc.setFontSize(fontSize);
-          doc.setFont('NotoSans', isBold ? 'bold' : 'normal');
-          doc.setTextColor(0);
-          doc.text(entry.title, b.margin + indent, b.y + fontSize * 0.3528 * 0.75);
-          b.y += lineH;
-        }
-        b.y += 4;
-      }
+      tocEntries = rawToc.map(e => ({ title: e.title, level: e.level }));
     }
 
-    // Walk node tree respecting hierarchy
+    // Walk node tree to build content
     const counter: SectionCounter = [0, 0, 0];
-    await walkTreePdf(nodes, null, 1, b, counter);
+    const pdfContent: Content[] = await walkTreeContent(nodes, null, 1, counter, tpl);
 
-    // Nodes without parent in selection (orphans) — show at root level
+    // Orphan nodes at root level
     for (const node of orphans) {
       if (node.type === 'folder') {
         const num = nextSectionNumber(counter, 'h1');
-        b.addHeading(`${num} ${cleanControlChars(node.title)}`, 'h1');
+        pdfContent.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, 'h1', tpl));
       } else if (node.type === 'note') {
         const num = nextSectionNumber(counter, 'h1');
-        b.addHeading(`${num} ${cleanControlChars(node.title)}`, 'h1');
+        pdfContent.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, 'h1', tpl));
         if (node.content) {
           const blocks = convertTipTapToBlocks(node.content);
-          await b.renderBlocks(blocks);
+          await resolveBlockImages(blocks);
+          pdfContent.push(...blocksToContent(blocks));
         }
       }
     }
 
-    await addSignatureBlock(b);
-    const blob = b.finalize();
+    // Signature
+    const sigData = getSignatureData();
+    const signatureImage = sigData.image ? await sigData.image : undefined;
+
+    const opts: PdfBuildOptions = {
+      dossierTitle: cleanControlChars(dossier.title),
+      infoLines: buildDossierInfoLines(dossier).map(cleanControlChars),
+      content: pdfContent,
+      includeToc,
+      tocEntries,
+      closingCity: sigData.city,
+      signatureImage,
+      signatureLines: sigData.lines,
+    };
+
+    const docDef = buildDocDefinition(tpl, logos, opts);
+    const blob = await generatePdfBlob(docDef);
     downloadBlob(blob, `Rapport_OSINT_${dossier.title}.pdf`);
   } catch (err) {
     console.error('PDF export failed:', err);
