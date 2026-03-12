@@ -1,4 +1,7 @@
 import type { jsPDF } from 'jspdf';
+import { registerNotoSans, PDF_FONT } from './pdfFonts';
+
+// ── Types ───────────────────────────────────────────────────────────
 
 export type FontFamily = 'Calibri' | 'Arial' | 'Times New Roman' | 'Georgia' | 'Helvetica' | 'Aptos';
 
@@ -56,6 +59,8 @@ export interface PdfTemplateConfig {
   footer: { format: string; lineColor: string };
 }
 
+// ── Defaults ────────────────────────────────────────────────────────
+
 export function defaultPdfTemplate(): PdfTemplateConfig {
   return {
     fontFamily: 'Calibri',
@@ -68,14 +73,14 @@ export function defaultPdfTemplate(): PdfTemplateConfig {
     },
     cover: {
       title: 'Rapport OSINT',
-      titleSize: 36,
+      titleSize: 28,
       titleColor: '#29417a',
-      subtitleSize: 20,
+      subtitleSize: 16,
       footerText: 'PJF Bruxelles - DR5 - Data Management & Analysis',
     },
     headings: {
-      h1: { fontSize: 16, color: '#000000', bgColor: '#f4c6a0', bold: true, italic: false, uppercase: false, borderStyle: 'none', borderColor: '#29417a', borderWidth: 1 },
-      h2: { fontSize: 13, color: '#000000', bgColor: '#f4c6a0', bold: true, italic: false, uppercase: false, borderStyle: 'none', borderColor: '#29417a', borderWidth: 1 },
+      h1: { fontSize: 14, color: '#000000', bgColor: '#f4c6a0', bold: true, italic: false, uppercase: false, borderStyle: 'none', borderColor: '#29417a', borderWidth: 1 },
+      h2: { fontSize: 12, color: '#000000', bgColor: '#f4c6a0', bold: true, italic: false, uppercase: false, borderStyle: 'none', borderColor: '#29417a', borderWidth: 1 },
       h3: { fontSize: 11, color: '#000000', bgColor: '', bold: true, italic: false, uppercase: false, borderStyle: 'bottom', borderColor: '#29417a', borderWidth: 1 },
     },
     body: { fontSize: 10, color: '#000000' },
@@ -111,6 +116,10 @@ export function loadPdfTemplate(): PdfTemplateConfig {
   } catch { /* use defaults */ }
   return defaults;
 }
+
+// ── Utilities ───────────────────────────────────────────────────────
+
+const PT_MM = 0.3528;
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
@@ -150,24 +159,22 @@ export function resolveLogoUrl(logo: string, serverUrl: string): string {
 export async function loadTemplateLogos(tpl: PdfTemplateConfig, serverUrl: string): Promise<PdfLogoData> {
   let logoLeft: string | null = null;
   let logoRight: string | null = null;
-
   if (tpl.header.logoLeft) {
-    try { logoLeft = await loadImageAsDataUrl(resolveLogoUrl(tpl.header.logoLeft, serverUrl)); } catch { /* skip */ }
+    try { logoLeft = await loadImageAsDataUrl(resolveLogoUrl(tpl.header.logoLeft, serverUrl)); } catch { /* */ }
   }
-  // Fallback: try default public logo
   if (!logoLeft) {
-    try { logoLeft = await loadImageAsDataUrl(new URL('/logo-pjf.jpeg', window.location.origin).href); } catch { /* skip */ }
+    try { logoLeft = await loadImageAsDataUrl(new URL('/logo-pjf.jpeg', window.location.origin).href); } catch { /* */ }
   }
-
   if (tpl.header.logoRight) {
-    try { logoRight = await loadImageAsDataUrl(resolveLogoUrl(tpl.header.logoRight, serverUrl)); } catch { /* skip */ }
+    try { logoRight = await loadImageAsDataUrl(resolveLogoUrl(tpl.header.logoRight, serverUrl)); } catch { /* */ }
   }
   if (!logoRight) {
-    try { logoRight = await loadImageAsDataUrl(new URL('/logo-dr5.png', window.location.origin).href); } catch { /* skip */ }
+    try { logoRight = await loadImageAsDataUrl(new URL('/logo-dr5.png', window.location.origin).href); } catch { /* */ }
   }
-
   return { logoLeft, logoRight };
 }
+
+// ── PDF Builder ─────────────────────────────────────────────────────
 
 export interface PdfBuilder {
   doc: jsPDF;
@@ -188,29 +195,23 @@ export interface PdfBuilder {
   addSubHeading: (text: string) => void;
   addBody: (text: string) => void;
   addDisclaimer: (text: string) => void;
-  drawCover: (subtitle: string, extraLines?: string[]) => void;
+  addInlineImage: (dataUrl: string, imgW: number, imgH: number) => void;
+  drawReportHeader: (title: string, infoLines: string[]) => void;
   finalize: () => Blob;
 }
 
-const PDF_FONT_MAP: Record<FontFamily, string> = {
-  'Calibri': 'helvetica',
-  'Arial': 'helvetica',
-  'Aptos': 'helvetica',
-  'Times New Roman': 'times',
-  'Georgia': 'times',
-  'Helvetica': 'helvetica',
-};
-
-export function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos: PdfLogoData): PdfBuilder {
+export async function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos: PdfLogoData): Promise<PdfBuilder> {
+  await registerNotoSans(doc);
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = tpl.page?.marginH || 20;
   const usableW = pageW - margin * 2;
-  const pdfFont = PDF_FONT_MAP[tpl.fontFamily] || 'helvetica';
   const headerH = 22;
   const footerH = 15;
   const contentTop = headerH + 5;
   const contentBottom = pageH - footerH;
+
+  function fontAscent(size: number): number { return size * PT_MM * 0.75; }
 
   const builder: PdfBuilder = {
     doc, tpl, logos,
@@ -228,45 +229,82 @@ export function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos: PdfL
       if (builder.y + need > contentBottom) builder.newContentPage();
     },
 
-    addHeading(text: string, level: 'h1' | 'h2' | 'h3') {
-      const h = tpl.headings[level];
-      const pad = level === 'h1' ? 4 : 3;
-      const ss = tpl.spacing?.sectionSpacing || 6;
-      const spaceBefore = level === 'h1' ? ss : (level === 'h2' ? ss * 0.5 : ss * 0.33);
-      const spaceAfter = level === 'h1' ? ss + 2 : ss;
-      const displayText = h.uppercase ? text.toUpperCase() : text;
+    drawReportHeader(title: string, infoLines: string[]) {
+      // Title
+      const titleSize = tpl.cover.titleSize;
+      doc.setFontSize(titleSize);
+      doc.setFont(PDF_FONT, 'bold');
+      const [tr, tg, tb] = hexToRgb(tpl.cover.titleColor);
+      doc.setTextColor(tr, tg, tb);
+      const titleBaseline = builder.y + fontAscent(titleSize);
+      doc.text(title, pageW / 2, titleBaseline, { align: 'center' });
+      builder.y += titleSize * PT_MM + 4;
 
-      builder.checkPage(level === 'h1' ? 20 : 12);
-      builder.y += spaceBefore;
-      doc.setFontSize(h.fontSize);
-      const fontStyle = (h.bold && h.italic) ? 'bolditalic' : h.bold ? 'bold' : h.italic ? 'italic' : 'normal';
-      doc.setFont(pdfFont, fontStyle);
-
-      const textH = h.fontSize * 0.5 + pad;
-      const rectY = builder.y - h.fontSize * 0.35;
-
-      if (h.bgColor) {
-        const [r, g, b] = hexToRgb(h.bgColor);
-        doc.setFillColor(r, g, b);
-        doc.rect(margin, rectY, usableW, textH, 'F');
+      // Info lines
+      if (infoLines.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont(PDF_FONT, 'normal');
+        doc.setTextColor(100);
+        for (const line of infoLines) {
+          const baseline = builder.y + fontAscent(10);
+          doc.text(line, pageW / 2, baseline, { align: 'center' });
+          builder.y += 10 * PT_MM + 2;
+        }
       }
 
-      const [cr, cg, cb] = hexToRgb(h.color);
-      doc.setTextColor(cr, cg, cb);
-      doc.text(displayText, margin + 3, builder.y);
+      // Separator
+      builder.y += 3;
+      const [lr, lg, lb] = hexToRgb(tpl.header.lineColor);
+      doc.setDrawColor(lr, lg, lb);
+      doc.setLineWidth(0.5);
+      doc.line(margin, builder.y, pageW - margin, builder.y);
+      builder.y += 6;
+      doc.setTextColor(0);
+    },
+
+    addHeading(text: string, level: 'h1' | 'h2' | 'h3') {
+      const h = tpl.headings[level];
+      const displayText = h.uppercase ? text.toUpperCase() : text;
+
+      const gapBefore = level === 'h1' ? 7 : (level === 'h2' ? 5 : 3);
+      const gapAfter = level === 'h1' ? 4 : (level === 'h2' ? 3 : 2);
+      const padV = 2;
+      const padH = 3;
+      const asc = fontAscent(h.fontSize);
+      const desc = h.fontSize * PT_MM * 0.25;
+      const rectH = padV + asc + desc + padV;
+
+      builder.checkPage(gapBefore + rectH + gapAfter + 8);
+      builder.y += gapBefore;
+
+      const rectTop = builder.y;
+      const baseline = rectTop + padV + asc;
+
+      doc.setFontSize(h.fontSize);
+      const fontStyle = (h.bold && h.italic) ? 'bolditalic' : h.bold ? 'bold' : h.italic ? 'italic' : 'normal';
+      doc.setFont(PDF_FONT, fontStyle);
+
+      if (h.bgColor) {
+        doc.setFillColor(...hexToRgb(h.bgColor));
+        doc.rect(margin, rectTop, usableW, rectH, 'F');
+      }
+
+      doc.setTextColor(...hexToRgb(h.color));
+      doc.text(displayText, margin + padH, baseline);
       doc.setTextColor(0);
 
       if (h.borderStyle && h.borderStyle !== 'none') {
-        const [br, bg, bb] = hexToRgb(h.borderColor || '#000000');
-        doc.setDrawColor(br, bg, bb);
+        doc.setDrawColor(...hexToRgb(h.borderColor || '#000000'));
         doc.setLineWidth(h.borderWidth || 0.5);
+        const rectBottom = rectTop + rectH;
         if (h.borderStyle === 'bottom') {
-          doc.line(margin, rectY + textH, margin + usableW, rectY + textH);
+          doc.line(margin, rectBottom, margin + usableW, rectBottom);
         } else if (h.borderStyle === 'box') {
-          doc.rect(margin, rectY, usableW, textH);
+          doc.rect(margin, rectTop, usableW, rectH);
         }
       }
-      builder.y += h.fontSize * 0.5 + spaceAfter;
+
+      builder.y = rectTop + rectH + gapAfter;
     },
 
     addSectionTitle(title: string) { builder.addHeading(title, 'h1'); },
@@ -275,142 +313,91 @@ export function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos: PdfL
     addBody(text: string) {
       const lh = tpl.spacing?.lineHeight || 1.4;
       const ps = tpl.spacing?.paragraphSpacing ?? 3;
-      doc.setFontSize(tpl.body.fontSize);
-      doc.setFont(pdfFont, 'normal');
-      const [br, bg, bb] = hexToRgb(tpl.body.color || '#000000');
-      doc.setTextColor(br, bg, bb);
+      const fontSize = tpl.body.fontSize;
+      doc.setFontSize(fontSize);
+      doc.setFont(PDF_FONT, 'normal');
+      doc.setTextColor(...hexToRgb(tpl.body.color || '#000000'));
       const lines: string[] = doc.splitTextToSize(text, usableW);
-      const lineStep = tpl.body.fontSize * 0.35 * lh;
+      const lineH = fontSize * PT_MM * lh;
       for (const line of lines) {
-        builder.checkPage(5);
-        doc.text(line, margin, builder.y, { maxWidth: usableW });
-        builder.y += lineStep;
+        builder.checkPage(lineH + 2);
+        doc.text(line, margin, builder.y + fontAscent(fontSize), { maxWidth: usableW });
+        builder.y += lineH;
       }
       doc.setTextColor(0);
       builder.y += ps;
+    },
+
+    addInlineImage(dataUrl: string, imgW: number, imgH: number) {
+      const maxW = usableW;
+      const maxH = 120;
+      let w = imgW * 0.264583;
+      let h = imgH * 0.264583;
+      if (w > maxW) { const s = maxW / w; w = maxW; h *= s; }
+      if (h > maxH) { const s = maxH / h; h = maxH; w *= s; }
+      builder.checkPage(h + 8);
+      builder.y += 2;
+      try {
+        const fmt = dataUrl.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+        doc.addImage(dataUrl, fmt, margin, builder.y, w, h);
+        builder.y += h + 3;
+      } catch (e) {
+        console.warn('PDF addImage failed:', e);
+      }
     },
 
     addDisclaimer(text: string) {
       const lh = tpl.spacing?.lineHeight || 1.4;
       const ps = tpl.spacing?.paragraphSpacing ?? 3;
-      doc.setFontSize(tpl.body.fontSize - 1);
-      doc.setFont(pdfFont, 'italic');
-      const [r, g, b] = hexToRgb(tpl.disclaimer.color);
-      doc.setTextColor(r, g, b);
+      const fontSize = tpl.body.fontSize - 1;
+      doc.setFontSize(fontSize);
+      doc.setFont(PDF_FONT, 'italic');
+      doc.setTextColor(...hexToRgb(tpl.disclaimer.color));
       const lines: string[] = doc.splitTextToSize(text, usableW);
-      const lineStep = (tpl.body.fontSize - 1) * 0.35 * lh;
+      const lineH = fontSize * PT_MM * lh;
       for (const line of lines) {
-        builder.checkPage(5);
-        doc.text(line, margin, builder.y, { maxWidth: usableW });
-        builder.y += lineStep;
+        builder.checkPage(lineH + 2);
+        doc.text(line, margin, builder.y + fontAscent(fontSize), { maxWidth: usableW });
+        builder.y += lineH;
       }
       doc.setTextColor(0);
       builder.y += ps;
     },
 
-    drawCover(subtitle: string, extraLines: string[] = []) {
-      // Logo left (cover, centered top)
-      if (logos.logoLeft) {
-        doc.addImage(logos.logoLeft, 'PNG', margin, 15, 25, 25);
-      }
-
-      // Header text
-      doc.setFontSize(8);
-      doc.setFont(pdfFont, 'bold');
-      doc.setTextColor(80);
-      doc.text(tpl.header.text, pageW / 2, 28, { align: 'center' });
-
-      // Logo right (cover top)
-      if (logos.logoRight) {
-        doc.addImage(logos.logoRight, 'PNG', pageW - margin - 25, 15, 25, 25);
-      }
-
-      // Separator line
-      const [lr, lg, lb] = hexToRgb(tpl.header.lineColor);
-      doc.setDrawColor(lr, lg, lb);
-      doc.setLineWidth(0.8);
-      doc.line(margin, 45, pageW - margin, 45);
-
-      // Title
-      const [tr, tg, tb] = hexToRgb(tpl.cover.titleColor);
-      doc.setFontSize(tpl.cover.titleSize);
-      doc.setFont(pdfFont, 'bold');
-      doc.setTextColor(tr, tg, tb);
-      doc.text(tpl.cover.title || 'Rapport OSINT', pageW / 2, 80, { align: 'center' });
-
-      // Subtitle
-      doc.setFontSize(tpl.cover.subtitleSize);
-      doc.setFont(pdfFont, 'normal');
-      doc.setTextColor(80);
-      doc.text(subtitle, pageW / 2, 100, { align: 'center' });
-
-      // Extra lines
-      let extraY = 115;
-      doc.setFontSize(12);
-      for (const line of extraLines) {
-        doc.text(line, pageW / 2, extraY, { align: 'center' });
-        extraY += 10;
-      }
-
-      // Separator line bottom
-      doc.setDrawColor(lr, lg, lb);
-      doc.setLineWidth(0.5);
-      doc.line(margin, extraY + 5, pageW - margin, extraY + 5);
-
-      doc.setTextColor(0);
-
-      // Footer text on cover
-      if (tpl.cover.footerText) {
-        doc.setFontSize(8);
-        doc.setTextColor(100);
-        doc.text(tpl.cover.footerText, pageW / 2, 270, { align: 'center' });
-        doc.setTextColor(0);
-      }
-    },
-
     finalize(): Blob {
-      // Draw headers/footers on all content pages (skip cover = page 1)
-      const totalContentPages = builder.currentPage - 1;
+      const totalPages = builder.currentPage;
       const [hlr, hlg, hlb] = hexToRgb(tpl.header.lineColor);
       const [flr, flg, flb] = hexToRgb(tpl.footer.lineColor);
 
-      for (let p = 2; p <= builder.currentPage; p++) {
+      for (let p = 1; p <= builder.currentPage; p++) {
         doc.setPage(p);
 
-        // Header line
+        // Header
         doc.setDrawColor(hlr, hlg, hlb);
         doc.setLineWidth(0.5);
         doc.line(margin, headerH, pageW - margin, headerH);
-
-        // Header text
         doc.setFontSize(8);
-        doc.setFont(pdfFont, 'normal');
+        doc.setFont(PDF_FONT, 'normal');
         doc.setTextColor(hlr, hlg, hlb);
         doc.text(tpl.header.text, pageW / 2, headerH - 5, { align: 'center' });
-
-        // Header logos
         if (logos.logoLeft) doc.addImage(logos.logoLeft, 'PNG', margin, 3, 15, 15);
         if (logos.logoRight) doc.addImage(logos.logoRight, 'PNG', pageW - margin - 15, 3, 15, 15);
 
-        // Footer line
+        // Footer
         doc.setDrawColor(flr, flg, flb);
         doc.line(margin, pageH - footerH, pageW - margin, pageH - footerH);
-
-        // Footer pagination
-        const pageNum = p - 1;
         const paginationText = tpl.footer.format
-          .replace('{n}', String(pageNum))
-          .replace('{total}', String(totalContentPages));
+          .replace('{n}', String(p))
+          .replace('{total}', String(totalPages));
         doc.setFontSize(8);
         doc.setTextColor(100);
         doc.text(paginationText, pageW - margin, pageH - footerH + 5, { align: 'right' });
         doc.setTextColor(0);
       }
 
-      // Replace placeholder in raw PDF for total pages
       const pdfOutput = doc.output('arraybuffer');
       const pdfString = new TextDecoder('latin1').decode(new Uint8Array(pdfOutput));
-      const fixedPdf = pdfString.replace(/__TOTAL_PAGES__/g, String(totalContentPages));
+      const fixedPdf = pdfString.replace(/__TOTAL_PAGES__/g, String(totalPages));
       const finalBytes = new Uint8Array(fixedPdf.length);
       for (let i = 0; i < fixedPdf.length; i++) {
         finalBytes[i] = fixedPdf.charCodeAt(i) & 0xff;
@@ -420,4 +407,46 @@ export function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos: PdfL
   };
 
   return builder;
+}
+
+// ── Sanitization ────────────────────────────────────────────────────
+
+export function cleanControlChars(text: string): string {
+  return text.replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u0000-\u001F]/g, '');
+}
+
+// ── Content Blocks ──────────────────────────────────────────────────
+
+export type ContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; src: string; alt?: string };
+
+export function extractContentBlocks(json: any): ContentBlock[] {
+  const blocks: ContentBlock[] = [];
+  if (!json) return blocks;
+
+  function walk(node: any) {
+    if (!node) return;
+    if (node.type === 'image' && node.attrs?.src) {
+      blocks.push({ type: 'image', src: node.attrs.src, alt: node.attrs.alt });
+      return;
+    }
+    if (node.text) {
+      const last = blocks[blocks.length - 1];
+      if (last && last.type === 'text') { last.text += node.text; }
+      else { blocks.push({ type: 'text', text: node.text }); }
+      return;
+    }
+    if (node.content) {
+      for (const child of node.content) { walk(child); }
+      if (['paragraph', 'heading', 'blockquote', 'listItem'].includes(node.type)) {
+        const last = blocks[blocks.length - 1];
+        if (last && last.type === 'text') { last.text += '\n'; }
+      }
+    }
+  }
+
+  if (json.content) { for (const child of json.content) { walk(child); } }
+  else { walk(json); }
+  return blocks;
 }

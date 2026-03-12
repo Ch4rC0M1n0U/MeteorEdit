@@ -108,7 +108,7 @@
     <main class="dv-main">
       <!-- Focus mode toggle (notes & maps only, not mindmap — mindmap uses toolbar slot) -->
       <div
-        v-if="dossierStore.selectedNode && ['note', 'map'].includes(dossierStore.selectedNode.type)"
+        v-if="dossierStore.selectedNode && dossierStore.selectedNode.type === 'note'"
         class="dv-focus-bar"
       >
         <PomodoroTimer v-if="focusMode" />
@@ -158,8 +158,19 @@
           :data="dossierStore.selectedNode.mapData"
           :node-id="dossierStore.selectedNode._id"
           :key="dossierStore.selectedNode._id"
-          @update:data="onMapUpdate"
-        />
+          @update:data="onMapUpdate">
+          <template #toolbar-end>
+            <PomodoroTimer v-if="focusMode" />
+            <button
+              class="me-map-focus-btn"
+              :class="{ active: focusMode }"
+              @click="toggleFocusMode"
+              :title="focusMode ? $t('dossier.exitFocusMode') : $t('dossier.focusMode')"
+            >
+              <v-icon size="16">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+            </button>
+          </template>
+        </MapEditor>
       </div>
 
       <div v-else-if="dossierStore.selectedNode.type === 'dataset'" class="dv-editor-wrap">
@@ -509,8 +520,8 @@ import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
-import { loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, createPdfBuilder } from '../../utils/pdfTemplate';
-import { generateDocx, type DocxExportData } from '../../utils/docxTemplate';
+import { loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, createPdfBuilder, cleanControlChars, extractContentBlocks, type PdfBuilder } from '../../utils/pdfTemplate';
+import { generateDocx, type DocxExportData, type DocxContentItem } from '../../utils/docxTemplate';
 import { tiptapJsonToHtml } from '../../utils/tiptapToHtml';
 import NodeTree from '../tree/NodeTree.vue';
 import DossierInfo from './DossierInfo.vue';
@@ -824,18 +835,14 @@ async function downloadAiReportAsPdf() {
     const tpl = loadPdfTemplate();
     const logos = await loadTemplateLogos(tpl, SERVER_URL);
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const b = createPdfBuilder(doc, tpl, logos);
+    const b = await createPdfBuilder(doc, tpl, logos);
 
-    // === COVER PAGE ===
-    const extraLines = [`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`];
-    if (aiReportModel.value) extraLines.push(`Mod\u00E8le: ${aiReportModel.value}`);
-    if (dossier.investigator) extraLines.push(`Enqu\u00EAteur demandeur: ${dossier.investigator}`);
-    b.drawCover(`Dossier \u00AB ${dossier.title} \u00BB`, extraLines);
+    const infoLines: string[] = [];
+    infoLines.push(`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`);
+    if (aiReportModel.value) infoLines.push(cleanControlChars(`Mod\u00E8le: ${aiReportModel.value}`));
+    if (dossier.investigator) infoLines.push(cleanControlChars(`Enqu\u00EAteur: ${dossier.investigator}`));
+    b.drawReportHeader(cleanControlChars(dossier.title), infoLines);
 
-    // === CONTENT ===
-    b.newContentPage();
-
-    // Parse AI content into sections
     const aiText = aiReportContent.value;
     const sectionRegex = /^#{1,3}\s+(.+)$/gm;
     const sections: Array<{ title: string; body: string }> = [];
@@ -859,17 +866,14 @@ async function downloadAiReportAsPdf() {
     }
 
     for (const section of sections) {
-      if (section.title) b.addSectionTitle(section.title);
+      if (section.title) b.addSectionTitle(cleanControlChars(section.title));
       if (section.body) {
-        const paragraphs = section.body.split(/\n\s*\n/);
-        for (const para of paragraphs) {
+        for (const para of section.body.split(/\n\s*\n/)) {
           const trimmed = para.trim();
-          if (trimmed) b.addBody(trimmed);
+          if (trimmed) b.addBody(cleanControlChars(trimmed));
         }
       }
     }
-
-    b.addDisclaimer('Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.');
 
     await addSignatureBlock(b);
     const blob = b.finalize();
@@ -920,16 +924,16 @@ async function downloadAiReportAsDocx() {
       docxSections.push({ title: '', level: 'h1', paragraphs: aiText.split(/\n\s*\n/).filter((p: string) => p.trim()) });
     }
 
+    const aiInfoLines: string[] = [];
+    aiInfoLines.push(`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`);
+    if (aiReportModel.value) aiInfoLines.push(`Mod\u00E8le: ${aiReportModel.value}`);
+    if (dossier.investigator) aiInfoLines.push(`Enqu\u00EAteur: ${dossier.investigator}`);
+
     const data: DocxExportData = {
       dossierTitle: dossier.title,
-      subtitle: `Dossier \u00AB ${dossier.title} \u00BB - Rapport IA`,
-      extraCoverLines: [
-        new Date().toLocaleDateString('fr-FR'),
-        ...(aiReportModel.value ? [`Mod\u00E8le: ${aiReportModel.value}`] : []),
-        ...(dossier.investigator ? [`Enqu\u00EAteur demandeur: ${dossier.investigator}`] : []),
-      ],
+      infoLines: aiInfoLines,
       sections: docxSections,
-      disclaimerText: 'Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.',
+      disclaimerText: '',
       closingDate: new Date().toLocaleDateString('fr-FR'),
       signature: sig?.name ? sig : undefined,
       signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
@@ -1349,7 +1353,7 @@ function printDossier(selectedNodeIds?: string[]) {
   };
 }
 
-async function addSignatureBlock(b: ReturnType<typeof createPdfBuilder>) {
+async function addSignatureBlock(b: PdfBuilder) {
   const { doc } = b;
   const rightX = b.pageW - b.margin;
   const closingDate = new Date().toLocaleDateString('fr-FR');
@@ -1395,6 +1399,65 @@ function handleSelectiveExport(format: 'pdf' | 'docx' | 'print', selectedIds: st
   else if (format === 'print') printDossier(selectedIds);
 }
 
+// Collect dossier info lines for report header (only non-empty fields)
+function buildDossierInfoLines(dossier: any): string[] {
+  const lines: string[] = [];
+  lines.push(new Date().toLocaleDateString('fr-FR'));
+  if (dossier.status) lines.push(`Statut: ${dossier.status}`);
+  if (dossier.investigator) lines.push(`Enqu\u00EAteur: ${dossier.investigator}`);
+  if ((dossier as any).magistrate) lines.push(`Magistrat: ${(dossier as any).magistrate}`);
+  if ((dossier as any).classification) lines.push(`Classification: ${(dossier as any).classification}`);
+  if (dossier.entities?.length) {
+    lines.push(`Entit\u00E9s: ${dossier.entities.map((e: any) => e.name).join(', ')}`);
+  }
+  return lines;
+}
+
+// Walk node tree recursively for PDF export
+async function walkTreePdf(
+  allNodes: any[],
+  parentId: string | null,
+  depth: number,
+  b: PdfBuilder,
+) {
+  const children = allNodes
+    .filter((n: any) => n.parentId === parentId && !n.deletedAt)
+    .sort((a: any, b: any) => a.order - b.order);
+
+  const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
+
+  for (const node of children) {
+    if (node.type === 'folder') {
+      b.addHeading(cleanControlChars(node.title), hl);
+      await walkTreePdf(allNodes, node._id, depth + 1, b);
+    } else if (node.type === 'note') {
+      b.addHeading(cleanControlChars(node.title), hl);
+      if (node.content) {
+        const blocks = extractContentBlocks(node.content);
+        for (const block of blocks) {
+          if (block.type === 'text') {
+            const cleaned = cleanControlChars(block.text.trim());
+            if (cleaned) b.addBody(cleaned);
+          } else if (block.type === 'image' && block.src) {
+            try {
+              const imgData = await loadImageAsDataUrl(block.src);
+              if (imgData) {
+                const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+                  const img = new Image();
+                  img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+                  img.onerror = () => resolve({ w: 800, h: 600 });
+                  img.src = imgData;
+                });
+                b.addInlineImage(imgData, dims.w, dims.h);
+              }
+            } catch { /* skip */ }
+          }
+        }
+      }
+    }
+  }
+}
+
 async function exportPDF(selectedNodeIds?: string[]) {
   if (!dossierStore.currentDossier) return;
   try {
@@ -1405,67 +1468,46 @@ async function exportPDF(selectedNodeIds?: string[]) {
     const tpl = loadPdfTemplate();
     const logos = await loadTemplateLogos(tpl, SERVER_URL);
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const b = createPdfBuilder(doc, tpl, logos);
+    const b = await createPdfBuilder(doc, tpl, logos);
 
-    // === COVER PAGE ===
-    const extraLines = [`Rapport n\u00B01 - ${new Date().toLocaleDateString('fr-FR')}`];
-    if (dossier.status) extraLines.push(`Statut: ${dossier.status}`);
-    if (dossier.investigator) extraLines.push(`Enqu\u00EAteur demandeur: ${dossier.investigator}`);
-    b.drawCover(`Dossier \u00AB ${dossier.title} \u00BB`, extraLines);
+    // Title + info
+    b.drawReportHeader(cleanControlChars(dossier.title), buildDossierInfoLines(dossier).map(cleanControlChars));
 
-    // === CONTENT ===
-    b.newContentPage();
+    // Walk node tree respecting hierarchy
+    await walkTreePdf(nodes, null, 1, b);
 
-    if (dossier.entities?.length) {
-      b.addSectionTitle('Entit\u00E9s concern\u00E9es');
-      b.addBody('Les recherches demand\u00E9es par l\u2019enqu\u00EAteur portent sur les entit\u00E9s suivantes :');
-      dossier.entities.forEach(ent => {
-        b.checkPage(8);
-        doc.setFontSize(tpl.body.fontSize);
-        doc.setFont('helvetica', 'normal');
-        const entLine = `\u2022 ${ent.name} (${ent.type})${ent.description ? ' : ' + ent.description : ''}`;
-        const entLines: string[] = doc.splitTextToSize(entLine, b.usableW - 5);
-        for (const l of entLines) {
-          b.checkPage(5);
-          doc.text(l, b.margin + 4, b.y);
-          b.y += 4.5;
-        }
-      });
-      b.y += 4;
-    }
-
-    if (dossier.objectives) {
-      b.addSectionTitle('Objectifs de la recherche OSINT');
-      b.addBody('Les objectifs sont d\u00E9finis comme suit :');
-      b.addBody(dossier.objectives);
-    }
-
-    b.addSectionTitle('Synth\u00E8se des faits');
-    if (dossier.judicialFacts) b.addBody(dossier.judicialFacts);
-    if (dossier.description) b.addBody(dossier.description);
-    if (!dossier.judicialFacts && !dossier.description) b.addBody('Aucune information disponible.');
-
-    b.addSectionTitle('R\u00E9sum\u00E9 des recherches et des r\u00E9sultats');
-    b.addBody('Les recherches en sources ouvertes ont \u00E9t\u00E9 men\u00E9es sur Internet. Il convient de souligner que, compte tenu de l\u2019immensit\u00E9 de ce r\u00E9seau et de la multiplicit\u00E9 des ressources disponibles, certaines informations pertinentes pourraient ne pas avoir \u00E9t\u00E9 identifi\u00E9es.');
-    b.addDisclaimer('Note : toutes les recherches reprises dans ce rapport ont \u00E9t\u00E9 r\u00E9alis\u00E9es en sources ouvertes uniquement.');
-
-    const noteNodes = nodes.filter(n => n.type === 'note');
-    if (noteNodes.length > 0) {
-      b.addSectionTitle('Recherches en source ouverte');
-      for (const node of noteNodes) {
-        b.checkPage(15);
-        b.addSubHeading(node.title);
+    // Nodes without parent in selection (orphans) — show at root level
+    const nodeIds = new Set(nodes.map((n: any) => n._id));
+    const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt);
+    for (const node of orphans.sort((a: any, b: any) => a.order - b.order)) {
+      if (node.type === 'folder') {
+        b.addHeading(cleanControlChars(node.title), 'h1');
+      } else if (node.type === 'note') {
+        b.addHeading(cleanControlChars(node.title), 'h1');
         if (node.content) {
-          const text = extractTextFromTiptap(node.content);
-          if (text) b.addBody(text);
+          const blocks = extractContentBlocks(node.content);
+          for (const block of blocks) {
+            if (block.type === 'text') {
+              const cleaned = cleanControlChars(block.text.trim());
+              if (cleaned) b.addBody(cleaned);
+            } else if (block.type === 'image' && block.src) {
+              try {
+                const imgData = await loadImageAsDataUrl(block.src);
+                if (imgData) {
+                  const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+                    img.onerror = () => resolve({ w: 800, h: 600 });
+                    img.src = imgData;
+                  });
+                  b.addInlineImage(imgData, dims.w, dims.h);
+                }
+              } catch { /* skip */ }
+            }
+          }
         }
-        b.y += 2;
       }
     }
-
-    b.addSectionTitle('Conclusion');
-    b.addBody(`Ce rapport est clos le ${new Date().toLocaleDateString('fr-FR')}.`);
-    b.addDisclaimer('Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.');
 
     await addSignatureBlock(b);
     const blob = b.finalize();
@@ -1475,59 +1517,55 @@ async function exportPDF(selectedNodeIds?: string[]) {
   }
 }
 
+// Walk node tree recursively for DOCX sections
+function walkTreeDocx(
+  allNodes: any[],
+  parentId: string | null,
+  depth: number,
+  sections: DocxExportData['sections'],
+) {
+  const children = allNodes
+    .filter((n: any) => n.parentId === parentId && !n.deletedAt)
+    .sort((a: any, b: any) => a.order - b.order);
 
-function buildDocxSections(dossier: any, nodes: any[], selectedNodeIds?: string[]): DocxExportData['sections'] {
-  const sections: DocxExportData['sections'] = [];
+  const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
 
-  if (dossier.entities?.length) {
-    sections.push({
-      title: 'Entit\u00E9s concern\u00E9es',
-      level: 'h1',
-      paragraphs: ['Les recherches demand\u00E9es par l\u2019enqu\u00EAteur portent sur les entit\u00E9s suivantes :'],
-      bullets: dossier.entities.map((ent: any) => `${ent.name} (${ent.type})${ent.description ? ' : ' + ent.description : ''}`),
-    });
-  }
-
-  if (dossier.objectives) {
-    sections.push({
-      title: 'Objectifs de la recherche OSINT',
-      level: 'h1',
-      paragraphs: ['Les objectifs sont d\u00E9finis comme suit :', dossier.objectives],
-    });
-  }
-
-  const factsParagraphs: string[] = [];
-  if (dossier.judicialFacts) factsParagraphs.push(dossier.judicialFacts);
-  if (dossier.description) factsParagraphs.push(dossier.description);
-  if (!factsParagraphs.length) factsParagraphs.push('Aucune information disponible.');
-  sections.push({ title: 'Synth\u00E8se des faits', level: 'h1', paragraphs: factsParagraphs });
-
-  sections.push({
-    title: 'R\u00E9sum\u00E9 des recherches et des r\u00E9sultats',
-    level: 'h1',
-    paragraphs: [
-      'Les recherches en sources ouvertes ont \u00E9t\u00E9 men\u00E9es sur Internet. Il convient de souligner que, compte tenu de l\u2019immensit\u00E9 de ce r\u00E9seau et de la multiplicit\u00E9 des ressources disponibles, certaines informations pertinentes pourraient ne pas avoir \u00E9t\u00E9 identifi\u00E9es.',
-      'Note : toutes les recherches reprises dans ce rapport ont \u00E9t\u00E9 r\u00E9alis\u00E9es en sources ouvertes uniquement.',
-    ],
-  });
-
-  const noteNodes = nodes.filter(n => n.type === 'note');
-  if (noteNodes.length > 0) {
-    for (const node of noteNodes) {
-      const text = node.content ? extractTextFromTiptap(node.content) : '';
-      sections.push({
-        title: node.title,
-        level: 'h2',
-        paragraphs: text ? text.split('\n').filter((l: string) => l.trim()) : [],
+  for (const node of children) {
+    if (node.type === 'folder') {
+      sections.push({ title: node.title, level: hl, paragraphs: [] });
+      walkTreeDocx(allNodes, node._id, depth + 1, sections);
+    } else if (node.type === 'note') {
+      const blocks = node.content ? extractContentBlocks(node.content) : [];
+      const contentItems: DocxContentItem[] = blocks.map((block: any) => {
+        if (block.type === 'image' && block.src) return { type: 'image' as const, src: block.src };
+        return { type: 'text' as const, text: block.text || '' };
       });
+      sections.push({ title: node.title, level: hl, paragraphs: [], content: contentItems });
     }
   }
+}
 
-  sections.push({
-    title: 'Conclusion',
-    level: 'h1',
-    paragraphs: [`Ce rapport est clos le ${new Date().toLocaleDateString('fr-FR')}.`],
-  });
+function buildDocxSections(dossier: any, nodes: any[]): DocxExportData['sections'] {
+  const sections: DocxExportData['sections'] = [];
+
+  // Walk tree from root
+  walkTreeDocx(nodes, null, 1, sections);
+
+  // Orphan nodes (parent not in selection)
+  const nodeIds = new Set(nodes.map((n: any) => n._id));
+  const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt);
+  for (const node of orphans.sort((a: any, b: any) => a.order - b.order)) {
+    if (node.type === 'folder') {
+      sections.push({ title: node.title, level: 'h1', paragraphs: [] });
+    } else if (node.type === 'note') {
+      const blocks = node.content ? extractContentBlocks(node.content) : [];
+      const contentItems: DocxContentItem[] = blocks.map((block: any) => {
+        if (block.type === 'image' && block.src) return { type: 'image' as const, src: block.src };
+        return { type: 'text' as const, text: block.text || '' };
+      });
+      sections.push({ title: node.title, level: 'h1', paragraphs: [], content: contentItems });
+    }
+  }
 
   return sections;
 }
@@ -1542,14 +1580,9 @@ async function exportDOCX(selectedNodeIds?: string[]) {
 
     const data: DocxExportData = {
       dossierTitle: dossier.title,
-      subtitle: `Dossier \u00AB ${dossier.title} \u00BB - Rapport n\u00B01`,
-      extraCoverLines: [
-        `${new Date().toLocaleDateString('fr-FR')}`,
-        `Statut: ${dossier.status}`,
-        ...(dossier.investigator ? [`Enqu\u00EAteur demandeur: ${dossier.investigator}`] : []),
-      ],
+      infoLines: buildDossierInfoLines(dossier),
       sections: buildDocxSections(dossier, nodes),
-      disclaimerText: 'Le pr\u00E9sent rapport est strictement confidentiel et destin\u00E9 uniquement aux autorit\u00E9s judiciaires comp\u00E9tentes. Toute diffusion, reproduction ou utilisation non autoris\u00E9e est interdite.',
+      disclaimerText: '',
       closingDate: new Date().toLocaleDateString('fr-FR'),
       signature: sig?.name ? sig : undefined,
       signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
@@ -2300,5 +2333,26 @@ function downloadBlob(blob: Blob, filename: string) {
   color: var(--me-accent);
   font-weight: 600;
   margin-top: 2px;
+}
+.me-map-focus-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: none;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.me-map-focus-btn:hover {
+  background: var(--me-accent-glow);
+  color: var(--me-text-primary);
+}
+.me-map-focus-btn.active {
+  background: var(--me-accent-glow);
+  color: var(--me-accent);
 }
 </style>
