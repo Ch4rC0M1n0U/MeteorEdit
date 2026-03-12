@@ -1,5 +1,6 @@
 import type { jsPDF } from 'jspdf';
 import { registerNotoSans, PDF_FONT } from './pdfFonts';
+import type { ContentBlock, InlineMark } from './contentBlocks';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -195,6 +196,7 @@ export interface PdfBuilder {
   addSubHeading: (text: string) => void;
   addBody: (text: string) => void;
   addDisclaimer: (text: string) => void;
+  addRichText: (children: ContentBlock[], align?: string) => void;
   addInlineImage: (dataUrl: string, imgW: number, imgH: number) => void;
   drawReportHeader: (title: string, infoLines: string[]) => void;
   finalize: () => Blob;
@@ -281,7 +283,7 @@ export async function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos
       const baseline = rectTop + padV + asc;
 
       doc.setFontSize(h.fontSize);
-      const fontStyle = (h.bold && h.italic) ? 'bolditalic' : h.bold ? 'bold' : h.italic ? 'italic' : 'normal';
+      const fontStyle = h.bold ? 'bold' : h.italic ? 'italic' : 'normal';
       doc.setFont(PDF_FONT, fontStyle);
 
       if (h.bgColor) {
@@ -325,6 +327,192 @@ export async function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos
         builder.y += lineH;
       }
       doc.setTextColor(0);
+      builder.y += ps;
+    },
+
+    addRichText(children: ContentBlock[], align?: string) {
+      if (!children || children.length === 0) return;
+
+      const lh = tpl.spacing?.lineHeight || 1.4;
+      const ps = tpl.spacing?.paragraphSpacing ?? 3;
+      const fontSize = tpl.body.fontSize;
+      const defaultColor = tpl.body.color || '#000000';
+
+      // ── helpers ──────────────────────────────────────────────
+      interface RichRun { text: string; marks: InlineMark }
+
+      function fontStyleFor(m: InlineMark): string {
+        if (m.code) return 'normal'; // code uses normal style with gray background
+        if (m.bold) return 'bold'; // no bolditalic variant registered, bold wins
+        if (m.italic) return 'italic';
+        return 'normal';
+      }
+
+      function fontNameFor(_m: InlineMark): string {
+        // Always use NotoSans to support non-ASCII (accents, etc.)
+        // Code blocks get a smaller size + gray background instead of courier
+        return PDF_FONT;
+      }
+
+      function fontSizeFor(m: InlineMark): number {
+        return m.code ? fontSize - 1 : fontSize;
+      }
+
+      function applyFont(m: InlineMark) {
+        doc.setFont(fontNameFor(m), fontStyleFor(m));
+        doc.setFontSize(fontSizeFor(m));
+      }
+
+      function measureWord(word: string, m: InlineMark): number {
+        applyFont(m);
+        return doc.getTextWidth(word);
+      }
+
+      // ── Build segments, splitting on hardBreak ───────────────
+      // Each "visual line group" is separated by hardBreak
+      const segmentGroups: RichRun[][] = [[]];
+      for (const child of children) {
+        if (child.type === 'hardBreak') {
+          segmentGroups.push([]);
+        } else if (child.type === 'text') {
+          segmentGroups[segmentGroups.length - 1].push({
+            text: child.text,
+            marks: child.marks || {},
+          });
+        }
+      }
+
+      // ── Word-wrap into visual lines ──────────────────────────
+      type VisualLine = RichRun[];
+      const lines: VisualLine[] = [];
+
+      for (const segments of segmentGroups) {
+        let currentLine: RichRun[] = [];
+        let currentLineW = 0;
+
+        for (const seg of segments) {
+          // Split segment text into words preserving spaces
+          const words = seg.text.split(/( +)/);
+          let pendingText = '';
+
+          for (const word of words) {
+            if (word === '') continue;
+            // Skip leading whitespace on a fresh wrapped line
+            if (currentLineW === 0 && word.trim() === '') continue;
+            const wordW = measureWord(word, seg.marks);
+
+            if (currentLineW + wordW > usableW && currentLine.length > 0 && currentLineW > 0) {
+              // Flush pending text for this segment before breaking
+              if (pendingText) {
+                currentLine.push({ text: pendingText, marks: seg.marks });
+                pendingText = '';
+              }
+              lines.push(currentLine);
+              currentLine = [];
+              currentLineW = 0;
+            }
+
+            pendingText += word;
+            currentLineW += wordW;
+          }
+
+          if (pendingText) {
+            currentLine.push({ text: pendingText, marks: seg.marks });
+          }
+        }
+
+        // End of a hardBreak group always creates a line
+        lines.push(currentLine);
+      }
+
+      // ── Render lines ─────────────────────────────────────────
+      const lineH = fontSize * PT_MM * lh;
+
+      for (const line of lines) {
+        builder.checkPage(lineH + 2);
+        const baseline = builder.y + fontAscent(fontSize);
+
+        // Calculate total line width for alignment
+        let totalW = 0;
+        for (const run of line) {
+          applyFont(run.marks);
+          totalW += doc.getTextWidth(run.text);
+        }
+
+        let startX = margin;
+        if (align === 'center') {
+          startX = margin + (usableW - totalW) / 2;
+        } else if (align === 'right') {
+          startX = margin + usableW - totalW;
+        }
+
+        let curX = startX;
+
+        for (const run of line) {
+          const m = run.marks;
+          const sz = fontSizeFor(m);
+          applyFont(m);
+          const runW = doc.getTextWidth(run.text);
+
+          // Determine text color
+          let textColor = defaultColor;
+          if (m.link) {
+            textColor = '#1565C0'; // blue for links
+          } else if (m.color) {
+            textColor = m.color;
+          }
+
+          // Draw highlight background
+          if (m.highlight) {
+            const hlAscent = fontAscent(sz);
+            const hlDesc = sz * PT_MM * 0.25;
+            doc.setFillColor(...hexToRgb(m.highlight));
+            doc.rect(curX, baseline - hlAscent, runW, hlAscent + hlDesc, 'F');
+          }
+
+          // Draw code background
+          if (m.code) {
+            const codeAscent = fontAscent(sz);
+            const codeDesc = sz * PT_MM * 0.25;
+            doc.setFillColor(235, 235, 235);
+            doc.rect(curX - 0.5, baseline - codeAscent, runW + 1, codeAscent + codeDesc, 'F');
+          }
+
+          // Set text color and draw
+          doc.setTextColor(...hexToRgb(textColor));
+          doc.text(run.text, curX, baseline);
+
+          // Draw underline (for explicit underline mark or links)
+          if (m.underline || m.link) {
+            const ulY = baseline + sz * PT_MM * 0.15;
+            doc.setDrawColor(...hexToRgb(textColor));
+            doc.setLineWidth(0.2);
+            doc.line(curX, ulY, curX + runW, ulY);
+          }
+
+          // Draw strikethrough
+          if (m.strike) {
+            const strikeY = baseline - fontAscent(sz) * 0.35;
+            doc.setDrawColor(...hexToRgb(textColor));
+            doc.setLineWidth(0.2);
+            doc.line(curX, strikeY, curX + runW, strikeY);
+          }
+
+          curX += runW;
+        }
+
+        // Reset draw color after decorations (underline, strikethrough)
+        doc.setDrawColor(0);
+
+        builder.y += lineH;
+      }
+
+      // Reset font and color to defaults
+      doc.setFont(PDF_FONT, 'normal');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(...hexToRgb(defaultColor));
+
+      // Paragraph spacing
       builder.y += ps;
     },
 
