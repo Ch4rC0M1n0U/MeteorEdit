@@ -452,7 +452,16 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import api, { SERVER_URL } from '../../services/api';
-import { type PdfTemplateConfig, defaultPdfTemplate, mergePdfTemplate, createPdfBuilder, loadTemplateLogos } from '../../utils/pdfTemplate';
+import {
+  type PdfTemplateConfig,
+  defaultPdfTemplate,
+  mergePdfTemplate,
+  loadTemplateLogos,
+  buildDocDefinition,
+  generatePdfBlob,
+  renderHeading,
+  blocksToContent,
+} from '../../utils/pdfmakeRenderer';
 
 const saving = ref(false);
 const snackbar = ref(false);
@@ -554,52 +563,64 @@ let previewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 async function generatePdfPreview() {
   previewLoading.value = true;
   try {
-    const { jsPDF } = await import('jspdf');
     const tplSnapshot = JSON.parse(JSON.stringify(tpl)) as PdfTemplateConfig;
     const logos = await loadTemplateLogos(tplSnapshot, SERVER_URL);
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const b = await createPdfBuilder(doc, tplSnapshot, logos);
 
-    // Title + info
-    b.drawReportHeader('Dossier Exemple', [
-      new Date().toLocaleDateString('fr-FR'),
-      'Statut: En cours',
-      'Enqueteur: Jean Dupont',
-    ]);
+    // Build example content using pdfmake data structures
+    const exampleContent: any[] = [];
 
-    // Content hierarchy example
-    b.addHeading('Recherches en source ouverte', 'h1');
-    b.addBody('Cette section illustre le style du corps de texte avec les parametres actuels du template.');
-    b.addHeading('Compte Instagram', 'h2');
-    b.addBody('Les recherches menees sur ce compte ont permis d\'identifier plusieurs publications pertinentes pour l\'enquete.');
-    b.addHeading('Analyse des publications', 'h3');
-    b.addBody('Les publications identifiees couvrent la periode du 1er janvier au 15 mars 2026.');
+    // Headings + body text
+    exampleContent.push(renderHeading('Recherches en source ouverte', 'h1', tplSnapshot));
+    exampleContent.push(...blocksToContent([
+      { type: 'paragraph', children: [{ type: 'text', text: 'Cette section illustre le style du corps de texte avec les parametres actuels du template.', marks: {} }] },
+    ], tplSnapshot));
+
+    exampleContent.push(renderHeading('Compte Instagram', 'h2', tplSnapshot));
+    exampleContent.push(...blocksToContent([
+      { type: 'paragraph', children: [{ type: 'text', text: 'Les recherches menees sur ce compte ont permis d\'identifier plusieurs publications pertinentes pour l\'enquete.', marks: {} }] },
+    ], tplSnapshot));
+
+    exampleContent.push(renderHeading('Analyse des publications', 'h3', tplSnapshot));
+    exampleContent.push(...blocksToContent([
+      { type: 'paragraph', children: [{ type: 'text', text: 'Les publications identifiees couvrent la periode du 1er janvier au 15 mars 2026.', marks: {} }] },
+    ], tplSnapshot));
 
     // Bullet list demo
-    await b.renderBlocks([
+    exampleContent.push(...blocksToContent([
       { type: 'bulletList', items: [
         [{ type: 'paragraph', children: [{ type: 'text', text: 'Publication du 15 janvier 2026', marks: {} }] }],
         [{ type: 'paragraph', children: [{ type: 'text', text: 'Story archivee du 3 fevrier 2026', marks: {} }] }],
       ]},
-    ]);
+    ], tplSnapshot));
 
     // Blockquote demo
-    await b.renderBlocks([
+    exampleContent.push(...blocksToContent([
       { type: 'blockquote', children: [
         { type: 'paragraph', children: [{ type: 'text', text: 'Source: profil public identifie le 10 mars 2026.', marks: {} }] },
       ]},
-    ]);
+    ], tplSnapshot));
 
     // Table demo
-    await b.renderBlocks([
+    exampleContent.push(...blocksToContent([
       { type: 'table', rows: [
         [[{ type: 'text', text: 'Date', marks: {} }], [{ type: 'text', text: 'Evenement', marks: {} }]],
         [[{ type: 'text', text: '15/01/2026', marks: {} }], [{ type: 'text', text: 'Publication identifiee', marks: {} }]],
         [[{ type: 'text', text: '03/02/2026', marks: {} }], [{ type: 'text', text: 'Story archivee', marks: {} }]],
       ]},
-    ]);
+    ], tplSnapshot));
 
-    const blob = b.finalize();
+    // Build doc definition and generate blob
+    const docDef = buildDocDefinition(tplSnapshot, logos, {
+      dossierTitle: 'Dossier Exemple',
+      infoLines: [
+        new Date().toLocaleDateString('fr-FR'),
+        'Statut: En cours',
+        'Enqueteur: Jean Dupont',
+      ],
+      content: exampleContent,
+    });
+
+    const blob = await generatePdfBlob(docDef);
 
     // Revoke previous URL
     if (pdfPreviewUrl.value) URL.revokeObjectURL(pdfPreviewUrl.value);
