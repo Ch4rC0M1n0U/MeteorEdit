@@ -64,37 +64,38 @@ function createWindow(): void {
   }
 }
 
-// IPC Handlers
-ipcMain.handle('get-server-url', () => store.get('serverUrl'));
+function registerIpcHandlers(): void {
+  ipcMain.handle('get-server-url', () => store.get('serverUrl'));
 
-ipcMain.handle('set-server-url', (_event, url: string) => {
-  store.set('serverUrl', url);
-  if (mainWindow) {
-    mainWindow.loadURL(url);
-  }
-});
+  ipcMain.handle('set-server-url', (_event, url: string) => {
+    store.set('serverUrl', url);
+    if (mainWindow) {
+      mainWindow.loadURL(url);
+    }
+  });
 
-ipcMain.handle('test-server-connection', async (_event, url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(`${url}/api/settings/branding`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(5000),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-});
+  ipcMain.handle('test-server-connection', async (_event, url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${url}/api/settings/branding`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  });
 
-ipcMain.handle('get-app-version', () => app.getVersion());
+  ipcMain.handle('get-app-version', () => app.getVersion());
 
-ipcMain.on('show-notification', (_event, title: string, body: string) => {
-  showNativeNotification(title, body, mainWindow);
-});
+  ipcMain.on('show-notification', (_event, title: string, body: string) => {
+    showNativeNotification(title, body, mainWindow);
+  });
 
-ipcMain.on('install-update', () => {
-  autoUpdater.quitAndInstall();
-});
+  ipcMain.on('install-update', () => {
+    autoUpdater.quitAndInstall();
+  });
+}
 
 // Register deep link protocol
 if (process.defaultApp) {
@@ -129,7 +130,10 @@ if (!gotTheLock) {
     isQuitting = true;
   });
 
-  app.whenReady().then(createWindow);
+  app.whenReady().then(() => {
+    registerIpcHandlers();
+    createWindow();
+  });
 
   app.on('window-all-closed', () => {
     app.quit();
