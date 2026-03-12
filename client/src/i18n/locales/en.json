@@ -157,6 +157,7 @@
     "online": "{count} online",
     "export": "Export",
     "exportPrint": "Export / Print",
+    "includeToc": "Include table of contents",
     "generateAiReport": "Generate AI report",
     "aiSummaryTitle": "AI Summary",
     "generatingSummary": "Generating summary...",
@@ -385,7 +386,8 @@
     "currentSignature": "Current signature",
     "confidential": "CONFIDENTIAL",
     "deleteHandwrittenSignature": "Delete handwritten signature",
-    "signatureProtected": "Signature protected against screen capture"
+    "signatureProtected": "Signature protected against screen capture",
+    "signatureCity": "City"
   },
   "preferences": {
     "title": "Preferences",

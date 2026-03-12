@@ -157,6 +157,7 @@
     "online": "{count} online",
     "export": "Exporteren",
     "exportPrint": "Exporteren / Afdrukken",
+    "includeToc": "Inhoudsopgave opnemen",
     "generateAiReport": "AI-rapport genereren",
     "aiSummaryTitle": "AI-samenvatting",
     "generatingSummary": "Samenvatting genereren...",
@@ -385,7 +386,8 @@
     "currentSignature": "Huidige handtekening",
     "confidential": "VERTROUWELIJK",
     "deleteHandwrittenSignature": "Handgeschreven handtekening verwijderen",
-    "signatureProtected": "Handtekening beschermd tegen schermopname"
+    "signatureProtected": "Handtekening beschermd tegen schermopname",
+    "signatureCity": "Stad"
   },
   "preferences": {
     "title": "Voorkeuren",

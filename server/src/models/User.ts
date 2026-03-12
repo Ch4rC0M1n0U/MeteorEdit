@@ -41,6 +41,7 @@ const userSchema = new Schema<IUser>(
       service: { type: String, default: '' },
       unit: { type: String, default: '' },
       email: { type: String, default: '' },
+      city: { type: String, default: 'Bruxelles' },
     },
     signatureImagePath: { type: String, default: null },
     lastLoginAt: { type: Date, default: null },

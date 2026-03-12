@@ -58,6 +58,7 @@
         <v-text-field v-model="sigForm.service" :label="$t('profile.signatureService')" density="compact" hide-details placeholder="ex: PJF - DJF/Bru" />
         <v-text-field v-model="sigForm.unit" :label="$t('profile.signatureUnit')" density="compact" hide-details placeholder="ex: OA-DR5" />
         <v-text-field v-model="sigForm.email" :label="$t('profile.signatureProfEmail')" density="compact" hide-details placeholder="ex: service@police.belgium.eu" />
+        <v-text-field v-model="sigForm.city" :label="$t('profile.signatureCity')" density="compact" hide-details placeholder="ex: Bruxelles" />
       </div>
 
       <div class="branding-actions mt-4">
@@ -182,6 +183,7 @@ const sigForm = reactive({
   service: '',
   unit: '',
   email: '',
+  city: '',
 });
 
 const initials = computed(() => {
@@ -320,6 +322,7 @@ onMounted(() => {
       sigForm.service = sig.service || '';
       sigForm.unit = sig.unit || '';
       sigForm.email = sig.email || '';
+      sigForm.city = sig.city || '';
     }
   }
   nextTick(() => initDrawCanvas());

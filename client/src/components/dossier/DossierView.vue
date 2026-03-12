@@ -520,8 +520,9 @@ import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
-import { loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, createPdfBuilder, cleanControlChars, extractContentBlocks, type PdfBuilder } from '../../utils/pdfTemplate';
-import { generateDocx, type DocxExportData, type DocxContentItem } from '../../utils/docxTemplate';
+import { loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, createPdfBuilder, cleanControlChars, type PdfBuilder } from '../../utils/pdfTemplate';
+import { generateDocx, type DocxExportData } from '../../utils/docxTemplate';
+import { convertTipTapToBlocks } from '../../utils/contentBlocks';
 import { tiptapJsonToHtml } from '../../utils/tiptapToHtml';
 import NodeTree from '../tree/NodeTree.vue';
 import DossierInfo from './DossierInfo.vue';
@@ -935,6 +936,7 @@ async function downloadAiReportAsDocx() {
       sections: docxSections,
       disclaimerText: '',
       closingDate: new Date().toLocaleDateString('fr-FR'),
+      closingCity: (authStore.user as any)?.signature?.city || 'Bruxelles',
       signature: sig?.name ? sig : undefined,
       signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
       serverUrl: SERVER_URL,
@@ -1363,7 +1365,8 @@ async function addSignatureBlock(b: PdfBuilder) {
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Bruxelles, le ${closingDate}`, rightX, b.y, { align: 'right' });
+  const city = (authStore.user as any)?.signature?.city || 'Bruxelles';
+  doc.text(`${city}, le ${closingDate}`, rightX, b.y, { align: 'right' });
   b.y += 8;
 
   // Signature image
@@ -1393,9 +1396,57 @@ async function addSignatureBlock(b: PdfBuilder) {
   }
 }
 
-function handleSelectiveExport(format: 'pdf' | 'docx' | 'print', selectedIds: string[]) {
-  if (format === 'pdf') exportPDF(selectedIds);
-  else if (format === 'docx') exportDOCX(selectedIds);
+// ── Section numbering ──────────────────────────────────────────────
+type SectionCounter = [number, number, number];
+
+function nextSectionNumber(counter: SectionCounter, level: 'h1' | 'h2' | 'h3'): string {
+  if (level === 'h1') {
+    counter[0]++;
+    counter[1] = 0;
+    counter[2] = 0;
+    return `${counter[0]}.`;
+  } else if (level === 'h2') {
+    counter[1]++;
+    counter[2] = 0;
+    return `${counter[0]}.${counter[1]}`;
+  } else {
+    counter[2]++;
+    return `${counter[0]}.${counter[1]}.${counter[2]}`;
+  }
+}
+
+// Collect TOC entries from node tree without rendering
+interface TocEntry { title: string; level: 'h1' | 'h2' | 'h3'; number: string }
+
+function collectTocEntries(
+  allNodes: any[],
+  parentId: string | null,
+  depth: number,
+  counter: SectionCounter,
+): TocEntry[] {
+  const entries: TocEntry[] = [];
+  const children = allNodes
+    .filter((n: any) => n.parentId === parentId && !n.deletedAt)
+    .sort((a: any, b: any) => a.order - b.order);
+
+  const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
+
+  for (const node of children) {
+    if (node.type === 'folder') {
+      const num = nextSectionNumber(counter, hl);
+      entries.push({ title: `${num} ${cleanControlChars(node.title)}`, level: hl, number: num });
+      entries.push(...collectTocEntries(allNodes, node._id, depth + 1, counter));
+    } else if (node.type === 'note') {
+      const num = nextSectionNumber(counter, hl);
+      entries.push({ title: `${num} ${cleanControlChars(node.title)}`, level: hl, number: num });
+    }
+  }
+  return entries;
+}
+
+function handleSelectiveExport(format: 'pdf' | 'docx' | 'print', selectedIds: string[], includeToc: boolean) {
+  if (format === 'pdf') exportPDF(selectedIds, includeToc);
+  else if (format === 'docx') exportDOCX(selectedIds, includeToc);
   else if (format === 'print') printDossier(selectedIds);
 }
 
@@ -1419,6 +1470,7 @@ async function walkTreePdf(
   parentId: string | null,
   depth: number,
   b: PdfBuilder,
+  counter: SectionCounter,
 ) {
   const children = allNodes
     .filter((n: any) => n.parentId === parentId && !n.deletedAt)
@@ -1428,37 +1480,21 @@ async function walkTreePdf(
 
   for (const node of children) {
     if (node.type === 'folder') {
-      b.addHeading(cleanControlChars(node.title), hl);
-      await walkTreePdf(allNodes, node._id, depth + 1, b);
+      const num = nextSectionNumber(counter, hl);
+      b.addHeading(`${num} ${cleanControlChars(node.title)}`, hl);
+      await walkTreePdf(allNodes, node._id, depth + 1, b, counter);
     } else if (node.type === 'note') {
-      b.addHeading(cleanControlChars(node.title), hl);
+      const num = nextSectionNumber(counter, hl);
+      b.addHeading(`${num} ${cleanControlChars(node.title)}`, hl);
       if (node.content) {
-        const blocks = extractContentBlocks(node.content);
-        for (const block of blocks) {
-          if (block.type === 'text') {
-            const cleaned = cleanControlChars(block.text.trim());
-            if (cleaned) b.addBody(cleaned);
-          } else if (block.type === 'image' && block.src) {
-            try {
-              const imgData = await loadImageAsDataUrl(block.src);
-              if (imgData) {
-                const dims = await new Promise<{ w: number; h: number }>((resolve) => {
-                  const img = new Image();
-                  img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-                  img.onerror = () => resolve({ w: 800, h: 600 });
-                  img.src = imgData;
-                });
-                b.addInlineImage(imgData, dims.w, dims.h);
-              }
-            } catch { /* skip */ }
-          }
-        }
+        const blocks = convertTipTapToBlocks(node.content);
+        await b.renderBlocks(blocks);
       }
     }
   }
 }
 
-async function exportPDF(selectedNodeIds?: string[]) {
+async function exportPDF(selectedNodeIds?: string[], includeToc = false) {
   if (!dossierStore.currentDossier) return;
   try {
     const { jsPDF } = await import('jspdf');
@@ -1473,38 +1509,58 @@ async function exportPDF(selectedNodeIds?: string[]) {
     // Title + info
     b.drawReportHeader(cleanControlChars(dossier.title), buildDossierInfoLines(dossier).map(cleanControlChars));
 
+    // Collect orphans for both TOC and rendering
+    const nodeIds = new Set(nodes.map((n: any) => n._id));
+    const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt)
+      .sort((a: any, b: any) => a.order - b.order);
+
+    // Table of contents (without page numbers)
+    if (includeToc) {
+      const tocCounter: SectionCounter = [0, 0, 0];
+      const tocEntries = collectTocEntries(nodes, null, 1, tocCounter);
+      // Also collect orphan entries for TOC
+      for (const node of orphans) {
+        if (node.type === 'folder' || node.type === 'note') {
+          const num = nextSectionNumber(tocCounter, 'h1');
+          tocEntries.push({ title: `${num} ${cleanControlChars(node.title)}`, level: 'h1', number: num });
+        }
+      }
+
+      if (tocEntries.length > 0) {
+        b.addHeading('Table des matières', 'h1');
+        const fontSize = tpl.body.fontSize;
+        const lh = tpl.spacing?.lineHeight || 1.4;
+        const lineH = fontSize * 0.3528 * lh;
+
+        for (const entry of tocEntries) {
+          const indent = entry.level === 'h1' ? 0 : entry.level === 'h2' ? 8 : 16;
+          const isBold = entry.level === 'h1';
+          b.checkPage(lineH + 2);
+          doc.setFontSize(fontSize);
+          doc.setFont('NotoSans', isBold ? 'bold' : 'normal');
+          doc.setTextColor(0);
+          doc.text(entry.title, b.margin + indent, b.y + fontSize * 0.3528 * 0.75);
+          b.y += lineH;
+        }
+        b.y += 4;
+      }
+    }
+
     // Walk node tree respecting hierarchy
-    await walkTreePdf(nodes, null, 1, b);
+    const counter: SectionCounter = [0, 0, 0];
+    await walkTreePdf(nodes, null, 1, b, counter);
 
     // Nodes without parent in selection (orphans) — show at root level
-    const nodeIds = new Set(nodes.map((n: any) => n._id));
-    const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt);
-    for (const node of orphans.sort((a: any, b: any) => a.order - b.order)) {
+    for (const node of orphans) {
       if (node.type === 'folder') {
-        b.addHeading(cleanControlChars(node.title), 'h1');
+        const num = nextSectionNumber(counter, 'h1');
+        b.addHeading(`${num} ${cleanControlChars(node.title)}`, 'h1');
       } else if (node.type === 'note') {
-        b.addHeading(cleanControlChars(node.title), 'h1');
+        const num = nextSectionNumber(counter, 'h1');
+        b.addHeading(`${num} ${cleanControlChars(node.title)}`, 'h1');
         if (node.content) {
-          const blocks = extractContentBlocks(node.content);
-          for (const block of blocks) {
-            if (block.type === 'text') {
-              const cleaned = cleanControlChars(block.text.trim());
-              if (cleaned) b.addBody(cleaned);
-            } else if (block.type === 'image' && block.src) {
-              try {
-                const imgData = await loadImageAsDataUrl(block.src);
-                if (imgData) {
-                  const dims = await new Promise<{ w: number; h: number }>((resolve) => {
-                    const img = new Image();
-                    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-                    img.onerror = () => resolve({ w: 800, h: 600 });
-                    img.src = imgData;
-                  });
-                  b.addInlineImage(imgData, dims.w, dims.h);
-                }
-              } catch { /* skip */ }
-            }
-          }
+          const blocks = convertTipTapToBlocks(node.content);
+          await b.renderBlocks(blocks);
         }
       }
     }
@@ -1523,6 +1579,7 @@ function walkTreeDocx(
   parentId: string | null,
   depth: number,
   sections: DocxExportData['sections'],
+  counter: SectionCounter,
 ) {
   const children = allNodes
     .filter((n: any) => n.parentId === parentId && !n.deletedAt)
@@ -1532,45 +1589,42 @@ function walkTreeDocx(
 
   for (const node of children) {
     if (node.type === 'folder') {
-      sections.push({ title: node.title, level: hl, paragraphs: [] });
-      walkTreeDocx(allNodes, node._id, depth + 1, sections);
+      const num = nextSectionNumber(counter, hl);
+      sections.push({ title: `${num} ${node.title}`, level: hl, paragraphs: [] });
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter);
     } else if (node.type === 'note') {
-      const blocks = node.content ? extractContentBlocks(node.content) : [];
-      const contentItems: DocxContentItem[] = blocks.map((block: any) => {
-        if (block.type === 'image' && block.src) return { type: 'image' as const, src: block.src };
-        return { type: 'text' as const, text: block.text || '' };
-      });
-      sections.push({ title: node.title, level: hl, paragraphs: [], content: contentItems });
+      const num = nextSectionNumber(counter, hl);
+      const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
+      sections.push({ title: `${num} ${node.title}`, level: hl, paragraphs: [], blocks });
     }
   }
 }
 
 function buildDocxSections(dossier: any, nodes: any[]): DocxExportData['sections'] {
   const sections: DocxExportData['sections'] = [];
+  const counter: SectionCounter = [0, 0, 0];
 
   // Walk tree from root
-  walkTreeDocx(nodes, null, 1, sections);
+  walkTreeDocx(nodes, null, 1, sections, counter);
 
   // Orphan nodes (parent not in selection)
   const nodeIds = new Set(nodes.map((n: any) => n._id));
   const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt);
   for (const node of orphans.sort((a: any, b: any) => a.order - b.order)) {
     if (node.type === 'folder') {
-      sections.push({ title: node.title, level: 'h1', paragraphs: [] });
+      const num = nextSectionNumber(counter, 'h1');
+      sections.push({ title: `${num} ${node.title}`, level: 'h1', paragraphs: [] });
     } else if (node.type === 'note') {
-      const blocks = node.content ? extractContentBlocks(node.content) : [];
-      const contentItems: DocxContentItem[] = blocks.map((block: any) => {
-        if (block.type === 'image' && block.src) return { type: 'image' as const, src: block.src };
-        return { type: 'text' as const, text: block.text || '' };
-      });
-      sections.push({ title: node.title, level: 'h1', paragraphs: [], content: contentItems });
+      const num = nextSectionNumber(counter, 'h1');
+      const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
+      sections.push({ title: `${num} ${node.title}`, level: 'h1', paragraphs: [], blocks });
     }
   }
 
   return sections;
 }
 
-async function exportDOCX(selectedNodeIds?: string[]) {
+async function exportDOCX(selectedNodeIds?: string[], includeToc = false) {
   if (!dossierStore.currentDossier) return;
   try {
     const dossier = dossierStore.currentDossier;
@@ -1584,6 +1638,8 @@ async function exportDOCX(selectedNodeIds?: string[]) {
       sections: buildDocxSections(dossier, nodes),
       disclaimerText: '',
       closingDate: new Date().toLocaleDateString('fr-FR'),
+      closingCity: (authStore.user as any)?.signature?.city || 'Bruxelles',
+      includeToc,
       signature: sig?.name ? sig : undefined,
       signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
       serverUrl: SERVER_URL,

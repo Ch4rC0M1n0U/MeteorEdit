@@ -569,6 +569,8 @@ export interface DocxExportData {
   }>;
   disclaimerText: string;
   closingDate: string;
+  closingCity?: string;
+  includeToc?: boolean;
   signature?: {
     title?: string;
     name?: string;
@@ -620,6 +622,50 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
     border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: hexToRgb(tpl.header.lineColor) } },
     spacing: { before: 160, after: 240 },
   }));
+
+  // ─── TABLE OF CONTENTS ───
+
+  if (data.includeToc) {
+    // TOC heading
+    docChildren.push(new Paragraph({
+      children: [new TextRun({
+        text: 'Table des matières',
+        font: docxFont(tpl),
+        size: ptToHalfPt(tpl.headings.h1.fontSize),
+        bold: true,
+        color: hexToRgb(tpl.headings.h1.color),
+      })],
+      heading: HeadingLevel.HEADING_1,
+      shading: tpl.headings.h1.bgColor ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.headings.h1.bgColor) } : undefined,
+      spacing: { before: 360, after: 120 },
+      border: buildHeadingBorder(tpl.headings.h1),
+    }));
+
+    // TOC entries — indented list of section titles with numbers
+    for (const section of data.sections) {
+      if (!section.title) continue;
+      const indent = section.level === 'h1' ? 0 : section.level === 'h2' ? 360 : 720;
+      const isBold = section.level === 'h1';
+      docChildren.push(new Paragraph({
+        children: [new TextRun({
+          text: section.title,
+          font: docxFont(tpl),
+          size: ptToHalfPt(tpl.body.fontSize),
+          bold: isBold,
+          color: tpl.body.color ? hexToRgb(tpl.body.color) : undefined,
+        })],
+        indent: { left: indent },
+        spacing: { after: 40 },
+      }));
+    }
+
+    // Spacer after TOC
+    docChildren.push(new Paragraph({
+      children: [],
+      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: hexToRgb(tpl.header.lineColor) } },
+      spacing: { before: 120, after: 240 },
+    }));
+  }
 
   // ─── CONTENT SECTIONS ───
 
@@ -675,7 +721,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
 
   docChildren.push(new Paragraph({
     children: [new TextRun({
-      text: `Bruxelles, le ${data.closingDate}`,
+      text: `${data.closingCity || 'Bruxelles'}, le ${data.closingDate}`,
       font: docxFont(tpl),
       size: ptToHalfPt(10),
     })],

@@ -157,6 +157,7 @@
     "online": "{count} en ligne",
     "export": "Exporter",
     "exportPrint": "Exporter / Imprimer",
+    "includeToc": "Inclure la table des matières",
     "generateAiReport": "Générer rapport IA",
     "aiSummaryTitle": "Résumé IA",
     "generatingSummary": "Génération du résumé...",
@@ -385,7 +386,8 @@
     "currentSignature": "Signature actuelle",
     "confidential": "CONFIDENTIEL",
     "deleteHandwrittenSignature": "Supprimer la signature manuscrite",
-    "signatureProtected": "Signature protégée contre la capture d'écran"
+    "signatureProtected": "Signature protégée contre la capture d'écran",
+    "signatureCity": "Ville"
   },
   "preferences": {
     "title": "Préférences",
