@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
 import store from './store';
 import { createTray } from './tray';
@@ -14,6 +14,9 @@ let isQuitting = false;
 function createWindow(): void {
   const bounds = store.get('windowBounds');
 
+  // Hide default menu bar
+  Menu.setApplicationMenu(null);
+
   mainWindow = new BrowserWindow({
     width: bounds?.width ?? 1280,
     height: bounds?.height ?? 800,
@@ -21,6 +24,7 @@ function createWindow(): void {
     y: bounds?.y,
     title: 'MeteorEdit',
     icon: path.join(__dirname, '..', 'resources', 'icon.ico'),
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

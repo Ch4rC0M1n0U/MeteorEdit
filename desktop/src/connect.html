@@ -5,97 +5,400 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MeteorEdit — Connexion</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f0f1a;
       color: #e0e0e0;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      -webkit-app-region: drag;
+    }
+
+    /* Subtle animated background gradient */
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(99, 91, 255, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(99, 91, 255, 0.05) 0%, transparent 60%);
+      z-index: 0;
+    }
+
+    .layout {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Left panel — branding */
+    .brand-panel {
+      flex: 0 0 380px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 48px;
+      background: linear-gradient(165deg, rgba(99, 91, 255, 0.12) 0%, rgba(15, 15, 26, 0.95) 100%);
+      border-right: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .brand-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #635BFF 0%, #4840CC 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      user-select: none;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(99, 91, 255, 0.3);
     }
-    .container {
-      text-align: center;
-      max-width: 420px;
-      width: 100%;
-      padding: 40px;
+
+    .brand-icon svg {
+      width: 44px;
+      height: 44px;
+      fill: white;
     }
-    .logo {
-      font-size: 2.5rem;
+
+    .brand-title {
+      font-size: 1.75rem;
       font-weight: 700;
-      color: #6C63FF;
+      color: #fff;
+      letter-spacing: -0.02em;
       margin-bottom: 8px;
     }
-    .subtitle {
-      color: #888;
-      margin-bottom: 32px;
-      font-size: 0.9rem;
+
+    .brand-tagline {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-align: center;
+      line-height: 1.5;
     }
-    .input-group {
+
+    .brand-version {
+      margin-top: 32px;
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.2);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* Right panel — connection form */
+    .connect-panel {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 16px;
+      justify-content: center;
+      align-items: center;
+      padding: 48px;
+      -webkit-app-region: no-drag;
     }
-    input {
-      padding: 12px 16px;
-      border: 1px solid #333;
-      border-radius: 8px;
-      background: #16213e;
-      color: #e0e0e0;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input:focus { border-color: #6C63FF; }
-    input::placeholder { color: #555; }
-    button {
+
+    .form-container {
       width: 100%;
-      padding: 12px;
+      max-width: 400px;
+    }
+
+    .form-header {
+      margin-bottom: 32px;
+    }
+
+    .form-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .form-header p {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper svg {
+      position: absolute;
+      left: 14px;
+      width: 18px;
+      height: 18px;
+      fill: rgba(255, 255, 255, 0.25);
+      pointer-events: none;
+      transition: fill 0.2s;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 16px 13px 44px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    input:focus {
+      border-color: #635BFF;
+      background: rgba(99, 91, 255, 0.06);
+      box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
+    }
+
+    input:focus + svg,
+    .input-wrapper:focus-within svg {
+      fill: #635BFF;
+    }
+
+    input::placeholder { color: rgba(255, 255, 255, 0.2); }
+
+    .btn {
+      width: 100%;
+      padding: 13px 24px;
       border: none;
-      border-radius: 8px;
-      background: #6C63FF;
-      color: white;
-      font-size: 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-    button:hover { background: #5a52d5; }
-    button:disabled { background: #444; cursor: not-allowed; }
-    .status {
+
+    .btn-primary {
+      background: #635BFF;
+      color: white;
+      box-shadow: 0 2px 8px rgba(99, 91, 255, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: #5449e6;
+      box-shadow: 0 4px 16px rgba(99, 91, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      background: rgba(99, 91, 255, 0.3);
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Status */
+    .status-bar {
       margin-top: 16px;
-      font-size: 0.85rem;
-      min-height: 20px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
     }
-    .status.error { color: #ff6b6b; }
-    .status.success { color: #51cf66; }
-    .status.loading { color: #888; }
+
+    .status-bar.visible { display: flex; }
+
+    .status-bar.error {
+      background: rgba(255, 69, 69, 0.1);
+      border: 1px solid rgba(255, 69, 69, 0.15);
+      color: #ff6b6b;
+    }
+
+    .status-bar.success {
+      background: rgba(81, 207, 102, 0.1);
+      border: 1px solid rgba(81, 207, 102, 0.15);
+      color: #51cf66;
+    }
+
+    .status-bar.loading {
+      background: rgba(99, 91, 255, 0.08);
+      border: 1px solid rgba(99, 91, 255, 0.12);
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .status-bar svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* Window controls area (drag region) */
+    .titlebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 32px;
+      -webkit-app-region: drag;
+      z-index: 100;
+    }
+
+    /* Hints */
+    .hints {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.25);
+      margin-bottom: 8px;
+    }
+
+    .hint svg {
+      width: 14px;
+      height: 14px;
+      fill: rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">MeteorEdit</div>
-    <div class="subtitle">Entrez l'adresse de votre serveur</div>
-    <div class="input-group">
-      <input
-        type="url"
-        id="serverUrl"
-        placeholder="https://meteoredit.example.com"
-        autofocus
-      />
-      <button id="connectBtn" onclick="testConnection()">Tester la connexion</button>
+  <div class="titlebar"></div>
+  <div class="bg-gradient"></div>
+
+  <div class="layout">
+    <!-- Left branding panel -->
+    <div class="brand-panel">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+      </div>
+      <div class="brand-title">MeteorEdit</div>
+      <div class="brand-tagline">Plateforme d'investigation OSINT<br/>et gestion de dossiers</div>
+      <div class="brand-version" id="appVersion">Desktop v1.0.0</div>
     </div>
-    <div id="status" class="status"></div>
+
+    <!-- Right connection panel -->
+    <div class="connect-panel">
+      <div class="form-container">
+        <div class="form-header">
+          <h2>Connexion au serveur</h2>
+          <p>Renseignez l'adresse de votre instance MeteorEdit</p>
+        </div>
+
+        <div class="field">
+          <label for="serverUrl">Adresse du serveur</label>
+          <div class="input-wrapper">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-.61.08-1.21.21-1.78L8.99 15v1c0 1.1.9 2 2 2v1.93C7.06 19.43 4 16.07 4 12zm13.89 5.4c-.26-.81-1-1.4-1.89-1.4h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41C17.92 5.77 20 8.65 20 12c0 2.08-.8 3.97-2.11 5.4z"/>
+            </svg>
+            <input
+              type="url"
+              id="serverUrl"
+              placeholder="https://meteoredit.example.com"
+              spellcheck="false"
+              autofocus
+            />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="connectBtn" onclick="testConnection()">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9.01 14H2v2h7.01v3L13 15l-3.99-4v3zm5.98-1v-3H22V8h-7.01V5L11 9l3.99 4z"/>
+          </svg>
+          <span id="btnText">Se connecter</span>
+        </button>
+
+        <div class="status-bar" id="statusBar">
+          <svg id="statusIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d=""/></svg>
+          <span id="statusText"></span>
+        </div>
+
+        <div class="hints">
+          <div class="hint">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            <span>Utilisez l'URL complète incluant le protocole (https://)</span>
+          </div>
+          <div class="hint">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+            </svg>
+            <span>La connexion est chiffree de bout en bout via TLS</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
   <script>
     const urlInput = document.getElementById('serverUrl');
     const connectBtn = document.getElementById('connectBtn');
-    const statusEl = document.getElementById('status');
+    const btnText = document.getElementById('btnText');
+    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    const statusIcon = document.getElementById('statusIcon');
 
-    // Load saved URL if any
+    const ICONS = {
+      error: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>',
+      success: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>',
+      loading: '<path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>'
+    };
+
+    // Load version
+    window.electronAPI.getAppVersion().then(v => {
+      document.getElementById('appVersion').textContent = 'Desktop v' + v;
+    });
+
+    // Load saved URL
     window.electronAPI.getServerUrl().then(url => {
       if (url) urlInput.value = url;
     });
@@ -104,33 +407,52 @@
       if (e.key === 'Enter') testConnection();
     });
 
+    function showStatus(type, message) {
+      statusBar.className = 'status-bar visible ' + type;
+      statusText.textContent = message;
+      statusIcon.innerHTML = ICONS[type] || '';
+    }
+
+    function hideStatus() {
+      statusBar.className = 'status-bar';
+    }
+
     async function testConnection() {
       const url = urlInput.value.trim().replace(/\/+$/, '');
       if (!url) {
-        statusEl.textContent = 'Veuillez entrer une URL';
-        statusEl.className = 'status error';
+        showStatus('error', 'Veuillez entrer une URL valide');
         return;
       }
 
       connectBtn.disabled = true;
-      statusEl.textContent = 'Connexion en cours...';
-      statusEl.className = 'status loading';
+      btnText.textContent = 'Connexion...';
+      connectBtn.querySelector('svg').style.display = 'none';
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      connectBtn.insertBefore(spinner, btnText);
+      showStatus('loading', 'Test de connexion en cours...');
 
       try {
         const ok = await window.electronAPI.testServerConnection(url);
         if (ok) {
-          statusEl.textContent = 'Connecté ! Chargement...';
-          statusEl.className = 'status success';
+          showStatus('success', 'Connexion etablie ! Chargement de l\'application...');
           await window.electronAPI.setServerUrl(url);
         } else {
-          statusEl.textContent = 'Serveur injoignable. Vérifiez l\'URL.';
-          statusEl.className = 'status error';
+          showStatus('error', 'Serveur injoignable. Verifiez l\'adresse et reessayez.');
+          resetBtn();
         }
       } catch (err) {
-        statusEl.textContent = 'Erreur de connexion. Vérifiez l\'URL.';
-        statusEl.className = 'status error';
+        showStatus('error', 'Erreur de connexion. Verifiez l\'adresse et reessayez.');
+        resetBtn();
       }
+    }
+
+    function resetBtn() {
       connectBtn.disabled = false;
+      btnText.textContent = 'Se connecter';
+      const spinner = connectBtn.querySelector('.spinner');
+      if (spinner) spinner.remove();
+      connectBtn.querySelector('svg').style.display = '';
     }
   </script>
 </body>
