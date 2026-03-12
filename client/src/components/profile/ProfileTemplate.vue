@@ -257,13 +257,6 @@
             <span class="tpl-color-hex mono">{{ tpl.body.color }}</span>
           </div>
         </div>
-        <div class="tpl-field">
-          <label class="tpl-label mono">Couleur avertissement</label>
-          <div class="tpl-color-row">
-            <input type="color" v-model="tpl.disclaimer.color" class="tpl-color-input" />
-            <span class="tpl-color-hex mono">{{ tpl.disclaimer.color }}</span>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -565,23 +558,46 @@ async function generatePdfPreview() {
     const tplSnapshot = JSON.parse(JSON.stringify(tpl)) as PdfTemplateConfig;
     const logos = await loadTemplateLogos(tplSnapshot, SERVER_URL);
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const b = createPdfBuilder(doc, tplSnapshot, logos);
+    const b = await createPdfBuilder(doc, tplSnapshot, logos);
 
-    // Cover page
-    b.drawCover('Dossier \u00AB Exemple \u00BB - Rapport n\u00B01', [
+    // Title + info
+    b.drawReportHeader('Dossier Exemple', [
       new Date().toLocaleDateString('fr-FR'),
       'Statut: En cours',
+      'Enqueteur: Jean Dupont',
     ]);
 
-    // Content page
-    b.newContentPage();
-    b.addHeading('Entites concernees', 'h1');
-    b.addBody('Les recherches demandees par l\u2019enqueteur portent sur les entites suivantes. Cette section illustre le style du corps de texte avec les parametres actuels.');
-    b.addHeading('Objectifs de la recherche', 'h2');
-    b.addBody('Les objectifs sont definis comme suit : identifier les informations pertinentes en sources ouvertes concernant les entites cibles.');
-    b.addHeading('Detail des resultats', 'h3');
-    b.addBody('Les recherches en sources ouvertes ont ete menees sur Internet. Il convient de souligner que certaines informations pertinentes pourraient ne pas avoir ete identifiees.');
-    b.addDisclaimer('Note : toutes les recherches reprises dans ce rapport ont ete realisees en sources ouvertes uniquement.');
+    // Content hierarchy example
+    b.addHeading('Recherches en source ouverte', 'h1');
+    b.addBody('Cette section illustre le style du corps de texte avec les parametres actuels du template.');
+    b.addHeading('Compte Instagram', 'h2');
+    b.addBody('Les recherches menees sur ce compte ont permis d\'identifier plusieurs publications pertinentes pour l\'enquete.');
+    b.addHeading('Analyse des publications', 'h3');
+    b.addBody('Les publications identifiees couvrent la periode du 1er janvier au 15 mars 2026.');
+
+    // Bullet list demo
+    await b.renderBlocks([
+      { type: 'bulletList', items: [
+        [{ type: 'paragraph', children: [{ type: 'text', text: 'Publication du 15 janvier 2026', marks: {} }] }],
+        [{ type: 'paragraph', children: [{ type: 'text', text: 'Story archivee du 3 fevrier 2026', marks: {} }] }],
+      ]},
+    ]);
+
+    // Blockquote demo
+    await b.renderBlocks([
+      { type: 'blockquote', children: [
+        { type: 'paragraph', children: [{ type: 'text', text: 'Source: profil public identifie le 10 mars 2026.', marks: {} }] },
+      ]},
+    ]);
+
+    // Table demo
+    await b.renderBlocks([
+      { type: 'table', rows: [
+        [[{ type: 'text', text: 'Date', marks: {} }], [{ type: 'text', text: 'Evenement', marks: {} }]],
+        [[{ type: 'text', text: '15/01/2026', marks: {} }], [{ type: 'text', text: 'Publication identifiee', marks: {} }]],
+        [[{ type: 'text', text: '03/02/2026', marks: {} }], [{ type: 'text', text: 'Story archivee', marks: {} }]],
+      ]},
+    ]);
 
     const blob = b.finalize();
 
