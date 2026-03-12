@@ -3,6 +3,7 @@ import path from 'path';
 import store from './store';
 import { createTray } from './tray';
 import { showNativeNotification } from './notifications';
+import { registerShortcuts, unregisterShortcuts } from './shortcuts';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -39,6 +40,7 @@ function createWindow(): void {
   });
 
   createTray(mainWindow);
+  registerShortcuts(mainWindow);
 
   // Minimize to tray instead of closing
   mainWindow.on('close', (event) => {
@@ -95,6 +97,10 @@ if (!gotTheLock) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
+  });
+
+  app.on('will-quit', () => {
+    unregisterShortcuts();
   });
 
   app.whenReady().then(createWindow);
