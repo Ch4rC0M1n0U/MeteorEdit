@@ -952,38 +952,3 @@ export function cleanControlChars(text: string): string {
   return text.replace(/[\u200B-\u200F\u2028-\u202F\uFEFF\u0000-\u001F]/g, '');
 }
 
-// ── Content Blocks ──────────────────────────────────────────────────
-
-export type ContentBlock =
-  | { type: 'text'; text: string }
-  | { type: 'image'; src: string; alt?: string };
-
-export function extractContentBlocks(json: any): ContentBlock[] {
-  const blocks: ContentBlock[] = [];
-  if (!json) return blocks;
-
-  function walk(node: any) {
-    if (!node) return;
-    if (node.type === 'image' && node.attrs?.src) {
-      blocks.push({ type: 'image', src: node.attrs.src, alt: node.attrs.alt });
-      return;
-    }
-    if (node.text) {
-      const last = blocks[blocks.length - 1];
-      if (last && last.type === 'text') { last.text += node.text; }
-      else { blocks.push({ type: 'text', text: node.text }); }
-      return;
-    }
-    if (node.content) {
-      for (const child of node.content) { walk(child); }
-      if (['paragraph', 'heading', 'blockquote', 'listItem'].includes(node.type)) {
-        const last = blocks[blocks.length - 1];
-        if (last && last.type === 'text') { last.text += '\n'; }
-      }
-    }
-  }
-
-  if (json.content) { for (const child of json.content) { walk(child); } }
-  else { walk(json); }
-  return blocks;
-}

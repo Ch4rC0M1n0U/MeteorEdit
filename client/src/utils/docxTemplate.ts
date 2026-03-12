@@ -203,19 +203,6 @@ function bodyParagraph(text: string, tpl: PdfTemplateConfig): Paragraph {
   });
 }
 
-function disclaimerParagraph(text: string, tpl: PdfTemplateConfig): Paragraph {
-  return new Paragraph({
-    children: [new TextRun({
-      text,
-      font: docxFont(tpl),
-      size: ptToHalfPt(tpl.body.fontSize - 1),
-      italics: true,
-      color: hexToRgb(tpl.disclaimer.color),
-    })],
-    spacing: { before: 200, after: 80 },
-  });
-}
-
 function bulletParagraph(text: string, tpl: PdfTemplateConfig): Paragraph {
   const lh = tpl.spacing?.lineHeight || 1.4;
   return new Paragraph({
@@ -552,10 +539,6 @@ async function resolveBlockImages(
 
 // ── Types ───────────────────────────────────────────────────────────
 
-export type DocxContentItem =
-  | { type: 'text'; text: string }
-  | { type: 'image'; src: string };
-
 export interface DocxExportData {
   dossierTitle: string;
   infoLines: string[];
@@ -564,10 +547,8 @@ export interface DocxExportData {
     level: 'h1' | 'h2' | 'h3';
     paragraphs: string[];
     bullets?: string[];
-    content?: DocxContentItem[];
     blocks?: ContentBlock[];  // Rich content blocks — preferred over paragraphs/content
   }>;
-  disclaimerText: string;
   closingDate: string;
   closingCity?: string;
   includeToc?: boolean;
@@ -674,31 +655,14 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       docChildren.push(sectionHeading(section.title, tpl, section.level));
     }
 
-    // New path: rich ContentBlock rendering
+    // Rich ContentBlock rendering (preferred)
     if (section.blocks && section.blocks.length > 0) {
       const images: { src: string; placeholder: Paragraph }[] = [];
       const blockElements = renderBlocksToDocx(section.blocks, tpl, images);
       const resolved = await resolveBlockImages(blockElements, images);
       docChildren.push(...resolved);
-    } else if (section.content && section.content.length > 0) {
-      // Legacy path: DocxContentItem rendering
-      for (const item of section.content) {
-        if (item.type === 'text' && item.text.trim()) {
-          docChildren.push(bodyParagraph(item.text, tpl));
-        } else if (item.type === 'image' && item.src) {
-          try {
-            const imgData = await fetchImageBuffer(item.src);
-            if (imgData) {
-              docChildren.push(new Paragraph({
-                children: [makeImageRun(imgData, 500, 400)],
-                spacing: { before: 80, after: 80 },
-              }));
-            }
-          } catch { /* skip */ }
-        }
-      }
     } else {
-      // Legacy path: plain text paragraphs
+      // Fallback: plain text paragraphs
       for (const para of section.paragraphs) {
         if (para.trim()) docChildren.push(bodyParagraph(para, tpl));
       }
@@ -709,12 +673,6 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
         docChildren.push(bulletParagraph(bullet, tpl));
       }
     }
-  }
-
-  // ─── DISCLAIMER ───
-
-  if (data.disclaimerText) {
-    docChildren.push(disclaimerParagraph(data.disclaimerText, tpl));
   }
 
   // ─── CLOSING + SIGNATURE ───

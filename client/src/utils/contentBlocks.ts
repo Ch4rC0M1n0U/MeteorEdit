@@ -298,14 +298,6 @@ function extractPlainTextFromNodes(nodes?: TipTapNode[]): string {
   return text;
 }
 
-// ── Inline vs block helpers ─────────────────────────────────────────
-
-const INLINE_TYPES = new Set<string>(['text', 'hardBreak']);
-
-function isInlineBlock(block: ContentBlock): boolean {
-  return INLINE_TYPES.has(block.type);
-}
-
 // ── Public API ──────────────────────────────────────────────────────
 
 /**
