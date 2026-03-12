@@ -1,0 +1,21 @@
+{
+  "name": "meteoredit-desktop",
+  "version": "1.0.0",
+  "description": "MeteorEdit Desktop Client for Windows",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "pack": "tsc && electron-builder --dir",
+    "dist": "tsc && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.6.0"
+  }
+}

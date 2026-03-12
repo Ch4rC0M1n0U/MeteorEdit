@@ -1,0 +1,34 @@
+appId: com.meteoredit.desktop
+productName: MeteorEdit
+copyright: Copyright © 2026
+
+directories:
+  output: release
+
+files:
+  - dist/**/*
+  - resources/**/*
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  installerHeaderIcon: resources/icon.ico
+
+publish:
+  provider: github
+  owner: Deshimaru
+  repo: MeteorEdit
+
+protocols:
+  - name: MeteorEdit
+    schemes:
+      - meteoredit
