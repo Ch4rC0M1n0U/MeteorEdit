@@ -200,7 +200,9 @@ export interface PdfBuilder {
   addList: (items: ContentBlock[][], ordered: boolean, level?: number, startNum?: number) => void;
   addBlockquote: (children: ContentBlock[]) => void;
   addCodeBlock: (text: string) => void;
+  addTable: (rows: ContentBlock[][][]) => void;
   addInlineImage: (dataUrl: string, imgW: number, imgH: number) => void;
+  renderBlocks: (blocks: ContentBlock[]) => Promise<void>;
   drawReportHeader: (title: string, infoLines: string[]) => void;
   finalize: () => Blob;
 }
@@ -704,6 +706,112 @@ export async function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos
       doc.setDrawColor(0);
     },
 
+    addTable(rows: ContentBlock[][][]) {
+      if (!rows || rows.length === 0) return;
+
+      const ps = tpl.spacing?.paragraphSpacing ?? 3;
+      const fontSize = tpl.body.fontSize;
+      const lh = tpl.spacing?.lineHeight || 1.4;
+      const lineH = fontSize * PT_MM * lh;
+      const cellPadH = 2; // horizontal padding per side
+      const cellPadV = 2; // vertical padding per side
+      const colCount = rows[0].length;
+      const colWidth = usableW / colCount;
+
+      // Helper: compute row heights and wrapped text
+      function prepareRow(row: ContentBlock[][]) {
+        const cellTexts: string[][] = [];
+        let maxH = 0;
+        for (let c = 0; c < colCount; c++) {
+          const cell = row[c] || [];
+          const plainText = blocksToPlainText(cell);
+          const wrapped: string[] = doc.splitTextToSize(plainText, colWidth - cellPadH * 2);
+          cellTexts.push(wrapped);
+          const cellH = wrapped.length * lineH;
+          if (cellH > maxH) maxH = cellH;
+        }
+        const rowH = maxH + cellPadV * 2;
+        return { cellTexts, rowH };
+      }
+
+      // Helper: draw a single row
+      function drawRow(row: ContentBlock[][], rowIndex: number, isHeader: boolean) {
+        const { cellTexts, rowH } = prepareRow(row);
+
+        // Draw cell backgrounds
+        for (let c = 0; c < colCount; c++) {
+          const cellX = margin + c * colWidth;
+
+          if (isHeader) {
+            doc.setFillColor(...hexToRgb(tpl.table.headerBgColor));
+            doc.rect(cellX, builder.y, colWidth, rowH, 'F');
+          } else if (rowIndex % 2 === 1 && tpl.table.alternateRowColor) {
+            doc.setFillColor(...hexToRgb(tpl.table.alternateRowColor));
+            doc.rect(cellX, builder.y, colWidth, rowH, 'F');
+          }
+        }
+
+        // Draw cell text
+        doc.setFontSize(fontSize);
+        for (let c = 0; c < colCount; c++) {
+          const cellX = margin + c * colWidth;
+          const lines = cellTexts[c];
+
+          if (isHeader) {
+            doc.setFont(PDF_FONT, 'bold');
+            doc.setTextColor(...hexToRgb(tpl.table.headerTextColor));
+          } else {
+            doc.setFont(PDF_FONT, 'normal');
+            doc.setTextColor(...hexToRgb(tpl.body.color || '#000000'));
+          }
+
+          let textY = builder.y + cellPadV + fontAscent(fontSize);
+          for (const line of lines) {
+            doc.text(line, cellX + cellPadH, textY);
+            textY += lineH;
+          }
+        }
+
+        // Draw cell borders
+        doc.setDrawColor(...hexToRgb(tpl.table.borderColor));
+        doc.setLineWidth(tpl.table.borderWidth);
+        for (let c = 0; c < colCount; c++) {
+          const cellX = margin + c * colWidth;
+          doc.rect(cellX, builder.y, colWidth, rowH);
+        }
+
+        builder.y += rowH;
+      }
+
+      // Render all rows
+      for (let r = 0; r < rows.length; r++) {
+        const { rowH } = prepareRow(rows[r]);
+        const isHeader = r === 0;
+
+        // Check page break
+        if (builder.y + rowH > contentBottom) {
+          builder.newContentPage();
+          // Redraw header row on new page
+          if (!isHeader && rows.length > 0) {
+            const { rowH: headerH } = prepareRow(rows[0]);
+            if (builder.y + headerH <= contentBottom) {
+              drawRow(rows[0], 0, true);
+            }
+          }
+        }
+
+        drawRow(rows[r], r, isHeader);
+      }
+
+      // Reset colors
+      doc.setDrawColor(0);
+      doc.setTextColor(0);
+      doc.setFont(PDF_FONT, 'normal');
+
+      // Paragraph spacing after table
+      builder.y += ps;
+    },
+
     addInlineImage(dataUrl: string, imgW: number, imgH: number) {
       const maxW = usableW;
       const maxH = 120;
@@ -719,6 +827,59 @@ export async function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos
         builder.y += h + 3;
       } catch (e) {
         console.warn('PDF addImage failed:', e);
+      }
+    },
+
+    async renderBlocks(blocks: ContentBlock[]) {
+      for (const block of blocks) {
+        switch (block.type) {
+          case 'paragraph':
+            builder.addRichText(block.children, block.align);
+            break;
+          case 'heading':
+            // Headings inside note content — render as bold text, NOT structural h1/h2/h3
+            // Because structural headings are handled by the tree walker
+            builder.addRichText([{ type: 'text', text: blocksToPlainText(block.children), marks: { bold: true } }]);
+            break;
+          case 'bulletList':
+            builder.addList(block.items, false);
+            break;
+          case 'orderedList':
+            builder.addList(block.items, true, 0, block.start || 1);
+            break;
+          case 'blockquote':
+            builder.addBlockquote(block.children);
+            break;
+          case 'codeBlock':
+            builder.addCodeBlock(block.text);
+            break;
+          case 'table':
+            builder.addTable(block.rows);
+            break;
+          case 'image':
+            if (block.src) {
+              try {
+                const dataUrl = await loadImageAsDataUrl(block.src);
+                const img = new Image();
+                await new Promise<void>((resolve, reject) => {
+                  img.onload = () => resolve();
+                  img.onerror = () => reject();
+                  img.src = dataUrl;
+                });
+                builder.addInlineImage(dataUrl, img.naturalWidth, img.naturalHeight);
+              } catch {
+                // Skip failed images silently
+              }
+            }
+            break;
+          case 'text':
+            // Standalone text at top level — render as body
+            builder.addBody(block.text);
+            break;
+          case 'hardBreak':
+            builder.y += 2;
+            break;
+        }
       }
     },
 
