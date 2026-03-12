@@ -14,14 +14,14 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: resources/icon.ico
+  icon: resources/icon.png
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  installerIcon: resources/icon.ico
-  uninstallerIcon: resources/icon.ico
-  installerHeaderIcon: resources/icon.ico
+  installerIcon: resources/icon.png
+  uninstallerIcon: resources/icon.png
+  installerHeaderIcon: resources/icon.png
 
 publish:
   provider: github
