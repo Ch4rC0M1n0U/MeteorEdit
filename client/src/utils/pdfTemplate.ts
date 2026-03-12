@@ -1,6 +1,6 @@
 import type { jsPDF } from 'jspdf';
 import { registerNotoSans, PDF_FONT } from './pdfFonts';
-import type { ContentBlock, InlineMark } from './contentBlocks';
+import { blocksToPlainText, type ContentBlock, type InlineMark } from './contentBlocks';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -197,6 +197,9 @@ export interface PdfBuilder {
   addBody: (text: string) => void;
   addDisclaimer: (text: string) => void;
   addRichText: (children: ContentBlock[], align?: string) => void;
+  addList: (items: ContentBlock[][], ordered: boolean, level?: number, startNum?: number) => void;
+  addBlockquote: (children: ContentBlock[]) => void;
+  addCodeBlock: (text: string) => void;
   addInlineImage: (dataUrl: string, imgW: number, imgH: number) => void;
   drawReportHeader: (title: string, infoLines: string[]) => void;
   finalize: () => Blob;
@@ -514,6 +517,191 @@ export async function createPdfBuilder(doc: jsPDF, tpl: PdfTemplateConfig, logos
 
       // Paragraph spacing
       builder.y += ps;
+    },
+
+    addList(items: ContentBlock[][], ordered: boolean, level = 0, startNum = 1) {
+      const lh = tpl.spacing?.lineHeight || 1.4;
+      const fontSize = tpl.body.fontSize;
+      const lineH = fontSize * PT_MM * lh;
+      const indent = level * 8;
+      const bulletWidth = ordered ? 6 : 4;
+
+      // Save original margin/usableW
+      const savedMargin = builder.margin;
+      const savedUsableW = builder.usableW;
+
+      for (let i = 0; i < items.length; i++) {
+        const itemBlocks = items[i];
+        const num = startNum + i;
+
+        // Draw bullet/number
+        const bulletX = savedMargin + indent;
+        const bulletText = ordered ? `${num}.` : '\u2022';
+
+        builder.checkPage(lineH + 2);
+        doc.setFontSize(fontSize);
+        doc.setFont(PDF_FONT, 'normal');
+        doc.setTextColor(...hexToRgb(tpl.body.color || '#000000'));
+        doc.text(bulletText, bulletX, builder.y + fontAscent(fontSize));
+
+        // Temporarily shift margin for item content
+        const contentIndent = indent + bulletWidth;
+        builder.margin = savedMargin + contentIndent;
+        builder.usableW = savedUsableW - contentIndent;
+
+        // Render each block in the item
+        for (const block of itemBlocks) {
+          switch (block.type) {
+            case 'paragraph':
+              builder.addRichText(block.children, block.align);
+              break;
+            case 'bulletList':
+              builder.addList(block.items, false, level + 1);
+              break;
+            case 'orderedList':
+              builder.addList(block.items, true, level + 1, block.start ?? 1);
+              break;
+            case 'text': {
+              const text = block.text;
+              doc.setFontSize(fontSize);
+              doc.setFont(PDF_FONT, 'normal');
+              doc.setTextColor(...hexToRgb(tpl.body.color || '#000000'));
+              const lines: string[] = doc.splitTextToSize(text, builder.usableW);
+              for (const line of lines) {
+                builder.checkPage(lineH + 2);
+                doc.text(line, builder.margin, builder.y + fontAscent(fontSize));
+                builder.y += lineH;
+              }
+              builder.y += tpl.spacing?.paragraphSpacing ?? 3;
+              break;
+            }
+            case 'blockquote':
+              builder.addBlockquote(block.children);
+              break;
+            case 'codeBlock':
+              builder.addCodeBlock(block.text);
+              break;
+            default:
+              // Skip unsupported types in list items
+              break;
+          }
+        }
+
+        // Restore margin/usableW
+        builder.margin = savedMargin;
+        builder.usableW = savedUsableW;
+
+        // Small spacing between items (only if not last)
+        if (i < items.length - 1) {
+          builder.y += 1;
+        }
+      }
+
+      // Paragraph spacing after list
+      builder.y += tpl.spacing?.paragraphSpacing ?? 3;
+    },
+
+    addBlockquote(children: ContentBlock[]) {
+      const ps = tpl.spacing?.paragraphSpacing ?? 3;
+      const borderX = builder.margin + 3;
+      const contentOffset = 7;
+
+      // Save state
+      const savedMargin = builder.margin;
+      const savedUsableW = builder.usableW;
+      const yStart = builder.y;
+
+      // Shift content to the right
+      builder.margin = savedMargin + contentOffset;
+      builder.usableW = savedUsableW - contentOffset;
+
+      // Render children in italic
+      for (const block of children) {
+        switch (block.type) {
+          case 'paragraph': {
+            // Override children marks to italic
+            const italicChildren: ContentBlock[] = block.children.map(child => {
+              if (child.type === 'text') {
+                return { ...child, marks: { ...child.marks, italic: true } };
+              }
+              return child;
+            });
+            builder.addRichText(italicChildren, block.align);
+            break;
+          }
+          case 'text': {
+            const lh = tpl.spacing?.lineHeight || 1.4;
+            const fontSize = tpl.body.fontSize;
+            const lineH = fontSize * PT_MM * lh;
+            doc.setFontSize(fontSize);
+            doc.setFont(PDF_FONT, 'italic');
+            doc.setTextColor(...hexToRgb(tpl.body.color || '#000000'));
+            const lines: string[] = doc.splitTextToSize(block.text, builder.usableW);
+            for (const line of lines) {
+              builder.checkPage(lineH + 2);
+              doc.text(line, builder.margin, builder.y + fontAscent(fontSize));
+              builder.y += lineH;
+            }
+            builder.y += ps;
+            break;
+          }
+          default:
+            break;
+        }
+      }
+
+      const yEnd = builder.y;
+
+      // Draw vertical border line
+      const [lr, lg, lb] = hexToRgb(tpl.header.lineColor);
+      doc.setDrawColor(lr, lg, lb);
+      doc.setLineWidth(0.5);
+      doc.line(borderX, yStart, borderX, yEnd - ps);
+
+      // Restore state
+      builder.margin = savedMargin;
+      builder.usableW = savedUsableW;
+
+      // Paragraph spacing
+      builder.y += ps;
+    },
+
+    addCodeBlock(text: string) {
+      const lh = tpl.spacing?.lineHeight || 1.4;
+      const ps = tpl.spacing?.paragraphSpacing ?? 3;
+      const fontSize = tpl.body.fontSize - 1;
+      const lineH = fontSize * PT_MM * lh;
+      const pad = 3;
+
+      const codeLines = text.split('\n');
+      const totalH = pad * 2 + codeLines.length * lineH;
+
+      builder.checkPage(Math.min(totalH, builder.contentBottom - builder.y));
+
+      // Draw background
+      const bgTop = builder.y;
+      doc.setFillColor(245, 245, 245);
+      doc.rect(builder.margin, bgTop, builder.usableW, totalH, 'F');
+
+      // Optional thin border
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.2);
+      doc.rect(builder.margin, bgTop, builder.usableW, totalH);
+
+      builder.y += pad;
+
+      doc.setFontSize(fontSize);
+      doc.setFont(PDF_FONT, 'normal');
+      doc.setTextColor(...hexToRgb(tpl.body.color || '#000000'));
+
+      for (const line of codeLines) {
+        builder.checkPage(lineH + 2);
+        doc.text(line || ' ', builder.margin + pad, builder.y + fontAscent(fontSize), { maxWidth: builder.usableW - pad * 2 });
+        builder.y += lineH;
+      }
+
+      builder.y += pad + ps;
+      doc.setDrawColor(0);
     },
 
     addInlineImage(dataUrl: string, imgW: number, imgH: number) {
