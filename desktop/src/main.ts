@@ -9,6 +9,7 @@ import { setupAutoUpdater } from './updater';
 import { autoUpdater } from 'electron-updater';
 
 let mainWindow: BrowserWindow | null = null;
+let isQuitting = false;
 
 function createWindow(): void {
   const bounds = store.get('windowBounds');
@@ -19,7 +20,7 @@ function createWindow(): void {
     x: bounds?.x,
     y: bounds?.y,
     title: 'MeteorEdit',
-    icon: path.join(__dirname, '..', 'resources', 'icon.ico'),
+    icon: path.join(__dirname, '..', 'resources', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -48,7 +49,7 @@ function createWindow(): void {
 
   // Minimize to tray instead of closing
   mainWindow.on('close', (event) => {
-    if (store.get('minimizeToTray') && mainWindow) {
+    if (!isQuitting && store.get('minimizeToTray') && mainWindow) {
       event.preventDefault();
       mainWindow.hide();
     }
@@ -122,6 +123,10 @@ if (!gotTheLock) {
 
   app.on('will-quit', () => {
     unregisterShortcuts();
+  });
+
+  app.on('before-quit', () => {
+    isQuitting = true;
   });
 
   app.whenReady().then(createWindow);

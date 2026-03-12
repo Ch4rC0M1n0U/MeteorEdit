@@ -4,7 +4,7 @@
   "description": "MeteorEdit Desktop Client for Windows",
   "main": "dist/main.js",
   "scripts": {
-    "copy-static": "cp src/connect.html dist/connect.html",
+    "copy-static": "node -e \"require('fs').copyFileSync('src/connect.html','dist/connect.html')\"",
     "dev": "tsc && npm run copy-static && electron .",
     "build": "tsc && npm run copy-static",
     "pack": "npm run build && electron-builder --dir",

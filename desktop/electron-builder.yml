@@ -9,6 +9,10 @@ files:
   - dist/**/*
   - resources/**/*
 
+extraResources:
+  - from: resources
+    to: resources
+
 win:
   target:
     - target: nsis

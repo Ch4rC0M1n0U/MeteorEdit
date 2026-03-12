@@ -5,19 +5,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setServerUrl: (url: string): Promise<void> => ipcRenderer.invoke('set-server-url', url),
   testServerConnection: (url: string): Promise<boolean> => ipcRenderer.invoke('test-server-connection', url),
   showNotification: (title: string, body: string): void => ipcRenderer.send('show-notification', title, body),
-  onDeepLink: (callback: (url: string) => void): void => {
-    ipcRenderer.on('deep-link', (_event, url: string) => callback(url));
+  onDeepLink: (callback: (url: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, url: string) => callback(url);
+    ipcRenderer.on('deep-link', handler);
+    return () => { ipcRenderer.removeListener('deep-link', handler); };
   },
-  onNavigate: (callback: (path: string) => void): void => {
-    ipcRenderer.on('navigate', (_event, path: string) => callback(path));
+  onNavigate: (callback: (path: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, path: string) => callback(path);
+    ipcRenderer.on('navigate', handler);
+    return () => { ipcRenderer.removeListener('navigate', handler); };
   },
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('get-app-version'),
   platform: process.platform,
-  onUpdateAvailable: (callback: () => void): void => {
-    ipcRenderer.on('update-available', () => callback());
+  onUpdateAvailable: (callback: () => void): (() => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('update-available', handler);
+    return () => { ipcRenderer.removeListener('update-available', handler); };
   },
-  onUpdateDownloaded: (callback: () => void): void => {
-    ipcRenderer.on('update-downloaded', () => callback());
+  onUpdateDownloaded: (callback: () => void): (() => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('update-downloaded', handler);
+    return () => { ipcRenderer.removeListener('update-downloaded', handler); };
   },
   installUpdate: (): void => ipcRenderer.send('install-update'),
 });
