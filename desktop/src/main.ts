@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import store from './store';
 import { createTray } from './tray';
+import { showNativeNotification } from './notifications';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -79,6 +80,10 @@ ipcMain.handle('test-server-connection', async (_event, url: string): Promise<bo
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.on('show-notification', (_event, title: string, body: string) => {
+  showNativeNotification(title, body, mainWindow);
+});
 
 // Single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
