@@ -4,6 +4,7 @@ import store from './store';
 import { createTray } from './tray';
 import { showNativeNotification } from './notifications';
 import { registerShortcuts, unregisterShortcuts } from './shortcuts';
+import { handleDeepLink } from './deeplinks';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -87,15 +88,28 @@ ipcMain.on('show-notification', (_event, title: string, body: string) => {
   showNativeNotification(title, body, mainWindow);
 });
 
+// Register deep link protocol
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('meteoredit', process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('meteoredit');
+}
+
 // Single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, commandLine) => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
+    }
+    const deepLinkUrl = commandLine.find(arg => arg.startsWith('meteoredit://'));
+    if (deepLinkUrl && mainWindow) {
+      handleDeepLink(deepLinkUrl, mainWindow);
     }
   });
 
