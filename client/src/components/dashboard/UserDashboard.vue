@@ -366,7 +366,7 @@ function formatDate(dateStr: string): string {
 /* Content row */
 .dash-content-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 16px;
 }

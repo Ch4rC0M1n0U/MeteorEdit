@@ -129,9 +129,9 @@ async function handleDelete(id: string) {
 
 <style scoped>
 .home-page {
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 32px 48px;
 }
 .home-header {
   display: flex;

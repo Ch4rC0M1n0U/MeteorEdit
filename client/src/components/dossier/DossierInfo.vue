@@ -1045,9 +1045,9 @@ async function removeCollaborator(userId: string) {
 
 <style scoped>
 .dossier-info {
-  max-width: 800px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 32px 48px;
   height: 100%;
   overflow-y: auto;
 }
@@ -1152,9 +1152,17 @@ async function removeCollaborator(userId: string) {
   color: var(--me-text-primary);
 }
 .di-form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 24px;
+}
+@media (min-width: 1200px) {
+  .di-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .di-form > .di-section:first-child {
+    grid-column: 1 / -1;
+  }
 }
 .di-section {
   background: var(--me-bg-surface);
