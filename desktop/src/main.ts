@@ -5,6 +5,8 @@ import { createTray } from './tray';
 import { showNativeNotification } from './notifications';
 import { registerShortcuts, unregisterShortcuts } from './shortcuts';
 import { handleDeepLink } from './deeplinks';
+import { setupAutoUpdater } from './updater';
+import { autoUpdater } from 'electron-updater';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -42,6 +44,7 @@ function createWindow(): void {
 
   createTray(mainWindow);
   registerShortcuts(mainWindow);
+  setupAutoUpdater(mainWindow);
 
   // Minimize to tray instead of closing
   mainWindow.on('close', (event) => {
@@ -86,6 +89,10 @@ ipcMain.handle('get-app-version', () => app.getVersion());
 
 ipcMain.on('show-notification', (_event, title: string, body: string) => {
   showNativeNotification(title, body, mainWindow);
+});
+
+ipcMain.on('install-update', () => {
+  autoUpdater.quitAndInstall();
 });
 
 // Register deep link protocol
