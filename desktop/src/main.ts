@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import store from './store';
+import { createTray } from './tray';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -36,8 +37,14 @@ function createWindow(): void {
     mainWindow?.show();
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
+  createTray(mainWindow);
+
+  // Minimize to tray instead of closing
+  mainWindow.on('close', (event) => {
+    if (store.get('minimizeToTray') && mainWindow) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
   });
 
   // Load the server URL or show the connect screen
