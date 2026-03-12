@@ -5,7 +5,7 @@ import store from './store';
 let tray: Tray | null = null;
 
 export function createTray(mainWindow: BrowserWindow): Tray {
-  tray = new Tray(path.join(__dirname, '..', 'resources', 'icon.png'));
+  tray = new Tray(path.join(__dirname, '..', 'resources', 'icon.ico'));
   tray.setToolTip('MeteorEdit');
 
   const updateMenu = (): void => {

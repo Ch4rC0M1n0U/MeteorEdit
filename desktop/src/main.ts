@@ -20,7 +20,7 @@ function createWindow(): void {
     x: bounds?.x,
     y: bounds?.y,
     title: 'MeteorEdit',
-    icon: path.join(__dirname, '..', 'resources', 'icon.png'),
+    icon: path.join(__dirname, '..', 'resources', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
