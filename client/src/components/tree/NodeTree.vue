@@ -59,6 +59,10 @@
           <v-icon size="16">mdi-table</v-icon>
           <span>{{ $t('tree.dataset') }}</span>
         </button>
+        <button class="nt-add-option" @click="$emit('create', 'media', null)">
+          <v-icon size="16">mdi-play-circle-outline</v-icon>
+          <span>{{ $t('tree.media') }}</span>
+        </button>
       </div>
     </v-menu>
 
@@ -188,6 +192,7 @@ function trashIcon(type: string) {
     case 'map': return 'mdi-map-outline';
     case 'document': return 'mdi-file-document-outline';
     case 'dataset': return 'mdi-table';
+    case 'media': return 'mdi-play-circle-outline';
     default: return 'mdi-file-outline';
   }
 }

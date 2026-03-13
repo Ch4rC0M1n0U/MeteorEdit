@@ -241,6 +241,7 @@
     "mindmap": "Mind Map",
     "map": "Map",
     "dataset": "Dataset",
+    "media": "Media",
     "others": "Others",
     "trash": "Trash",
     "emptyTrash": "Trash is empty",

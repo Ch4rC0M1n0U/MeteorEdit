@@ -62,6 +62,9 @@
           <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="$emit('create', 'dataset', node._id)">
             <v-icon size="14">mdi-table</v-icon> {{ $t('tree.dataset') }}
           </button>
+          <button v-if="node.type === 'folder'" class="nti-ctx-item" @click="showMenu = false; $emit('create', 'media', node._id)">
+            <v-icon size="14">mdi-play-circle-outline</v-icon> {{ $t('tree.media') }}
+          </button>
           <button class="nti-ctx-item" @click="showMenu = false; startRename()">
             <v-icon size="14">mdi-pencil-outline</v-icon> {{ $t('tree.rename') }}
           </button>
@@ -143,6 +146,7 @@ const icon = computed(() => {
     case 'map': return 'mdi-map-outline';
     case 'document': return 'mdi-file-document-outline';
     case 'dataset': return 'mdi-table';
+    case 'media': return 'mdi-play-circle-outline';
     default: return 'mdi-file-outline';
   }
 });

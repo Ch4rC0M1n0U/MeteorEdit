@@ -46,14 +46,6 @@
         </div>
         <div class="es-footer-btns">
           <button class="es-btn es-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
-          <button class="es-btn es-btn--print" @click="doExport('print')" :disabled="selectedIds.size === 0">
-            <v-icon size="14">mdi-printer-outline</v-icon>
-            {{ $t('common.print') }}
-          </button>
-          <button class="es-btn es-btn--pdf" @click="doExport('pdf')" :disabled="selectedIds.size === 0">
-            <v-icon size="14">mdi-file-pdf-box</v-icon>
-            PDF
-          </button>
           <button class="es-btn es-btn--docx" @click="doExport('docx')" :disabled="selectedIds.size === 0">
             <v-icon size="14">mdi-file-word-box</v-icon>
             DOCX
@@ -75,7 +67,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  export: [format: 'pdf' | 'docx' | 'print', selectedIds: string[], includeToc: boolean];
+  export: [format: 'docx', selectedIds: string[], includeToc: boolean];
 }>();
 
 const NODE_ICONS: Record<string, string> = {
@@ -85,6 +77,7 @@ const NODE_ICONS: Record<string, string> = {
   document: 'mdi-file-document',
   map: 'mdi-map-marker',
   dataset: 'mdi-table',
+  media: 'mdi-play-circle-outline',
 };
 
 const selectedIds = ref<Set<string>>(new Set());
@@ -164,7 +157,7 @@ function toggleNode(nodeId: string) {
   selectedIds.value = newSet;
 }
 
-function doExport(format: 'pdf' | 'docx' | 'print') {
+function doExport(format: 'docx') {
   emit('export', format, Array.from(selectedIds.value), includeToc.value);
   model.value = false;
 }
@@ -275,10 +268,6 @@ const ExportNodeItem = defineComponent({
 .es-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .es-btn--cancel { background: none; color: var(--me-text-muted); }
 .es-btn--cancel:hover { background: rgba(255,255,255,0.06); color: var(--me-text-primary); }
-.es-btn--print { background: #27ae60; color: #fff; }
-.es-btn--print:hover:not(:disabled) { filter: brightness(1.15); }
-.es-btn--pdf { background: #c0392b; color: #fff; }
-.es-btn--pdf:hover:not(:disabled) { filter: brightness(1.15); }
 .es-btn--docx { background: #2980b9; color: #fff; }
 .es-btn--docx:hover:not(:disabled) { filter: brightness(1.15); }
 </style>
