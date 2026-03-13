@@ -94,6 +94,11 @@ export const useDossierStore = defineStore('dossier', () => {
           result.mapData = await encStore.decryptForDossier(dossierId, (result.mapData as string).slice(4));
         } catch { /* leave as-is */ }
       }
+      if (result.mediaData && typeof result.mediaData === 'string' && (result.mediaData as string).startsWith('ENC:')) {
+        try {
+          result.mediaData = await encStore.decryptForDossier(dossierId, (result.mediaData as string).slice(4));
+        } catch { /* leave as-is */ }
+      }
       return result;
     } catch {
       return node;
@@ -126,6 +131,12 @@ export const useDossierStore = defineStore('dossier', () => {
         if (!(typeof result.mapData === 'string' && (result.mapData as string).startsWith('ENC:'))) {
           const encrypted = await encStore.encryptForDossier(dossierId, result.mapData);
           result.mapData = 'ENC:' + encrypted;
+        }
+      }
+      if (result.mediaData !== undefined && result.mediaData !== null) {
+        if (!(typeof result.mediaData === 'string' && (result.mediaData as string).startsWith('ENC:'))) {
+          const encrypted = await encStore.encryptForDossier(dossierId, result.mediaData);
+          result.mediaData = 'ENC:' + encrypted;
         }
       }
       // Clear contentText for encrypted dossiers (can't search encrypted content server-side)
