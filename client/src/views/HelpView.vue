@@ -125,7 +125,7 @@ const categories: Category[] = [
 <h3>Concepts clés</h3>
 <ul>
 <li><strong>Dossier</strong> — Unité d'enquête contenant des noeuds organisés en arborescence</li>
-<li><strong>Noeud</strong> — Élément du dossier : dossier, note, mindmap, carte, dataset ou document</li>
+<li><strong>Noeud</strong> — Élément du dossier : dossier, note, mindmap, carte, dataset, document ou média</li>
 <li><strong>Collaborateur</strong> — Utilisateur ayant accès à votre dossier en temps réel</li>
 </ul>`,
       },
@@ -243,7 +243,7 @@ const categories: Category[] = [
 <li><strong>Shift+Suppr</strong> — Suppression définitive immédiate</li>
 </ul>
 <h3>Types de noeuds</h3>
-<p>Depuis le menu contextuel d'un dossier, créez : <strong>Sous-dossier</strong>, <strong>Note</strong>, <strong>Mind map</strong>, <strong>Carte</strong> ou <strong>Dataset</strong>.</p>`,
+<p>Depuis le menu contextuel d'un dossier, créez : <strong>Sous-dossier</strong>, <strong>Note</strong>, <strong>Mind map</strong>, <strong>Carte</strong>, <strong>Dataset</strong> ou <strong>Média</strong>.</p>`,
       },
       {
         id: 'nd-notes',
@@ -358,6 +358,44 @@ const categories: Category[] = [
 <li><strong>Sauvegarder</strong> — Enregistre les annotations dans le noeud</li>
 </ul>
 <p>Les annotations sont sauvegardées et persistent entre les sessions.</p>`,
+      },
+      {
+        id: 'nd-media',
+        title: 'Analyse média (vidéo / audio)',
+        keywords: ['média', 'media', 'vidéo', 'video', 'audio', 'youtube', 'vimeo', 'soundcloud', 'oembed', 'annotation', 'capture', 'timestamp', 'horodatage', 'analyse'],
+        content: `<h2>Analyse média — Vidéo et audio</h2>
+<p>Le noeud de type <strong>média</strong> permet d'analyser des contenus vidéo et audio directement dans votre enquête.</p>
+
+<h3>Création d'un noeud média</h3>
+<p>Depuis le menu de l'arborescence ou le menu contextuel d'un dossier, sélectionnez <strong>Média</strong>. Deux options s'offrent à vous :</p>
+<ul>
+<li><strong>URL</strong> — Collez un lien vers une vidéo ou un fichier audio en ligne</li>
+<li><strong>Upload</strong> — Déposez un fichier vidéo ou audio depuis votre ordinateur</li>
+</ul>
+
+<h3>Détection automatique (oEmbed)</h3>
+<p>Lorsque vous entrez une URL, le système détecte automatiquement la plateforme via le protocole <strong>oEmbed</strong> et récupère les métadonnées associées (titre, auteur, miniature, durée, etc.).</p>
+<p>Plateformes prises en charge : <strong>YouTube</strong>, <strong>Vimeo</strong>, <strong>SoundCloud</strong>, <strong>Dailymotion</strong> et d'autres services compatibles oEmbed.</p>
+
+<h3>Capture d'image (screenshot)</h3>
+<p>Pendant la lecture d'une vidéo, cliquez sur le bouton <strong>Capture</strong> pour prendre une capture d'écran de l'image courante. La capture est automatiquement horodatée avec le timecode de la vidéo.</p>
+
+<h3>Annotations horodatées</h3>
+<p>Cliquez sur le bouton <strong>Note</strong> pour créer une annotation textuelle associée au timecode actuel de la vidéo. Les annotations sont affichées sous le lecteur :</p>
+<ul>
+<li><strong>Horodatage cliquable</strong> — Cliquez sur un timecode pour revenir à ce point dans la vidéo</li>
+<li><strong>Filtre et tri</strong> — Filtrez et triez vos annotations pour retrouver rapidement une information</li>
+<li><strong>Édition et suppression</strong> — Modifiez ou supprimez une annotation à tout moment</li>
+</ul>
+
+<h3>Métadonnées</h3>
+<p>Cliquez sur le bouton <strong>Éditer les métadonnées</strong> pour compléter ou modifier les informations de la source : plateforme, chaîne, date de publication, description, etc.</p>
+
+<h3>Export</h3>
+<p>Les noeuds média sont inclus dans l'export DOCX avec leurs métadonnées et annotations (format tableau ou séquentiel).</p>
+
+<h3>Intégrité</h3>
+<p>Les captures d'écran sont enregistrées comme preuves avec un <strong>EvidenceRecord</strong> et un hash <strong>SHA-256</strong>, garantissant leur intégrité.</p>`,
       },
     ],
   },
