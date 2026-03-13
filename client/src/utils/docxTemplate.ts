@@ -8,8 +8,8 @@ import {
   type ParagraphChild,
 } from 'docx';
 import { saveAs } from 'file-saver';
-import type { PdfTemplateConfig, FontFamily } from './pdfmakeRenderer';
-import { loadPdfTemplate, loadImageAsDataUrl, resolveLogoUrl } from './pdfmakeRenderer';
+import type { PdfTemplateConfig, FontFamily } from './templateConfig';
+import { loadPdfTemplate, loadImageAsDataUrl, resolveLogoUrl } from './templateConfig';
 import type { ContentBlock } from './contentBlocks';
 import { blocksToPlainText } from './contentBlocks';
 
@@ -38,20 +38,29 @@ function docxFont(tpl: PdfTemplateConfig): string {
 
 // ── Images ──────────────────────────────────────────────────────────
 
-async function fetchImageBuffer(url: string): Promise<{ buffer: ArrayBuffer; w: number; h: number } | null> {
+async function fetchImageBuffer(url: string, serverUrl?: string): Promise<{ buffer: ArrayBuffer; w: number; h: number } | null> {
   try {
-    const dataUrl = await loadImageAsDataUrl(url);
+    // Resolve relative URLs to the backend server (not the Vite dev server)
+    let resolvedUrl = url;
+    if (serverUrl && !url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith('http')) {
+      resolvedUrl = url.startsWith('/') ? `${serverUrl}${url}` : `${serverUrl}/${url}`;
+    }
+    const dataUrl = await loadImageAsDataUrl(resolvedUrl);
     const base64 = dataUrl.split(',')[1];
     const bin = atob(base64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve({ buffer: bytes.buffer, w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = () => resolve(null);
+      img.onload = () => {
+        resolve({ buffer: bytes.buffer, w: img.naturalWidth, h: img.naturalHeight });
+      };
+      img.onerror = () => {
+        resolve(null);
+      };
       img.src = dataUrl;
     });
-  } catch {
+  } catch (err) {
     return null;
   }
 }
@@ -347,12 +356,32 @@ export function renderBlocksToDocx(
   for (const block of blocks) {
     switch (block.type) {
       case 'paragraph': {
-        const children = richTextRuns(block.children, tpl);
-        elements.push(new Paragraph({
-          children,
-          alignment: mapAlignment(block.align),
-          spacing: { after: 80, line: lineSpacing },
-        }));
+        // Extract inline images from paragraph children and render them separately
+        const inlineChildren = block.children.filter(c => c.type !== 'image');
+        const inlineImages = block.children.filter(c => c.type === 'image');
+
+        if (inlineChildren.length > 0) {
+          const children = richTextRuns(inlineChildren, tpl);
+          elements.push(new Paragraph({
+            children,
+            alignment: mapAlignment(block.align),
+            spacing: { after: 80, line: lineSpacing },
+          }));
+        }
+
+        // Render images that were inside the paragraph as separate image blocks
+        for (const imgBlock of inlineImages) {
+          if (imgBlock.type === 'image' && imgBlock.src) {
+            const placeholder = new Paragraph({
+              children: [new TextRun({ text: `[Image: ${imgBlock.alt || imgBlock.src}]`, font: docxFont(tpl), size: ptToHalfPt(8), color: '999999', italics: true })],
+              spacing: { before: 80, after: 80 },
+            });
+            if (_images) {
+              _images.push({ src: imgBlock.src, placeholder });
+            }
+            elements.push(placeholder);
+          }
+        }
         break;
       }
 
@@ -517,13 +546,14 @@ export function renderBlocksToDocx(
 async function resolveBlockImages(
   elements: (Paragraph | Table)[],
   images: { src: string; placeholder: Paragraph }[],
+  serverUrl?: string,
 ): Promise<(Paragraph | Table)[]> {
   if (images.length === 0) return elements;
 
   const resolved = new Map<Paragraph, Paragraph>();
   for (const img of images) {
     try {
-      const imgData = await fetchImageBuffer(img.src);
+      const imgData = await fetchImageBuffer(img.src, serverUrl);
       if (imgData) {
         resolved.set(img.placeholder, new Paragraph({
           children: [makeImageRun(imgData, 500, 400)],
@@ -537,6 +567,191 @@ async function resolveBlockImages(
   return elements.map(el => resolved.get(el as Paragraph) || el);
 }
 
+// ── Media Helpers ───────────────────────────────────────────────────
+
+function formatMediaTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+export function renderMediaMetadataDocx(metadata: any, tpl: PdfTemplateConfig): Paragraph[] {
+  const paragraphs: Paragraph[] = [];
+  const font = docxFont(tpl);
+  const fontSize = ptToHalfPt(tpl.body.fontSize);
+  const color = tpl.body.color ? hexToRgb(tpl.body.color) : undefined;
+
+  // Title
+  if (metadata.title) {
+    paragraphs.push(new Paragraph({
+      children: [new TextRun({ text: metadata.title, font, size: ptToHalfPt(tpl.headings.h3.fontSize), bold: true, color: hexToRgb(tpl.headings.h3.color) })],
+      heading: HeadingLevel.HEADING_3,
+      spacing: { before: 120, after: 80 },
+    }));
+  }
+
+  // Source + Channel
+  const infoParts: string[] = [];
+  if (metadata.platform) infoParts.push(`Source: ${metadata.platform}`);
+  if (metadata.channelName) infoParts.push(`Channel: ${metadata.channelName}`);
+  if (infoParts.length) {
+    paragraphs.push(new Paragraph({
+      children: [new TextRun({ text: infoParts.join(' | '), font, size: fontSize, color })],
+      spacing: { after: 40 },
+    }));
+  }
+
+  // URL
+  if (metadata.url) {
+    paragraphs.push(new Paragraph({
+      children: [
+        new TextRun({ text: 'URL: ', font, size: fontSize, bold: true, color }),
+        new ExternalHyperlink({
+          children: [new TextRun({ text: metadata.url, font, size: fontSize, color: '0563C1', underline: { type: UnderlineType.SINGLE }, style: 'Hyperlink' } as Record<string, unknown>)],
+          link: metadata.url,
+        }),
+      ],
+      spacing: { after: 40 },
+    }));
+  }
+
+  // Published date
+  if (metadata.publishedAt) {
+    const dateStr = new Date(metadata.publishedAt).toLocaleDateString('fr-FR');
+    paragraphs.push(new Paragraph({
+      children: [new TextRun({ text: `Published: ${dateStr}`, font, size: fontSize, color })],
+      spacing: { after: 40 },
+    }));
+  }
+
+  // Duration
+  if (metadata.duration) {
+    paragraphs.push(new Paragraph({
+      children: [new TextRun({ text: `Duration: ${formatMediaTime(metadata.duration)}`, font, size: fontSize, color })],
+      spacing: { after: 80 },
+    }));
+  }
+
+  return paragraphs;
+}
+
+export function renderMediaAnnotationsTableDocx(
+  annotations: any[],
+  tpl: PdfTemplateConfig,
+  _images: { src: string; placeholder: Paragraph }[],
+): Table {
+  const font = docxFont(tpl);
+  const fontSize = ptToHalfPt(tpl.body.fontSize);
+  const sorted = [...annotations].sort((a, b) => a.timestamp - b.timestamp);
+
+  // Header row
+  const headerCells = ['Temps', 'Capture', 'Commentaire'].map(text =>
+    new TableCell({
+      children: [new Paragraph({
+        children: [new TextRun({ text, font, size: fontSize, bold: true, color: tpl.table?.headerTextColor ? hexToRgb(tpl.table.headerTextColor) : 'FFFFFF' })],
+      })],
+      width: { size: 3000, type: WidthType.DXA },
+      shading: tpl.table?.headerBgColor
+        ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table.headerBgColor) }
+        : { type: ShadingType.CLEAR, fill: '2C3E50' },
+    })
+  );
+
+  const rows: TableRow[] = [new TableRow({ children: headerCells })];
+
+  for (const ann of sorted) {
+    const timeText = formatMediaTime(ann.timestamp);
+
+    // Capture cell — image placeholder or empty
+    let captureChildren: Paragraph[];
+    if (ann.type === 'capture' && ann.screenshotUrl) {
+      const placeholder = new Paragraph({
+        children: [new TextRun({ text: `[Capture ${timeText}]`, font, size: ptToHalfPt(8), color: '999999', italics: true })],
+      });
+      _images.push({ src: ann.screenshotUrl, placeholder });
+      captureChildren = [placeholder];
+    } else {
+      captureChildren = [new Paragraph({ children: [new TextRun({ text: ann.type === 'capture' ? 'Capture' : '-', font, size: fontSize })] })];
+    }
+
+    const useAltBg = rows.length % 2 === 0 && tpl.table?.alternateRowColor;
+
+    rows.push(new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: timeText, font, size: fontSize, bold: true })] })],
+          width: { size: 1500, type: WidthType.DXA },
+          shading: useAltBg ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table!.alternateRowColor!) } : undefined,
+        }),
+        new TableCell({
+          children: captureChildren,
+          width: { size: 3500, type: WidthType.DXA },
+          shading: useAltBg ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table!.alternateRowColor!) } : undefined,
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: ann.comment || '', font, size: fontSize })] })],
+          width: { size: 4000, type: WidthType.DXA },
+          shading: useAltBg ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table!.alternateRowColor!) } : undefined,
+        }),
+      ],
+    }));
+  }
+
+  return new Table({
+    rows,
+    width: { size: 9000, type: WidthType.DXA },
+  });
+}
+
+export function renderMediaAnnotationsSequentialDocx(
+  annotations: any[],
+  tpl: PdfTemplateConfig,
+  _images: { src: string; placeholder: Paragraph }[],
+): (Paragraph | Table)[] {
+  const font = docxFont(tpl);
+  const fontSize = ptToHalfPt(tpl.body.fontSize);
+  const color = tpl.body.color ? hexToRgb(tpl.body.color) : undefined;
+  const sorted = [...annotations].sort((a, b) => a.timestamp - b.timestamp);
+  const elements: (Paragraph | Table)[] = [];
+
+  for (const ann of sorted) {
+    const timeText = formatMediaTime(ann.timestamp);
+    const typeLabel = ann.type === 'capture' ? 'Capture' : 'Note';
+
+    // Timestamp + type header
+    elements.push(new Paragraph({
+      children: [
+        new TextRun({ text: `[${timeText}] `, font, size: fontSize, bold: true, color: hexToRgb(tpl.headings.h3.color) }),
+        new TextRun({ text: typeLabel, font, size: fontSize, bold: true, color }),
+      ],
+      spacing: { before: 160, after: 40 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: 'DDDDDD' } },
+    }));
+
+    // Screenshot placeholder
+    if (ann.type === 'capture' && ann.screenshotUrl) {
+      const placeholder = new Paragraph({
+        children: [new TextRun({ text: `[Capture ${timeText}]`, font, size: ptToHalfPt(8), color: '999999', italics: true })],
+        spacing: { before: 40, after: 40 },
+      });
+      _images.push({ src: ann.screenshotUrl, placeholder });
+      elements.push(placeholder);
+    }
+
+    // Comment
+    if (ann.comment) {
+      elements.push(new Paragraph({
+        children: [new TextRun({ text: ann.comment, font, size: fontSize, color })],
+        spacing: { after: 80 },
+      }));
+    }
+  }
+
+  return elements;
+}
+
 // ── Types ───────────────────────────────────────────────────────────
 
 export interface DocxExportData {
@@ -548,6 +763,8 @@ export interface DocxExportData {
     paragraphs: string[];
     bullets?: string[];
     blocks?: ContentBlock[];  // Rich content blocks — preferred over paragraphs/content
+    mediaData?: any;  // MediaData for media nodes
+    mediaFormat?: 'table' | 'sequential';
   }>;
   closingDate: string;
   closingCity?: string;
@@ -655,11 +872,29 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       docChildren.push(sectionHeading(section.title, tpl, section.level));
     }
 
-    // Rich ContentBlock rendering (preferred)
-    if (section.blocks && section.blocks.length > 0) {
+    // Media node rendering
+    if (section.mediaData) {
+      const md = section.mediaData;
+      const metaObj = { ...md.metadata, url: md.source?.url };
+      docChildren.push(...renderMediaMetadataDocx(metaObj, tpl));
+
+      if (md.annotations?.length) {
+        const images: { src: string; placeholder: Paragraph }[] = [];
+        if (section.mediaFormat === 'table') {
+          const table = renderMediaAnnotationsTableDocx(md.annotations, tpl, images);
+          const resolved = await resolveBlockImages([table], images, data.serverUrl);
+          docChildren.push(...resolved);
+        } else {
+          const seqElements = renderMediaAnnotationsSequentialDocx(md.annotations, tpl, images);
+          const resolved = await resolveBlockImages(seqElements, images, data.serverUrl);
+          docChildren.push(...resolved);
+        }
+      }
+    } else if (section.blocks && section.blocks.length > 0) {
+      // Rich ContentBlock rendering (preferred)
       const images: { src: string; placeholder: Paragraph }[] = [];
       const blockElements = renderBlocksToDocx(section.blocks, tpl, images);
-      const resolved = await resolveBlockImages(blockElements, images);
+      const resolved = await resolveBlockImages(blockElements, images, data.serverUrl);
       docChildren.push(...resolved);
     } else {
       // Fallback: plain text paragraphs

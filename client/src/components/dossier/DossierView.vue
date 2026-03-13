@@ -528,7 +528,7 @@ import { useTemplateStore } from '../../stores/template';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
 import { loadImageAsDataUrl, cleanControlChars } from '../../utils/templateConfig';
-import { generateDocx, type DocxExportData } from '../../utils/docxTemplate';
+import { generateDocx, renderMediaMetadataDocx, renderMediaAnnotationsTableDocx, renderMediaAnnotationsSequentialDocx, type DocxExportData } from '../../utils/docxTemplate';
 import { convertTipTapToBlocks } from '../../utils/contentBlocks';
 import NodeTree from '../tree/NodeTree.vue';
 import DossierInfo from './DossierInfo.vue';
@@ -1127,8 +1127,8 @@ function nextSectionNumber(counter: SectionCounter, level: 'h1' | 'h2' | 'h3'): 
   }
 }
 
-function handleSelectiveExport(format: string, selectedIds: string[], includeToc: boolean) {
-  exportDOCX(selectedIds, includeToc);
+function handleSelectiveExport(format: string, selectedIds: string[], includeToc: boolean, mediaFormat?: 'table' | 'sequential') {
+  exportDOCX(selectedIds, includeToc, mediaFormat);
 }
 
 // Collect dossier info lines for report header (only non-empty fields)
@@ -1158,6 +1158,7 @@ function walkTreeDocx(
   depth: number,
   sections: DocxExportData['sections'],
   counter: SectionCounter,
+  mediaFormat: 'table' | 'sequential' = 'sequential',
 ) {
   const children = allNodes
     .filter((n: any) => n.parentId === parentId && !n.deletedAt)
@@ -1169,21 +1170,30 @@ function walkTreeDocx(
     if (node.type === 'folder') {
       const num = nextSectionNumber(counter, hl);
       sections.push({ title: `${num} ${node.title}`, level: hl, paragraphs: [] });
-      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter);
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter, mediaFormat);
     } else if (node.type === 'note') {
       const num = nextSectionNumber(counter, hl);
       const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
       sections.push({ title: `${num} ${node.title}`, level: hl, paragraphs: [], blocks });
+    } else if (node.type === 'media' && node.mediaData) {
+      const num = nextSectionNumber(counter, hl);
+      sections.push({
+        title: `${num} ${node.title}`,
+        level: hl,
+        paragraphs: [],
+        mediaData: node.mediaData,
+        mediaFormat,
+      });
     }
   }
 }
 
-function buildDocxSections(dossier: any, nodes: any[]): DocxExportData['sections'] {
+function buildDocxSections(dossier: any, nodes: any[], mediaFormat: 'table' | 'sequential' = 'sequential'): DocxExportData['sections'] {
   const sections: DocxExportData['sections'] = [];
   const counter: SectionCounter = [0, 0, 0];
 
   // Walk tree from root
-  walkTreeDocx(nodes, null, 1, sections, counter);
+  walkTreeDocx(nodes, null, 1, sections, counter, mediaFormat);
 
   // Orphan nodes (parent not in selection)
   const nodeIds = new Set(nodes.map((n: any) => n._id));
@@ -1196,13 +1206,22 @@ function buildDocxSections(dossier: any, nodes: any[]): DocxExportData['sections
       const num = nextSectionNumber(counter, 'h1');
       const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
       sections.push({ title: `${num} ${node.title}`, level: 'h1', paragraphs: [], blocks });
+    } else if (node.type === 'media' && node.mediaData) {
+      const num = nextSectionNumber(counter, 'h1');
+      sections.push({
+        title: `${num} ${node.title}`,
+        level: 'h1',
+        paragraphs: [],
+        mediaData: node.mediaData,
+        mediaFormat,
+      });
     }
   }
 
   return sections;
 }
 
-async function exportDOCX(selectedNodeIds?: string[], includeToc = false) {
+async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaFormat: 'table' | 'sequential' = 'sequential') {
   if (!dossierStore.currentDossier) return;
   try {
     const dossier = dossierStore.currentDossier;
@@ -1213,7 +1232,7 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false) {
     const data: DocxExportData = {
       dossierTitle: dossier.title,
       infoLines: buildDossierInfoLines(dossier),
-      sections: buildDocxSections(dossier, nodes),
+      sections: buildDocxSections(dossier, nodes, mediaFormat),
       closingDate: new Date().toLocaleDateString('fr-FR'),
       closingCity: (authStore.user as any)?.signature?.city || 'Bruxelles',
       includeToc,

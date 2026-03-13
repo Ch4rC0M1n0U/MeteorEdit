@@ -43,6 +43,11 @@
             <input type="checkbox" v-model="includeToc" />
             <span>{{ $t('dossier.includeToc') }}</span>
           </label>
+          <div v-if="hasMediaNodes" class="es-media-format">
+            <span class="es-media-format-label">{{ $t('media.mediaExportFormat') }}</span>
+            <label class="es-radio"><input type="radio" v-model="mediaFormat" value="table" /> {{ $t('media.formatTable') }}</label>
+            <label class="es-radio"><input type="radio" v-model="mediaFormat" value="sequential" /> {{ $t('media.formatSequential') }}</label>
+          </div>
         </div>
         <div class="es-footer-btns">
           <button class="es-btn es-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
@@ -67,7 +72,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  export: [format: 'docx', selectedIds: string[], includeToc: boolean];
+  export: [format: 'docx', selectedIds: string[], includeToc: boolean, mediaFormat: 'table' | 'sequential'];
 }>();
 
 const NODE_ICONS: Record<string, string> = {
@@ -82,6 +87,7 @@ const NODE_ICONS: Record<string, string> = {
 
 const selectedIds = ref<Set<string>>(new Set());
 const includeToc = ref(true);
+const mediaFormat = ref<'table' | 'sequential'>('sequential');
 
 const allNodes = computed(() => props.nodes.filter(n => !n.deletedAt));
 
@@ -100,6 +106,10 @@ const childrenMap = computed(() => {
 });
 
 const rootNodes = computed(() => childrenMap.value.get(null) || []);
+
+const hasMediaNodes = computed(() => {
+  return allNodes.value.some(n => n.type === 'media' && selectedIds.value.has(n._id));
+});
 
 // When dialog opens, select all by default
 watch(model, (open) => {
@@ -158,7 +168,7 @@ function toggleNode(nodeId: string) {
 }
 
 function doExport(format: 'docx') {
-  emit('export', format, Array.from(selectedIds.value), includeToc.value);
+  emit('export', format, Array.from(selectedIds.value), includeToc.value, mediaFormat.value);
   model.value = false;
 }
 
@@ -270,4 +280,16 @@ const ExportNodeItem = defineComponent({
 .es-btn--cancel:hover { background: rgba(255,255,255,0.06); color: var(--me-text-primary); }
 .es-btn--docx { background: #2980b9; color: #fff; }
 .es-btn--docx:hover:not(:disabled) { filter: brightness(1.15); }
+
+.es-media-format {
+  display: flex; align-items: center; gap: 10px; margin-top: 4px;
+}
+.es-media-format-label {
+  font-size: 12px; color: var(--me-text-secondary); font-weight: 500;
+}
+.es-radio {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--me-text-secondary); cursor: pointer; user-select: none;
+}
+.es-radio input { accent-color: var(--me-accent); cursor: pointer; }
 </style>
