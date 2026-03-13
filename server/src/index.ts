@@ -22,6 +22,7 @@ import aiRoutes from './routes/ai';
 import reportTemplateRoutes from './routes/reportTemplates';
 import taskRoutes from './routes/tasks';
 import clipperRoutes from './routes/clipper';
+import mediaRoutes from './routes/media';
 import encryptionRoutes from './routes/encryption';
 import evidenceRoutes from './routes/evidence';
 import SiteSettings from './models/SiteSettings';
@@ -81,6 +82,7 @@ app.use('/api', exportRoutes);
 app.use('/api', snapshotRoutes);
 app.use('/api', taskRoutes);
 app.use('/api/clip', clipperRoutes);
+app.use('/api/media', mediaRoutes);
 app.use('/api/encryption', encryptionRoutes);
 app.use('/api', evidenceRoutes);
 
