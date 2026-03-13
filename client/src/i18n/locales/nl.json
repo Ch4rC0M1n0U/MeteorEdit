@@ -1084,6 +1084,8 @@
     "cancel": "Annuleren",
     "createMedia": "Media aanmaken",
     "mediaName": "Medianaam",
-    "or": "of"
+    "or": "of",
+    "tagsCommaSeparated": "Gescheiden door komma's",
+    "preview": "Voorbeeld"
   }
 }

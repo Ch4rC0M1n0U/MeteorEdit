@@ -1084,6 +1084,8 @@
     "cancel": "Annuler",
     "createMedia": "Creer un media",
     "mediaName": "Nom du media",
-    "or": "ou"
+    "or": "ou",
+    "tagsCommaSeparated": "Separes par des virgules",
+    "preview": "Apercu"
   }
 }

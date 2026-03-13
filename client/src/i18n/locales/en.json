@@ -1084,6 +1084,8 @@
     "cancel": "Cancel",
     "createMedia": "Create media",
     "mediaName": "Media name",
-    "or": "or"
+    "or": "or",
+    "tagsCommaSeparated": "Comma-separated",
+    "preview": "Preview"
   }
 }
