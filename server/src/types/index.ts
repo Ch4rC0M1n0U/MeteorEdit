@@ -90,13 +90,14 @@ export interface IDossier extends Document {
 export interface IDossierNode extends Document {
   dossierId: Types.ObjectId;
   parentId: Types.ObjectId | null;
-  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset';
+  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset' | 'media';
   title: string;
   order: number;
   content: any | null;
   contentText: string | null;
   excalidrawData: any | null;
   mapData: any | null;
+  mediaData: any | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;

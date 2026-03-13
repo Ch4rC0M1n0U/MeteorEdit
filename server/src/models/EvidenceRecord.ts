@@ -16,7 +16,7 @@ export interface IEvidenceRecord extends Document {
   filePath: string;
   fileSize: number;
   sourceUrl: string | null;
-  evidenceType: 'file' | 'screenshot' | 'clip';
+  evidenceType: 'file' | 'screenshot' | 'clip' | 'media-capture';
   verifications: IEvidenceVerification[];
   lastVerifiedAt: Date | null;
   lastVerificationStatus: 'valid' | 'tampered' | 'missing' | null;
@@ -39,7 +39,7 @@ const evidenceRecordSchema = new Schema({
   filePath: { type: String, required: true, immutable: true },
   fileSize: { type: Number, required: true },
   sourceUrl: { type: String, default: null },
-  evidenceType: { type: String, enum: ['file', 'screenshot', 'clip'], required: true },
+  evidenceType: { type: String, enum: ['file', 'screenshot', 'clip', 'media-capture'], required: true },
   verifications: [verificationSchema],
   lastVerifiedAt: { type: Date, default: null },
   lastVerificationStatus: { type: String, enum: ['valid', 'tampered', 'missing'], default: null },
