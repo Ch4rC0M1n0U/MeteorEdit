@@ -26,8 +26,8 @@
                 <span>Export JSON</span>
               </button>
               <button class="dv-export-option" @click="exportSelectOpen = true">
-                <v-icon size="16">mdi-file-export-outline</v-icon>
-                <span>{{ $t('dossier.exportPrint') }}</span>
+                <v-icon size="16">mdi-file-word-box</v-icon>
+                <span>{{ $t('dossier.exportDocx') }}</span>
               </button>
               <div v-if="aiEnabled" class="dv-export-divider" />
               <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect">
@@ -182,6 +182,10 @@
         />
       </div>
 
+      <div v-else-if="dossierStore.selectedNode.type === 'media'" class="dv-editor-wrap">
+        <MediaEditor :node="dossierStore.selectedNode" />
+      </div>
+
       <div v-else-if="dossierStore.selectedNode.type === 'document'" class="dv-content-panel dv-document-panel">
         <div class="dv-content-header">
           <v-icon size="20" class="mr-2">mdi-file-document-outline</v-icon>
@@ -259,6 +263,13 @@
         />
       </div>
     </v-dialog>
+
+    <!-- Media Create -->
+    <MediaCreateDialog
+      v-model="showMediaCreateDialog"
+      :parent-id="mediaCreateParentId"
+      @created="handleMediaCreated"
+    />
 
     <!-- Web Clipper -->
     <WebClipperDialog v-model="webClipperOpen" />
@@ -453,10 +464,6 @@
         </button>
         <div v-else class="ai-footer-actions">
           <button class="me-btn-ghost" @click="closeAiReport">{{ $t('common.close') }}</button>
-          <button v-if="aiReportContent" class="me-btn-primary" @click="downloadAiReportAsPdf">
-            <v-icon size="14" class="mr-1">mdi-file-pdf-box</v-icon>
-            PDF
-          </button>
           <button v-if="aiReportContent" class="me-btn-primary" @click="downloadAiReportAsDocx">
             <v-icon size="14" class="mr-1">mdi-file-word-box</v-icon>
             DOCX
@@ -520,15 +527,9 @@ import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
-import {
-  loadPdfTemplate, loadTemplateLogos, loadImageAsDataUrl, cleanControlChars,
-  blocksToContent, resolveBlockImages, buildDocDefinition, generatePdfBlob,
-  renderHeading, type TocEntry as PdfTocEntry, type PdfBuildOptions,
-} from '../../utils/pdfmakeRenderer';
-import type { Content } from 'pdfmake/interfaces';
+import { loadImageAsDataUrl, cleanControlChars } from '../../utils/templateConfig';
 import { generateDocx, type DocxExportData } from '../../utils/docxTemplate';
 import { convertTipTapToBlocks } from '../../utils/contentBlocks';
-import { tiptapJsonToHtml } from '../../utils/tiptapToHtml';
 import NodeTree from '../tree/NodeTree.vue';
 import DossierInfo from './DossierInfo.vue';
 import NoteEditor from '../editor/NoteEditor.vue';
@@ -540,6 +541,9 @@ import TaskPanel from './TaskPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
 import DatasetEditor from '../dataset/DatasetEditor.vue';
+import MediaEditor from '../media/MediaEditor.vue';
+import MediaCreateDialog from '../media/MediaCreateDialog.vue';
+import type { MediaData } from '../../types';
 import EvidencePanel from '../evidence/EvidencePanel.vue';
 import DossierEvidenceView from '../evidence/DossierEvidenceView.vue';
 
@@ -547,6 +551,8 @@ const { t } = useI18n();
 
 const webClipperOpen = ref(false);
 const exportSelectOpen = ref(false);
+const showMediaCreateDialog = ref(false);
+const mediaCreateParentId = ref<string | null>(null);
 
 // AI Summary
 const summaryDialog = ref(false);
@@ -833,86 +839,6 @@ function closeAiReport() {
   aiReportDialog.value = false;
 }
 
-async function downloadAiReportAsPdf() {
-  if (!aiReportContent.value || !dossierStore.currentDossier) return;
-  try {
-    const dossier = dossierStore.currentDossier;
-    const tpl = loadPdfTemplate();
-    const logos = await loadTemplateLogos(tpl, SERVER_URL);
-
-    const infoLines: string[] = [];
-    infoLines.push(`Rapport IA - ${new Date().toLocaleDateString('fr-FR')}`);
-    if (aiReportModel.value) infoLines.push(cleanControlChars(`Mod\u00E8le: ${aiReportModel.value}`));
-    if (dossier.investigator) {
-      const invName = typeof dossier.investigator === 'string' ? dossier.investigator : dossier.investigator?.name || '';
-      if (invName) infoLines.push(cleanControlChars(`Enqu\u00EAteur: ${invName}`));
-    }
-
-    // Parse AI markdown into sections and build pdfmake content
-    const aiText = aiReportContent.value;
-    const sectionRegex = /^#{1,3}\s+(.+)$/gm;
-    const sections: Array<{ title: string; body: string }> = [];
-    let match: RegExpExecArray | null;
-    const matches: Array<{ title: string; index: number }> = [];
-    while ((match = sectionRegex.exec(aiText)) !== null) {
-      matches.push({ title: match[1].trim(), index: match.index });
-    }
-
-    if (matches.length > 0) {
-      const preamble = aiText.substring(0, matches[0].index).trim();
-      if (preamble) sections.push({ title: '', body: preamble });
-      for (let i = 0; i < matches.length; i++) {
-        const headingEnd = aiText.indexOf('\n', matches[i].index);
-        const bodyStart = headingEnd >= 0 ? headingEnd + 1 : matches[i].index + matches[i].title.length;
-        const bodyEnd = i + 1 < matches.length ? matches[i + 1].index : aiText.length;
-        sections.push({ title: matches[i].title, body: aiText.substring(bodyStart, bodyEnd).trim() });
-      }
-    } else {
-      sections.push({ title: '', body: aiText });
-    }
-
-    const pdfContent: Content[] = [];
-    for (const section of sections) {
-      if (section.title) {
-        pdfContent.push(renderHeading(cleanControlChars(section.title), 'h2', tpl));
-      }
-      if (section.body) {
-        for (const para of section.body.split(/\n\s*\n/)) {
-          const trimmed = para.trim();
-          if (trimmed) {
-            pdfContent.push({
-              text: cleanControlChars(trimmed),
-              fontSize: tpl.body.fontSize,
-              color: tpl.body.color,
-              margin: [0, 0, 0, 3] as [number, number, number, number],
-            });
-          }
-        }
-      }
-    }
-
-    // Signature
-    const sigData = getSignatureData();
-    const signatureImage = sigData.image ? await sigData.image : undefined;
-
-    const opts: PdfBuildOptions = {
-      dossierTitle: cleanControlChars(dossier.title),
-      infoLines,
-      content: pdfContent,
-      closingCity: sigData.city,
-      signatureImage,
-      signatureLines: sigData.lines,
-    };
-
-    const docDef = buildDocDefinition(tpl, logos, opts);
-    const blob = await generatePdfBlob(docDef);
-    downloadBlob(blob, `Rapport_OSINT_IA_${dossier.title}.pdf`);
-    aiReportDialog.value = false;
-  } catch (err) {
-    console.error('AI PDF export failed:', err);
-  }
-}
-
 async function downloadAiReportAsDocx() {
   if (!aiReportContent.value || !dossierStore.currentDossier) return;
   try {
@@ -992,6 +918,11 @@ function onMapUpdate(val: any) {
 }
 
 function handleCreateNode(type: string, parentId: string | null) {
+  if (type === 'media') {
+    mediaCreateParentId.value = parentId;
+    showMediaCreateDialog.value = true;
+    return;
+  }
   createType.value = type;
   createParentId.value = parentId;
   createTitle.value = '';
@@ -1021,6 +952,16 @@ async function confirmCreate() {
     content,
   });
   createDialog.value = false;
+}
+
+async function handleMediaCreated(title: string, mediaData: MediaData) {
+  await dossierStore.createNode({
+    type: 'media',
+    title,
+    parentId: mediaCreateParentId.value,
+    mediaData,
+  });
+  showMediaCreateDialog.value = false;
 }
 
 async function handleDuplicateNode(nodeId: string) {
@@ -1147,243 +1088,6 @@ async function exportJSON() {
   }
 }
 
-function esc(str: string): string {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function printDossier(selectedNodeIds?: string[]) {
-  const dossier = dossierStore.currentDossier;
-  if (!dossier) return;
-
-  const allNotes = dossierStore.nodes.filter((n) => n.type === 'note' && !n.deletedAt);
-  const nodes = selectedNodeIds ? allNotes.filter((n) => selectedNodeIds.includes(n._id)) : allNotes;
-  const statusLabels: Record<string, string> = { open: 'Ouvert', in_progress: 'En cours', closed: 'Clos' };
-
-  let entitiesHtml = '';
-  if (dossier.entities && dossier.entities.length > 0) {
-    entitiesHtml = `
-      <div class="print-section">
-        <h2>Entites</h2>
-        <table>
-          <thead><tr><th>Nom</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            ${dossier.entities.map((e) => `<tr><td>${esc(e.name)}</td><td>${esc(e.type)}</td><td>${esc(e.description)}</td></tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`;
-  }
-
-  let investigatorHtml = '';
-  const inv = dossier.investigator;
-  if (inv && (inv.name || inv.service || inv.email)) {
-    investigatorHtml = `
-      <div class="print-section">
-        <h2>Enqueteur</h2>
-        <table>
-          <tbody>
-            ${inv.name ? `<tr><td><strong>Nom</strong></td><td>${esc(inv.name)}</td></tr>` : ''}
-            ${inv.service ? `<tr><td><strong>Service</strong></td><td>${esc(inv.service)}</td></tr>` : ''}
-            ${inv.unit ? `<tr><td><strong>Unite</strong></td><td>${esc(inv.unit)}</td></tr>` : ''}
-            ${inv.phone ? `<tr><td><strong>Telephone</strong></td><td>${esc(inv.phone)}</td></tr>` : ''}
-            ${inv.email ? `<tr><td><strong>Email</strong></td><td>${esc(inv.email)}</td></tr>` : ''}
-          </tbody>
-        </table>
-      </div>`;
-  }
-
-  let objectivesHtml = '';
-  if (dossier.objectives) {
-    objectivesHtml = `
-      <div class="print-section">
-        <h2>Objectifs</h2>
-        <p>${esc(dossier.objectives).replace(/\n/g, '<br>')}</p>
-      </div>`;
-  }
-
-  let judicialHtml = '';
-  if (dossier.judicialFacts) {
-    judicialHtml = `
-      <div class="print-section">
-        <h2>Faits judiciaires</h2>
-        <p>${esc(dossier.judicialFacts).replace(/\n/g, '<br>')}</p>
-      </div>`;
-  }
-
-  let notesHtml = '';
-  if (nodes.length > 0) {
-    notesHtml = nodes.map((node) => {
-      let contentHtml = '';
-      if (node.content) {
-        contentHtml = tiptapJsonToHtml(node.content);
-      }
-      if (!contentHtml) {
-        contentHtml = '<p><em>Contenu vide</em></p>';
-      }
-      return `
-        <div class="print-section print-note">
-          <h2>${esc(node.title)}</h2>
-          <div class="note-content">${contentHtml}</div>
-        </div>`;
-    }).join('');
-  }
-
-  const createdDate = new Date(dossier.createdAt).toLocaleDateString('fr-FR', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  });
-
-  const printHtml = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <title>Impression - ${esc(dossier.title)}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-      color: #1a1a1a;
-      background: #fff;
-      line-height: 1.6;
-      font-size: 12pt;
-    }
-    .print-cover {
-      text-align: center;
-      padding: 60px 40px 40px;
-      border-bottom: 3px solid #2196F3;
-      margin-bottom: 30px;
-    }
-    .print-cover h1 {
-      font-size: 28pt;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 12px;
-    }
-    .print-cover .subtitle {
-      font-size: 12pt;
-      color: #555;
-      margin-bottom: 6px;
-    }
-    .print-cover .status {
-      display: inline-block;
-      padding: 4px 16px;
-      border-radius: 12px;
-      background: #e3f2fd;
-      color: #1565c0;
-      font-size: 10pt;
-      font-weight: 600;
-      margin-top: 10px;
-    }
-    .print-container { max-width: 800px; margin: 0 auto; padding: 0 40px 40px; }
-    .print-section {
-      margin-bottom: 28px;
-      page-break-inside: avoid;
-    }
-    .print-note { page-break-before: auto; }
-    .print-section h2 {
-      font-size: 16pt;
-      font-weight: 700;
-      color: #1565c0;
-      border-bottom: 2px solid #e0e0e0;
-      padding-bottom: 6px;
-      margin-bottom: 12px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 12px;
-      font-size: 11pt;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px 12px;
-      text-align: left;
-    }
-    th {
-      background: #f5f5f5;
-      font-weight: 600;
-      color: #333;
-    }
-    .note-content img { max-width: 100%; height: auto; }
-    .note-content blockquote {
-      border-left: 4px solid #90caf9;
-      padding: 8px 16px;
-      margin: 12px 0;
-      background: #f9f9f9;
-      color: #444;
-    }
-    .note-content pre {
-      background: #f5f5f5;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 12px;
-      font-size: 10pt;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-    .note-content code {
-      background: #f0f0f0;
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-size: 10pt;
-    }
-    .note-content pre code { background: none; padding: 0; }
-    .note-content ul, .note-content ol { padding-left: 24px; margin: 8px 0; }
-    .note-content p { margin-bottom: 8px; }
-    .note-content h1, .note-content h2, .note-content h3,
-    .note-content h4, .note-content h5, .note-content h6 {
-      margin-top: 16px; margin-bottom: 8px; color: #1a1a1a;
-    }
-    .note-content hr { border: none; border-top: 1px solid #ddd; margin: 16px 0; }
-    .note-content a { color: #1565c0; text-decoration: underline; }
-    .note-content .task-list { list-style: none; padding-left: 0; }
-    .note-content .task-item { display: flex; align-items: flex-start; gap: 6px; }
-    .note-content .task-item input[type="checkbox"] { margin-top: 5px; }
-    .print-footer {
-      text-align: center;
-      font-size: 9pt;
-      color: #999;
-      border-top: 1px solid #eee;
-      padding-top: 12px;
-      margin-top: 40px;
-    }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .print-cover { page-break-after: always; }
-      .print-note { page-break-inside: avoid; }
-      .print-section { page-break-inside: avoid; }
-      @page { margin: 15mm 20mm; }
-    }
-  </style>
-</head>
-<body>
-  <div class="print-cover">
-    <h1>${esc(dossier.title)}</h1>
-    ${dossier.description ? `<p class="subtitle">${esc(dossier.description)}</p>` : ''}
-    <p class="subtitle">${createdDate}</p>
-    <span class="status">${statusLabels[dossier.status] || dossier.status}</span>
-  </div>
-  <div class="print-container">
-    ${investigatorHtml}
-    ${objectivesHtml}
-    ${judicialHtml}
-    ${entitiesHtml}
-    ${notesHtml}
-    <div class="print-footer">
-      Impression generee le ${new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-    </div>
-  </div>
-</body>
-</html>`;
-
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-  printWindow.document.write(printHtml);
-  printWindow.document.close();
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-  };
-}
 
 function getSignatureData(): { city?: string; image?: Promise<string | undefined>; lines: string[] } {
   const sig = (authStore.user as any)?.signature;
@@ -1423,39 +1127,8 @@ function nextSectionNumber(counter: SectionCounter, level: 'h1' | 'h2' | 'h3'): 
   }
 }
 
-// Collect TOC entries from node tree without rendering
-interface TocEntry { title: string; level: 'h1' | 'h2' | 'h3'; number: string }
-
-function collectTocEntries(
-  allNodes: any[],
-  parentId: string | null,
-  depth: number,
-  counter: SectionCounter,
-): TocEntry[] {
-  const entries: TocEntry[] = [];
-  const children = allNodes
-    .filter((n: any) => n.parentId === parentId && !n.deletedAt)
-    .sort((a: any, b: any) => a.order - b.order);
-
-  const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
-
-  for (const node of children) {
-    if (node.type === 'folder') {
-      const num = nextSectionNumber(counter, hl);
-      entries.push({ title: `${num} ${cleanControlChars(node.title)}`, level: hl, number: num });
-      entries.push(...collectTocEntries(allNodes, node._id, depth + 1, counter));
-    } else if (node.type === 'note') {
-      const num = nextSectionNumber(counter, hl);
-      entries.push({ title: `${num} ${cleanControlChars(node.title)}`, level: hl, number: num });
-    }
-  }
-  return entries;
-}
-
-function handleSelectiveExport(format: 'pdf' | 'docx' | 'print', selectedIds: string[], includeToc: boolean) {
-  if (format === 'pdf') exportPDF(selectedIds, includeToc);
-  else if (format === 'docx') exportDOCX(selectedIds, includeToc);
-  else if (format === 'print') printDossier(selectedIds);
+function handleSelectiveExport(format: string, selectedIds: string[], includeToc: boolean) {
+  exportDOCX(selectedIds, includeToc);
 }
 
 // Collect dossier info lines for report header (only non-empty fields)
@@ -1477,110 +1150,6 @@ function buildDossierInfoLines(dossier: any): string[] {
   return lines;
 }
 
-// Walk node tree recursively for PDF export (pdfmake content)
-async function walkTreeContent(
-  allNodes: any[],
-  parentId: string | null,
-  depth: number,
-  counter: SectionCounter,
-  tpl: any,
-): Promise<Content[]> {
-  const children = allNodes
-    .filter((n: any) => n.parentId === parentId && !n.deletedAt)
-    .sort((a: any, b: any) => a.order - b.order);
-
-  const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
-  const content: Content[] = [];
-
-  for (const node of children) {
-    if (node.type === 'folder') {
-      const num = nextSectionNumber(counter, hl);
-      content.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, hl, tpl));
-      const subContent = await walkTreeContent(allNodes, node._id, depth + 1, counter, tpl);
-      content.push(...subContent);
-    } else if (node.type === 'note') {
-      const num = nextSectionNumber(counter, hl);
-      content.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, hl, tpl));
-      if (node.content) {
-        const blocks = convertTipTapToBlocks(node.content);
-        await resolveBlockImages(blocks);
-        content.push(...blocksToContent(blocks));
-      }
-    }
-  }
-  return content;
-}
-
-async function exportPDF(selectedNodeIds?: string[], includeToc = false) {
-  if (!dossierStore.currentDossier) return;
-  try {
-    const dossier = dossierStore.currentDossier;
-    const allNodes = dossierStore.nodes;
-    const nodes = selectedNodeIds ? allNodes.filter(n => selectedNodeIds.includes(n._id)) : allNodes;
-    const tpl = loadPdfTemplate();
-    const logos = await loadTemplateLogos(tpl, SERVER_URL);
-
-    // Collect orphans for both TOC and rendering
-    const nodeIds = new Set(nodes.map((n: any) => n._id));
-    const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt)
-      .sort((a: any, b: any) => a.order - b.order);
-
-    // TOC entries
-    let tocEntries: PdfTocEntry[] | undefined;
-    if (includeToc) {
-      const tocCounter: SectionCounter = [0, 0, 0];
-      const rawToc = collectTocEntries(nodes, null, 1, tocCounter);
-      for (const node of orphans) {
-        if (node.type === 'folder' || node.type === 'note') {
-          const num = nextSectionNumber(tocCounter, 'h1');
-          rawToc.push({ title: `${num} ${cleanControlChars(node.title)}`, level: 'h1', number: num });
-        }
-      }
-      tocEntries = rawToc.map(e => ({ title: e.title, level: e.level }));
-    }
-
-    // Walk node tree to build content
-    const counter: SectionCounter = [0, 0, 0];
-    const pdfContent: Content[] = await walkTreeContent(nodes, null, 1, counter, tpl);
-
-    // Orphan nodes at root level
-    for (const node of orphans) {
-      if (node.type === 'folder') {
-        const num = nextSectionNumber(counter, 'h1');
-        pdfContent.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, 'h1', tpl));
-      } else if (node.type === 'note') {
-        const num = nextSectionNumber(counter, 'h1');
-        pdfContent.push(renderHeading(`${num} ${cleanControlChars(node.title)}`, 'h1', tpl));
-        if (node.content) {
-          const blocks = convertTipTapToBlocks(node.content);
-          await resolveBlockImages(blocks);
-          pdfContent.push(...blocksToContent(blocks));
-        }
-      }
-    }
-
-    // Signature
-    const sigData = getSignatureData();
-    const signatureImage = sigData.image ? await sigData.image : undefined;
-
-    const opts: PdfBuildOptions = {
-      dossierTitle: cleanControlChars(dossier.title),
-      infoLines: buildDossierInfoLines(dossier).map(cleanControlChars),
-      content: pdfContent,
-      includeToc,
-      tocEntries,
-      closingCity: sigData.city,
-      signatureImage,
-      signatureLines: sigData.lines,
-    };
-
-    const docDef = buildDocDefinition(tpl, logos, opts);
-    const blob = await generatePdfBlob(docDef);
-    downloadBlob(blob, `Rapport_OSINT_${dossier.title}.pdf`);
-  } catch (err) {
-    console.error('PDF export failed:', err);
-  }
-}
 
 // Walk node tree recursively for DOCX sections
 function walkTreeDocx(
