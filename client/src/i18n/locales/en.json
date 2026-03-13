@@ -1046,6 +1046,7 @@
     "addUrl": "Add a URL",
     "uploadFile": "Upload a file",
     "urlPlaceholder": "YouTube, Vimeo, SoundCloud URL, direct link...",
+    "detect": "Detect",
     "detecting": "Detecting metadata...",
     "capture": "Capture",
     "note": "Note",
