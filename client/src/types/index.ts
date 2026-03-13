@@ -84,17 +84,54 @@ export interface NoteTemplate {
   updatedAt: string;
 }
 
+export interface MediaSource {
+  type: 'url' | 'upload';
+  url?: string;
+  fileUrl?: string;
+  fileName?: string;
+  mimeType: string;
+  mediaType: 'video' | 'audio';
+}
+
+export interface MediaMetadata {
+  title: string;
+  platform?: string;
+  channelName?: string;
+  channelUrl?: string;
+  publishedAt?: string;
+  duration?: number;
+  thumbnailUrl?: string;
+  description?: string;
+  tags?: string[];
+}
+
+export interface MediaAnnotation {
+  id: string;
+  timestamp: number;
+  type: 'capture' | 'note';
+  comment: string;
+  screenshotUrl?: string;
+  createdAt: string;
+}
+
+export interface MediaData {
+  source: MediaSource;
+  metadata: MediaMetadata;
+  annotations: MediaAnnotation[];
+}
+
 export interface DossierNode {
   _id: string;
   dossierId: string;
   parentId: string | null;
-  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset';
+  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset' | 'media';
   title: string;
   order: number;
   content: any | null;
   contentText: string | null;
   excalidrawData: any | null;
   mapData: any | null;
+  mediaData: MediaData | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
