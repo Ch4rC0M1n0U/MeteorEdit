@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { listUsers, updateUser, deleteUser, resetUserPassword, resetUser2FA, getAuditLogs, getAuditStats } from '../controllers/adminController';
 import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, uploadLoginBackground, deleteLoginBackground, testEmail } from '../controllers/settingsController';
-import { exportBackup, importBackup, getStorageInfo } from '../controllers/backupController';
+import { exportBackup, importBackup, getStorageInfo, scanOrphans, cleanOrphans } from '../controllers/backupController';
 import { getStats } from '../controllers/statsController';
 import { getPluginSettings, updatePluginSettings } from '../controllers/pluginSettingsController';
 import { listOllamaModels, pullOllamaModel, cancelPullOllamaModel, deleteOllamaModel, updateOllamaSettings } from '../controllers/aiController';
@@ -386,6 +386,8 @@ router.post('/settings/test-email', testEmail);
 router.get('/backup/export', exportBackup);
 router.post('/backup/import', upload.single('backup'), importBackup);
 router.get('/storage-info', getStorageInfo);
+router.get('/storage/orphans', scanOrphans);
+router.delete('/storage/orphans', cleanOrphans);
 
 /**
  * @swagger

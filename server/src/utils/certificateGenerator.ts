@@ -1,5 +1,3 @@
-import puppeteer from 'puppeteer';
-
 interface CertVerification {
   verifiedAt: Date;
   status: string;
@@ -28,7 +26,7 @@ export async function generateEvidenceCertificate(
   const capturedDate = new Date(record.capturedAt).toLocaleDateString('fr-FR', dateOpts);
 
   const typeLabels: Record<string, string> = {
-    file: 'Fichier', screenshot: 'Capture ecran', clip: 'Clip web',
+    file: 'Fichier', screenshot: 'Capture ecran', clip: 'Clip web', 'media-capture': 'Capture media',
   };
 
   const nodeTypeLabels: Record<string, string> = {
@@ -122,13 +120,19 @@ export async function generateEvidenceCertificate(
 </body>
 </html>`;
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle0' });
-  const pdfUint8 = await page.pdf({ format: 'A4', printBackground: true });
-  await browser.close();
-  return Buffer.from(pdfUint8);
+  try {
+    const puppeteer = await import('puppeteer');
+    const browser = await puppeteer.default.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdfUint8 = await page.pdf({ format: 'A4', printBackground: true });
+    await browser.close();
+    return Buffer.from(pdfUint8);
+  } catch (err) {
+    console.error('Puppeteer PDF generation failed:', err);
+    throw new Error(`Certificate PDF generation failed: ${(err as Error).message}`);
+  }
 }

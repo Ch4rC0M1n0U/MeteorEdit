@@ -42,6 +42,20 @@
           <v-icon size="16">mdi-delete-outline</v-icon>
         </button>
       </div>
+      <div class="ia-separator" />
+      <!-- Zoom controls -->
+      <div class="ia-tool-group">
+        <button class="ia-tool-btn" @click="zoomOut" :disabled="zoomLevel <= 0.25" title="Zoom -">
+          <v-icon size="16">mdi-magnify-minus-outline</v-icon>
+        </button>
+        <span class="ia-zoom-label mono">{{ Math.round(zoomLevel * 100) }}%</span>
+        <button class="ia-tool-btn" @click="zoomIn" :disabled="zoomLevel >= 5" title="Zoom +">
+          <v-icon size="16">mdi-magnify-plus-outline</v-icon>
+        </button>
+        <button class="ia-tool-btn" @click="zoomReset" title="Ajuster">
+          <v-icon size="16">mdi-fit-to-screen-outline</v-icon>
+        </button>
+      </div>
       <div class="ia-spacer" />
       <div class="ia-tool-group">
         <button class="ia-tool-btn ia-save-btn" @click="save" title="Sauvegarder">
@@ -51,22 +65,28 @@
       </div>
     </div>
 
-    <!-- Canvas area -->
-    <div class="ia-canvas-wrap" ref="canvasWrapRef">
-      <img
-        ref="imageRef"
-        :src="imageSrc"
-        class="ia-image"
-        @load="onImageLoad"
-        crossorigin="anonymous"
-      />
-      <canvas
-        ref="canvasRef"
-        class="ia-canvas"
-        @pointerdown="onPointerDown"
-        @pointermove="onPointerMove"
-        @pointerup="onPointerUp"
-      />
+    <!-- Canvas area with scroll -->
+    <div class="ia-canvas-wrap" ref="canvasWrapRef" @wheel.prevent="onWheel">
+      <div
+        class="ia-canvas-inner"
+        ref="canvasInnerRef"
+        :style="{ transform: `scale(${zoomLevel})`, transformOrigin: '0 0' }"
+      >
+        <img
+          ref="imageRef"
+          :src="imageSrc"
+          class="ia-image"
+          @load="onImageLoad"
+          crossorigin="anonymous"
+        />
+        <canvas
+          ref="canvasRef"
+          class="ia-canvas"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+        />
+      </div>
       <!-- Text input overlay with drag handle -->
       <div
         v-if="textInput.visible"
@@ -96,13 +116,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick, watch } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 
 interface Annotation {
-  type: 'rect' | 'circle' | 'arrow' | 'freehand' | 'text';
+  type: 'rect' | 'circle' | 'arrow' | 'freehand' | 'text' | 'blur';
   color: string;
   strokeWidth: number;
-  // rect/circle
+  // rect/circle/blur
   x?: number;
   y?: number;
   w?: number;
@@ -134,12 +154,14 @@ const tools = [
   { id: 'arrow', icon: 'mdi-arrow-top-right', label: 'Fleche' },
   { id: 'freehand', icon: 'mdi-draw', label: 'Dessin libre' },
   { id: 'text', icon: 'mdi-format-text', label: 'Texte' },
-] as const;
+  { id: 'blur', icon: 'mdi-blur', label: 'Flou' },
+];
 
 const colors = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6', '#ffffff', '#000000'];
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const canvasWrapRef = ref<HTMLDivElement | null>(null);
+const canvasInnerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
 const textInputRef = ref<HTMLInputElement | null>(null);
@@ -150,6 +172,7 @@ const strokeWidth = ref(3);
 const annotations = ref<Annotation[]>([]);
 const drawing = ref(false);
 const currentAnnotation = ref<Annotation | null>(null);
+const zoomLevel = ref(1);
 
 const textInput = reactive({
   visible: false,
@@ -158,12 +181,26 @@ const textInput = reactive({
   value: '',
 });
 
-// Scale factor for canvas coords
+// Scale factor for canvas coords (canvas display px -> natural image px)
 let scaleX = 1;
 let scaleY = 1;
 
+// Offscreen canvas holding the original image pixels (for blur rendering)
+let sourceCanvas: HTMLCanvasElement | null = null;
+
 function onImageLoad() {
+  buildSourceCanvas();
   resizeCanvas();
+}
+
+function buildSourceCanvas() {
+  const img = imageRef.value;
+  if (!img) return;
+  sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = img.naturalWidth;
+  sourceCanvas.height = img.naturalHeight;
+  const ctx = sourceCanvas.getContext('2d')!;
+  ctx.drawImage(img, 0, 0);
 }
 
 function resizeCanvas() {
@@ -185,6 +222,10 @@ onMounted(() => {
   window.addEventListener('resize', resizeCanvas);
 });
 
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeCanvas);
+});
+
 watch(() => props.initialAnnotations, (val) => {
   if (val) {
     annotations.value = [...val];
@@ -192,18 +233,55 @@ watch(() => props.initialAnnotations, (val) => {
   }
 });
 
+// --- Zoom ---
+function zoomIn() {
+  zoomLevel.value = Math.min(5, +(zoomLevel.value * 1.25).toFixed(2));
+  nextTick(updateScrollSize);
+}
+
+function zoomOut() {
+  zoomLevel.value = Math.max(0.25, +(zoomLevel.value / 1.25).toFixed(2));
+  nextTick(updateScrollSize);
+}
+
+function zoomReset() {
+  zoomLevel.value = 1;
+  nextTick(updateScrollSize);
+}
+
+function onWheel(e: WheelEvent) {
+  if (!e.ctrlKey) return;
+  if (e.deltaY < 0) {
+    zoomIn();
+  } else {
+    zoomOut();
+  }
+}
+
+function updateScrollSize() {
+  // The CSS transform doesn't affect layout, so we set min-width/min-height
+  // on the inner container to force scroll area
+  const inner = canvasInnerRef.value;
+  const img = imageRef.value;
+  if (!inner || !img) return;
+  inner.style.minWidth = `${img.clientWidth * zoomLevel.value}px`;
+  inner.style.minHeight = `${img.clientHeight * zoomLevel.value}px`;
+}
+
+// --- Coordinates ---
 function getCanvasCoords(e: PointerEvent) {
   const canvas = canvasRef.value!;
   const rect = canvas.getBoundingClientRect();
+  // getBoundingClientRect accounts for CSS scale, so divide by zoom to get logical canvas px
   return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY,
+    x: ((e.clientX - rect.left) * canvas.width / rect.width) * scaleX,
+    y: ((e.clientY - rect.top) * canvas.height / rect.height) * scaleY,
   };
 }
 
+// --- Drawing ---
 function onPointerDown(e: PointerEvent) {
   if (activeTool.value === 'text') {
-    // Commit any existing text input first
     if (textInput.visible) {
       commitText();
     }
@@ -215,22 +293,24 @@ function onPointerDown(e: PointerEvent) {
     textInput.y = e.clientY - wrapRect.top + wrap.scrollTop;
     textInput.value = '';
     textInput.visible = true;
-    // Use setTimeout to ensure DOM is updated and focus isn't stolen by pointer events
     setTimeout(() => textInputRef.value?.focus(), 50);
     return;
   }
 
   drawing.value = true;
   const { x, y } = getCanvasCoords(e);
+  const tool = activeTool.value;
 
-  if (activeTool.value === 'rect') {
+  if (tool === 'rect') {
     currentAnnotation.value = { type: 'rect', color: activeColor.value, strokeWidth: strokeWidth.value, x, y, w: 0, h: 0 };
-  } else if (activeTool.value === 'circle') {
+  } else if (tool === 'circle') {
     currentAnnotation.value = { type: 'circle', color: activeColor.value, strokeWidth: strokeWidth.value, x, y, w: 0, h: 0 };
-  } else if (activeTool.value === 'arrow') {
+  } else if (tool === 'arrow') {
     currentAnnotation.value = { type: 'arrow', color: activeColor.value, strokeWidth: strokeWidth.value, x1: x, y1: y, x2: x, y2: y };
-  } else if (activeTool.value === 'freehand') {
+  } else if (tool === 'freehand') {
     currentAnnotation.value = { type: 'freehand', color: activeColor.value, strokeWidth: strokeWidth.value, points: [{ x, y }] };
+  } else if (tool === 'blur') {
+    currentAnnotation.value = { type: 'blur', color: '', strokeWidth: 0, x, y, w: 0, h: 0 };
   }
 }
 
@@ -239,7 +319,7 @@ function onPointerMove(e: PointerEvent) {
   const { x, y } = getCanvasCoords(e);
   const a = currentAnnotation.value;
 
-  if (a.type === 'rect' || a.type === 'circle') {
+  if (a.type === 'rect' || a.type === 'circle' || a.type === 'blur') {
     a.w = x - a.x!;
     a.h = y - a.y!;
   } else if (a.type === 'arrow') {
@@ -256,10 +336,9 @@ function onPointerUp() {
   if (!drawing.value || !currentAnnotation.value) return;
   drawing.value = false;
 
-  // Only add non-trivial annotations
   const a = currentAnnotation.value;
   let valid = true;
-  if (a.type === 'rect' || a.type === 'circle') {
+  if (a.type === 'rect' || a.type === 'circle' || a.type === 'blur') {
     valid = Math.abs(a.w || 0) > 3 || Math.abs(a.h || 0) > 3;
   } else if (a.type === 'arrow') {
     valid = Math.abs((a.x2 || 0) - (a.x1 || 0)) > 3 || Math.abs((a.y2 || 0) - (a.y1 || 0)) > 3;
@@ -268,12 +347,18 @@ function onPointerUp() {
   }
 
   if (valid) {
+    // Normalize blur rects to positive w/h
+    if (a.type === 'blur' && (a.w! < 0 || a.h! < 0)) {
+      if (a.w! < 0) { a.x = a.x! + a.w!; a.w = -a.w!; }
+      if (a.h! < 0) { a.y = a.y! + a.h!; a.h = -a.h!; }
+    }
     annotations.value.push(a);
   }
   currentAnnotation.value = null;
   redraw();
 }
 
+// --- Text ---
 function commitText() {
   if (!textInput.visible) return;
   textInput.visible = false;
@@ -284,11 +369,13 @@ function commitText() {
   const wrap = canvasWrapRef.value!;
   const canvasRect = canvas.getBoundingClientRect();
   const wrapRect = wrap.getBoundingClientRect();
-  // Convert wrap-relative coords to canvas-relative, then to natural image coords
   const canvasX = textInput.x - (canvasRect.left - wrapRect.left + wrap.scrollLeft);
   const canvasY = textInput.y - (canvasRect.top - wrapRect.top + wrap.scrollTop);
-  const x = canvasX * scaleX;
-  const y = canvasY * scaleY;
+  // Convert display coords to natural coords (account for zoom via rect ratio)
+  const rx = canvas.width / canvasRect.width;
+  const ry = canvas.height / canvasRect.height;
+  const x = canvasX * rx * scaleX;
+  const y = canvasY * ry * scaleY;
 
   annotations.value.push({
     type: 'text',
@@ -328,14 +415,11 @@ function stopTextDrag() {
   textDragging = false;
   document.removeEventListener('pointermove', onTextDrag);
   document.removeEventListener('pointerup', stopTextDrag);
-  // Re-focus the input after dragging
   setTimeout(() => textInputRef.value?.focus(), 50);
 }
 
 function onTextBlur() {
-  // Don't commit while dragging
   if (textDragging) return;
-  // Delay to avoid conflict with canvas pointerdown creating a new text input
   setTimeout(() => commitText(), 100);
 }
 
@@ -344,6 +428,7 @@ function cancelText() {
   textInput.value = '';
 }
 
+// --- Actions ---
 function undo() {
   annotations.value.pop();
   redraw();
@@ -358,24 +443,73 @@ function save() {
   emit('save', [...annotations.value]);
 }
 
+// --- Render ---
+function drawBlurRegion(ctx: CanvasRenderingContext2D, a: Annotation, displayScale: boolean) {
+  if (!sourceCanvas) return;
+  // Natural image coordinates
+  const nx = a.x!;
+  const ny = a.y!;
+  const nw = Math.abs(a.w!);
+  const nh = Math.abs(a.h!);
+  if (nw < 2 || nh < 2) return;
+
+  // Pixelation block size in natural pixels
+  const blockSize = 12;
+  const tilesX = Math.max(1, Math.ceil(nw / blockSize));
+  const tilesY = Math.max(1, Math.ceil(nh / blockSize));
+
+  // Offscreen: draw source region scaled down to tiny size (pixelation)
+  const off = document.createElement('canvas');
+  off.width = tilesX;
+  off.height = tilesY;
+  const offCtx = off.getContext('2d')!;
+  offCtx.imageSmoothingEnabled = true;
+  offCtx.drawImage(sourceCanvas, nx, ny, nw, nh, 0, 0, tilesX, tilesY);
+
+  // Draw back onto main canvas, scaled up with no smoothing (blocky)
+  ctx.imageSmoothingEnabled = false;
+  if (displayScale) {
+    // Drawing on preview canvas (display coords)
+    const dx = nx / scaleX;
+    const dy = ny / scaleY;
+    const dw = nw / scaleX;
+    const dh = nh / scaleY;
+    ctx.drawImage(off, 0, 0, tilesX, tilesY, dx, dy, dw, dh);
+  } else {
+    // Drawing at natural resolution (for save)
+    ctx.drawImage(off, 0, 0, tilesX, tilesY, nx, ny, nw, nh);
+  }
+  ctx.imageSmoothingEnabled = true;
+}
+
 function redraw() {
   const canvas = canvasRef.value;
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Use display pixel ratio
-  const displayW = canvas.width;
-  const displayH = canvas.height;
-  ctx.clearRect(0, 0, displayW, displayH);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const allAnnotations = [...annotations.value];
   if (currentAnnotation.value) allAnnotations.push(currentAnnotation.value);
 
   for (const a of allAnnotations) {
+    if (a.type === 'blur') {
+      drawBlurRegion(ctx, a, true);
+      // Draw dashed border for visibility
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      const bx = a.x! / scaleX, by = a.y! / scaleY;
+      const bw = a.w! / scaleX, bh = a.h! / scaleY;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.setLineDash([]);
+      continue;
+    }
+
     ctx.strokeStyle = a.color;
     ctx.fillStyle = a.color;
-    ctx.lineWidth = a.strokeWidth / scaleX; // Scale stroke to display
+    ctx.lineWidth = a.strokeWidth / scaleX;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
@@ -396,7 +530,6 @@ function redraw() {
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
-      // Arrowhead
       const angle = Math.atan2(y2 - y1, x2 - x1);
       const headLen = 12;
       ctx.beginPath();
@@ -491,6 +624,13 @@ function redraw() {
   font-size: 12px;
   font-weight: 600;
 }
+.ia-zoom-label {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  min-width: 38px;
+  text-align: center;
+  user-select: none;
+}
 .ia-color-btn {
   width: 20px;
   height: 20px;
@@ -517,23 +657,25 @@ function redraw() {
   flex: 1;
   position: relative;
   overflow: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
   padding: 16px;
 }
+.ia-canvas-inner {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
 .ia-image {
-  max-width: 100%;
-  max-height: 100%;
   display: block;
+  max-width: 100%;
   user-select: none;
   pointer-events: none;
 }
 .ia-canvas {
   position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   cursor: crosshair;
 }
 .ia-text-box {

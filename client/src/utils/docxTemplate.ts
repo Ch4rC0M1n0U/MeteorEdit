@@ -567,6 +567,21 @@ async function resolveBlockImages(
   return elements.map(el => resolved.get(el as Paragraph) || el);
 }
 
+/** Pre-resolve image URLs to buffers for use in table cell construction */
+async function preResolveImages(
+  screenshotUrls: string[],
+  serverUrl?: string,
+): Promise<Map<string, { buffer: ArrayBuffer; w: number; h: number }>> {
+  const map = new Map<string, { buffer: ArrayBuffer; w: number; h: number }>();
+  for (const url of screenshotUrls) {
+    try {
+      const imgData = await fetchImageBuffer(url, serverUrl);
+      if (imgData) map.set(url, imgData);
+    } catch { /* skip */ }
+  }
+  return map;
+}
+
 // ── Media Helpers ───────────────────────────────────────────────────
 
 function formatMediaTime(seconds: number): string {
@@ -637,22 +652,33 @@ export function renderMediaMetadataDocx(metadata: any, tpl: PdfTemplateConfig): 
   return paragraphs;
 }
 
-export function renderMediaAnnotationsTableDocx(
+export async function renderMediaAnnotationsTableDocx(
   annotations: any[],
   tpl: PdfTemplateConfig,
-  _images: { src: string; placeholder: Paragraph }[],
-): Table {
+  serverUrl?: string,
+): Promise<Table> {
   const font = docxFont(tpl);
   const fontSize = ptToHalfPt(tpl.body.fontSize);
   const sorted = [...annotations].sort((a, b) => a.timestamp - b.timestamp);
 
-  // Header row
-  const headerCells = ['Temps', 'Capture', 'Commentaire'].map(text =>
+  // Pre-resolve all capture images so they can be embedded directly in cells
+  const captureUrls = sorted
+    .filter(a => a.type === 'capture' && a.screenshotUrl)
+    .map(a => a.screenshotUrl);
+  const resolvedImages = await preResolveImages(captureUrls, serverUrl);
+
+  // Header row — widths must match data rows
+  const headerDefs = [
+    { text: 'Temps', width: 900 },
+    { text: 'Capture', width: 3800 },
+    { text: 'Commentaire', width: 4300 },
+  ];
+  const headerCells = headerDefs.map(({ text, width }) =>
     new TableCell({
       children: [new Paragraph({
         children: [new TextRun({ text, font, size: fontSize, bold: true, color: tpl.table?.headerTextColor ? hexToRgb(tpl.table.headerTextColor) : 'FFFFFF' })],
       })],
-      width: { size: 3000, type: WidthType.DXA },
+      width: { size: width, type: WidthType.DXA },
       shading: tpl.table?.headerBgColor
         ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table.headerBgColor) }
         : { type: ShadingType.CLEAR, fill: '2C3E50' },
@@ -664,14 +690,19 @@ export function renderMediaAnnotationsTableDocx(
   for (const ann of sorted) {
     const timeText = formatMediaTime(ann.timestamp);
 
-    // Capture cell — image placeholder or empty
+    // Capture cell — resolved image or text fallback
     let captureChildren: Paragraph[];
     if (ann.type === 'capture' && ann.screenshotUrl) {
-      const placeholder = new Paragraph({
-        children: [new TextRun({ text: `[Capture ${timeText}]`, font, size: ptToHalfPt(8), color: '999999', italics: true })],
-      });
-      _images.push({ src: ann.screenshotUrl, placeholder });
-      captureChildren = [placeholder];
+      const imgData = resolvedImages.get(ann.screenshotUrl);
+      if (imgData) {
+        captureChildren = [new Paragraph({
+          children: [makeImageRun(imgData, 250, 180)],
+        })];
+      } else {
+        captureChildren = [new Paragraph({
+          children: [new TextRun({ text: `[Capture ${timeText}]`, font, size: ptToHalfPt(8), color: '999999', italics: true })],
+        })];
+      }
     } else {
       captureChildren = [new Paragraph({ children: [new TextRun({ text: ann.type === 'capture' ? 'Capture' : '-', font, size: fontSize })] })];
     }
@@ -682,17 +713,17 @@ export function renderMediaAnnotationsTableDocx(
       children: [
         new TableCell({
           children: [new Paragraph({ children: [new TextRun({ text: timeText, font, size: fontSize, bold: true })] })],
-          width: { size: 1500, type: WidthType.DXA },
+          width: { size: 900, type: WidthType.DXA },
           shading: useAltBg ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table!.alternateRowColor!) } : undefined,
         }),
         new TableCell({
           children: captureChildren,
-          width: { size: 3500, type: WidthType.DXA },
+          width: { size: 3800, type: WidthType.DXA },
           shading: useAltBg ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table!.alternateRowColor!) } : undefined,
         }),
         new TableCell({
           children: [new Paragraph({ children: [new TextRun({ text: ann.comment || '', font, size: fontSize })] })],
-          width: { size: 4000, type: WidthType.DXA },
+          width: { size: 4300, type: WidthType.DXA },
           shading: useAltBg ? { type: ShadingType.CLEAR, fill: hexToRgb(tpl.table!.alternateRowColor!) } : undefined,
         }),
       ],
@@ -879,12 +910,11 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       docChildren.push(...renderMediaMetadataDocx(metaObj, tpl));
 
       if (md.annotations?.length) {
-        const images: { src: string; placeholder: Paragraph }[] = [];
         if (section.mediaFormat === 'table') {
-          const table = renderMediaAnnotationsTableDocx(md.annotations, tpl, images);
-          const resolved = await resolveBlockImages([table], images, data.serverUrl);
-          docChildren.push(...resolved);
+          const table = await renderMediaAnnotationsTableDocx(md.annotations, tpl, data.serverUrl);
+          docChildren.push(table);
         } else {
+          const images: { src: string; placeholder: Paragraph }[] = [];
           const seqElements = renderMediaAnnotationsSequentialDocx(md.annotations, tpl, images);
           const resolved = await resolveBlockImages(seqElements, images, data.serverUrl);
           docChildren.push(...resolved);

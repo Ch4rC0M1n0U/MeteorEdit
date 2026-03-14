@@ -1,5 +1,5 @@
 <template>
-  <div class="me-editor glass-card">
+  <div class="me-editor glass-card" :class="{ 'me-editor--expanded': expanded }">
     <!-- Player Section -->
     <div class="me-player-section">
       <!-- Native video -->
@@ -8,6 +8,7 @@
         ref="playerRef"
         class="me-player-video"
         controls
+        crossorigin="anonymous"
         :src="mediaSrc"
         @timeupdate="onTimeUpdate"
         @loadedmetadata="onLoadedMetadata"
@@ -26,13 +27,7 @@
 
       <!-- YouTube embed -->
       <div v-else-if="youtubeId" class="me-embed-wrapper">
-        <iframe
-          class="me-embed-iframe"
-          :src="`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1`"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        />
+        <div :id="ytPlayerId" class="me-embed-iframe" />
       </div>
 
       <!-- Vimeo embed -->
@@ -74,6 +69,9 @@
           <button class="me-btn me-btn--meta" @click="showMetadata = true">
             <v-icon size="14">mdi-information-outline</v-icon>
             {{ t('media.metadata') }}
+          </button>
+          <button class="me-btn me-btn--expand" @click="expanded = !expanded" :title="expanded ? t('media.shrinkPlayer') : t('media.expandPlayer')">
+            <v-icon size="14">{{ expanded ? 'mdi-arrow-collapse' : 'mdi-arrow-expand' }}</v-icon>
           </button>
         </div>
       </div>
@@ -119,6 +117,7 @@
             :src="screenshotSrc(ann)"
             class="me-ann-thumb"
             :alt="t('media.capture')"
+            @click="viewerSrc = screenshotSrc(ann)"
           />
 
           <div class="me-ann-content">
@@ -170,18 +169,53 @@
     <MediaMetadataDialog
       v-model="showMetadata"
       :metadata="currentMetadata"
+      :source-url="props.node.mediaData?.source.url"
       @save="onMetadataSave"
     />
+
+    <!-- Image Viewer Overlay -->
+    <Teleport to="body">
+      <div v-if="viewerSrc && !annotatorOpen" class="me-viewer-overlay" @click="viewerSrc = ''">
+        <div class="me-viewer-toolbar" @click.stop>
+          <button class="me-viewer-btn" @click="openAnnotator" :title="t('media.editCapture')">
+            <v-icon size="20" color="#fff">mdi-pencil-outline</v-icon>
+          </button>
+          <button class="me-viewer-btn" @click="viewerSrc = ''">
+            <v-icon size="20" color="#fff">mdi-close</v-icon>
+          </button>
+        </div>
+        <img :src="viewerSrc" class="me-viewer-img" @click.stop />
+      </div>
+    </Teleport>
+
+    <!-- Image Annotator Overlay -->
+    <Teleport to="body">
+      <div v-if="annotatorOpen" class="me-annotator-overlay">
+        <div class="me-annotator-header">
+          <span class="me-annotator-title mono">{{ t('media.editCapture') }}</span>
+          <button class="me-viewer-btn" @click="annotatorOpen = false">
+            <v-icon size="20" color="#fff">mdi-close</v-icon>
+          </button>
+        </div>
+        <div class="me-annotator-body">
+          <ImageAnnotator
+            :image-src="viewerSrc"
+            @save="onAnnotatorSave"
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { DossierNode, MediaAnnotation, MediaMetadata } from '../../types';
 import api, { SERVER_URL } from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import MediaMetadataDialog from './MediaMetadataDialog.vue';
+import ImageAnnotator from '../editor/ImageAnnotator.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();
@@ -203,6 +237,10 @@ const filter = ref('');
 const sortAsc = ref(true);
 const editingId = ref<string | null>(null);
 const editingComment = ref('');
+const viewerSrc = ref('');
+const annotatorOpen = ref(false);
+const cacheBust = ref(0);
+const expanded = ref(false);
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -251,6 +289,80 @@ const mediaSrc = computed(() => sourceUrl.value);
 
 const currentMetadata = computed<MediaMetadata>(() => {
   return props.node.mediaData?.metadata || { title: '' };
+});
+
+// --- YouTube IFrame API ---
+const ytPlayerId = `yt-player-${Date.now()}`;
+let ytPlayer: any = null;
+let ytTimeInterval: ReturnType<typeof setInterval> | null = null;
+
+function loadYouTubeAPI(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).YT && (window as any).YT.Player) {
+      resolve();
+      return;
+    }
+    const existing = document.getElementById('yt-iframe-api');
+    if (existing) {
+      const prev = (window as any).onYouTubeIframeAPIReady;
+      (window as any).onYouTubeIframeAPIReady = () => {
+        if (prev) prev();
+        resolve();
+      };
+      return;
+    }
+    const tag = document.createElement('script');
+    tag.id = 'yt-iframe-api';
+    tag.src = 'https://www.youtube.com/iframe_api';
+    (window as any).onYouTubeIframeAPIReady = () => resolve();
+    document.head.appendChild(tag);
+  });
+}
+
+function initYouTubePlayer(videoId: string) {
+  if (ytPlayer) {
+    try { ytPlayer.destroy(); } catch { /* ignore */ }
+    ytPlayer = null;
+  }
+  if (ytTimeInterval) {
+    clearInterval(ytTimeInterval);
+    ytTimeInterval = null;
+  }
+  ytPlayer = new (window as any).YT.Player(ytPlayerId, {
+    videoId,
+    playerVars: { enablejsapi: 1, origin: window.location.origin },
+    events: {
+      onReady: (event: any) => {
+        duration.value = event.target.getDuration() || 0;
+        ytTimeInterval = setInterval(() => {
+          if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+            currentTime.value = ytPlayer.getCurrentTime() || 0;
+            // Update duration if it wasn't available initially
+            if (!duration.value && typeof ytPlayer.getDuration === 'function') {
+              duration.value = ytPlayer.getDuration() || 0;
+            }
+          }
+        }, 250);
+      },
+    },
+  });
+}
+
+watch(
+  () => youtubeId.value,
+  async (id) => {
+    if (id) {
+      await loadYouTubeAPI();
+      nextTick(() => initYouTubePlayer(id));
+    }
+  },
+);
+
+onMounted(async () => {
+  if (youtubeId.value) {
+    await loadYouTubeAPI();
+    nextTick(() => initYouTubePlayer(youtubeId.value!));
+  }
 });
 
 // --- Time formatting ---
@@ -303,10 +415,17 @@ const filteredAnnotations = computed(() => {
 // --- Capture frame ---
 async function captureFrame() {
   if (!props.node.mediaData || capturing.value) return;
+  // Ensure annotations array exists
+  if (!props.node.mediaData.annotations) {
+    props.node.mediaData.annotations = [];
+  }
   capturing.value = true;
 
   try {
-    const ts = playerRef.value ? playerRef.value.currentTime : 0;
+    // Get timestamp from YouTube API, native player, or fallback to currentTime ref
+    const ts = ytPlayer && typeof ytPlayer.getCurrentTime === 'function'
+      ? ytPlayer.getCurrentTime()
+      : playerRef.value ? playerRef.value.currentTime : currentTime.value;
 
     if (!isEmbed.value && playerRef.value && playerRef.value instanceof HTMLVideoElement) {
       // Native video: draw frame to canvas
@@ -337,18 +456,18 @@ async function captureFrame() {
       props.node.mediaData.annotations.push(annotation);
       saveMediaData();
     } else if (isEmbed.value) {
-      // Embed: use server-side capture
+      // Embed (YouTube/Vimeo): extract frame server-side via yt-dlp + ffmpeg
       const url = props.node.mediaData.source.url || '';
       const { data } = await api.post('/media/capture-embed', {
         nodeId: props.node._id,
         dossierId: props.node.dossierId,
         url,
-        timestamp: 0,
+        timestamp: ts,
       });
 
       const annotation: MediaAnnotation = {
         id: crypto.randomUUID(),
-        timestamp: 0,
+        timestamp: ts,
         type: 'capture',
         comment: '',
         screenshotUrl: data.screenshotUrl || data.fileUrl,
@@ -367,7 +486,13 @@ async function captureFrame() {
 // --- Add note ---
 function addNote() {
   if (!props.node.mediaData) return;
-  const ts = playerRef.value ? playerRef.value.currentTime : 0;
+  // Ensure annotations array exists
+  if (!props.node.mediaData.annotations) {
+    props.node.mediaData.annotations = [];
+  }
+  const ts = ytPlayer && typeof ytPlayer.getCurrentTime === 'function'
+    ? ytPlayer.getCurrentTime()
+    : playerRef.value ? playerRef.value.currentTime : currentTime.value;
 
   const annotation: MediaAnnotation = {
     id: crypto.randomUUID(),
@@ -390,6 +515,11 @@ function deleteAnnotation(id: string) {
   if (!props.node.mediaData) return;
   const idx = props.node.mediaData.annotations.findIndex((a) => a.id === id);
   if (idx >= 0) {
+    const ann = props.node.mediaData.annotations[idx]!;
+    // Delete associated evidence record + file on server
+    if (ann.screenshotUrl) {
+      api.delete('/media/capture', { data: { screenshotUrl: ann.screenshotUrl } }).catch(console.error);
+    }
     props.node.mediaData.annotations.splice(idx, 1);
     saveMediaData();
   }
@@ -419,7 +549,9 @@ function cancelEdit() {
 
 // --- Seek ---
 function seekTo(timestamp: number) {
-  if (playerRef.value) {
+  if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+    ytPlayer.seekTo(timestamp, true);
+  } else if (playerRef.value) {
     playerRef.value.currentTime = timestamp;
     playerRef.value.play().catch(() => {});
   }
@@ -428,8 +560,8 @@ function seekTo(timestamp: number) {
 // --- Screenshot src ---
 function screenshotSrc(ann: MediaAnnotation): string {
   if (!ann.screenshotUrl) return '';
-  if (ann.screenshotUrl.startsWith('http')) return ann.screenshotUrl;
-  return `${SERVER_URL}/${ann.screenshotUrl}`;
+  const base = ann.screenshotUrl.startsWith('http') ? ann.screenshotUrl : `${SERVER_URL}/${ann.screenshotUrl}`;
+  return cacheBust.value ? `${base}?t=${cacheBust.value}` : base;
 }
 
 // --- Save (debounced) ---
@@ -447,6 +579,100 @@ function saveMediaData() {
   }, 500);
 }
 
+// --- Image annotator ---
+function openAnnotator() {
+  annotatorOpen.value = true;
+}
+
+function findAnnotationBySrc(src: string): MediaAnnotation | undefined {
+  if (!props.node.mediaData) return undefined;
+  // Strip cache-bust query params for comparison
+  const cleanSrc = src.split('?')[0];
+  return props.node.mediaData.annotations.find(a => screenshotSrc(a).split('?')[0] === cleanSrc);
+}
+
+async function onAnnotatorSave(annotations: any[]) {
+  try {
+    // Render annotations onto image
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.src = viewerSrc.value;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = reject;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+
+    for (const a of annotations) {
+      ctx.strokeStyle = a.color;
+      ctx.fillStyle = a.color;
+      ctx.lineWidth = a.strokeWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (a.type === 'rect') {
+        ctx.strokeRect(a.x, a.y, a.w, a.h);
+      } else if (a.type === 'circle') {
+        ctx.beginPath();
+        ctx.ellipse(a.x + a.w / 2, a.y + a.h / 2, Math.abs(a.w / 2), Math.abs(a.h / 2), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (a.type === 'arrow') {
+        ctx.beginPath();
+        ctx.moveTo(a.x1, a.y1);
+        ctx.lineTo(a.x2, a.y2);
+        ctx.stroke();
+        const angle = Math.atan2(a.y2 - a.y1, a.x2 - a.x1);
+        const headLen = 12 * (a.strokeWidth / 2);
+        ctx.beginPath();
+        ctx.moveTo(a.x2, a.y2);
+        ctx.lineTo(a.x2 - headLen * Math.cos(angle - Math.PI / 6), a.y2 - headLen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(a.x2, a.y2);
+        ctx.lineTo(a.x2 - headLen * Math.cos(angle + Math.PI / 6), a.y2 - headLen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+      } else if (a.type === 'freehand' && a.points?.length) {
+        ctx.beginPath();
+        ctx.moveTo(a.points[0].x, a.points[0].y);
+        for (let i = 1; i < a.points.length; i++) {
+          ctx.lineTo(a.points[i].x, a.points[i].y);
+        }
+        ctx.stroke();
+      } else if (a.type === 'text' && a.text) {
+        ctx.font = `bold ${a.fontSize || 16}px sans-serif`;
+        ctx.fillText(a.text, a.x, a.y);
+      }
+    }
+
+    // Get base64 image data
+    const imageData = canvas.toDataURL('image/png');
+
+    // Find the annotation to get its screenshotUrl
+    const ann = findAnnotationBySrc(viewerSrc.value);
+    if (!ann?.screenshotUrl) {
+      console.error('Could not find annotation for viewer source');
+      annotatorOpen.value = false;
+      return;
+    }
+
+    // Replace capture file in-place on server (same path, updated hash + evidence)
+    const { data } = await api.post('/media/replace-capture', {
+      screenshotUrl: ann.screenshotUrl,
+      imageData,
+    });
+
+    // Force browser cache bust on viewer + thumbnails
+    cacheBust.value = Date.now();
+    viewerSrc.value = `${SERVER_URL}/${data.screenshotUrl}?t=${cacheBust.value}`;
+    annotatorOpen.value = false;
+  } catch (err) {
+    console.error('Annotation save failed:', err);
+  }
+}
+
 // --- Metadata save ---
 function onMetadataSave(metadata: MediaMetadata) {
   if (!props.node.mediaData) return;
@@ -457,6 +683,10 @@ function onMetadataSave(metadata: MediaMetadata) {
 // --- Cleanup ---
 onBeforeUnmount(() => {
   if (saveTimeout) clearTimeout(saveTimeout);
+  if (ytTimeInterval) clearInterval(ytTimeInterval);
+  if (ytPlayer) {
+    try { ytPlayer.destroy(); } catch { /* ignore */ }
+  }
 });
 </script>
 
@@ -466,14 +696,17 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 0;
   border-radius: 12px;
-  overflow: hidden;
   background: var(--me-bg-surface);
   border: 1px solid var(--me-border);
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
 }
 
 /* ── Player Section ── */
 .me-player-section {
   background: var(--me-bg-deep);
+  flex-shrink: 0;
 }
 
 .me-player-video {
@@ -482,6 +715,9 @@ onBeforeUnmount(() => {
   max-height: 520px;
   background: #000;
   outline: none;
+}
+.me-editor--expanded .me-player-video {
+  max-height: 780px; /* ~1.5x of 520px */
 }
 
 .me-player-audio {
@@ -495,13 +731,21 @@ onBeforeUnmount(() => {
 .me-embed-wrapper {
   position: relative;
   width: 100%;
-  padding-bottom: 56.25%; /* 16:9 */
+  max-width: 960px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
   background: #000;
 }
+.me-editor--expanded .me-embed-wrapper {
+  max-width: 1440px;
+}
 .me-embed-iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+/* YouTube IFrame API replaces the div with an iframe — target it via :deep */
+.me-embed-wrapper :deep(iframe) {
   width: 100%;
   height: 100%;
   border: none;
@@ -590,11 +834,30 @@ onBeforeUnmount(() => {
   color: var(--me-text-primary);
 }
 
+.me-btn--expand {
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-muted);
+  padding: 4px 8px;
+  min-width: auto;
+}
+.me-btn--expand:hover {
+  border-color: var(--me-text-secondary);
+  color: var(--me-text-primary);
+}
+.me-editor--expanded .me-btn--expand {
+  color: var(--me-accent);
+  border-color: var(--me-accent);
+}
+
 /* ── Annotations Section ── */
 .me-annotations-section {
   border-top: 1px solid var(--me-border);
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .me-annotations-header {
@@ -674,7 +937,8 @@ onBeforeUnmount(() => {
 
 /* ── Annotations List ── */
 .me-annotations-list {
-  max-height: 400px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 0 16px 12px;
   display: flex;
@@ -731,6 +995,11 @@ onBeforeUnmount(() => {
   border-radius: 4px;
   border: 1px solid var(--me-border);
   flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.me-ann-thumb:hover {
+  opacity: 0.8;
 }
 
 .me-ann-content {
@@ -833,5 +1102,86 @@ onBeforeUnmount(() => {
 }
 .me-spin {
   animation: me-spin 1s linear infinite;
+}
+</style>
+
+<style>
+/* Viewer overlay — NOT scoped because it's teleported to body */
+.me-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.me-viewer-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+.me-viewer-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.me-viewer-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+.me-viewer-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+/* Annotator overlay */
+.me-annotator-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--me-bg-deep, #0f0f14);
+  display: flex;
+  flex-direction: column;
+}
+.me-annotator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--me-border);
+}
+.me-annotator-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+}
+.me-annotator-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+}
+.me-annotator-body .ia-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.me-annotator-body .ia-canvas-wrap {
+  flex: 1;
 }
 </style>

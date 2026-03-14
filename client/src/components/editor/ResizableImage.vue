@@ -47,7 +47,8 @@
             </button>
           </div>
           <ImageAnnotator
-            :image-src="node.attrs.src"
+            :key="annotatorImageSrc"
+            :image-src="annotatorImageSrc"
             @save="onAnnotationSave"
           />
         </div>
@@ -68,6 +69,7 @@ const imgWidth = ref<number>(0);
 const selected = ref(false);
 const copied = ref(false);
 const annotatorOpen = ref(false);
+const annotatorImageSrc = ref('');
 let resizing = false;
 let startX = 0;
 let startWidth = 0;
@@ -179,6 +181,9 @@ function deleteNode() {
 }
 
 function openAnnotator() {
+  // Force a fresh image URL to bypass browser cache
+  const base = (props.node.attrs.src as string).split('?')[0];
+  annotatorImageSrc.value = `${base}?t=${Date.now()}`;
   annotatorOpen.value = true;
 }
 
@@ -187,7 +192,9 @@ async function onAnnotationSave(annotations: any[]) {
   try {
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
-    img.src = props.node.attrs.src;
+    // Use a fresh cache-bust URL to ensure we load the latest version from server
+    const baseSrc = (props.node.attrs.src as string).split('?')[0];
+    img.src = `${baseSrc}?t=${Date.now()}`;
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
       img.onerror = reject;
@@ -199,8 +206,34 @@ async function onAnnotationSave(annotations: any[]) {
     const ctx = canvas.getContext('2d')!;
     ctx.drawImage(img, 0, 0);
 
-    // Draw annotations
+    // Draw annotations (coordinates are in natural image pixels)
+    // Keep a copy of the clean image for blur operations
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = img.naturalWidth;
+    sourceCanvas.height = img.naturalHeight;
+    sourceCanvas.getContext('2d')!.drawImage(img, 0, 0);
+
     for (const a of annotations) {
+      if (a.type === 'blur') {
+        // Pixelate the region
+        const nx = a.x, ny = a.y, nw = Math.abs(a.w), nh = Math.abs(a.h);
+        if (nw > 2 && nh > 2) {
+          const blockSize = 12;
+          const tilesX = Math.max(1, Math.ceil(nw / blockSize));
+          const tilesY = Math.max(1, Math.ceil(nh / blockSize));
+          const off = document.createElement('canvas');
+          off.width = tilesX;
+          off.height = tilesY;
+          const offCtx = off.getContext('2d')!;
+          offCtx.imageSmoothingEnabled = true;
+          offCtx.drawImage(sourceCanvas, nx, ny, nw, nh, 0, 0, tilesX, tilesY);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(off, 0, 0, tilesX, tilesY, nx, ny, nw, nh);
+          ctx.imageSmoothingEnabled = true;
+        }
+        continue;
+      }
+
       ctx.strokeStyle = a.color;
       ctx.fillStyle = a.color;
       ctx.lineWidth = a.strokeWidth;
@@ -239,25 +272,45 @@ async function onAnnotationSave(annotations: any[]) {
       }
     }
 
-    // Convert to blob and upload
-    const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((b) => resolve(b!), 'image/png');
-    });
-    const formData = new FormData();
-    formData.append('image', blob, 'annotated.png');
-    const { data } = await api.post('/upload/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-
-    // Delete the old image file
     const oldSrc = props.node.attrs.src as string;
-    const oldFilename = oldSrc.split('/uploads/').pop();
-    if (oldFilename) {
-      api.delete(`/upload/${oldFilename}`).catch(() => {});
+
+    // Check if this is a clipper screenshot or media capture — replace in-place
+    const isEvidenceFile = oldSrc.includes('/uploads/screenshots/') || oldSrc.includes('/uploads/media/captures/');
+
+    if (isEvidenceFile) {
+      // Replace file in-place to preserve evidence integrity
+      const imageData = canvas.toDataURL('image/png');
+      // Strip query params (?t=xxx cache bust) before extracting path
+      const cleanSrc = oldSrc.split('?')[0];
+      const screenshotUrl = cleanSrc.split('/uploads/').pop();
+      if (screenshotUrl) {
+        await api.post('/media/replace-capture', {
+          screenshotUrl: `uploads/${screenshotUrl}`,
+          imageData,
+        });
+        // Force cache bust to refresh the image
+        const cacheBust = Date.now();
+        props.updateAttributes({ src: `${cleanSrc}?t=${cacheBust}` });
+      }
+    } else {
+      // Regular editor image: re-upload and delete old
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), 'image/png');
+      });
+      const formData = new FormData();
+      formData.append('image', blob, 'annotated.png');
+      const { data } = await api.post('/upload/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const oldFilename = oldSrc.split('/uploads/').pop();
+      if (oldFilename) {
+        api.delete(`/upload/${oldFilename}`).catch(() => {});
+      }
+
+      props.updateAttributes({ src: `${SERVER_URL}${data.url}` });
     }
 
-    // Update image src in the editor
-    props.updateAttributes({ src: `${SERVER_URL}${data.url}` });
     annotatorOpen.value = false;
   } catch (err) {
     console.error('Annotation save failed:', err);

@@ -143,7 +143,7 @@
             <v-icon size="14" class="mr-1">mdi-plus</v-icon>
             {{ $t('dossier.addDocument') }}
           </button>
-          <input ref="docInput" type="file" hidden @change="handleDocUpload" />
+          <input ref="docInput" type="file" hidden multiple @change="handleDocUpload" />
         </div>
         <div v-if="form.linkedDocuments.length" class="di-doc-list">
           <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
@@ -205,7 +205,18 @@
               <v-icon size="16" :title="entityTypeLabel(entity.type)" class="di-el-type-icon">{{ entityIcon(entity.type) }}</v-icon>
               <span class="di-el-type-label mono">{{ entityTypeLabel(entity.type) }}</span>
             </span>
-            <span class="di-el-col-name">{{ entity.name }}</span>
+            <span class="di-el-col-name">
+              <span v-if="entity.photos?.length" class="di-el-thumbs">
+                <img
+                  v-for="(photo, pi) in entity.photos.slice(0, 2)"
+                  :key="pi"
+                  :src="`${SERVER_URL}/${photo}`"
+                  class="di-el-thumb"
+                />
+                <span v-if="entity.photos.length > 2" class="di-el-thumb-more mono">+{{ entity.photos.length - 2 }}</span>
+              </span>
+              {{ entity.name }}
+            </span>
             <span class="di-el-col-desc" :title="entity.description">{{ entity.description || '—' }}</span>
             <span class="di-el-col-actions">
               <button class="di-el-btn" @click="copyEntity(entity.name, i)" :title="$t('dossier.copyEntity') + ' ' + entity.name">
@@ -405,6 +416,45 @@
             class="mb-2"
           />
           <v-text-field v-model="newEntity.description" :label="$t('dossier.entityDescOptional')" />
+
+          <!-- Photos d'identité (only when editing existing entity) -->
+          <div v-if="editingEntityIndex !== null" class="di-entity-photos-section">
+            <div class="di-entity-photos-header">
+              <span class="mono" style="font-size: 12px; font-weight: 600;">
+                <v-icon size="14" class="mr-1">mdi-camera-outline</v-icon>
+                {{ $t('dossier.entityPhotos') }}
+              </span>
+              <button
+                type="button"
+                class="me-btn-small"
+                @click="entityPhotoInput?.click()"
+                :disabled="uploadingEntityPhoto"
+              >
+                <v-icon size="14" class="mr-1">{{ uploadingEntityPhoto ? 'mdi-loading' : 'mdi-plus' }}</v-icon>
+                {{ $t('dossier.addPhoto') }}
+              </button>
+              <input
+                ref="entityPhotoInput"
+                type="file"
+                accept="image/*"
+                multiple
+                style="display: none"
+                @change="uploadEntityPhoto"
+              />
+            </div>
+            <div v-if="newEntity.photos.length" class="di-entity-photos-grid">
+              <div v-for="(photo, pi) in newEntity.photos" :key="pi" class="di-entity-photo-item">
+                <img :src="`${SERVER_URL}/${photo}`" class="di-entity-photo-img" />
+                <button
+                  class="di-entity-photo-delete"
+                  @click="deleteEntityPhoto(editingEntityIndex!, photo)"
+                  :title="$t('dossier.deletePhoto')"
+                >
+                  <v-icon size="12">mdi-close</v-icon>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="dialog-footer">
           <button class="me-btn-ghost" @click="entityDialog = false">{{ $t('common.cancel') }}</button>
@@ -488,7 +538,7 @@ const form = reactive({
   objectives: '',
   judicialFacts: '',
   investigator: { name: '', service: '', unit: '', phone: '', email: '' },
-  entities: [] as { name: string; type: string; description: string }[],
+  entities: [] as { name: string; type: string; description: string; photos: string[] }[],
   classification: 'routine' as 'priority' | 'routine',
   isUrgent: false,
   isEmbargo: false,
@@ -498,7 +548,9 @@ const form = reactive({
   linkedDocuments: [] as { _id: string; fileName: string; filePath: string; fileSize: number; uploadedAt: string }[],
 });
 
-const newEntity = reactive({ name: '', type: '', description: '' });
+const newEntity = reactive({ name: '', type: '', description: '', photos: [] as string[] });
+const entityPhotoInput = ref<HTMLInputElement | null>(null);
+const uploadingEntityPhoto = ref(false);
 
 const statusLabel = computed(() => {
   switch (form.status) {
@@ -535,7 +587,7 @@ function loadFromDossier() {
     form.objectives = d.objectives;
     form.judicialFacts = d.judicialFacts;
     form.investigator = { ...d.investigator };
-    form.entities = (d.entities || []).map((e: any) => ({ ...e }));
+    form.entities = (d.entities || []).map((e: any) => ({ ...e, photos: e.photos || [] }));
     form.classification = d.classification || 'routine';
     form.isUrgent = !!d.isUrgent;
     form.isEmbargo = !!d.isEmbargo;
@@ -592,16 +644,18 @@ async function removeLogo() {
 function triggerDocInput() { docInput.value?.click(); }
 
 async function handleDocUpload(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0];
-  if (!file || !dossierStore.currentDossier) return;
+  const files = (e.target as HTMLInputElement).files;
+  if (!files?.length || !dossierStore.currentDossier) return;
   uploadingDoc.value = true;
-  const fd = new FormData();
-  fd.append('document', file);
   try {
-    const { data } = await api.post(`/dossiers/${dossierStore.currentDossier._id}/documents`, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    syncDossierInList(data);
+    for (const file of Array.from(files)) {
+      const fd = new FormData();
+      fd.append('document', file);
+      const { data } = await api.post(`/dossiers/${dossierStore.currentDossier._id}/documents`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      syncDossierInList(data);
+    }
     loadFromDossier();
   } catch (err) {
     console.error('Failed to upload document:', err);
@@ -772,6 +826,7 @@ function openEntityDialog() {
   newEntity.name = '';
   newEntity.type = '';
   newEntity.description = '';
+  newEntity.photos = [];
   entityDialog.value = true;
 }
 
@@ -781,14 +836,15 @@ function openEditEntity(index: number) {
   newEntity.name = e.name;
   newEntity.type = e.type;
   newEntity.description = e.description;
+  newEntity.photos = [...(e.photos || [])];
   entityDialog.value = true;
 }
 
 async function saveEntity() {
   if (editingEntityIndex.value !== null) {
-    form.entities[editingEntityIndex.value] = { ...newEntity };
+    form.entities[editingEntityIndex.value] = { ...newEntity, photos: [...newEntity.photos] };
   } else {
-    form.entities.push({ ...newEntity });
+    form.entities.push({ ...newEntity, photos: [...newEntity.photos] });
   }
   entityDialog.value = false;
   editingEntityIndex.value = null;
@@ -807,6 +863,55 @@ async function removeEntity(index: number) {
   form.entities.splice(index, 1);
   if (dossierStore.currentDossier) {
     await dossierStore.updateDossier(dossierStore.currentDossier._id, form);
+  }
+}
+
+// --- Photos d'entité ---
+async function uploadEntityPhoto(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  if (!files?.length || !dossierStore.currentDossier) return;
+
+  // Determine entity index: if editing, use that; otherwise it's the last one added
+  const entityIndex = editingEntityIndex.value;
+  if (entityIndex === null) return;
+
+  uploadingEntityPhoto.value = true;
+  try {
+    for (const file of Array.from(files)) {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const { data } = await api.post(
+        `/dossiers/${dossierStore.currentDossier._id}/entities/${entityIndex}/photo`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      // Refresh entities from response
+      form.entities = (data.entities || []).map((e: any) => ({ ...e, photos: e.photos || [] }));
+      newEntity.photos = [...(form.entities[entityIndex]?.photos || [])];
+    }
+  } catch (err) {
+    console.error('Entity photo upload error:', err);
+  } finally {
+    uploadingEntityPhoto.value = false;
+    if (input) input.value = '';
+  }
+}
+
+async function deleteEntityPhoto(entityIndex: number, photoPath: string) {
+  if (!dossierStore.currentDossier) return;
+  try {
+    const { data } = await api.delete(
+      `/dossiers/${dossierStore.currentDossier._id}/entities/${entityIndex}/photo`,
+      { data: { photoPath } },
+    );
+    form.entities = (data.entities || []).map((e: any) => ({ ...e, photos: e.photos || [] }));
+    // Update dialog state if open
+    if (editingEntityIndex.value === entityIndex) {
+      newEntity.photos = [...(form.entities[entityIndex]?.photos || [])];
+    }
+  } catch (err) {
+    console.error('Entity photo delete error:', err);
   }
 }
 
@@ -1353,6 +1458,77 @@ async function removeCollaborator(userId: string) {
 .di-el-btn-danger:hover {
   background: rgba(248, 113, 113, 0.1);
   color: var(--me-error);
+}
+/* Entity photo thumbnails in list */
+.di-el-thumbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.di-el-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--me-border);
+}
+.di-el-thumb-more {
+  font-size: 10px;
+  color: var(--me-text-muted);
+  margin-left: 2px;
+}
+/* Entity photos section in dialog */
+.di-entity-photos-section {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--me-border);
+}
+.di-entity-photos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.di-entity-photos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.di-entity-photo-item {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--me-border);
+}
+.di-entity-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.di-entity-photo-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.di-entity-photo-item:hover .di-entity-photo-delete {
+  opacity: 1;
 }
 .di-tags-field {
   margin-top: 8px;

@@ -5,6 +5,7 @@ import {
   updateDossier, deleteDossier, updateCollaborators, getTags,
   uploadDossierLogo, deleteDossierLogo,
   uploadLinkedDocument, deleteLinkedDocument,
+  uploadEntityPhoto, deleteEntityPhoto,
 } from '../controllers/dossierController';
 import { getUserDashboard, getTaskStats } from '../controllers/dashboardController';
 import { upload } from '../config/upload';
@@ -368,4 +369,6 @@ router.post('/:id/logo', upload.single('logo'), uploadDossierLogo);
 router.delete('/:id/logo', deleteDossierLogo);
 router.post('/:id/documents', upload.single('document'), uploadLinkedDocument);
 router.delete('/:id/documents/:docId', deleteLinkedDocument);
+router.post('/:id/entities/:entityIndex/photo', upload.single('photo'), uploadEntityPhoto);
+router.delete('/:id/entities/:entityIndex/photo', deleteEntityPhoto);
 export default router;

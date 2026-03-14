@@ -1,11 +1,11 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import EvidenceRecord from '../models/EvidenceRecord';
+
 import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { computeFileHash } from '../utils/hashFile';
 import { logActivity } from '../utils/activityLogger';
-import { generateEvidenceCertificate } from '../utils/certificateGenerator';
 import fs from 'fs';
 import path from 'path';
 
@@ -31,12 +31,12 @@ export async function getNodeEvidence(req: AuthRequest, res: Response) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const record = await EvidenceRecord.findOne({ nodeId: req.params.nodeId })
+    const records = await EvidenceRecord.find({ nodeId: req.params.nodeId })
       .sort({ capturedAt: -1 })
       .populate('capturedBy', 'firstName lastName');
 
-    if (!record) return res.status(404).json({ error: 'No evidence record' });
-    res.json(record);
+    if (!records.length) return res.status(404).json({ error: 'No evidence record' });
+    res.json(records);
   } catch (err) {
     console.error('getNodeEvidence error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -55,9 +55,11 @@ export async function verifyNodeIntegrity(req: AuthRequest, res: Response) {
 
     const record = await EvidenceRecord.findOne({ nodeId: req.params.nodeId })
       .sort({ capturedAt: -1 });
-    if (!record) return res.status(404).json({ error: 'No evidence record' });
+    if (!record) {
+      return res.status(404).json({ error: 'No evidence record' });
+    }
 
-    let status: 'valid' | 'tampered' | 'missing';
+    let status: 'valid' | 'tampered' | 'missing' | 'enriched';
     let computedHash: string | null = null;
 
     let resolvedPath = record.filePath;
@@ -69,7 +71,21 @@ export async function verifyNodeIntegrity(req: AuthRequest, res: Response) {
       status = 'missing';
     } else {
       computedHash = await computeFileHash(resolvedPath);
-      status = computedHash === record.fileHash ? 'valid' : 'tampered';
+      if (computedHash === record.fileHash) {
+        // File matches current hash — check if it was enriched (hash differs from original)
+        status = (record.originalHash && record.fileHash !== record.originalHash) ? 'enriched' : 'valid';
+      } else {
+        status = 'tampered';
+      }
+    }
+
+    // Backfill originalHash for old records that don't have it
+    if (!record.originalHash) {
+      await EvidenceRecord.updateOne(
+        { _id: record._id, originalHash: null },
+        { $set: { originalHash: record.fileHash } },
+      );
+      record.set('originalHash', record.fileHash, { strict: false });
     }
 
     record.verifications.push({
@@ -115,8 +131,118 @@ export async function getDossierEvidence(req: AuthRequest, res: Response) {
   }
 }
 
-// GET /api/nodes/:nodeId/evidence/certificate
-export async function exportEvidenceCertificate(req: AuthRequest, res: Response) {
+// DELETE /api/dossiers/:id/evidence/purge-missing
+export async function purgeMissingEvidence(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const dossierId = req.params.id as string;
+    if (!(await checkAccess(req, dossierId))) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const records = await EvidenceRecord.find({ dossierId });
+    let purged = 0;
+
+    for (const record of records) {
+      let resolvedPath = record.filePath;
+      if (!path.isAbsolute(resolvedPath)) {
+        resolvedPath = path.resolve(process.cwd(), resolvedPath);
+      }
+      if (!fs.existsSync(resolvedPath)) {
+        await EvidenceRecord.deleteOne({ _id: record._id });
+        purged++;
+      }
+    }
+
+    if (purged > 0) {
+      await logActivity(userId, 'evidence.purge_missing', 'dossier', dossierId, {
+        purged,
+        total: records.length,
+      }, getIp(req));
+    }
+
+    res.json({ purged, remaining: records.length - purged });
+  } catch (err) {
+    console.error('purgeMissingEvidence error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// POST /api/dossiers/:id/evidence/verify-all
+export async function verifyAllDossierEvidence(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const dossierId = req.params.id as string;
+    if (!(await checkAccess(req, dossierId))) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const records = await EvidenceRecord.find({ dossierId });
+    if (!records.length) return res.status(404).json({ error: 'No evidence records' });
+
+    const results: { id: string; status: string }[] = [];
+
+    for (const record of records) {
+      let status: 'valid' | 'tampered' | 'missing' | 'enriched';
+      let computedHash: string | null = null;
+
+      let resolvedPath = record.filePath;
+      if (!path.isAbsolute(resolvedPath)) {
+        resolvedPath = path.resolve(process.cwd(), resolvedPath);
+      }
+
+      if (!fs.existsSync(resolvedPath)) {
+        status = 'missing';
+      } else {
+        computedHash = await computeFileHash(resolvedPath);
+        if (computedHash === record.fileHash) {
+          status = (record.originalHash && record.fileHash !== record.originalHash) ? 'enriched' : 'valid';
+        } else {
+          status = 'tampered';
+        }
+      }
+
+      // Backfill originalHash for old records
+      if (!record.originalHash) {
+        await EvidenceRecord.updateOne(
+          { _id: record._id, originalHash: null },
+          { $set: { originalHash: record.fileHash } },
+        );
+        record.set('originalHash', record.fileHash, { strict: false });
+      }
+
+      record.verifications.push({
+        verifiedAt: new Date(),
+        verifiedBy: userId as any,
+        status,
+        computedHash,
+      });
+      record.lastVerifiedAt = new Date();
+      record.lastVerificationStatus = status;
+      await record.save();
+
+      results.push({ id: record._id.toString(), status });
+    }
+
+    const hasT = results.some(r => r.status === 'tampered');
+    const hasM = results.some(r => r.status === 'missing');
+    const allV = results.every(r => r.status === 'valid');
+    const worstStatus = hasT ? 'tampered' : hasM ? 'missing' : allV ? 'valid' : null;
+
+    await logActivity(userId, 'evidence.verified_all_dossier', 'dossier', dossierId, {
+      count: records.length,
+      worstStatus,
+    }, getIp(req));
+
+    res.json({ results, worstStatus, total: records.length });
+  } catch (err) {
+    console.error('verifyAllDossierEvidence error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// POST /api/nodes/:nodeId/evidence/verify-all
+export async function verifyAllNodeEvidence(req: AuthRequest, res: Response) {
   try {
     const userId = req.user!.userId;
     const node = await DossierNode.findById(req.params.nodeId);
@@ -125,27 +251,139 @@ export async function exportEvidenceCertificate(req: AuthRequest, res: Response)
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const dossier = await Dossier.findById(node.dossierId);
-    if (!dossier) return res.status(404).json({ error: 'Dossier not found' });
+    const records = await EvidenceRecord.find({ nodeId: req.params.nodeId });
+    if (!records.length) return res.status(404).json({ error: 'No evidence records' });
 
-    const record = await EvidenceRecord.findOne({ nodeId: req.params.nodeId })
-      .sort({ capturedAt: -1 })
-      .populate('capturedBy', 'firstName lastName');
-    if (!record) return res.status(404).json({ error: 'No evidence record' });
+    const results: { id: string; status: string }[] = [];
 
-    const pdfBuffer = await generateEvidenceCertificate(
-      record as any,
-      { title: node.title, type: node.type },
-      { title: dossier.title }
-    );
+    for (const record of records) {
+      let status: 'valid' | 'tampered' | 'missing' | 'enriched';
+      let computedHash: string | null = null;
 
-    await logActivity(userId, 'evidence.certificate_exported', 'node', node._id.toString(), { nodeTitle: node.title }, getIp(req));
+      let resolvedPath = record.filePath;
+      if (!path.isAbsolute(resolvedPath)) {
+        resolvedPath = path.resolve(process.cwd(), resolvedPath);
+      }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="certificat-integrite-${node._id}.pdf"`);
-    res.send(pdfBuffer);
+      if (!fs.existsSync(resolvedPath)) {
+        status = 'missing';
+      } else {
+        computedHash = await computeFileHash(resolvedPath);
+        if (computedHash === record.fileHash) {
+          status = (record.originalHash && record.fileHash !== record.originalHash) ? 'enriched' : 'valid';
+        } else {
+          status = 'tampered';
+        }
+      }
+
+      // Backfill originalHash for old records
+      if (!record.originalHash) {
+        await EvidenceRecord.updateOne(
+          { _id: record._id, originalHash: null },
+          { $set: { originalHash: record.fileHash } },
+        );
+        record.set('originalHash', record.fileHash, { strict: false });
+      }
+
+      record.verifications.push({
+        verifiedAt: new Date(),
+        verifiedBy: userId as any,
+        status,
+        computedHash,
+      });
+      record.lastVerifiedAt = new Date();
+      record.lastVerificationStatus = status;
+      await record.save();
+
+      results.push({ id: record._id.toString(), status });
+    }
+
+    // Update node with worst status
+    const hasT = results.some(r => r.status === 'tampered');
+    const hasM = results.some(r => r.status === 'missing');
+    const allV = results.every(r => r.status === 'valid');
+    const worstStatus = hasT ? 'tampered' : hasM ? 'missing' : allV ? 'valid' : null;
+
+    node.set('hashVerifiedAt', new Date());
+    node.set('lastVerificationStatus', worstStatus);
+    await node.save();
+
+    await logActivity(userId, 'evidence.verified_all', 'node', node._id.toString(), {
+      nodeTitle: node.title,
+      count: records.length,
+      worstStatus,
+    }, getIp(req));
+
+    res.json({ results, worstStatus });
   } catch (err) {
-    console.error('exportEvidenceCertificate error:', err);
+    console.error('verifyAllNodeEvidence error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 }
+
+// POST /api/nodes/:nodeId/evidence/rehash
+export async function rehashNodeEvidence(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const node = await DossierNode.findById(req.params.nodeId);
+    if (!node) return res.status(404).json({ error: 'Node not found' });
+    if (!(await checkAccess(req, node.dossierId.toString()))) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const records = await EvidenceRecord.find({ nodeId: req.params.nodeId });
+    if (!records.length) return res.status(404).json({ error: 'No evidence records' });
+
+    let updated = 0;
+
+    for (const record of records) {
+      let resolvedPath = record.filePath;
+      if (!path.isAbsolute(resolvedPath)) {
+        resolvedPath = path.resolve(process.cwd(), resolvedPath);
+      }
+
+      if (!fs.existsSync(resolvedPath)) continue;
+
+      const newHash = await computeFileHash(resolvedPath);
+      if (newHash !== record.fileHash) {
+        // Backfill originalHash for old records
+        if (!record.originalHash) {
+          await EvidenceRecord.updateOne(
+            { _id: record._id, originalHash: null },
+            { $set: { originalHash: record.fileHash } },
+          );
+          record.set('originalHash', record.fileHash, { strict: false });
+        }
+        record.fileHash = newHash;
+        record.fileSize = fs.statSync(resolvedPath).size;
+        record.verifications.push({
+          verifiedAt: new Date(),
+          verifiedBy: userId as any,
+          status: 'enriched',
+          computedHash: newHash,
+        });
+        record.lastVerifiedAt = new Date();
+        record.lastVerificationStatus = 'enriched';
+        await record.save();
+        updated++;
+      }
+    }
+
+    if (updated > 0) {
+      node.set('hashVerifiedAt', new Date());
+      node.set('lastVerificationStatus', 'enriched');
+      await node.save();
+
+      await logActivity(userId, 'evidence.rehashed', 'node', node._id.toString(), {
+        nodeTitle: node.title,
+        updated,
+      }, getIp(req));
+    }
+
+    res.json({ updated, total: records.length });
+  } catch (err) {
+    console.error('rehashNodeEvidence error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+

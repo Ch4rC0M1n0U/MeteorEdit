@@ -230,19 +230,20 @@ async function detectOembed() {
   errorMsg.value = '';
   try {
     const { data } = await api.post('/media/oembed', { url: urlInput.value.trim() });
-    if (data.title && !title.value) {
-      title.value = data.title;
+    const meta = data.metadata || data;
+    if (meta.title && !title.value) {
+      title.value = meta.title;
     }
     metadata.value = {
-      title: data.title || '',
-      platform: data.platform || '',
-      channelName: data.channelName || data.author_name || '',
-      channelUrl: data.channelUrl || data.author_url || '',
-      publishedAt: data.publishedAt || '',
-      duration: data.duration || 0,
-      thumbnailUrl: data.thumbnailUrl || data.thumbnail_url || '',
-      description: data.description || '',
-      tags: data.tags || [],
+      title: meta.title || '',
+      platform: meta.platform || '',
+      channelName: meta.channelName || meta.author_name || '',
+      channelUrl: meta.channelUrl || meta.author_url || '',
+      publishedAt: meta.publishedAt || '',
+      duration: meta.duration || 0,
+      thumbnailUrl: meta.thumbnailUrl || meta.thumbnail_url || '',
+      description: meta.description || '',
+      tags: meta.tags || [],
     };
   } catch (err: any) {
     errorMsg.value = err.response?.data?.message || t('media.unsupportedFormat');

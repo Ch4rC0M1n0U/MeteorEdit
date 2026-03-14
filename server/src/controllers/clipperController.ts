@@ -472,6 +472,7 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
         dossierId,
         capturedBy: userId,
         capturedAt: new Date(),
+        originalHash: screenshotHash,
         fileHash: screenshotHash,
         filePath: screenshotAbsPath,
         fileSize: screenshotSize,

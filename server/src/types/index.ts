@@ -44,6 +44,7 @@ export interface IEntity {
   name: string;
   type: string;
   description: string;
+  photos: string[];
 }
 
 export interface IInvestigator {

@@ -30,4 +30,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   installUpdate: (): void => ipcRenderer.send('install-update'),
   setTitleBarOverlay: (options: { color: string; symbolColor: string; height: number }): void =>
     ipcRenderer.send('set-titlebar-overlay', options),
+  setUserInfo: (info: { name: string; email: string } | null): void =>
+    ipcRenderer.send('set-user-info', info),
+  setBranding: (branding: { appName: string; logoUrl: string }): void =>
+    ipcRenderer.send('set-branding', branding),
 });

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
 import store from './store';
-import { createTray } from './tray';
+import { createTray, setTrayUserInfo, setTrayServerUrl, setTrayBranding } from './tray';
 import { showNativeNotification } from './notifications';
 import { registerShortcuts, unregisterShortcuts } from './shortcuts';
 import { handleDeepLink } from './deeplinks';
@@ -165,6 +165,53 @@ function createWindow(): void {
           setTimeout(updateLogo, 2000);
           setTimeout(updateLogo, 4000);
 
+          // Sync user info to tray menu
+          function syncUserInfo() {
+            try {
+              const token = localStorage.getItem('accessToken');
+              if (token) {
+                // Decode JWT payload (base64url)
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                // Fetch user profile to get name/email
+                fetch('/api/auth/me', {
+                  headers: { 'Authorization': 'Bearer ' + token }
+                }).then(r => r.ok ? r.json() : null).then(data => {
+                  if (data && window.electronAPI && window.electronAPI.setUserInfo) {
+                    window.electronAPI.setUserInfo({
+                      name: (data.firstName || '') + ' ' + (data.lastName || ''),
+                      email: data.email || '',
+                    });
+                  }
+                }).catch(() => {});
+              } else if (window.electronAPI && window.electronAPI.setUserInfo) {
+                window.electronAPI.setUserInfo(null);
+              }
+            } catch(e) {}
+          }
+          syncUserInfo();
+          // Re-check periodically (login/logout changes localStorage)
+          setInterval(syncUserInfo, 10000);
+
+          // Sync branding info to tray popup
+          function syncBranding() {
+            try {
+              fetch('/api/settings/branding')
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                  if (data && window.electronAPI && window.electronAPI.setBranding) {
+                    const logoUrl = data.logoUrl
+                      ? window.location.origin + data.logoUrl
+                      : '';
+                    window.electronAPI.setBranding({
+                      appName: data.appName || 'MeteorEdit',
+                      logoUrl: logoUrl,
+                    });
+                  }
+                }).catch(() => {});
+            } catch(e) {}
+          }
+          syncBranding();
+
           // Sync titlebar overlay colors with theme
           function syncOverlayTheme() {
             const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
@@ -199,9 +246,18 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('set-server-url', (_event, url: string) => {
     store.set('serverUrl', url);
+    setTrayServerUrl(url);
     if (mainWindow) {
       mainWindow.loadURL(url);
     }
+  });
+
+  ipcMain.on('set-user-info', (_event, info: { name: string; email: string } | null) => {
+    setTrayUserInfo(info);
+  });
+
+  ipcMain.on('set-branding', (_event, branding: { appName: string; logoUrl: string }) => {
+    setTrayBranding(branding);
   });
 
   ipcMain.handle('test-server-connection', async (_event, url: string): Promise<boolean> => {

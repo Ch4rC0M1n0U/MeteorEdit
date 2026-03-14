@@ -1,12 +1,23 @@
 import { Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
 import { computeFileHash } from '../utils/hashFile';
 import EvidenceRecord from '../models/EvidenceRecord';
 
+const execFileAsync = promisify(execFile);
+
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
+
+/** Parse ISO 8601 duration (PT1H2M30S) to seconds */
+function parseISO8601Duration(iso: string): number {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return 0;
+  return (parseInt(m[1] || '0') * 3600) + (parseInt(m[2] || '0') * 60) + parseInt(m[3] || '0');
+}
 
 interface MediaMetadata {
   title: string | null;
@@ -14,6 +25,10 @@ interface MediaMetadata {
   channelUrl: string | null;
   platform: string | null;
   thumbnailUrl: string | null;
+  duration: number | null;
+  description: string | null;
+  publishedAt: string | null;
+  tags: string[];
 }
 
 /**
@@ -35,6 +50,10 @@ export async function fetchOembed(req: AuthRequest, res: Response): Promise<void
       channelUrl: null,
       platform: null,
       thumbnailUrl: null,
+      duration: null,
+      description: null,
+      publishedAt: null,
+      tags: [],
     };
 
     // Try noembed.com first
@@ -44,43 +63,63 @@ export async function fetchOembed(req: AuthRequest, res: Response): Promise<void
       if (response.ok) {
         const data = await response.json() as Record<string, any>;
         if (data && !data.error) {
-          metadata = {
-            title: data.title || null,
-            channelName: data.author_name || null,
-            channelUrl: data.author_url || null,
-            platform: data.provider_name || null,
-            thumbnailUrl: data.thumbnail_url || null,
-          };
+          metadata.title = data.title || null;
+          metadata.channelName = data.author_name || null;
+          metadata.channelUrl = data.author_url || null;
+          metadata.platform = data.provider_name || null;
+          metadata.thumbnailUrl = data.thumbnail_url || null;
         }
       }
     } catch {
       // noembed failed, will try fallback
     }
 
-    // Fallback: fetch HTML and parse OG meta tags
-    if (!metadata.title && !metadata.thumbnailUrl) {
-      try {
-        const htmlResponse = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MeteorEdit/1.0)' },
-          signal: AbortSignal.timeout(10000),
-        });
-        if (htmlResponse.ok) {
-          const html = await htmlResponse.text();
+    // Always fetch HTML to enrich metadata (duration, description, publishedAt, tags)
+    try {
+      const htmlResponse = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (htmlResponse.ok) {
+        const html = await htmlResponse.text();
 
-          const getMetaContent = (property: string): string | null => {
-            const regex = new RegExp(`<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i');
-            const altRegex = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${property}["']`, 'i');
-            const match = html.match(regex) || html.match(altRegex);
-            return match ? match[1] : null;
-          };
+        const getMetaContent = (property: string): string | null => {
+          const regex = new RegExp(`<meta[^>]+(?:property|name|itemprop)=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i');
+          const altRegex = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name|itemprop)=["']${property}["']`, 'i');
+          const match = html.match(regex) || html.match(altRegex);
+          return match ? match[1] : null;
+        };
 
-          metadata.title = metadata.title || getMetaContent('og:title') || getMetaContent('twitter:title');
-          metadata.thumbnailUrl = metadata.thumbnailUrl || getMetaContent('og:image') || getMetaContent('twitter:image');
-          metadata.channelName = metadata.channelName || getMetaContent('og:site_name');
+        // Fill in missing basic metadata
+        metadata.title = metadata.title || getMetaContent('og:title') || getMetaContent('twitter:title');
+        metadata.thumbnailUrl = metadata.thumbnailUrl || getMetaContent('og:image') || getMetaContent('twitter:image');
+        metadata.channelName = metadata.channelName || getMetaContent('og:site_name');
+
+        // Description
+        metadata.description = getMetaContent('og:description') || getMetaContent('description') || null;
+
+        // Published date
+        const datePublished = getMetaContent('datePublished') || getMetaContent('uploadDate') || getMetaContent('article:published_time') || getMetaContent('og:video:release_date');
+        if (datePublished) {
+          // Normalize to YYYY-MM-DD
+          const parsed = new Date(datePublished);
+          metadata.publishedAt = isNaN(parsed.getTime()) ? datePublished : parsed.toISOString().slice(0, 10);
         }
-      } catch {
-        // Fallback also failed, return whatever we have
+
+        // Duration (ISO 8601 format like PT1M47S)
+        const isoDuration = getMetaContent('duration');
+        if (isoDuration) {
+          metadata.duration = parseISO8601Duration(isoDuration);
+        }
+
+        // Tags/keywords
+        const keywords = getMetaContent('keywords');
+        if (keywords) {
+          metadata.tags = keywords.split(',').map(k => k.trim()).filter(Boolean);
+        }
       }
+    } catch {
+      // HTML fetch failed, return whatever we have
     }
 
     res.json({ metadata });
@@ -176,6 +215,7 @@ export async function captureFrame(req: AuthRequest, res: Response): Promise<voi
       dossierId,
       capturedBy: userId,
       capturedAt: new Date(),
+      originalHash: fileHash,
       fileHash,
       filePath,
       fileSize,
@@ -202,11 +242,10 @@ export async function captureFrame(req: AuthRequest, res: Response): Promise<voi
 }
 
 /**
- * Capture a screenshot of an embedded media page via Puppeteer.
+ * Extract a video frame at a given timestamp using yt-dlp + ffmpeg.
  * POST /api/media/capture-embed
  */
 export async function captureEmbed(req: AuthRequest, res: Response): Promise<void> {
-  let browser: any = null;
   try {
     const userId = req.user!.userId;
     const { nodeId, dossierId, url, timestamp } = req.body;
@@ -221,51 +260,34 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       fs.mkdirSync(captureDir, { recursive: true });
     }
 
-    const filename = `cap-${Date.now()}.png`;
+    const filename = `cap-${Date.now()}.jpg`;
     const filePath = path.join(captureDir, filename);
+    const ts = Math.max(0, Math.floor(timestamp || 0));
 
-    // Launch Puppeteer (same pattern as clipperController)
-    const puppeteer = await import('puppeteer');
-    browser = await puppeteer.default.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 900 });
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    // Step 1: Get direct video stream URL via yt-dlp
+    const { stdout: streamUrl } = await execFileAsync('yt-dlp', [
+      '-f', 'best[ext=mp4]/best',
+      '-g',
+      '--no-warnings',
+      '--no-playlist',
+      url,
+    ], { timeout: 20000 });
 
-    // Dismiss cookie banners - simplified version
-    try {
-      const acceptSelectors = [
-        '#onetrust-accept-btn-handler',
-        '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
-        '#CybotCookiebotDialogBodyButtonAccept',
-        '#didomi-notice-agree-button',
-        'button[id*="accept"]',
-        'button[id*="consent"]',
-        'button[class*="accept"]',
-        'button[class*="consent"]',
-        '[aria-label*="accept" i]',
-        '[aria-label*="accepter" i]',
-      ];
-      for (const selector of acceptSelectors) {
-        try {
-          const btn = await page.$(selector);
-          if (btn) {
-            await btn.click();
-            await new Promise(r => setTimeout(r, 300));
-            break;
-          }
-        } catch { /* continue */ }
-      }
-    } catch { /* non-critical */ }
+    const videoUrl = streamUrl.trim().split('\n')[0];
+    if (!videoUrl) {
+      res.status(400).json({ error: 'Impossible de récupérer le flux vidéo' });
+      return;
+    }
 
-    // Wait for page to settle
-    await new Promise(r => setTimeout(r, 2000));
-
-    await page.screenshot({ path: filePath, fullPage: true });
-    await browser.close();
-    browser = null;
+    // Step 2: Extract frame at timestamp via ffmpeg
+    await execFileAsync('ffmpeg', [
+      '-ss', String(ts),
+      '-i', videoUrl,
+      '-frames:v', '1',
+      '-q:v', '2',
+      '-y',
+      filePath,
+    ], { timeout: 15000 });
 
     // Compute hash and file size
     const fileHash = await computeFileHash(filePath);
@@ -277,6 +299,7 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       dossierId,
       capturedBy: userId,
       capturedAt: new Date(),
+      originalHash: fileHash,
       fileHash,
       filePath,
       fileSize,
@@ -297,11 +320,121 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       screenshotUrl: `uploads/media/captures/${filename}`,
       evidenceId: evidence._id,
     });
-  } catch (error) {
-    console.error('captureEmbed error:', error);
-    if (browser) {
-      try { await browser.close(); } catch { /* ignore */ }
+  } catch (error: any) {
+    console.error('captureEmbed error:', error?.message || error);
+    res.status(500).json({ error: 'Échec de la capture. Vérifiez que yt-dlp et ffmpeg sont installés.' });
+  }
+}
+
+// POST /api/media/replace-capture
+export async function replaceCapture(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const { screenshotUrl, imageData } = req.body;
+    if (!screenshotUrl || !imageData) {
+      return res.status(400).json({ error: 'Missing screenshotUrl or imageData' });
     }
-    res.status(500).json({ error: 'Erreur serveur' });
+
+    // Resolve the file path on disk (strip any query params like ?t=xxx)
+    const relativePath = screenshotUrl.replace(/^\//, '').split('?')[0];
+    const absPath = path.resolve(UPLOAD_DIR, '..', relativePath);
+
+    // Ensure parent directory exists (create if needed)
+    const dir = path.dirname(absPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // Decode base64 image data and write (overwrite or create) the file
+    const base64 = imageData.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
+    fs.writeFileSync(absPath, buffer);
+
+    // Re-compute hash and update evidence record
+    const newHash = await computeFileHash(absPath);
+    const newSize = fs.statSync(absPath).size;
+
+    // Normalize path separators for cross-platform matching
+    const normalizedPath = absPath.replace(/\\/g, '/');
+    const record = await EvidenceRecord.findOne({
+      $or: [
+        { filePath: absPath },
+        { filePath: normalizedPath },
+        { filePath: absPath.replace(/\//g, '\\') },
+      ],
+    });
+    if (record) {
+      // Backfill originalHash for old records
+      if (!record.originalHash) {
+        await EvidenceRecord.updateOne(
+          { _id: record._id, originalHash: null },
+          { $set: { originalHash: record.fileHash } },
+        );
+        record.set('originalHash', record.fileHash, { strict: false });
+      }
+      record.fileHash = newHash;
+      record.fileSize = newSize;
+      record.verifications.push({
+        verifiedAt: new Date(),
+        verifiedBy: userId as any,
+        status: 'enriched',
+        computedHash: newHash,
+      });
+      record.lastVerifiedAt = new Date();
+      record.lastVerificationStatus = 'enriched';
+      await record.save();
+    }
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    const targetId = record ? record.nodeId.toString() : undefined;
+    if (targetId) {
+      await logActivity(userId, 'media_capture.enriched', 'node', targetId, { screenshotUrl }, ip, ua);
+    }
+
+    res.json({ screenshotUrl: relativePath, hash: newHash });
+  } catch (error: any) {
+    console.error('replaceCapture error:', error?.message || error);
+    res.status(500).json({ error: 'Failed to replace capture' });
+  }
+}
+
+// DELETE /api/media/capture
+export async function deleteCapture(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const { screenshotUrl } = req.body;
+    if (!screenshotUrl) {
+      return res.status(400).json({ error: 'Missing screenshotUrl' });
+    }
+
+    const relativePath = screenshotUrl.replace(/^\//, '');
+    const absPath = path.resolve(UPLOAD_DIR, '..', relativePath);
+
+    // Delete file from disk
+    if (fs.existsSync(absPath)) {
+      fs.unlinkSync(absPath);
+    }
+
+    // Delete evidence record (normalize path for cross-platform)
+    const normalizedPath = absPath.replace(/\\/g, '/');
+    const result = await EvidenceRecord.deleteMany({
+      $or: [
+        { filePath: absPath },
+        { filePath: normalizedPath },
+        { filePath: absPath.replace(/\//g, '\\') },
+      ],
+    });
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    try {
+      await logActivity(userId, 'media_capture.deleted', 'node', userId, { screenshotUrl, deleted: result.deletedCount }, ip, ua);
+    } catch { /* ignore log errors */ }
+
+    res.json({ deleted: result.deletedCount });
+  } catch (error: any) {
+    console.error('deleteCapture error:', error?.message || error);
+    res.status(500).json({ error: 'Failed to delete capture' });
   }
 }

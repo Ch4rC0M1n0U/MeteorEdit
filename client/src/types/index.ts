@@ -147,7 +147,7 @@ export interface DossierNode {
 export interface EvidenceVerification {
   verifiedAt: string;
   verifiedBy: string;
-  status: 'valid' | 'tampered' | 'missing';
+  status: 'valid' | 'tampered' | 'missing' | 'enriched';
   computedHash: string | null;
 }
 
@@ -157,13 +157,14 @@ export interface EvidenceRecord {
   dossierId: string;
   capturedBy: { _id: string; firstName: string; lastName: string };
   capturedAt: string;
+  originalHash: string;
   fileHash: string;
   fileSize: number;
   sourceUrl: string | null;
-  evidenceType: 'file' | 'screenshot' | 'clip';
+  evidenceType: 'file' | 'screenshot' | 'clip' | 'media-capture';
   verifications: EvidenceVerification[];
   lastVerifiedAt: string | null;
-  lastVerificationStatus: 'valid' | 'tampered' | 'missing' | null;
+  lastVerificationStatus: 'valid' | 'tampered' | 'missing' | 'enriched' | null;
   createdAt: string;
 }
 

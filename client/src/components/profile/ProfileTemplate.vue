@@ -3,7 +3,7 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-file-document-edit-outline</v-icon>
-        Template rapport PDF
+        Template rapport
       </h2>
     </div>
 
@@ -378,31 +378,6 @@
       </div>
     </div>
 
-    <!-- PDF Preview -->
-    <div class="tpl-card glass-card fade-in fade-in-delay-6">
-      <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-eye-outline</v-icon>
-        Apercu PDF
-        <button class="tpl-refresh-btn" @click="generatePdfPreview" :disabled="previewLoading" title="Rafraichir">
-          <v-icon size="14" :class="{ 'tpl-spin': previewLoading }">mdi-refresh</v-icon>
-        </button>
-      </h3>
-      <div class="tpl-preview-container">
-        <div v-if="previewLoading" class="tpl-preview-loading">
-          <v-progress-circular indeterminate size="32" color="primary" />
-          <span class="mono">Generation...</span>
-        </div>
-        <iframe
-          v-else-if="pdfPreviewUrl"
-          :src="pdfPreviewUrl"
-          class="tpl-pdf-iframe"
-        ></iframe>
-        <div v-else class="tpl-preview-empty mono">
-          Cliquez sur le bouton pour generer l'apercu PDF
-        </div>
-      </div>
-    </div>
-
     <!-- Actions -->
     <div class="tpl-actions fade-in">
       <div class="tpl-actions-left">
@@ -450,18 +425,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import api, { SERVER_URL } from '../../services/api';
 import {
   type PdfTemplateConfig,
   defaultPdfTemplate,
   mergePdfTemplate,
-  loadTemplateLogos,
-  buildDocDefinition,
-  generatePdfBlob,
-  renderHeading,
-  blocksToContent,
-} from '../../utils/pdfmakeRenderer';
+} from '../../utils/templateConfig';
 
 const saving = ref(false);
 const snackbar = ref(false);
@@ -555,97 +525,6 @@ function deletePreset() {
   showSnack(`Preset "${name}" supprime`);
 }
 
-// === PDF Preview ===
-const pdfPreviewUrl = ref<string | null>(null);
-const previewLoading = ref(false);
-let previewDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-async function generatePdfPreview() {
-  previewLoading.value = true;
-  try {
-    const tplSnapshot = JSON.parse(JSON.stringify(tpl)) as PdfTemplateConfig;
-    const logos = await loadTemplateLogos(tplSnapshot, SERVER_URL);
-
-    // Build example content using pdfmake data structures
-    const exampleContent: any[] = [];
-
-    // Headings + body text
-    exampleContent.push(renderHeading('Recherches en source ouverte', 'h1', tplSnapshot));
-    exampleContent.push(...blocksToContent([
-      { type: 'paragraph', children: [{ type: 'text', text: 'Cette section illustre le style du corps de texte avec les parametres actuels du template.', marks: {} }] },
-    ], tplSnapshot));
-
-    exampleContent.push(renderHeading('Compte Instagram', 'h2', tplSnapshot));
-    exampleContent.push(...blocksToContent([
-      { type: 'paragraph', children: [{ type: 'text', text: 'Les recherches menees sur ce compte ont permis d\'identifier plusieurs publications pertinentes pour l\'enquete.', marks: {} }] },
-    ], tplSnapshot));
-
-    exampleContent.push(renderHeading('Analyse des publications', 'h3', tplSnapshot));
-    exampleContent.push(...blocksToContent([
-      { type: 'paragraph', children: [{ type: 'text', text: 'Les publications identifiees couvrent la periode du 1er janvier au 15 mars 2026.', marks: {} }] },
-    ], tplSnapshot));
-
-    // Bullet list demo
-    exampleContent.push(...blocksToContent([
-      { type: 'bulletList', items: [
-        [{ type: 'paragraph', children: [{ type: 'text', text: 'Publication du 15 janvier 2026', marks: {} }] }],
-        [{ type: 'paragraph', children: [{ type: 'text', text: 'Story archivee du 3 fevrier 2026', marks: {} }] }],
-      ]},
-    ], tplSnapshot));
-
-    // Blockquote demo
-    exampleContent.push(...blocksToContent([
-      { type: 'blockquote', children: [
-        { type: 'paragraph', children: [{ type: 'text', text: 'Source: profil public identifie le 10 mars 2026.', marks: {} }] },
-      ]},
-    ], tplSnapshot));
-
-    // Table demo
-    exampleContent.push(...blocksToContent([
-      { type: 'table', rows: [
-        [[{ type: 'text', text: 'Date', marks: {} }], [{ type: 'text', text: 'Evenement', marks: {} }]],
-        [[{ type: 'text', text: '15/01/2026', marks: {} }], [{ type: 'text', text: 'Publication identifiee', marks: {} }]],
-        [[{ type: 'text', text: '03/02/2026', marks: {} }], [{ type: 'text', text: 'Story archivee', marks: {} }]],
-      ]},
-    ], tplSnapshot));
-
-    // Build doc definition and generate blob
-    const docDef = buildDocDefinition(tplSnapshot, logos, {
-      dossierTitle: 'Dossier Exemple',
-      infoLines: [
-        new Date().toLocaleDateString('fr-FR'),
-        'Statut: En cours',
-        'Enqueteur: Jean Dupont',
-      ],
-      content: exampleContent,
-    });
-
-    const blob = await generatePdfBlob(docDef);
-
-    // Revoke previous URL
-    if (pdfPreviewUrl.value) URL.revokeObjectURL(pdfPreviewUrl.value);
-    pdfPreviewUrl.value = URL.createObjectURL(blob);
-  } catch (err) {
-    console.error('PDF preview failed:', err);
-    showSnack('Erreur lors de la generation');
-  } finally {
-    previewLoading.value = false;
-  }
-}
-
-function debouncedPreview() {
-  if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-  previewDebounceTimer = setTimeout(() => {
-    if (pdfPreviewUrl.value) generatePdfPreview();
-  }, 1500);
-}
-
-watch(() => JSON.stringify(tpl), debouncedPreview);
-
-onBeforeUnmount(() => {
-  if (pdfPreviewUrl.value) URL.revokeObjectURL(pdfPreviewUrl.value);
-  if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
-});
 
 // === Logo previews ===
 const logoLeftPreview = computed(() => {
@@ -864,35 +743,6 @@ onMounted(async () => {
   font-size: 11px;
 }
 .tpl-table-preview th { font-weight: 600; }
-
-/* PDF Preview */
-.tpl-preview-container { display: flex; justify-content: center; min-height: 500px; }
-.tpl-pdf-iframe {
-  width: 100%;
-  height: 600px;
-  border: 1px solid var(--me-border);
-  border-radius: var(--me-radius-sm);
-  background: #fff;
-}
-.tpl-preview-loading {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; width: 100%; color: var(--me-text-muted);
-}
-.tpl-preview-empty {
-  display: flex; align-items: center; justify-content: center;
-  width: 100%; color: var(--me-text-muted); font-size: 13px;
-}
-.tpl-refresh-btn {
-  margin-left: auto;
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px;
-  background: none; border: 1px solid var(--me-border); border-radius: var(--me-radius-xs);
-  color: var(--me-text-muted); cursor: pointer; transition: all 0.15s;
-}
-.tpl-refresh-btn:hover { border-color: var(--me-accent); color: var(--me-accent); }
-.tpl-refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.tpl-spin { animation: spin 1s linear infinite; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* Toggle row */
 .tpl-row-toggles { display: flex; gap: 16px; margin-top: 4px; flex-wrap: wrap; }
