@@ -959,6 +959,16 @@
       "admin": "Beheer",
       "other": "Overige functies",
       "personal": "Persoonlijke ruimte"
+    },
+    "encryption": {
+      "title": "End-to-end encryptie",
+      "description": "Alle onderzoeksbestanden en inhoud worden versleuteld voordat ze uw browser verlaten.",
+      "features": [
+        "Alleen geautoriseerde dossierleden kunnen de gegevens lezen",
+        "De serverbeheerder heeft geen toegang tot de gegevens",
+        "AES-256-GCM + RSA-OAEP 4096 encryptie (industriestandaard)",
+        "Uw wachtwoord is de sleutel — verlies het nooit"
+      ]
     }
   },
   "nodeTypes": {

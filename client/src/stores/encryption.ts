@@ -218,21 +218,9 @@ export const useEncryptionStore = defineStore('encryption', () => {
 
     await api.put(`/encryption/dossier/${dossierId}`, {
       encryptedKeys: [{ userId, encryptedKey }],
-      isEncrypted: true,
     });
 
     dossierKeyCache.set(dossierId, dossierAesKey);
-  }
-
-  /**
-   * Disable encryption on a dossier.
-   */
-  async function disableDossierEncryption(dossierId: string): Promise<void> {
-    await api.put(`/encryption/dossier/${dossierId}`, {
-      encryptedKeys: [],
-      isEncrypted: false,
-    });
-    dossierKeyCache.delete(dossierId);
   }
 
   /**
@@ -327,7 +315,6 @@ export const useEncryptionStore = defineStore('encryption', () => {
     reEncryptPrivateKey,
     tryRestoreFromSession,
     setupDossierEncryption,
-    disableDossierEncryption,
     getDossierKey,
     shareDossierKey,
     encryptForDossier,

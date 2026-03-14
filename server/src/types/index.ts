@@ -151,8 +151,6 @@ export interface ISiteSettings extends Document {
   clipperQuality: number;
   clipperUserAgent: string;
   clipperProxy: string;
-  // Defaults
-  defaultEncryptionEnabled: boolean;
   // Network
   allowedOrigins: string;
   announcementEnabled: boolean;

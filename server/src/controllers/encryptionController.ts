@@ -124,7 +124,6 @@ export async function getDossierKeys(req: AuthRequest, res: Response): Promise<v
     }
     res.json({
       encryptionKeys: dossier.encryptionKeys || [],
-      isEncrypted: true, // Encryption is now always enabled
     });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur' });

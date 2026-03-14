@@ -10,21 +10,6 @@
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
-    <!-- Nouveaux dossiers -->
-    <div class="sec-card glass-card fade-in fade-in-delay-1">
-      <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-folder-plus-outline</v-icon>
-        <h3 class="sec-card-title mono">{{ $t('admin.newDossiers') }}</h3>
-      </div>
-      <div class="sec-option">
-        <div>
-          <p class="sec-label">{{ $t('admin.e2eDefault') }}</p>
-          <p class="sec-desc">{{ $t('admin.e2eDefaultDesc') }}</p>
-        </div>
-        <v-switch v-model="form.defaultEncryptionEnabled" color="primary" hide-details @update:model-value="save" />
-      </div>
-    </div>
-
     <!-- Retention des donnees -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
@@ -66,14 +51,12 @@ const loading = ref(true);
 const saved = ref(false);
 
 const form = ref({
-  defaultEncryptionEnabled: false,
   trashAutoDeleteDays: 0,
 });
 
 onMounted(async () => {
   try {
     const { data } = await api.get('/settings/branding');
-    form.value.defaultEncryptionEnabled = !!data.defaultEncryptionEnabled;
     form.value.trashAutoDeleteDays = data.trashAutoDeleteDays || 0;
   } catch {} finally {
     loading.value = false;

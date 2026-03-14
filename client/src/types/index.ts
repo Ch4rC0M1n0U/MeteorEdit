@@ -47,7 +47,6 @@ export interface Dossier {
   owner: string;
   collaborators: (string | CollaboratorUser)[];
   encryptionKeys: { userId: string; encryptedKey: string }[];
-  isEncrypted: boolean;
   createdAt: string;
   updatedAt: string;
 }

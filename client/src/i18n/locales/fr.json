@@ -959,6 +959,16 @@
       "admin": "Administration",
       "other": "Autres fonctionnalités",
       "personal": "Espace personnel"
+    },
+    "encryption": {
+      "title": "Chiffrement de bout en bout",
+      "description": "Tous les fichiers et contenus d'investigation sont chiffrés avant de quitter votre navigateur.",
+      "features": [
+        "Seuls les membres autorisés du dossier peuvent lire les données",
+        "L'administrateur du serveur ne peut pas accéder aux données",
+        "Chiffrement AES-256-GCM + RSA-OAEP 4096 (standard industriel)",
+        "Votre mot de passe est la clé — ne le perdez jamais"
+      ]
     }
   },
   "nodeTypes": {

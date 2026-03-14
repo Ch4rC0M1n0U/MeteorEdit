@@ -36,8 +36,6 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     clipperQuality: { type: Number, default: 80 },
     clipperUserAgent: { type: String, default: '' },
     clipperProxy: { type: String, default: '' },
-    // Defaults
-    defaultEncryptionEnabled: { type: Boolean, default: false },
     // Network
     allowedOrigins: { type: String, default: '*' },
     announcementEnabled: { type: Boolean, default: false },

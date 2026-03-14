@@ -959,6 +959,16 @@
       "admin": "Administration",
       "other": "Other features",
       "personal": "Personal space"
+    },
+    "encryption": {
+      "title": "End-to-End Encryption",
+      "description": "All investigation files and content are encrypted before leaving your browser.",
+      "features": [
+        "Only authorized dossier members can read the data",
+        "The server administrator cannot access the data",
+        "AES-256-GCM + RSA-OAEP 4096 encryption (industry standard)",
+        "Your password is the key — never lose it"
+      ]
     }
   },
   "nodeTypes": {

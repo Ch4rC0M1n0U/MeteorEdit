@@ -30,7 +30,7 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
     if (typeof body.loginMessage === 'string') update.loginMessage = body.loginMessage;
 
     // Security toggles
-    const boolFields = ['require2FA', 'maintenanceMode', 'registrationEnabled', 'passwordRequireUppercase', 'passwordRequireNumber', 'passwordRequireSpecial', 'smtpSecure', 'defaultEncryptionEnabled', 'announcementEnabled'];
+    const boolFields = ['require2FA', 'maintenanceMode', 'registrationEnabled', 'passwordRequireUppercase', 'passwordRequireNumber', 'passwordRequireSpecial', 'smtpSecure', 'announcementEnabled'];
     for (const field of boolFields) {
       if (typeof body[field] === 'boolean') update[field] = body[field];
     }
@@ -89,9 +89,6 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
     }
     if (changedKeys.some(k => ['clipperTimeoutMs', 'clipperQuality', 'clipperUserAgent', 'clipperProxy'].includes(k))) {
       await logActivity(req.user!.userId, 'settings.clipper_update', 'system', null, { fields: changedKeys.filter(k => k.startsWith('clipper')) }, ip);
-    }
-    if (changedKeys.some(k => ['defaultEncryptionEnabled'].includes(k))) {
-      await logActivity(req.user!.userId, 'settings.defaults_update', 'system', null, { defaultEncryptionEnabled: update.defaultEncryptionEnabled }, ip);
     }
     if (changedKeys.some(k => ['allowedOrigins'].includes(k))) {
       await logActivity(req.user!.userId, 'settings.network_update', 'system', null, { allowedOrigins: update.allowedOrigins }, ip);

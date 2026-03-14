@@ -126,8 +126,6 @@ router.get('/keys/:userId', authenticate, getUserPublicKey);
  *                       type: string
  *                     encryptedKey:
  *                       type: string
- *               isEncrypted:
- *                 type: boolean
  *     responses:
  *       200:
  *         description: Dossier mis a jour avec les cles
@@ -167,8 +165,6 @@ router.get('/keys/:userId', authenticate, getUserPublicKey);
  *                         type: string
  *                       encryptedKey:
  *                         type: string
- *                 isEncrypted:
- *                   type: boolean
  *       404:
  *         description: Dossier non trouve
  */

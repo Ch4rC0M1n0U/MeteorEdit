@@ -519,7 +519,7 @@ const categories: Category[] = [
 <li>Tous les noeuds et leur contenu (notes, mind maps, cartes, datasets) sont restaurés</li>
 <li>La hiérarchie des dossiers est conservée</li>
 <li>Les fichiers attachés (documents, captures) ne sont pas transférés (seules les métadonnées sont importées)</li>
-<li>Le dossier importé n'est pas chiffré, même si l'original l'était</li>
+<li>Le dossier importé sera automatiquement chiffré après import</li>
 </ul>`,
       },
       {
@@ -608,21 +608,18 @@ const categories: Category[] = [
         title: 'Chiffrement de bout en bout',
         keywords: ['chiffrement', 'encryption', 'e2e', 'clé', 'rsa', 'aes', 'sécurité', 'crypter'],
         content: `<h2>Chiffrement de bout en bout (E2E)</h2>
-<p>Protégez le contenu de vos dossiers avec un chiffrement de bout en bout.</p>
+<p>Tous les fichiers et contenus d'investigation sont chiffrés <strong>avant de quitter votre navigateur</strong>. Le chiffrement est toujours actif et ne peut pas être désactivé.</p>
 <h3>Fonctionnement</h3>
 <ul>
-<li><strong>Algorithme</strong> : RSA-OAEP 4096 bits + AES-256-GCM</li>
+<li><strong>Algorithme</strong> : RSA-OAEP 4096 bits + AES-256-GCM (standard industriel)</li>
 <li>Les données sont chiffrées <strong>avant</strong> d'être envoyées au serveur</li>
-<li>Seuls les détenteurs de la clé peuvent déchiffrer le contenu</li>
-<li>Le serveur ne voit jamais les données en clair</li>
+<li>Seuls les membres autorisés du dossier peuvent déchiffrer le contenu</li>
+<li>Même l'administrateur du serveur ne peut pas accéder aux données en clair</li>
 </ul>
-<h3>Activation</h3>
-<ol>
-<li>Ouvrez le panneau d'informations du dossier</li>
-<li>Section <strong>Chiffrement</strong>, activez le chiffrement</li>
-<li>Définissez un mot de passe pour protéger votre clé</li>
-<li>Partagez la clé avec vos collaborateurs si nécessaire</li>
-</ol>`,
+<h3>Votre mot de passe est la clé</h3>
+<p>Votre mot de passe protège votre clé privée de chiffrement. <strong>Ne le perdez jamais</strong> — sans lui, vos données chiffrées sont irrécupérables.</p>
+<h3>Collaboration chiffrée</h3>
+<p>Lorsque vous ajoutez un collaborateur à un dossier, la clé de chiffrement du dossier est automatiquement partagée de manière sécurisée via le chiffrement asymétrique RSA.</p>`,
       },
       {
         id: 'sec-password',
@@ -744,9 +741,9 @@ const categories: Category[] = [
         content: `<h2>Paramètres par défaut</h2>
 <p>Depuis <strong>Administration > Paramètres par défaut</strong> :</p>
 <ul>
-<li><strong>Chiffrement E2E par défaut</strong> — Active automatiquement le chiffrement de bout en bout pour les nouveaux dossiers</li>
 <li><strong>Purge automatique de la corbeille</strong> — Nombre de jours avant suppression définitive des éléments en corbeille (0 = désactivé)</li>
-</ul>`,
+</ul>
+<p><em>Note : le chiffrement de bout en bout est toujours actif et ne peut pas être désactivé.</em></p>`,
       },
       {
         id: 'adm-network',
