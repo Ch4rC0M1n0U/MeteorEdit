@@ -5,6 +5,7 @@ import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, u
 import { exportBackup, importBackup, getStorageInfo, scanOrphans, cleanOrphans } from '../controllers/backupController';
 import { getStats } from '../controllers/statsController';
 import { getPluginSettings, updatePluginSettings } from '../controllers/pluginSettingsController';
+import { scanEncryptionStatus, migrateBranding } from '../controllers/encryptionController';
 import { listOllamaModels, pullOllamaModel, cancelPullOllamaModel, deleteOllamaModel, updateOllamaSettings } from '../controllers/aiController';
 import { upload, brandingUpload } from '../config/upload';
 
@@ -687,5 +688,58 @@ router.delete('/ai/models/:name', deleteOllamaModel);
  *                   type: string
  */
 router.put('/ai/settings', updateOllamaSettings);
+
+// Encryption scan & migration
+/**
+ * @swagger
+ * /api/admin/encryption/scan:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Scanner le statut de chiffrement des donnees
+ *     description: Compte les noeuds, fichiers et dossiers non chiffres.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Resultats du scan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 unencryptedContentNodes:
+ *                   type: number
+ *                 unencryptedFileNodes:
+ *                   type: number
+ *                 unencryptedDossiers:
+ *                   type: number
+ *                 totalNodes:
+ *                   type: number
+ *                 totalDossiers:
+ *                   type: number
+ */
+router.get('/encryption/scan', scanEncryptionStatus);
+
+/**
+ * @swagger
+ * /api/admin/encryption/migrate-branding:
+ *   post:
+ *     tags: [Admin]
+ *     summary: Migrer les fichiers de branding vers uploads/branding/
+ *     description: Deplace les fichiers de branding existants et met a jour les chemins dans SiteSettings.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Nombre de fichiers migres
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 migrated:
+ *                   type: number
+ */
+router.post('/encryption/migrate-branding', migrateBranding);
 
 export default router;

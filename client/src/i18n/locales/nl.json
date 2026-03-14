@@ -752,7 +752,19 @@
       "algorithm": "Algoritme",
       "keyDerivation": "Sleutelafleiding",
       "zeroKnowledge": "Zero-Knowledge",
-      "zeroKnowledgeDesc": "De server heeft nooit toegang tot onversleutelde gegevens"
+      "zeroKnowledgeDesc": "De server heeft nooit toegang tot onversleutelde gegevens",
+      "scanTitle": "Scan & Migratie",
+      "scanBtn": "Encryptie scannen",
+      "scanning": "Scannen...",
+      "migrateBrandingBtn": "Branding migreren",
+      "migrating": "Migreren...",
+      "totalDossiers": "Totaal dossiers",
+      "unencryptedDossiers": "Dossiers zonder sleutel",
+      "totalNodes": "Totaal nodes",
+      "unencryptedContent": "Onversleutelde inhoud",
+      "unencryptedFiles": "Onversleutelde bestanden",
+      "migrateResult": "{count} branding bestand(en) gemigreerd",
+      "autoEncryptNote": "Nieuwe uploads worden automatisch versleuteld. Bestaande onversleutelde inhoud wordt versleuteld bij opnieuw opslaan."
     }
   },
   "search": {

@@ -752,7 +752,19 @@
       "algorithm": "Algorithm",
       "keyDerivation": "Key Derivation",
       "zeroKnowledge": "Zero-Knowledge",
-      "zeroKnowledgeDesc": "The server can never access plaintext data"
+      "zeroKnowledgeDesc": "The server can never access plaintext data",
+      "scanTitle": "Scan & Migration",
+      "scanBtn": "Scan encryption",
+      "scanning": "Scanning...",
+      "migrateBrandingBtn": "Migrate branding",
+      "migrating": "Migrating...",
+      "totalDossiers": "Total dossiers",
+      "unencryptedDossiers": "Dossiers without keys",
+      "totalNodes": "Total nodes",
+      "unencryptedContent": "Unencrypted content",
+      "unencryptedFiles": "Unencrypted files",
+      "migrateResult": "{count} branding file(s) migrated",
+      "autoEncryptNote": "New uploads are automatically encrypted. Existing unencrypted content will be encrypted when re-saved."
     }
   },
   "search": {

@@ -752,7 +752,19 @@
       "algorithm": "Algorithme",
       "keyDerivation": "Dérivation de clé",
       "zeroKnowledge": "Zero-Knowledge",
-      "zeroKnowledgeDesc": "Le serveur ne peut jamais accéder aux données en clair"
+      "zeroKnowledgeDesc": "Le serveur ne peut jamais accéder aux données en clair",
+      "scanTitle": "Scan et migration",
+      "scanBtn": "Scanner le chiffrement",
+      "scanning": "Scan en cours...",
+      "migrateBrandingBtn": "Migrer le branding",
+      "migrating": "Migration en cours...",
+      "totalDossiers": "Total dossiers",
+      "unencryptedDossiers": "Dossiers sans clé",
+      "totalNodes": "Total noeuds",
+      "unencryptedContent": "Contenu non chiffré",
+      "unencryptedFiles": "Fichiers non chiffrés",
+      "migrateResult": "{count} fichier(s) de branding migré(s)",
+      "autoEncryptNote": "Les nouveaux uploads sont automatiquement chiffrés. Le contenu existant non chiffré sera chiffré lors de la prochaine sauvegarde."
     }
   },
   "search": {
