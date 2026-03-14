@@ -99,15 +99,75 @@
 
       <p class="enc-scan-note">{{ $t('admin.encryption.autoEncryptNote') }}</p>
     </div>
+
+    <!-- File Migration Section -->
+    <div class="enc-migrate-section fade-in fade-in-delay-3">
+      <h3 class="enc-scan-title mono">
+        <v-icon size="18" class="mr-2">mdi-file-lock-outline</v-icon>
+        {{ $t('admin.encryption.migrateFilesTitle') }}
+      </h3>
+      <p class="enc-migrate-desc">{{ $t('admin.encryption.migrateFilesDesc') }}</p>
+
+      <div class="enc-scan-actions">
+        <button
+          class="me-btn me-btn--primary"
+          :disabled="fileMigrationRunning"
+          @click="runFileMigration"
+        >
+          <v-icon size="16" class="mr-1">mdi-lock-plus-outline</v-icon>
+          {{ fileMigrationRunning ? $t('admin.encryption.migrateFilesRunning') : $t('admin.encryption.migrateFilesBtn') }}
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div v-if="fileMigrationRunning || fileMigrationDone" class="enc-migrate-progress glass-card">
+        <div class="enc-migrate-progress-header">
+          <span class="enc-migrate-progress-label">
+            {{ $t('admin.encryption.migrateFilesProgress', { current: fileMigrationCurrent, total: fileMigrationTotal }) }}
+          </span>
+          <span v-if="fileMigrationRunning" class="enc-migrate-progress-phase">
+            {{ fileMigrationPhase }}
+          </span>
+        </div>
+        <div class="enc-migrate-progress-bar">
+          <div
+            class="enc-migrate-progress-fill"
+            :style="{ width: fileMigrationPercent + '%' }"
+          ></div>
+        </div>
+
+        <!-- Completion -->
+        <div v-if="fileMigrationDone" class="enc-migrate-done">
+          <v-icon size="18" color="success" class="mr-1">mdi-check-circle</v-icon>
+          <span>{{ $t('admin.encryption.migrateFilesDone', { files: fileMigrationStats.files, content: fileMigrationStats.content }) }}</span>
+        </div>
+
+        <!-- Errors -->
+        <div v-if="fileMigrationErrors.length > 0" class="enc-migrate-errors">
+          <div class="enc-migrate-errors-title">
+            <v-icon size="16" color="warning" class="mr-1">mdi-alert-outline</v-icon>
+            {{ $t('admin.encryption.migrateFilesErrors', { count: fileMigrationErrors.length }) }}
+          </div>
+          <ul class="enc-migrate-errors-list">
+            <li v-for="(err, i) in fileMigrationErrors" :key="i">
+              <strong>{{ err.title || err.nodeId }}</strong>: {{ err.error }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import api from '../../services/api';
+import api, { SERVER_URL } from '../../services/api';
+import { useEncryptionStore } from '../../stores/encryption';
+import { encryptFile, hashFile } from '../../utils/encryption';
 
 const { t } = useI18n();
+const encryptionStore = useEncryptionStore();
 
 interface ScanResult {
   unencryptedContentNodes: number;
@@ -117,10 +177,44 @@ interface ScanResult {
   totalDossiers: number;
 }
 
+interface UnencryptedFileNode {
+  _id: string;
+  dossierId: string;
+  title: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  type: string;
+}
+
+interface UnencryptedContentNode {
+  _id: string;
+  dossierId: string;
+  title: string;
+  type: string;
+}
+
+interface MigrationError {
+  nodeId: string;
+  title: string;
+  error: string;
+}
+
 const scanning = ref(false);
 const migrating = ref(false);
 const scanResult = ref<ScanResult | null>(null);
 const migrateResult = ref<number | null>(null);
+
+// File migration state
+const fileMigrationRunning = ref(false);
+const fileMigrationDone = ref(false);
+const fileMigrationCurrent = ref(0);
+const fileMigrationTotal = ref(0);
+const fileMigrationPhase = ref('');
+const fileMigrationErrors = ref<MigrationError[]>([]);
+const fileMigrationStats = ref({ files: 0, content: 0 });
+
+const fileMigrationPercent = ref(0);
 
 async function runScan() {
   scanning.value = true;
@@ -143,6 +237,184 @@ async function runBrandingMigration() {
     // silent
   } finally {
     migrating.value = false;
+  }
+}
+
+async function ensureDossierKey(dossierId: string) {
+  let key = await encryptionStore.getDossierKey(dossierId);
+  if (!key) {
+    await encryptionStore.setupDossierEncryption(dossierId);
+    key = await encryptionStore.getDossierKey(dossierId);
+  }
+  return key;
+}
+
+async function runFileMigration() {
+  if (!encryptionStore.isUnlocked) {
+    return;
+  }
+
+  fileMigrationRunning.value = true;
+  fileMigrationDone.value = false;
+  fileMigrationCurrent.value = 0;
+  fileMigrationTotal.value = 0;
+  fileMigrationPercent.value = 0;
+  fileMigrationErrors.value = [];
+  fileMigrationStats.value = { files: 0, content: 0 };
+
+  try {
+    // Phase 1: Migrate files
+    fileMigrationPhase.value = t('admin.encryption.migratePhaseFiles');
+    const { data: fileData } = await api.get('/admin/encryption/unencrypted-files');
+    const files: UnencryptedFileNode[] = fileData.files;
+
+    // Phase 2: Get unencrypted content
+    const { data: contentData } = await api.get('/admin/encryption/unencrypted-content');
+    const contentNodes: UnencryptedContentNode[] = contentData.contentNodes || [];
+
+    fileMigrationTotal.value = files.length + contentNodes.length;
+
+    // Migrate files
+    for (const node of files) {
+      try {
+        const key = await ensureDossierKey(node.dossierId);
+        if (!key) {
+          fileMigrationErrors.value.push({
+            nodeId: node._id,
+            title: node.title || node._id,
+            error: t('admin.encryption.migrateErrorNoKey'),
+          });
+          fileMigrationCurrent.value++;
+          fileMigrationPercent.value = Math.round((fileMigrationCurrent.value / fileMigrationTotal.value) * 100);
+          continue;
+        }
+
+        // Download the plaintext file
+        const response = await fetch(SERVER_URL + node.fileUrl, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const plainBuffer = await response.arrayBuffer();
+
+        // Compute hash of plaintext
+        const plainHash = await hashFile(plainBuffer);
+
+        // Encrypt
+        const encryptedBuffer = await encryptFile(key, plainBuffer);
+        const encryptedBlob = new Blob([encryptedBuffer], { type: 'application/octet-stream' });
+        const originalName = node.fileName || node.fileUrl.split('/').pop() || 'file';
+        const encryptedFile = new File([encryptedBlob], originalName + '.enc', { type: 'application/octet-stream' });
+
+        // Detect original content type from the file extension
+        const ext = (node.fileName || node.fileUrl).split('.').pop()?.toLowerCase() || '';
+        const mimeMap: Record<string, string> = {
+          pdf: 'application/pdf',
+          png: 'image/png',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          gif: 'image/gif',
+          webp: 'image/webp',
+          svg: 'image/svg+xml',
+          doc: 'application/msword',
+          docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          xls: 'application/vnd.ms-excel',
+          xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          csv: 'text/csv',
+          txt: 'text/plain',
+          mp4: 'video/mp4',
+          mp3: 'audio/mpeg',
+          wav: 'audio/wav',
+        };
+        const originalContentType = mimeMap[ext] || 'application/octet-stream';
+
+        // Upload encrypted version
+        const formData = new FormData();
+        formData.append('file', encryptedFile);
+        formData.append('originalContentType', originalContentType);
+        formData.append('originalFileSize', plainBuffer.byteLength.toString());
+        formData.append('plainHash', plainHash);
+
+        await api.post(`/admin/encryption/replace/${node._id}`, formData);
+        fileMigrationStats.value.files++;
+      } catch (err: any) {
+        fileMigrationErrors.value.push({
+          nodeId: node._id,
+          title: node.title || node._id,
+          error: err.message || String(err),
+        });
+      }
+      fileMigrationCurrent.value++;
+      fileMigrationPercent.value = Math.round((fileMigrationCurrent.value / fileMigrationTotal.value) * 100);
+    }
+
+    // Phase 2: Migrate content nodes (re-save triggers auto-encryption in dossier store)
+    fileMigrationPhase.value = t('admin.encryption.migratePhaseContent');
+    for (const node of contentNodes) {
+      try {
+        const key = await ensureDossierKey(node.dossierId);
+        if (!key) {
+          fileMigrationErrors.value.push({
+            nodeId: node._id,
+            title: node.title || node._id,
+            error: t('admin.encryption.migrateErrorNoKey'),
+          });
+          fileMigrationCurrent.value++;
+          fileMigrationPercent.value = Math.round((fileMigrationCurrent.value / fileMigrationTotal.value) * 100);
+          continue;
+        }
+
+        // Fetch the full node
+        const { data: fullNode } = await api.get(`/nodes/${node._id}`);
+
+        // Build update payload - encrypt the fields that need it
+        const update: Record<string, any> = {};
+
+        if (fullNode.content && !fullNode.content.startsWith('"ENC:')) {
+          const { encryptContent } = await import('../../utils/encryption');
+          update.content = '"ENC:' + await encryptContent(fullNode.content, key) + '"';
+        }
+
+        if (fullNode.excalidrawData) {
+          const { encryptContent } = await import('../../utils/encryption');
+          update.excalidrawData = 'ENC:' + await encryptContent(fullNode.excalidrawData, key);
+        }
+
+        if (fullNode.mapData) {
+          const { encryptContent } = await import('../../utils/encryption');
+          update.mapData = 'ENC:' + await encryptContent(fullNode.mapData, key);
+        }
+
+        if (Object.keys(update).length > 0) {
+          await api.put(`/nodes/${node._id}`, update);
+          fileMigrationStats.value.content++;
+        }
+      } catch (err: any) {
+        fileMigrationErrors.value.push({
+          nodeId: node._id,
+          title: node.title || node._id,
+          error: err.message || String(err),
+        });
+      }
+      fileMigrationCurrent.value++;
+      fileMigrationPercent.value = Math.round((fileMigrationCurrent.value / fileMigrationTotal.value) * 100);
+    }
+
+    fileMigrationDone.value = true;
+  } catch (err: any) {
+    fileMigrationErrors.value.push({
+      nodeId: '',
+      title: 'Global',
+      error: err.message || String(err),
+    });
+  } finally {
+    fileMigrationRunning.value = false;
+    fileMigrationPercent.value = 100;
+    // Refresh scan after migration
+    runScan();
   }
 }
 </script>
@@ -266,5 +538,87 @@ async function runBrandingMigration() {
   color: var(--me-text-muted);
   font-style: italic;
   margin: 0;
+}
+
+/* File Migration Section */
+.enc-migrate-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--me-border);
+}
+.enc-migrate-desc {
+  font-size: 13px;
+  color: var(--me-text-secondary);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+.enc-migrate-progress {
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.enc-migrate-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.enc-migrate-progress-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  font-family: var(--me-font-mono);
+}
+.enc-migrate-progress-phase {
+  font-size: 12px;
+  color: var(--me-text-muted);
+}
+.enc-migrate-progress-bar {
+  height: 6px;
+  background: var(--me-bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.enc-migrate-progress-fill {
+  height: 100%;
+  background: var(--me-accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.enc-migrate-done {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #4caf50;
+  font-weight: 600;
+  margin-top: 8px;
+}
+.enc-migrate-errors {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 152, 0, 0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 152, 0, 0.2);
+}
+.enc-migrate-errors-title {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ff9800;
+  margin-bottom: 8px;
+}
+.enc-migrate-errors-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  color: var(--me-text-secondary);
+}
+.enc-migrate-errors-list li {
+  padding: 3px 0;
+}
+.enc-migrate-errors-list li strong {
+  color: var(--me-text-primary);
 }
 </style>

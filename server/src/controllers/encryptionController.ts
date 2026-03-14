@@ -172,6 +172,91 @@ export async function scanEncryptionStatus(req: AuthRequest, res: Response): Pro
   }
 }
 
+export async function listUnencryptedFiles(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const nodes = await DossierNode.find({
+      fileUrl: { $ne: null, $not: /\.enc$/ },
+      deletedAt: null,
+    }).select('_id dossierId title fileUrl fileName fileSize type').lean();
+
+    res.json({ files: nodes });
+  } catch (error) {
+    console.error('List unencrypted files error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function listUnencryptedContent(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const nodes = await DossierNode.find({
+      content: { $ne: null, $exists: true, $not: /^"ENC:/ },
+      deletedAt: null,
+    }).select('_id dossierId title type').lean();
+
+    const excalidrawNodes = await DossierNode.find({
+      excalidrawData: { $ne: null, $exists: true },
+      deletedAt: null,
+    }).select('_id dossierId title type').lean();
+
+    const mapNodes = await DossierNode.find({
+      mapData: { $ne: null, $exists: true },
+      deletedAt: null,
+    }).select('_id dossierId title type').lean();
+
+    res.json({
+      contentNodes: nodes,
+      excalidrawNodes,
+      mapNodes,
+    });
+  } catch (error) {
+    console.error('List unencrypted content error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function replaceWithEncrypted(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { nodeId } = req.params;
+    const node = await DossierNode.findById(nodeId);
+    if (!node || !node.fileUrl) {
+      res.status(404).json({ message: 'Node or file not found' });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ message: 'No file provided' });
+      return;
+    }
+
+    // Delete old file
+    const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
+    const oldFilePath = path.resolve(UPLOAD_DIR, '..', node.fileUrl.replace(/^\//, ''));
+    if (fs.existsSync(oldFilePath)) {
+      fs.unlinkSync(oldFilePath);
+    }
+
+    // Update node with new encrypted file path
+    const newFileUrl = `/uploads/${req.file.filename}`;
+    node.fileUrl = newFileUrl;
+    node.originalContentType = req.body.originalContentType || null;
+    node.originalFileSize = req.body.originalFileSize ? parseInt(req.body.originalFileSize) : null;
+    if (req.body.plainHash) {
+      node.fileHash = req.body.plainHash;
+    }
+    await node.save();
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'encryption.migrate_file', 'node', nodeId as string, {
+      newFileUrl,
+    }, ip, req.headers['user-agent']?.toString() || '');
+
+    res.json({ message: 'File replaced', fileUrl: newFileUrl });
+  } catch (error) {
+    console.error('Replace with encrypted error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function migrateBranding(req: AuthRequest, res: Response): Promise<void> {
   try {
     const settings = await SiteSettings.findOne();

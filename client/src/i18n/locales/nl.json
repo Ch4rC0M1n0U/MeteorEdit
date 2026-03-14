@@ -764,7 +764,17 @@
       "unencryptedContent": "Onversleutelde inhoud",
       "unencryptedFiles": "Onversleutelde bestanden",
       "migrateResult": "{count} branding bestand(en) gemigreerd",
-      "autoEncryptNote": "Nieuwe uploads worden automatisch versleuteld. Bestaande onversleutelde inhoud wordt versleuteld bij opnieuw opslaan."
+      "autoEncryptNote": "Nieuwe uploads worden automatisch versleuteld. Bestaande onversleutelde inhoud wordt versleuteld bij opnieuw opslaan.",
+      "migrateFilesTitle": "Bestaande bestanden migreren",
+      "migrateFilesDesc": "Versleutelt alle bestaande onversleutelde bestanden en inhoud. Bestanden worden gedownload, client-side versleuteld en opnieuw geüpload naar de server.",
+      "migrateFilesBtn": "Migratie starten",
+      "migrateFilesRunning": "Migratie bezig...",
+      "migrateFilesProgress": "{current} / {total} items verwerkt",
+      "migratePhaseFiles": "Bestanden versleutelen...",
+      "migratePhaseContent": "Inhoud versleutelen...",
+      "migrateFilesDone": "{files} bestand(en) en {content} inhoud(en) succesvol versleuteld",
+      "migrateFilesErrors": "{count} fout(en) aangetroffen",
+      "migrateErrorNoKey": "Kan de versleutelingssleutel van het dossier niet verkrijgen"
     }
   },
   "search": {

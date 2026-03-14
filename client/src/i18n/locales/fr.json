@@ -764,7 +764,17 @@
       "unencryptedContent": "Contenu non chiffré",
       "unencryptedFiles": "Fichiers non chiffrés",
       "migrateResult": "{count} fichier(s) de branding migré(s)",
-      "autoEncryptNote": "Les nouveaux uploads sont automatiquement chiffrés. Le contenu existant non chiffré sera chiffré lors de la prochaine sauvegarde."
+      "autoEncryptNote": "Les nouveaux uploads sont automatiquement chiffrés. Le contenu existant non chiffré sera chiffré lors de la prochaine sauvegarde.",
+      "migrateFilesTitle": "Migration des fichiers existants",
+      "migrateFilesDesc": "Chiffre tous les fichiers et contenus existants non chiffrés. Les fichiers sont téléchargés, chiffrés côté client, puis renvoyés sur le serveur.",
+      "migrateFilesBtn": "Lancer la migration",
+      "migrateFilesRunning": "Migration en cours...",
+      "migrateFilesProgress": "{current} / {total} éléments traités",
+      "migratePhaseFiles": "Chiffrement des fichiers...",
+      "migratePhaseContent": "Chiffrement du contenu...",
+      "migrateFilesDone": "{files} fichier(s) et {content} contenu(s) chiffrés avec succès",
+      "migrateFilesErrors": "{count} erreur(s) rencontrée(s)",
+      "migrateErrorNoKey": "Impossible d'obtenir la clé de chiffrement du dossier"
     }
   },
   "search": {

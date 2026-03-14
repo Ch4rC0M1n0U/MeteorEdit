@@ -764,7 +764,17 @@
       "unencryptedContent": "Unencrypted content",
       "unencryptedFiles": "Unencrypted files",
       "migrateResult": "{count} branding file(s) migrated",
-      "autoEncryptNote": "New uploads are automatically encrypted. Existing unencrypted content will be encrypted when re-saved."
+      "autoEncryptNote": "New uploads are automatically encrypted. Existing unencrypted content will be encrypted when re-saved.",
+      "migrateFilesTitle": "Migrate existing files",
+      "migrateFilesDesc": "Encrypts all existing unencrypted files and content. Files are downloaded, encrypted client-side, then re-uploaded to the server.",
+      "migrateFilesBtn": "Start migration",
+      "migrateFilesRunning": "Migration in progress...",
+      "migrateFilesProgress": "{current} / {total} items processed",
+      "migratePhaseFiles": "Encrypting files...",
+      "migratePhaseContent": "Encrypting content...",
+      "migrateFilesDone": "{files} file(s) and {content} content(s) encrypted successfully",
+      "migrateFilesErrors": "{count} error(s) encountered",
+      "migrateErrorNoKey": "Unable to obtain the dossier encryption key"
     }
   },
   "search": {
