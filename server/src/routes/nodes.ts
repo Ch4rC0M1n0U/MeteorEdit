@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
 import {
-  getNodes, createNode, updateNode,
+  getNodes, getNode, createNode, updateNode,
   deleteNode, moveNode, duplicateNode, uploadFile, uploadImage, deleteUploadedFile, mentionUser,
   getTrash, restoreNode, purgeNode, emptyTrash, viewNode,
 } from '../controllers/nodeController';
@@ -192,6 +192,7 @@ router.delete('/dossiers/:id/trash', emptyTrash);
  *       404:
  *         description: Noeud non trouve
  */
+router.get('/nodes/:nodeId', getNode);
 router.put('/nodes/:nodeId', updateNode);
 router.post('/nodes/:nodeId/view', viewNode);
 router.delete('/nodes/:nodeId', deleteNode);

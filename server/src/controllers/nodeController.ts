@@ -49,8 +49,28 @@ export async function getNodes(req: AuthRequest, res: Response): Promise<void> {
       res.status(403).json({ message: 'Access denied' });
       return;
     }
-    const nodes = await DossierNode.find({ dossierId, deletedAt: null }).sort({ order: 1 });
+    const nodes = await DossierNode.find({ dossierId, deletedAt: null })
+      .select('_id dossierId parentId type title order fileUrl fileName fileSize fileHash lastVerificationStatus deletedAt createdAt updatedAt')
+      .sort({ order: 1 })
+      .lean();
     res.json(nodes);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function getNode(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const node = await DossierNode.findById(req.params.nodeId).lean();
+    if (!node) {
+      res.status(404).json({ message: 'Node not found' });
+      return;
+    }
+    if (!(await checkDossierAccess(node.dossierId.toString(), req.user!.userId))) {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+    res.json(node);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -143,19 +163,25 @@ export async function deleteNode(req: AuthRequest, res: Response): Promise<void>
       res.status(403).json({ message: 'Access denied' });
       return;
     }
-    // Soft-delete node and all descendants recursively
+
+    // Collect all descendant IDs iteratively
     const now = new Date();
-    async function softDeleteRecursive(parentId: string) {
-      const children = await DossierNode.find({ parentId, deletedAt: null });
-      for (const child of children) {
-        await softDeleteRecursive(child._id.toString());
-        child.deletedAt = now;
-        await child.save();
-      }
+    const allIds = [node._id];
+    let currentParentIds = [node._id.toString()];
+
+    while (currentParentIds.length > 0) {
+      const children = await DossierNode.find(
+        { parentId: { $in: currentParentIds }, deletedAt: null },
+        '_id'
+      ).lean();
+      const childIds = children.map(c => c._id);
+      allIds.push(...childIds);
+      currentParentIds = childIds.map(id => id.toString());
     }
-    await softDeleteRecursive(node._id.toString());
-    node.deletedAt = now;
-    await node.save();
+
+    // Bulk soft-delete all at once
+    await DossierNode.updateMany({ _id: { $in: allIds } }, { deletedAt: now });
+
     if (!(await isDossierEmbargo(node.dossierId.toString()))) {
       const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
       const ua = req.headers['user-agent'] || '';
@@ -174,7 +200,10 @@ export async function getTrash(req: AuthRequest, res: Response): Promise<void> {
       res.status(403).json({ message: 'Access denied' });
       return;
     }
-    const nodes = await DossierNode.find({ dossierId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+    const nodes = await DossierNode.find({ dossierId, deletedAt: { $ne: null } })
+      .select('_id dossierId parentId type title order fileUrl fileName fileSize fileHash lastVerificationStatus deletedAt createdAt updatedAt')
+      .sort({ deletedAt: -1 })
+      .lean();
     res.json(nodes);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -192,17 +221,21 @@ export async function restoreNode(req: AuthRequest, res: Response): Promise<void
       res.status(403).json({ message: 'Access denied' });
       return;
     }
-    // Restore node and all descendants with the same deletedAt
+
+    // Collect all descendant IDs with the same deletedAt timestamp
     const deletedAt = node.deletedAt;
-    async function restoreRecursive(parentId: string) {
-      const children = await DossierNode.find({ parentId, deletedAt });
-      for (const child of children) {
-        await restoreRecursive(child._id.toString());
-        child.deletedAt = null;
-        await child.save();
-      }
+    const allIds = [node._id];
+    let currentParentIds = [node._id.toString()];
+
+    while (currentParentIds.length > 0) {
+      const children = await DossierNode.find(
+        { parentId: { $in: currentParentIds }, deletedAt },
+        '_id'
+      ).lean();
+      const childIds = children.map(c => c._id);
+      allIds.push(...childIds);
+      currentParentIds = childIds.map(id => id.toString());
     }
-    await restoreRecursive(node._id.toString());
 
     // If parent was also deleted, restore to root
     if (node.parentId) {
@@ -211,8 +244,12 @@ export async function restoreNode(req: AuthRequest, res: Response): Promise<void
         node.parentId = null;
       }
     }
+
+    // Bulk restore all at once
+    await DossierNode.updateMany({ _id: { $in: allIds } }, { deletedAt: null });
     node.deletedAt = null;
     await node.save();
+
     if (!(await isDossierEmbargo(node.dossierId.toString()))) {
       const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
       const ua = req.headers['user-agent'] || '';
@@ -381,6 +418,7 @@ export async function uploadFile(req: AuthRequest, res: Response): Promise<void>
       dossierId: node.dossierId,
       capturedBy: req.user!.userId,
       capturedAt: new Date(),
+      originalHash: fileHash,
       fileHash,
       filePath: absFilePath,
       fileSize: req.file.size,

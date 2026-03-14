@@ -16,11 +16,26 @@ function isOwnerOrCollaborator(dossier: any, userId: string): boolean {
 export async function listDossiers(req: AuthRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const dossiers = await Dossier.find({
-      $or: [{ owner: userId }, { collaborators: userId }],
-    }).sort({ updatedAt: -1 });
-    res.json(dossiers);
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
+
+    const filter = { $or: [{ owner: userId }, { collaborators: userId }] };
+    const [dossiers, total] = await Promise.all([
+      Dossier.find(filter)
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Dossier.countDocuments(filter),
+    ]);
+
+    res.json({
+      dossiers,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
+    console.error('List dossiers error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 }
@@ -231,6 +246,73 @@ export async function uploadLinkedDocument(req: AuthRequest, res: Response): Pro
       const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
       await logActivity(userId, 'dossier.update', 'dossier', dossier._id.toString(), { title: dossier.title, change: 'linked_document_upload', fileName: req.file.originalname }, ip, req.headers['user-agent'] || '');
     }
+    res.json(dossier);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function uploadEntityPhoto(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    const userId = req.user!.userId;
+    if (!isOwnerOrCollaborator(dossier, userId)) { res.status(403).json({ message: 'Access denied' }); return; }
+    if (!req.file) { res.status(400).json({ message: 'No file provided' }); return; }
+
+    const entityIndex = parseInt(req.params.entityIndex as string, 10);
+    if (isNaN(entityIndex) || entityIndex < 0 || entityIndex >= dossier.entities.length) {
+      res.status(404).json({ message: 'Entity not found' }); return;
+    }
+
+    const entity = dossier.entities[entityIndex];
+    if (!entity.photos) entity.photos = [];
+    const photoPath = `uploads/${req.file.filename}`;
+    entity.photos.push(photoPath);
+    await dossier.save();
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'entity.photo_upload', 'dossier', dossier._id.toString(), {
+      entityName: entity.name, entityType: entity.type,
+    }, ip, req.headers['user-agent'] || '');
+
+    res.json(dossier);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function deleteEntityPhoto(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    const userId = req.user!.userId;
+    if (!isOwnerOrCollaborator(dossier, userId)) { res.status(403).json({ message: 'Access denied' }); return; }
+
+    const entityIndex = parseInt(req.params.entityIndex as string, 10);
+    if (isNaN(entityIndex) || entityIndex < 0 || entityIndex >= dossier.entities.length) {
+      res.status(404).json({ message: 'Entity not found' }); return;
+    }
+
+    const { photoPath } = req.body;
+    if (!photoPath) { res.status(400).json({ message: 'photoPath required' }); return; }
+
+    const entity = dossier.entities[entityIndex];
+    const photoIndex = (entity.photos || []).indexOf(photoPath);
+    if (photoIndex === -1) { res.status(404).json({ message: 'Photo not found' }); return; }
+
+    // Delete file from disk
+    const absPath = path.resolve(process.env.UPLOAD_DIR || './uploads', photoPath.replace(/^uploads\//, ''));
+    if (fs.existsSync(absPath)) fs.unlinkSync(absPath);
+
+    entity.photos.splice(photoIndex, 1);
+    await dossier.save();
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'entity.photo_delete', 'dossier', dossier._id.toString(), {
+      entityName: entity.name, entityType: entity.type,
+    }, ip, req.headers['user-agent'] || '');
+
     res.json(dossier);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

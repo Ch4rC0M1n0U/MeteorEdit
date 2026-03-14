@@ -101,4 +101,37 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom', '@excalidraw/excalidraw'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
+          'vendor-vuetify': ['vuetify'],
+          'vendor-tiptap': [
+            '@tiptap/vue-3',
+            '@tiptap/starter-kit',
+            '@tiptap/extension-image',
+            '@tiptap/extension-table',
+            '@tiptap/extension-table-row',
+            '@tiptap/extension-table-cell',
+            '@tiptap/extension-table-header',
+            '@tiptap/extension-underline',
+            '@tiptap/extension-text-align',
+            '@tiptap/extension-link',
+            '@tiptap/extension-mention',
+            '@tiptap/extension-placeholder',
+            '@tiptap/extension-task-list',
+            '@tiptap/extension-task-item',
+            '@tiptap/extension-highlight',
+            '@tiptap/extension-code-block-lowlight',
+            '@tiptap/extension-color',
+            '@tiptap/extension-text-style',
+            '@tiptap/extension-subscript',
+            '@tiptap/extension-superscript',
+          ],
+          'vendor-excalidraw': ['react', 'react-dom', '@excalidraw/excalidraw'],
+        },
+      },
+    },
+  },
 });

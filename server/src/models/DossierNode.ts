@@ -26,5 +26,7 @@ const dossierNodeSchema = new Schema<IDossierNode>(
 
 dossierNodeSchema.index({ dossierId: 1, parentId: 1 });
 dossierNodeSchema.index({ contentText: 'text', title: 'text' });
+dossierNodeSchema.index({ parentId: 1 });
+dossierNodeSchema.index({ dossierId: 1, deletedAt: 1, order: 1 });
 
 export default mongoose.model<IDossierNode>('DossierNode', dossierNodeSchema);

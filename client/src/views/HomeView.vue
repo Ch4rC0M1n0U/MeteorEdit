@@ -45,7 +45,10 @@
       />
     </div>
 
-    <div v-else-if="!dossierStore.loading" class="home-empty fade-in">
+    <div ref="sentinelRef" style="height: 1px;" />
+    <v-progress-linear v-if="dossierStore.loading && dossierStore.dossiers.length > 0" indeterminate color="primary" class="mt-2" style="border-radius: 4px;" />
+
+    <div v-if="!dossierStore.dossiers.length && !dossierStore.loading" class="home-empty fade-in">
       <v-icon size="48" color="primary" class="mb-4">mdi-folder-open-outline</v-icon>
       <h3 class="mono">{{ $t('home.noDossiers') }}</h3>
       <p class="text-muted">{{ $t('home.noDossiersHint') }}</p>
@@ -58,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../stores/dossier';
 import { useConfirm } from '../composables/useConfirm';
@@ -72,14 +75,30 @@ const { t } = useI18n();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const importInputRef = ref<HTMLInputElement | null>(null);
+const sentinelRef = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
 
 const favoriteDossiers = computed(() =>
   dossierStore.dossiers.filter(d => dossierStore.isFavorite(d._id))
 );
 
 onMounted(() => {
-  dossierStore.fetchDossiers();
+  dossierStore.fetchDossiers(true);
   dossierStore.fetchFavorites();
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && dossierStore.hasMoreDossiers && !dossierStore.loading) {
+        dossierStore.fetchDossiers();
+      }
+    },
+    { threshold: 0.1 }
+  );
+  if (sentinelRef.value) observer.observe(sentinelRef.value);
+});
+
+onBeforeUnmount(() => {
+  observer?.disconnect();
 });
 
 function handleOpen(id: string) {
@@ -108,7 +127,7 @@ async function handleImport(e: Event) {
       return;
     }
     const { data: newDossier } = await api.post('/dossiers/import/json', data);
-    await dossierStore.fetchDossiers();
+    await dossierStore.fetchDossiers(true);
     dossierStore.openDossier(newDossier._id);
   } catch (err) {
     console.error('Import failed:', err);

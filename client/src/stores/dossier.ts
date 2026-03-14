@@ -14,6 +14,7 @@ export const useDossierStore = defineStore('dossier', () => {
   const loading = ref(false);
   const favorites = ref<string[]>([]);
   const activeCollaborators = ref<{ userId: string; firstName: string; lastName: string; avatarPath: string | null; initials: string }[]>([]);
+  const nodeContentCache = ref<Map<string, DossierNode>>(new Map());
 
   // Sensitive dossier fields that get encrypted
   const ENCRYPTED_DOSSIER_FIELDS = ['objectives', 'judicialFacts', 'description', 'entities'] as const;
@@ -172,11 +173,33 @@ export const useDossierStore = defineStore('dossier', () => {
     return favorites.value.includes(dossierId);
   }
 
-  async function fetchDossiers() {
+  const hasMoreDossiers = ref(true);
+  const dossierPage = ref(1);
+
+  async function fetchDossiers(reset = false) {
     loading.value = true;
     try {
-      const { data } = await api.get<Dossier[]>('/dossiers');
-      dossiers.value = data;
+      if (reset) {
+        dossierPage.value = 1;
+        dossiers.value = [];
+        hasMoreDossiers.value = true;
+      }
+      const { data } = await api.get('/dossiers', {
+        params: { page: dossierPage.value, limit: 20 },
+      });
+      // Support both old (array) and new (paginated) response formats
+      if (Array.isArray(data)) {
+        dossiers.value = data;
+        hasMoreDossiers.value = false;
+      } else {
+        if (reset || dossierPage.value === 1) {
+          dossiers.value = data.dossiers;
+        } else {
+          dossiers.value.push(...data.dossiers);
+        }
+        hasMoreDossiers.value = dossierPage.value < data.pagination.totalPages;
+        dossierPage.value++;
+      }
     } finally {
       loading.value = false;
     }
@@ -197,23 +220,13 @@ export const useDossierStore = defineStore('dossier', () => {
         api.get<DossierNode[]>(`/dossiers/${id}/trash`),
       ]);
 
-      // Decrypt dossier fields if encrypted
       currentDossier.value = await decryptDossierFields(dossierRes.data);
-
-      // Decrypt node content if dossier is encrypted
-      if (dossierRes.data.isEncrypted) {
-        nodes.value = await Promise.all(
-          nodesRes.data.map(n => decryptNodeContent(n, id))
-        );
-        trashNodes.value = await Promise.all(
-          trashRes.data.map(n => decryptNodeContent(n, id))
-        );
-      } else {
-        nodes.value = nodesRes.data;
-        trashNodes.value = trashRes.data;
-      }
+      // Nodes are now lightweight metadata (no content fields)
+      nodes.value = nodesRes.data;
+      trashNodes.value = trashRes.data;
 
       selectedNode.value = null;
+      nodeContentCache.value.clear();
 
       const socket = connectSocket();
       socket.emit('join-dossier', id);
@@ -233,6 +246,7 @@ export const useDossierStore = defineStore('dossier', () => {
     trashNodes.value = [];
     selectedNode.value = null;
     activeCollaborators.value = [];
+    nodeContentCache.value.clear();
   }
 
   function setupSocketListeners() {
@@ -265,6 +279,7 @@ export const useDossierStore = defineStore('dossier', () => {
     });
 
     socket.on('node-updated', (data: { nodeId: string; content: any }) => {
+      nodeContentCache.value.delete(data.nodeId);
       const idx = nodes.value.findIndex(n => n._id === data.nodeId);
       if (idx >= 0) {
         nodes.value[idx] = { ...nodes.value[idx], content: data.content };
@@ -276,6 +291,7 @@ export const useDossierStore = defineStore('dossier', () => {
 
     // Screenshot/background update from server (e.g. web clipper screenshot ready)
     socket.on('node-content-updated', (data: { nodeId: string; content: any; fileUrl?: string }) => {
+      nodeContentCache.value.delete(data.nodeId);
       const idx = nodes.value.findIndex(n => n._id === data.nodeId);
       if (idx >= 0) {
         nodes.value[idx] = { ...nodes.value[idx], content: data.content, fileUrl: data.fileUrl };
@@ -351,6 +367,7 @@ export const useDossierStore = defineStore('dossier', () => {
       : data;
     const idx = nodes.value.findIndex(n => n._id === nodeId);
     if (idx >= 0) nodes.value[idx] = decrypted;
+    nodeContentCache.value.set(nodeId, decrypted);
     if (selectedNode.value?._id === nodeId) selectedNode.value = decrypted;
     return decrypted;
   }
@@ -386,11 +403,7 @@ export const useDossierStore = defineStore('dossier', () => {
     // Also restore children from server
     if (currentDossier.value) {
       const { data: freshNodes } = await api.get<DossierNode[]>(`/dossiers/${currentDossier.value._id}/nodes`);
-      if (currentDossier.value.isEncrypted) {
-        nodes.value = await Promise.all(freshNodes.map(n => decryptNodeContent(n, currentDossier.value!._id)));
-      } else {
-        nodes.value = freshNodes;
-      }
+      nodes.value = freshNodes;
     }
   }
 
@@ -405,11 +418,41 @@ export const useDossierStore = defineStore('dossier', () => {
     trashNodes.value = [];
   }
 
-  function selectNode(node: DossierNode | null) {
-    selectedNode.value = node;
-    if (node?._id) {
-      api.post(`/nodes/${node._id}/view`).catch(() => {});
+  async function selectNode(node: DossierNode | null) {
+    if (!node) {
+      selectedNode.value = null;
+      return;
     }
+
+    // Check cache first
+    const cached = nodeContentCache.value.get(node._id);
+    if (cached) {
+      selectedNode.value = cached;
+      api.post(`/nodes/${node._id}/view`).catch(() => {});
+      return;
+    }
+
+    // Fetch full node content
+    try {
+      const { data } = await api.get<DossierNode>(`/nodes/${node._id}`);
+      const dossierId = currentDossier.value?._id;
+      const fullNode = dossierId && currentDossier.value?.isEncrypted
+        ? await decryptNodeContent(data, dossierId)
+        : data;
+
+      // Update cache and selected node
+      nodeContentCache.value.set(node._id, fullNode);
+      selectedNode.value = fullNode;
+
+      // Also update the node in the nodes array with full data
+      const idx = nodes.value.findIndex(n => n._id === node._id);
+      if (idx >= 0) nodes.value[idx] = fullNode;
+    } catch {
+      // Fallback to lightweight node
+      selectedNode.value = node;
+    }
+
+    api.post(`/nodes/${node._id}/view`).catch(() => {});
   }
 
   // Fallback: used when Yjs collaboration is not available.
@@ -430,7 +473,8 @@ export const useDossierStore = defineStore('dossier', () => {
 
   return {
     dossiers, currentDossier, nodes, trashNodes, selectedNode, loading,
-    favorites, fetchFavorites, toggleFavorite, isFavorite, activeCollaborators,
+    hasMoreDossiers, dossierPage,
+    favorites, fetchFavorites, toggleFavorite, isFavorite, activeCollaborators, nodeContentCache,
     fetchDossiers, createDossier, openDossier, closeDossier,
     updateDossier, deleteDossier,
     createNode, updateNode, deleteNode, selectNode,

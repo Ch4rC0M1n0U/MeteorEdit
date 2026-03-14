@@ -111,6 +111,15 @@
         v-if="dossierStore.selectedNode && dossierStore.selectedNode.type === 'note'"
         class="dv-focus-bar"
       >
+        <button
+          v-if="dossierStore.selectedNode.fileUrl"
+          class="dv-focus-btn"
+          :class="{ 'dv-focus-btn--active': annotatorOpen }"
+          @click="annotatorOpen = !annotatorOpen"
+          :title="$t('dossier.annotateImage')"
+        >
+          <v-icon size="18">mdi-draw</v-icon>
+        </button>
         <PomodoroTimer v-if="focusMode" />
         <button
           class="dv-focus-btn"
@@ -125,7 +134,17 @@
       <DossierInfo v-if="!dossierStore.selectedNode" />
 
       <div v-else-if="dossierStore.selectedNode.type === 'note'" class="dv-editor-wrap">
+        <!-- Clip screenshot annotator -->
+        <div v-if="annotatorOpen && dossierStore.selectedNode.fileUrl" class="dv-clip-annotator">
+          <ImageAnnotator
+            :image-src="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+            :initial-annotations="dossierStore.selectedNode.content?.annotations"
+            :key="'clip-annot-' + dossierStore.selectedNode._id"
+            @save="onAnnotationsSave"
+          />
+        </div>
         <NoteEditor
+          v-else
           v-model="dossierStore.selectedNode.content"
           :node-id="dossierStore.selectedNode._id"
           :key="dossierStore.selectedNode._id"
@@ -259,6 +278,7 @@
           v-if="dossierStore.selectedNode"
           :node-id="dossierStore.selectedNode._id"
           :node-title="dossierStore.selectedNode.title"
+          :record-id="evidenceRecordId"
           @close="evidencePanelOpen = false"
         />
       </div>
@@ -520,7 +540,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
@@ -533,15 +553,23 @@ import { convertTipTapToBlocks } from '../../utils/contentBlocks';
 import NodeTree from '../tree/NodeTree.vue';
 import DossierInfo from './DossierInfo.vue';
 import NoteEditor from '../editor/NoteEditor.vue';
-import ExcalidrawWrapper from '../excalidraw/ExcalidrawWrapper.vue';
-import MapEditor from '../map/MapEditor.vue';
+const ExcalidrawWrapper = defineAsyncComponent(() =>
+  import('../excalidraw/ExcalidrawWrapper.vue')
+);
+const MapEditor = defineAsyncComponent(() =>
+  import('../map/MapEditor.vue')
+);
 import ImageAnnotator from '../editor/ImageAnnotator.vue';
 import PomodoroTimer from '../common/PomodoroTimer.vue';
 import TaskPanel from './TaskPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
-import DatasetEditor from '../dataset/DatasetEditor.vue';
-import MediaEditor from '../media/MediaEditor.vue';
+const DatasetEditor = defineAsyncComponent(() =>
+  import('../dataset/DatasetEditor.vue')
+);
+const MediaEditor = defineAsyncComponent(() =>
+  import('../media/MediaEditor.vue')
+);
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import type { MediaData } from '../../types';
 import EvidencePanel from '../evidence/EvidencePanel.vue';
@@ -598,6 +626,7 @@ const selectedTemplateId = ref<string | null>(null);
 // Sidebar
 const sidebarTab = ref<'tree' | 'tasks' | 'evidence'>('tree');
 const evidencePanelOpen = ref(false);
+const evidenceRecordId = ref<string | undefined>();
 const annotatorOpen = ref(false);
 
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
@@ -610,10 +639,84 @@ function isImageFile(fileName: string | null): boolean {
 
 async function onAnnotationsSave(annotations: any[]) {
   if (!dossierStore.selectedNode) return;
-  const existing = dossierStore.selectedNode.content || {};
-  await dossierStore.updateNode(dossierStore.selectedNode._id, {
+  const node = dossierStore.selectedNode;
+
+  // If node has a fileUrl (clipper screenshot), replace file in-place with annotations baked in
+  if (node.fileUrl) {
+    try {
+      const imgSrc = `${SERVER_URL}/${node.fileUrl}`;
+      console.log('onAnnotationsSave: loading image from', imgSrc);
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.src = imgSrc;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = (e) => { console.error('Image load error:', e); reject(e); };
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+
+      for (const a of annotations) {
+        ctx.strokeStyle = a.color;
+        ctx.fillStyle = a.color;
+        ctx.lineWidth = a.strokeWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (a.type === 'rect') {
+          ctx.strokeRect(a.x, a.y, a.w, a.h);
+        } else if (a.type === 'circle') {
+          ctx.beginPath();
+          ctx.ellipse(a.x + a.w / 2, a.y + a.h / 2, Math.abs(a.w / 2), Math.abs(a.h / 2), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (a.type === 'arrow') {
+          ctx.beginPath();
+          ctx.moveTo(a.x1, a.y1);
+          ctx.lineTo(a.x2, a.y2);
+          ctx.stroke();
+          const angle = Math.atan2(a.y2 - a.y1, a.x2 - a.x1);
+          const headLen = 12 * (a.strokeWidth / 2);
+          ctx.beginPath();
+          ctx.moveTo(a.x2, a.y2);
+          ctx.lineTo(a.x2 - headLen * Math.cos(angle - Math.PI / 6), a.y2 - headLen * Math.sin(angle - Math.PI / 6));
+          ctx.moveTo(a.x2, a.y2);
+          ctx.lineTo(a.x2 - headLen * Math.cos(angle + Math.PI / 6), a.y2 - headLen * Math.sin(angle + Math.PI / 6));
+          ctx.stroke();
+        } else if (a.type === 'freehand' && a.points?.length) {
+          ctx.beginPath();
+          ctx.moveTo(a.points[0].x, a.points[0].y);
+          for (let i = 1; i < a.points.length; i++) {
+            ctx.lineTo(a.points[i].x, a.points[i].y);
+          }
+          ctx.stroke();
+        } else if (a.type === 'text' && a.text) {
+          ctx.font = `bold ${a.fontSize || 16}px sans-serif`;
+          ctx.fillText(a.text, a.x, a.y);
+        }
+      }
+
+      const imageData = canvas.toDataURL('image/png');
+      console.log('onAnnotationsSave: calling replace-capture for', node.fileUrl, 'imageData length:', imageData.length);
+      const { data } = await api.post('/media/replace-capture', {
+        screenshotUrl: node.fileUrl,
+        imageData,
+      });
+      console.log('onAnnotationsSave: replace-capture result:', data);
+    } catch (err) {
+      console.error('Clip annotation save failed:', err);
+    }
+  }
+
+  // Save annotations metadata in node content
+  const existing = node.content || {};
+  await dossierStore.updateNode(node._id, {
     content: { ...existing, annotations },
   });
+  annotatorOpen.value = false;
 }
 
 // Reset annotator when node changes
@@ -621,11 +724,12 @@ watch(() => dossierStore.selectedNode?._id, () => {
   annotatorOpen.value = false;
 });
 
-function onEvidenceSelectNode(nodeId: string) {
+function onEvidenceSelectNode(nodeId: string, recordId?: string) {
   const node = dossierStore.nodes.find(n => n._id === nodeId);
   if (node) {
     dossierStore.selectNode(node);
-    sidebarTab.value = 'tree';
+    evidenceRecordId.value = recordId;
+    evidencePanelOpen.value = true;
   }
 }
 
@@ -1561,6 +1665,12 @@ function downloadBlob(blob: Blob, filename: string) {
 .dv-action-btn--active {
   color: var(--me-accent) !important;
   background: var(--me-accent-glow) !important;
+}
+.dv-clip-annotator {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 .dv-doc-image-area {
   flex: 1;

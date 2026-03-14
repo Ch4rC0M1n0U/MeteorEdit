@@ -5,6 +5,7 @@ const entitySchema = new Schema({
   name: { type: String, required: true },
   type: { type: String, required: true },
   description: { type: String, default: '' },
+  photos: [{ type: String }],
 }, { _id: false });
 
 const investigatorSchema = new Schema({
@@ -54,5 +55,8 @@ const dossierSchema = new Schema<IDossier>(
 
 dossierSchema.index({ title: 'text', description: 'text', objectives: 'text', judicialFacts: 'text' });
 dossierSchema.index({ tags: 1 });
+dossierSchema.index({ owner: 1 });
+dossierSchema.index({ collaborators: 1 });
+dossierSchema.index({ createdAt: -1 });
 
 export default mongoose.model<IDossier>('Dossier', dossierSchema);

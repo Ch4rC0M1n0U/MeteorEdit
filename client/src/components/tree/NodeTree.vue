@@ -21,14 +21,37 @@
       @dragleave="onRootDragLeave"
       @drop="onRootDrop"
     >
-      <NodeTreeItem
-        v-for="node in rootNodes"
-        :key="node._id"
-        :node="node"
-        :all-nodes="dossierStore.nodes"
-        @create="(type, parentId) => $emit('create', type, parentId)"
-        @duplicate="(nodeId) => $emit('duplicate', nodeId)"
-      />
+      <template v-if="flattenedNodes.length <= 200">
+        <NodeTreeItem
+          v-for="item in flattenedNodes"
+          :key="item.id"
+          :node="item.node"
+          :all-nodes="dossierStore.nodes"
+          :depth="item.depth"
+          :expanded="item.expanded"
+          @toggle-expand="toggleExpanded"
+          @create="(type, parentId) => $emit('create', type, parentId)"
+          @duplicate="(nodeId) => $emit('duplicate', nodeId)"
+        />
+      </template>
+      <RecycleScroller
+        v-else
+        :items="flattenedNodes"
+        :item-size="34"
+        key-field="id"
+        class="nt-scroller"
+        v-slot="{ item }"
+      >
+        <NodeTreeItem
+          :node="item.node"
+          :all-nodes="dossierStore.nodes"
+          :depth="item.depth"
+          :expanded="item.expanded"
+          @toggle-expand="toggleExpanded"
+          @create="(type, parentId) => $emit('create', type, parentId)"
+          @duplicate="(nodeId) => $emit('duplicate', nodeId)"
+        />
+      </RecycleScroller>
     </div>
 
     <v-menu>
@@ -107,12 +130,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { RecycleScroller } from 'vue-virtual-scroller';
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
 import NodeTreeItem from './NodeTreeItem.vue';
+import type { DossierNode } from '../../types';
 
 const { t } = useI18n();
 
@@ -123,6 +149,61 @@ const { confirm } = useConfirm();
 const trashOpen = ref(false);
 const rootDropActive = ref(false);
 const rootDragCounter = ref(0);
+
+// Virtualization: flatten tree with expand/collapse state
+const expandedIds = ref<Set<string>>(new Set());
+
+watch(() => dossierStore.nodes, (newNodes) => {
+  for (const n of newNodes) {
+    if (n.type === 'folder' && !expandedIds.value.has(n._id)) {
+      expandedIds.value.add(n._id);
+    }
+  }
+}, { immediate: true });
+
+function toggleExpanded(nodeId: string) {
+  if (expandedIds.value.has(nodeId)) {
+    expandedIds.value.delete(nodeId);
+  } else {
+    expandedIds.value.add(nodeId);
+  }
+}
+
+interface FlatNode {
+  id: string;
+  node: DossierNode;
+  depth: number;
+  expanded: boolean;
+}
+
+const flattenedNodes = computed<FlatNode[]>(() => {
+  const result: FlatNode[] = [];
+  const nodesByParent = new Map<string | null, DossierNode[]>();
+
+  for (const n of dossierStore.nodes) {
+    const key = n.parentId || null;
+    if (!nodesByParent.has(key)) nodesByParent.set(key, []);
+    nodesByParent.get(key)!.push(n);
+  }
+
+  for (const [, children] of nodesByParent) {
+    children.sort((a, b) => a.order - b.order);
+  }
+
+  function walk(parentId: string | null, depth: number) {
+    const children = nodesByParent.get(parentId) || [];
+    for (const child of children) {
+      const expanded = expandedIds.value.has(child._id);
+      result.push({ id: child._id, node: child, depth, expanded });
+      if (child.type === 'folder' && expanded) {
+        walk(child._id, depth + 1);
+      }
+    }
+  }
+
+  walk(null, 0);
+  return result;
+});
 
 function onRootDragEnter() {
   rootDragCounter.value++;
@@ -266,6 +347,10 @@ async function handleEmptyTrash() {
 
 .nt-root-drop {
   min-height: 20px;
+}
+.nt-scroller {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
 }
 .nt-root-drop-active {
   outline: 2px dashed var(--me-accent);

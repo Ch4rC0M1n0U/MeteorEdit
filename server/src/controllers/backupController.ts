@@ -9,6 +9,7 @@ import DossierNode from '../models/DossierNode';
 import SiteSettings from '../models/SiteSettings';
 import PluginSettings from '../models/PluginSettings';
 import ActivityLog from '../models/ActivityLog';
+import EvidenceRecord from '../models/EvidenceRecord';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', 'uploads');
 
@@ -16,41 +17,59 @@ const COLLECTION_KEYS = ['users', 'dossiers', 'dossiernodes', 'sitesettings', 'p
 
 export async function exportBackup(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const [users, dossiers, dossiernodes, sitesettings, pluginsettings, activitylogs] = await Promise.all([
-      User.find().lean(),
-      Dossier.find().lean(),
-      DossierNode.find().lean(),
-      SiteSettings.find().lean(),
-      PluginSettings.find().lean(),
-      ActivityLog.find().lean(),
-    ]);
-
-    const backup = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      users,
-      dossiers,
-      dossiernodes,
-      sitesettings,
-      pluginsettings,
-      activitylogs,
-    };
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `meteoredit-backup-${timestamp}.json`;
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(JSON.stringify(backup, null, 2));
+
+    // Stream JSON manually
+    res.write('{\n');
+    res.write(`"version":1,\n`);
+    res.write(`"exportedAt":"${new Date().toISOString()}",\n`);
+
+    const collections = [
+      { key: 'users', model: User },
+      { key: 'dossiers', model: Dossier },
+      { key: 'dossiernodes', model: DossierNode },
+      { key: 'sitesettings', model: SiteSettings },
+      { key: 'pluginsettings', model: PluginSettings },
+      { key: 'activitylogs', model: ActivityLog },
+    ] as const;
+
+    let totalDocuments = 0;
+
+    for (let i = 0; i < collections.length; i++) {
+      const { key, model } = collections[i];
+      res.write(`"${key}":[`);
+
+      const cursor = (model as any).find().lean().cursor();
+      let first = true;
+
+      for await (const doc of cursor) {
+        if (!first) res.write(',');
+        res.write(JSON.stringify(doc));
+        first = false;
+        totalDocuments++;
+      }
+
+      res.write(']');
+      if (i < collections.length - 1) res.write(',\n');
+    }
+
+    res.write('\n}');
+    res.end();
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     await logActivity(req.user!.userId, 'settings.backup_export', 'system', null, {
-      collections: COLLECTION_KEYS.length,
-      totalDocuments: users.length + dossiers.length + dossiernodes.length + sitesettings.length + pluginsettings.length + activitylogs.length,
+      collections: collections.length,
+      totalDocuments,
     }, ip);
   } catch (error) {
     console.error('Export backup error:', error);
-    res.status(500).json({ message: 'Server error' });
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Server error' });
+    }
   }
 }
 
@@ -160,6 +179,162 @@ export async function getStorageInfo(_req: AuthRequest, res: Response): Promise<
     });
   } catch (error) {
     console.error('Get storage info error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+/** Collect all file paths referenced in the database */
+async function getReferencedFiles(): Promise<Set<string>> {
+  const referenced = new Set<string>();
+
+  const addPath = (p: string | undefined | null) => {
+    if (!p) return;
+    // Normalize: strip leading slash, strip query params, resolve to absolute
+    const clean = p.replace(/^\//, '').split('?')[0];
+    if (clean.startsWith('uploads/')) {
+      referenced.add(path.resolve(UPLOAD_DIR, '..', clean));
+    }
+  };
+
+  // 1. DossierNode: fileUrl + content images
+  const nodes = await DossierNode.find({}, 'fileUrl content').lean();
+  for (const node of nodes) {
+    addPath(node.fileUrl);
+    // Extract image URLs from TipTap JSON content
+    if (node.content) {
+      const contentStr = typeof node.content === 'string' ? node.content : JSON.stringify(node.content);
+      const imgMatches = contentStr.match(/uploads\/[^"?\s]+/g);
+      if (imgMatches) {
+        for (const m of imgMatches) {
+          referenced.add(path.resolve(UPLOAD_DIR, '..', m));
+        }
+      }
+    }
+  }
+
+  // 2. Dossier: logoPath, linkedDocuments, entity photos
+  const dossiers = await Dossier.find({}, 'logoPath linkedDocuments entities').lean();
+  for (const d of dossiers) {
+    addPath(d.logoPath);
+    if (d.linkedDocuments) {
+      for (const doc of d.linkedDocuments) {
+        addPath((doc as any).filePath);
+      }
+    }
+    if (d.entities) {
+      for (const entity of d.entities) {
+        if ((entity as any).photos) {
+          for (const photo of (entity as any).photos) {
+            addPath(photo);
+          }
+        }
+      }
+    }
+  }
+
+  // 3. SiteSettings: logoPath, faviconPath, loginBackgroundPath
+  const settings = await SiteSettings.find({}, 'logoPath faviconPath loginBackgroundPath').lean();
+  for (const s of settings) {
+    addPath(s.logoPath);
+    addPath(s.faviconPath);
+    addPath(s.loginBackgroundPath);
+  }
+
+  // 4. EvidenceRecord: filePath (absolute paths)
+  const evidences = await EvidenceRecord.find({}, 'filePath').lean();
+  for (const e of evidences) {
+    if (e.filePath) {
+      // Evidence stores absolute paths
+      referenced.add(path.resolve(e.filePath));
+    }
+  }
+
+  return referenced;
+}
+
+/** List all physical files in uploads directory */
+function getAllFiles(dirPath: string): string[] {
+  const files: string[] = [];
+  if (!fs.existsSync(dirPath)) return files;
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...getAllFiles(fullPath));
+    } else if (entry.isFile()) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+export async function scanOrphans(_req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const referenced = await getReferencedFiles();
+    const allFiles = getAllFiles(UPLOAD_DIR);
+
+    const orphans: { path: string; relativePath: string; size: number }[] = [];
+    let totalOrphanSize = 0;
+
+    for (const filePath of allFiles) {
+      const resolved = path.resolve(filePath);
+      if (!referenced.has(resolved)) {
+        const stat = fs.statSync(filePath);
+        const relativePath = path.relative(path.resolve(UPLOAD_DIR, '..'), filePath).replace(/\\/g, '/');
+        orphans.push({ path: resolved, relativePath, size: stat.size });
+        totalOrphanSize += stat.size;
+      }
+    }
+
+    res.json({
+      totalFiles: allFiles.length,
+      referencedFiles: referenced.size,
+      orphanCount: orphans.length,
+      orphanSizeBytes: totalOrphanSize,
+      orphans: orphans.map(o => ({ relativePath: o.relativePath, size: o.size })),
+    });
+  } catch (error) {
+    console.error('Scan orphans error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function cleanOrphans(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const referenced = await getReferencedFiles();
+    const allFiles = getAllFiles(UPLOAD_DIR);
+
+    let deletedCount = 0;
+    let freedBytes = 0;
+
+    for (const filePath of allFiles) {
+      const resolved = path.resolve(filePath);
+      if (!referenced.has(resolved)) {
+        const stat = fs.statSync(filePath);
+        freedBytes += stat.size;
+        fs.unlinkSync(filePath);
+        deletedCount++;
+      }
+    }
+
+    // Recalculate storage after cleanup
+    const { totalFiles, totalSize } = getDirectoryStats(UPLOAD_DIR);
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'settings.storage_cleanup', 'system', null, {
+      deletedFiles: deletedCount,
+      freedBytes,
+    }, ip);
+
+    res.json({
+      deletedFiles: deletedCount,
+      freedBytes,
+      totalFiles,
+      totalSizeBytes: totalSize,
+    });
+  } catch (error) {
+    console.error('Clean orphans error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 }
