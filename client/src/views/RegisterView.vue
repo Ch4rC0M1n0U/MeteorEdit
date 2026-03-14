@@ -104,6 +104,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
 import { useBrandingStore } from '../stores/branding';
@@ -111,6 +112,7 @@ import { useBrandingStore } from '../stores/branding';
 const { t } = useI18n();
 const authStore = useAuthStore();
 const brandingStore = useBrandingStore();
+const router = useRouter();
 
 const firstName = ref('');
 const lastName = ref('');
@@ -123,8 +125,14 @@ const success = ref(false);
 async function handleRegister() {
   error.value = '';
   try {
-    await authStore.register(email.value, password.value, firstName.value, lastName.value);
-    success.value = true;
+    const result = await authStore.register(email.value, password.value, firstName.value, lastName.value);
+    if (result?.autoLoginSuccess) {
+      // Auto-login succeeded, redirect to home
+      router.push('/');
+    } else {
+      // Registration succeeded but auto-login failed (e.g. admin activation required)
+      success.value = true;
+    }
   } catch (e: any) {
     error.value = e.response?.data?.message || t('auth.registerError');
   }

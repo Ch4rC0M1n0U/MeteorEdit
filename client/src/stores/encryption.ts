@@ -238,7 +238,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
 
     try {
       const { data } = await api.get(`/encryption/dossier/${dossierId}`);
-      if (!data.isEncrypted || !data.encryptionKeys?.length) return null;
+      if (!data.encryptionKeys?.length) return null;
 
       const { data: meData } = await api.get('/auth/me');
       const userId = meData.id;

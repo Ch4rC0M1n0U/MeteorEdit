@@ -237,43 +237,17 @@
         <div v-else class="di-empty mono">{{ $t('dossier.noEntities') }}</div>
       </div>
 
-      <!-- CHIFFREMENT E2E -->
-      <div class="di-section" v-if="dossierStore.currentDossier && isOwner">
+      <!-- CHIFFREMENT E2E (toujours actif) -->
+      <div class="di-section" v-if="dossierStore.currentDossier">
         <div class="di-section-header">
           <h3 class="di-section-title mono">
             <v-icon size="16" class="mr-2">mdi-lock-outline</v-icon>
             {{ $t('dossier.encryption') }}
           </h3>
-          <div class="di-encryption-toggle">
-            <v-switch
-              v-model="encryptionEnabled"
-              :loading="encryptionBusy"
-              :disabled="encryptionBusy"
-              color="primary"
-              density="compact"
-              hide-details
-              @update:model-value="toggleEncryption"
-            />
-          </div>
         </div>
-        <p v-if="encryptionEnabled" class="di-encryption-info mono">
+        <p class="di-encryption-info mono">
           <v-icon size="14" class="mr-1" color="success">mdi-shield-check-outline</v-icon>
           {{ $t('dossier.encryptionActive') }}
-        </p>
-        <p v-else class="di-encryption-info mono">
-          <v-icon size="14" class="mr-1" color="warning">mdi-shield-off-outline</v-icon>
-          {{ $t('dossier.encryptionInactive') }}
-        </p>
-        <p v-if="!encryptionStore.isUnlocked && encryptionStore.hasKeys" class="di-encryption-warning mono">
-          <v-icon size="14" class="mr-1" color="error">mdi-key-alert</v-icon>
-          {{ $t('dossier.keysLocked') }}
-        </p>
-        <p v-if="!encryptionStore.hasKeys" class="di-encryption-warning mono">
-          <v-icon size="14" class="mr-1" color="warning">mdi-key-plus</v-icon>
-          {{ $t('dossier.noKeys') }}
-          <button class="di-gen-keys-btn" @click="generateEncryptionKeys" :disabled="generatingKeys">
-            {{ generatingKeys ? $t('dossier.generating') : $t('dossier.generateKeys') }}
-          </button>
         </p>
       </div>
 
@@ -479,7 +453,7 @@ import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
 
 const { t } = useI18n();
-const { prompt: customPrompt, confirm: customConfirm } = useConfirm();
+const { confirm: customConfirm } = useConfirm();
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
 const encryptionStore = useEncryptionStore();
@@ -749,15 +723,8 @@ async function toggleEmbargo(newValue: boolean | null) {
     if (!confirmed) return;
     form.isEmbargo = true;
 
-    // Sauvegarder isEmbargo immédiatement en base AVANT le chiffrement
+    // Sauvegarder isEmbargo immédiatement en base
     await dossierStore.updateDossier(dossierId, { isEmbargo: true });
-
-    // Auto-activer le chiffrement si pas encore actif
-    if (!encryptionEnabled.value) {
-      if (encryptionStore.hasKeys && encryptionStore.isUnlocked) {
-        await toggleEncryption(true);
-      }
-    }
   } else {
     // Désactivation de l'embargo
     const confirmed = await customConfirm({
@@ -934,138 +901,7 @@ async function enrichEntityAI(index: number) {
   }
 }
 
-// --- Chiffrement E2E ---
-const encryptionEnabled = ref(false);
-const encryptionBusy = ref(false);
-const generatingKeys = ref(false);
-
-watch(() => dossierStore.currentDossier?.isEncrypted, (val) => {
-  encryptionEnabled.value = !!val;
-}, { immediate: true });
-
-async function generateEncryptionKeys() {
-  generatingKeys.value = true;
-  try {
-    // Prompt user for password to protect the private key
-    const password = await customPrompt({
-      title: t('dossier.encryption'),
-      message: t('dossier.encryptionPasswordPrompt'),
-      promptLabel: t('dossier.encryptionPasswordLabel'),
-      confirmText: t('dossier.encryptionConfirmGenerate'),
-      promptType: 'password',
-    });
-    if (!password) return;
-    await encryptionStore.initializeKeys(password);
-  } catch (err) {
-    console.error('Failed to generate encryption keys:', err);
-  } finally {
-    generatingKeys.value = false;
-  }
-}
-
-async function toggleEncryption(newValue: boolean | null) {
-  if (!dossierStore.currentDossier) return;
-  const dossierId = dossierStore.currentDossier._id;
-  encryptionBusy.value = true;
-
-  try {
-    if (newValue) {
-      // Enable encryption
-      if (!encryptionStore.hasKeys) {
-        encryptionEnabled.value = false;
-        await customConfirm({ title: t('dossier.encryption'), message: t('dossier.encryptionNeedKeys'), confirmText: t('common.ok'), cancelText: '' });
-        return;
-      }
-      if (!encryptionStore.isUnlocked) {
-        encryptionEnabled.value = false;
-        await customConfirm({ title: t('dossier.encryption'), message: t('dossier.encryptionNeedUnlock'), confirmText: t('common.ok'), cancelText: '' });
-        return;
-      }
-
-      // Setup dossier encryption (generates AES key)
-      await encryptionStore.setupDossierEncryption(dossierId);
-
-      // Re-save current dossier fields encrypted
-      const dossier = dossierStore.currentDossier;
-      // Mark dossier as encrypted in local state first
-      dossier.isEncrypted = true;
-
-      await dossierStore.updateDossier(dossierId, {
-        objectives: dossier.objectives,
-        judicialFacts: dossier.judicialFacts,
-        description: dossier.description,
-        entities: dossier.entities,
-      });
-
-      // Re-encrypt all existing node content
-      const allNodes = [...dossierStore.nodes];
-      for (const node of allNodes) {
-        if (node.content || node.excalidrawData || node.mapData) {
-          await dossierStore.updateNode(node._id, {
-            content: node.content,
-            excalidrawData: node.excalidrawData,
-            mapData: node.mapData,
-          });
-        }
-      }
-
-      // Share key with collaborators
-      const collabs = dossier.collaborators || [];
-      for (const collab of collabs) {
-        const collabId = typeof collab === 'string' ? collab : collab._id;
-        try {
-          await encryptionStore.shareDossierKey(dossierId, collabId);
-        } catch {
-          console.warn(`Could not share encryption key with collaborator ${collabId}`);
-        }
-      }
-
-      encryptionEnabled.value = true;
-    } else {
-      // Disable encryption - decrypt all content first
-      if (!encryptionStore.isUnlocked) {
-        encryptionEnabled.value = true;
-        await customConfirm({ title: t('dossier.encryption'), message: t('dossier.encryptionDisableNeedUnlock'), confirmText: t('common.ok'), cancelText: '' });
-        return;
-      }
-
-      // The current data in memory is already decrypted.
-      // We need to save it unencrypted, then disable encryption flag.
-      const dossier = dossierStore.currentDossier;
-      // Temporarily mark as not encrypted so updateDossier won't re-encrypt
-      dossier.isEncrypted = false;
-
-      await dossierStore.updateDossier(dossierId, {
-        objectives: dossier.objectives,
-        judicialFacts: dossier.judicialFacts,
-        description: dossier.description,
-        entities: dossier.entities,
-      });
-
-      // Re-save all node content unencrypted
-      const allNodes = [...dossierStore.nodes];
-      for (const node of allNodes) {
-        if (node.content || node.excalidrawData || node.mapData) {
-          await dossierStore.updateNode(node._id, {
-            content: node.content,
-            excalidrawData: node.excalidrawData,
-            mapData: node.mapData,
-          });
-        }
-      }
-
-      // Remove encryption keys from dossier
-      await encryptionStore.disableDossierEncryption(dossierId);
-      encryptionEnabled.value = false;
-    }
-  } catch (err) {
-    console.error('Encryption toggle error:', err);
-    // Revert UI state
-    encryptionEnabled.value = !newValue;
-  } finally {
-    encryptionBusy.value = false;
-  }
-}
+// --- Chiffrement E2E (toujours actif, plus de toggle) ---
 
 // --- Collaborateurs ---
 const collaboratorDetails = ref<CollaboratorUser[]>([]);
@@ -1120,8 +956,8 @@ async function addCollaborator(user: CollaboratorUser | null) {
     const { data } = await api.patch(`/dossiers/${dossierStore.currentDossier._id}/collaborators`, { collaborators: newCollabIds });
     dossierStore.currentDossier = data;
 
-    // If dossier is encrypted, share the encryption key with the new collaborator
-    if (dossierStore.currentDossier?.isEncrypted && encryptionStore.isUnlocked) {
+    // Share the encryption key with the new collaborator
+    if (encryptionStore.isUnlocked) {
       try {
         await encryptionStore.shareDossierKey(dossierStore.currentDossier._id, user._id);
       } catch (err) {
@@ -1692,44 +1528,12 @@ async function removeCollaborator(userId: string) {
 .spin { animation: spin 1s linear infinite; }
 
 /* Encryption */
-.di-encryption-toggle {
-  display: flex;
-  align-items: center;
-}
 .di-encryption-info {
   font-size: 12px;
   color: var(--me-text-muted);
   line-height: 1.6;
   display: flex;
   align-items: center;
-}
-.di-encryption-warning {
-  font-size: 12px;
-  color: var(--me-text-muted);
-  line-height: 1.6;
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-}
-.di-gen-keys-btn {
-  margin-left: 8px;
-  padding: 3px 10px;
-  border-radius: var(--me-radius-xs);
-  background: var(--me-accent-glow);
-  border: 1px solid var(--me-accent);
-  color: var(--me-accent);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 600;
-  transition: all 0.15s;
-}
-.di-gen-keys-btn:hover {
-  background: var(--me-accent);
-  color: var(--me-bg-deep);
-}
-.di-gen-keys-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Classification badges */

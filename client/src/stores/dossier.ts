@@ -23,7 +23,6 @@ export const useDossierStore = defineStore('dossier', () => {
    * Decrypt sensitive fields of a dossier if it's encrypted.
    */
   async function decryptDossierFields(dossier: Dossier): Promise<Dossier> {
-    if (!dossier.isEncrypted) return dossier;
     const encStore = useEncryptionStore();
     if (!encStore.isUnlocked) return dossier;
     try {
@@ -32,6 +31,7 @@ export const useDossierStore = defineStore('dossier', () => {
       const result = { ...dossier };
       for (const field of ENCRYPTED_DOSSIER_FIELDS) {
         const val = (result as any)[field];
+        // Only decrypt values with "ENC:" prefix (backward compat: plaintext is returned as-is)
         if (val && typeof val === 'string' && val.startsWith('ENC:')) {
           try {
             (result as any)[field] = await encStore.decryptForDossier(dossier._id, val.slice(4));
@@ -52,9 +52,6 @@ export const useDossierStore = defineStore('dossier', () => {
   async function encryptDossierFields(dossierId: string, data: Partial<Dossier>): Promise<Partial<Dossier>> {
     const encStore = useEncryptionStore();
     if (!encStore.isUnlocked) return data;
-    // Check if dossier is encrypted
-    const dossier = currentDossier.value;
-    if (!dossier?.isEncrypted) return data;
     try {
       const result = { ...data };
       for (const field of ENCRYPTED_DOSSIER_FIELDS) {
@@ -112,8 +109,6 @@ export const useDossierStore = defineStore('dossier', () => {
   async function encryptNodeData(nodeData: Partial<DossierNode>, dossierId: string): Promise<Partial<DossierNode>> {
     const encStore = useEncryptionStore();
     if (!encStore.isUnlocked) return nodeData;
-    const dossier = currentDossier.value;
-    if (!dossier?.isEncrypted) return nodeData;
     try {
       const result = { ...nodeData };
       if (result.content !== undefined && result.content !== null) {
@@ -208,6 +203,13 @@ export const useDossierStore = defineStore('dossier', () => {
   async function createDossier(dossierData: Partial<Dossier>) {
     const { data } = await api.post<Dossier>('/dossiers', dossierData);
     dossiers.value.unshift(data);
+
+    // Auto-setup encryption for the new dossier
+    const encStore = useEncryptionStore();
+    if (encStore.isUnlocked) {
+      await encStore.setupDossierEncryption(data._id);
+    }
+
     return data;
   }
 
@@ -219,6 +221,15 @@ export const useDossierStore = defineStore('dossier', () => {
         api.get<DossierNode[]>(`/dossiers/${id}/nodes`),
         api.get<DossierNode[]>(`/dossiers/${id}/trash`),
       ]);
+
+      // Ensure dossier encryption is set up (creates AES key if missing)
+      const encStore = useEncryptionStore();
+      if (encStore.isUnlocked) {
+        const existingKey = await encStore.getDossierKey(id);
+        if (!existingKey) {
+          await encStore.setupDossierEncryption(id);
+        }
+      }
 
       currentDossier.value = await decryptDossierFields(dossierRes.data);
       // Nodes are now lightweight metadata (no content fields)
@@ -347,9 +358,7 @@ export const useDossierStore = defineStore('dossier', () => {
       encryptedNodeData
     );
     // Decrypt for local state
-    const decrypted = currentDossier.value?.isEncrypted
-      ? await decryptNodeContent(data, dossierId)
-      : data;
+    const decrypted = await decryptNodeContent(data, dossierId);
     nodes.value.push(decrypted);
     getSocket()?.emit('node-created', { dossierId, node: data });
     return decrypted;
@@ -362,7 +371,7 @@ export const useDossierStore = defineStore('dossier', () => {
       : nodeData;
     const { data } = await api.put<DossierNode>(`/nodes/${nodeId}`, encryptedNodeData);
     // Decrypt for local state
-    const decrypted = dossierId && currentDossier.value?.isEncrypted
+    const decrypted = dossierId
       ? await decryptNodeContent(data, dossierId)
       : data;
     const idx = nodes.value.findIndex(n => n._id === nodeId);
@@ -395,7 +404,7 @@ export const useDossierStore = defineStore('dossier', () => {
     trashNodes.value = trashNodes.value.filter(n => !restored.find(r => r._id === n._id));
 
     const dossierId = currentDossier.value?._id;
-    const decrypted = dossierId && currentDossier.value?.isEncrypted
+    const decrypted = dossierId
       ? await decryptNodeContent(data, dossierId)
       : data;
     nodes.value.push(decrypted);
@@ -436,7 +445,7 @@ export const useDossierStore = defineStore('dossier', () => {
     try {
       const { data } = await api.get<DossierNode>(`/nodes/${node._id}`);
       const dossierId = currentDossier.value?._id;
-      const fullNode = dossierId && currentDossier.value?.isEncrypted
+      const fullNode = dossierId
         ? await decryptNodeContent(data, dossierId)
         : data;
 

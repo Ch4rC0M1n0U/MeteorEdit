@@ -25,11 +25,17 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refreshToken', data.refreshToken);
       user.value = data.user;
 
-      // Try to unlock encryption keys after login
+      // Auto-unlock encryption keys after login
       const encStore = useEncryptionStore();
-      const hasKeys = await encStore.checkKeys();
-      if (hasKeys) {
-        await encStore.unlockKeys(password);
+      const restored = await encStore.tryRestoreFromSession();
+      if (!restored) {
+        const hasKeys = await encStore.checkKeys();
+        if (hasKeys) {
+          await encStore.unlockKeys(password);
+        } else {
+          // Legacy user without keys - initialize them now
+          await encStore.initializeKeys(password);
+        }
       }
 
       return {};
@@ -46,12 +52,18 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refreshToken', data.refreshToken);
       user.value = data.user;
 
-      // Unlock encryption keys using cached password from login step
+      // Auto-unlock encryption keys using cached password from login step
       if (pendingPassword) {
         const encStore = useEncryptionStore();
-        const hasKeys = await encStore.checkKeys();
-        if (hasKeys) {
-          await encStore.unlockKeys(pendingPassword);
+        const restored = await encStore.tryRestoreFromSession();
+        if (!restored) {
+          const hasKeys = await encStore.checkKeys();
+          if (hasKeys) {
+            await encStore.unlockKeys(pendingPassword);
+          } else {
+            // Legacy user without keys - initialize them now
+            await encStore.initializeKeys(pendingPassword);
+          }
         }
         pendingPassword = null;
       }
@@ -60,10 +72,27 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(email: string, password: string, firstName: string, lastName: string) {
+  async function register(email: string, password: string, firstName: string, lastName: string): Promise<{ autoLoginSuccess?: boolean }> {
     loading.value = true;
     try {
       await api.post('/auth/register', { email, password, firstName, lastName });
+
+      // Try auto-login after registration to initialize encryption keys
+      try {
+        const { data } = await api.post<LoginResponse>('/auth/login', { email, password });
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        user.value = data.user;
+
+        // Auto-initialize encryption keys with the registration password
+        const encStore = useEncryptionStore();
+        await encStore.initializeKeys(password);
+
+        return { autoLoginSuccess: true };
+      } catch {
+        // Auto-login may fail (e.g. admin activation required) - that's OK
+        return {};
+      }
     } finally {
       loading.value = false;
     }
