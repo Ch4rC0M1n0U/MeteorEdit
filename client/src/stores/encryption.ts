@@ -4,9 +4,13 @@ import api from '../services/api';
 import {
   generateKeyPair,
   exportPublicKey,
+  exportPrivateKey,
+  importPrivateKey,
   encryptPrivateKey,
   decryptPrivateKey,
   generateDossierKey,
+  exportDossierKey,
+  importDossierKey,
   encryptDossierKey,
   decryptDossierKey,
   encryptContent,
@@ -24,6 +28,94 @@ export const useEncryptionStore = defineStore('encryption', () => {
   const dossierKeyCache = new Map<string, CryptoKey>();
 
   const isUnlocked = computed(() => !!privateKey.value);
+
+  // --- sessionStorage persistence ---
+  const SESSION_KEY = 'me_crypto_session';
+  let ephemeralKey: CryptoKey | null = null;
+
+  async function getEphemeralKey(): Promise<CryptoKey> {
+    if (!ephemeralKey) {
+      ephemeralKey = await window.crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+    }
+    return ephemeralKey;
+  }
+
+  async function saveToSession(): Promise<void> {
+    if (!privateKey.value) return;
+    try {
+      const key = await getEphemeralKey();
+      const privateKeyJwk = await exportPrivateKey(privateKey.value);
+      // Serialize dossier key cache
+      const dossierKeysObj: Record<string, string> = {};
+      for (const [id, dk] of dossierKeyCache.entries()) {
+        const rawBuf = await exportDossierKey(dk);
+        const bytes = new Uint8Array(rawBuf);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        dossierKeysObj[id] = btoa(binary);
+      }
+      const data = JSON.stringify({ privateKeyJwk, dossierKeys: dossierKeysObj });
+      const encoded = new TextEncoder().encode(data);
+      const iv = window.crypto.getRandomValues(new Uint8Array(12));
+      const encrypted = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+      const payload = {
+        iv: btoa(String.fromCharCode(...iv)),
+        data: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+      };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+    } catch (e) {
+      console.error('Failed to save crypto session:', e);
+    }
+  }
+
+  async function tryRestoreFromSession(): Promise<boolean> {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw || !ephemeralKey) return false;
+    try {
+      const { iv, data } = JSON.parse(raw);
+      const ivArr = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
+      const dataArr = Uint8Array.from(atob(data), c => c.charCodeAt(0));
+      const decrypted = await window.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: ivArr },
+        ephemeralKey,
+        dataArr
+      );
+      const parsed = JSON.parse(new TextDecoder().decode(decrypted));
+
+      // Restore private key
+      privateKey.value = await importPrivateKey(parsed.privateKeyJwk);
+
+      // Restore dossier keys
+      if (parsed.dossierKeys) {
+        for (const [id, keyStr] of Object.entries(parsed.dossierKeys)) {
+          const binary = atob(keyStr as string);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          const dk = await importDossierKey(bytes.buffer);
+          dossierKeyCache.set(id, dk);
+        }
+      }
+      hasKeys.value = true;
+      return true;
+    } catch (e) {
+      console.error('Failed to restore crypto session:', e);
+      sessionStorage.removeItem(SESSION_KEY);
+      return false;
+    }
+  }
+
+  function clearSession(): void {
+    sessionStorage.removeItem(SESSION_KEY);
+    ephemeralKey = null;
+  }
 
   /**
    * Check if the user already has encryption keys stored on the server.
@@ -60,6 +152,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
     privateKey.value = keyPair.privateKey;
     publicKey.value = keyPair.publicKey;
     hasKeys.value = true;
+    await saveToSession();
   }
 
   /**
@@ -81,6 +174,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
         publicKey.value = await importPublicKey(data.publicKey);
       }
       hasKeys.value = true;
+      await saveToSession();
       return true;
     } catch {
       return false;
@@ -95,6 +189,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
     publicKey.value = null;
     hasKeys.value = false;
     dossierKeyCache.clear();
+    clearSession();
   }
 
   /**
@@ -155,6 +250,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
 
       const dossierAesKey = await decryptDossierKey(myKey.encryptedKey, privateKey.value);
       dossierKeyCache.set(dossierId, dossierAesKey);
+      await saveToSession();
       return dossierAesKey;
     } catch {
       return null;
@@ -219,6 +315,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
     initializeKeys,
     unlockKeys,
     lockKeys,
+    tryRestoreFromSession,
     setupDossierEncryption,
     disableDossierEncryption,
     getDossierKey,
