@@ -96,9 +96,11 @@ import { ref, reactive, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
+import { useEncryptionStore } from '../../stores/encryption';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const encryptionStore = useEncryptionStore();
 
 // Password
 const pwForm = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -114,7 +116,24 @@ async function changePassword() {
   }
   pwSaving.value = true;
   try {
-    await api.put('/auth/password', { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+    // Re-encrypt private key with new password if encryption is unlocked
+    let encryptionPayload: { encryptedPrivateKey?: string; encryptionSalt?: string } = {};
+    if (encryptionStore.isUnlocked) {
+      const { encryptedPrivateKey, salt } = await encryptionStore.reEncryptPrivateKey(pwForm.newPassword);
+      encryptionPayload = { encryptedPrivateKey, encryptionSalt: salt };
+    }
+
+    await api.put('/auth/password', {
+      currentPassword: pwForm.currentPassword,
+      newPassword: pwForm.newPassword,
+      ...encryptionPayload,
+    });
+
+    // Re-unlock keys with new password to refresh session
+    if (encryptionStore.isUnlocked) {
+      await encryptionStore.unlockKeys(pwForm.newPassword);
+    }
+
     pwMessage.value = t('profile.passwordChanged');
     pwSuccess.value = true;
     pwForm.currentPassword = '';

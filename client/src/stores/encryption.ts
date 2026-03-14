@@ -182,6 +182,15 @@ export const useEncryptionStore = defineStore('encryption', () => {
   }
 
   /**
+   * Re-encrypt the private key with a new password (for password change).
+   * Returns the new encrypted private key and salt to send to the server.
+   */
+  async function reEncryptPrivateKey(newPassword: string): Promise<{ encryptedPrivateKey: string; salt: string }> {
+    if (!privateKey.value) throw new Error('Cles de chiffrement non deverrouillees');
+    return encryptPrivateKey(privateKey.value, newPassword);
+  }
+
+  /**
    * Lock keys (e.g., on logout).
    */
   function lockKeys(): void {
@@ -315,6 +324,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
     initializeKeys,
     unlockKeys,
     lockKeys,
+    reEncryptPrivateKey,
     tryRestoreFromSession,
     setupDossierEncryption,
     disableDossierEncryption,

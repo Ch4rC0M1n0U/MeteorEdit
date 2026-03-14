@@ -208,6 +208,13 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
       return;
     }
     user.password = newPassword;
+    // Update encryption keys if re-encrypted with new password
+    if (req.body.encryptedPrivateKey) {
+      user.encryptionPrivateKey = req.body.encryptedPrivateKey;
+    }
+    if (req.body.encryptionSalt) {
+      user.encryptionSalt = req.body.encryptionSalt;
+    }
     await user.save();
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     await logActivity(req.user!.userId, 'profile.password_change', 'user', req.user!.userId, {}, ip, req.headers['user-agent'] || '');
