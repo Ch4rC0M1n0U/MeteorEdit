@@ -193,6 +193,9 @@ export async function uploadDossierLogo(req: AuthRequest, res: Response): Promis
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
     dossier.logoPath = `uploads/${req.file.filename}`;
+    if (req.body.originalContentType) {
+      (dossier as any).logoOriginalContentType = req.body.originalContentType;
+    }
     dossier.icon = null;
     await dossier.save();
     if (!dossier.isEmbargo) {
@@ -235,10 +238,12 @@ export async function uploadLinkedDocument(req: AuthRequest, res: Response): Pro
       res.status(403).json({ message: 'Access denied' }); return;
     }
     if (!req.file) { res.status(400).json({ message: 'No file provided' }); return; }
+    const originalFileSize = req.body.originalFileSize ? parseInt(req.body.originalFileSize, 10) : undefined;
     dossier.linkedDocuments.push({
       fileName: req.file.originalname,
       filePath: `uploads/${req.file.filename}`,
-      fileSize: req.file.size,
+      fileSize: originalFileSize || req.file.size,
+      originalContentType: req.body.originalContentType || undefined,
       uploadedAt: new Date(),
     } as any);
     await dossier.save();
@@ -269,6 +274,12 @@ export async function uploadEntityPhoto(req: AuthRequest, res: Response): Promis
     if (!entity.photos) entity.photos = [];
     const photoPath = `uploads/${req.file.filename}`;
     entity.photos.push(photoPath);
+    // Store original content type metadata if provided (encrypted upload)
+    if (req.body.originalContentType) {
+      const entityAny = entity as any;
+      if (!entityAny.photoMetadata) entityAny.photoMetadata = [];
+      entityAny.photoMetadata.push({ path: photoPath, originalContentType: req.body.originalContentType });
+    }
     await dossier.save();
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');

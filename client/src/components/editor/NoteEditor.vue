@@ -204,6 +204,8 @@ import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
 import api, { SERVER_URL } from '../../services/api';
 import { useTemplateStore } from '../../stores/template';
+import { useDossierStore } from '../../stores/dossier';
+import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import CommentSidebar from './CommentSidebar.vue';
 import { createMentionExtension } from './mentionExtension';
 
@@ -214,6 +216,8 @@ const emit = defineEmits<{ 'update:modelValue': [value: any] }>();
 
 const authStore = useAuthStore();
 const templateStore = useTemplateStore();
+const dossierStore = useDossierStore();
+const { uploadEncryptedImage } = useEncryptedUpload();
 const { prompt: promptDialog } = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
 const showComments = ref(false);
@@ -305,9 +309,15 @@ async function insertLink() {
 }
 
 async function uploadImageFile(file: File): Promise<string | null> {
-  const formData = new FormData();
-  formData.append('image', file);
   try {
+    const dossierId = dossierStore.currentDossier?._id;
+    if (dossierId) {
+      const url = await uploadEncryptedImage(dossierId, file);
+      return `${SERVER_URL}${url}`;
+    }
+    // Fallback: no dossier context
+    const formData = new FormData();
+    formData.append('image', file);
     const { data } = await api.post('/upload/image', formData);
     return `${SERVER_URL}${data.url}`;
   } catch {

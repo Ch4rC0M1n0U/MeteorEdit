@@ -451,12 +451,14 @@ import api, { SERVER_URL } from '../../services/api';
 import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
+import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 
 const { t } = useI18n();
 const { confirm: customConfirm } = useConfirm();
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
 const encryptionStore = useEncryptionStore();
+const { uploadEncryptedFile } = useEncryptedUpload();
 
 const editing = ref(false);
 const entityDialog = ref(false);
@@ -591,12 +593,9 @@ function syncDossierInList(updated: any) {
 async function handleLogoUpload(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file || !dossierStore.currentDossier) return;
-  const fd = new FormData();
-  fd.append('logo', file);
+  const dossierId = dossierStore.currentDossier._id;
   try {
-    const { data } = await api.post(`/dossiers/${dossierStore.currentDossier._id}/logo`, fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const { data } = await uploadEncryptedFile(dossierId, file, `/dossiers/${dossierId}/logo`, 'logo');
     syncDossierInList(data);
     form.icon = null;
   } catch (err) {
@@ -620,14 +619,11 @@ function triggerDocInput() { docInput.value?.click(); }
 async function handleDocUpload(e: Event) {
   const files = (e.target as HTMLInputElement).files;
   if (!files?.length || !dossierStore.currentDossier) return;
+  const dossierId = dossierStore.currentDossier._id;
   uploadingDoc.value = true;
   try {
     for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append('document', file);
-      const { data } = await api.post(`/dossiers/${dossierStore.currentDossier._id}/documents`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await uploadEncryptedFile(dossierId, file, `/dossiers/${dossierId}/documents`, 'document');
       syncDossierInList(data);
     }
     loadFromDossier();
@@ -843,15 +839,15 @@ async function uploadEntityPhoto(event: Event) {
   const entityIndex = editingEntityIndex.value;
   if (entityIndex === null) return;
 
+  const dossierId = dossierStore.currentDossier._id;
   uploadingEntityPhoto.value = true;
   try {
     for (const file of Array.from(files)) {
-      const formData = new FormData();
-      formData.append('photo', file);
-      const { data } = await api.post(
-        `/dossiers/${dossierStore.currentDossier._id}/entities/${entityIndex}/photo`,
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
+      const { data } = await uploadEncryptedFile(
+        dossierId,
+        file,
+        `/dossiers/${dossierId}/entities/${entityIndex}/photo`,
+        'photo',
       );
       // Refresh entities from response
       form.entities = (data.entities || []).map((e: any) => ({ ...e, photos: e.photos || [] }));

@@ -152,7 +152,9 @@ export async function uploadMedia(req: AuthRequest, res: Response): Promise<void
     const destPath = path.join(mediaDir, req.file.filename);
     fs.renameSync(srcPath, destPath);
 
-    const mimeType = req.file.mimetype;
+    // Use original content type if provided (encrypted upload), otherwise use detected mimetype
+    const originalContentType = req.body.originalContentType;
+    const mimeType = originalContentType || req.file.mimetype;
     let mediaType: 'video' | 'audio' = 'video';
     if (mimeType.startsWith('audio/')) {
       mediaType = 'audio';

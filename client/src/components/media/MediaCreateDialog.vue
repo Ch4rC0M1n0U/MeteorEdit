@@ -149,8 +149,12 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { MediaData, MediaSource, MediaMetadata } from '../../types';
 import api from '../../services/api';
+import { useDossierStore } from '../../stores/dossier';
+import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 
 const { t } = useI18n();
+const dossierStore = useDossierStore();
+const { uploadEncryptedFile } = useEncryptedUpload();
 
 const model = defineModel<boolean>({ default: false });
 
@@ -325,14 +329,22 @@ async function confirm() {
   let source: MediaSource;
 
   if (mode.value === 'upload' && selectedFile.value) {
-    // Upload the file first
+    // Upload the file first (encrypted if dossier context available)
     uploading.value = true;
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile.value);
-      const { data } = await api.post('/media/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const dossierId = dossierStore.currentDossier?._id;
+      let data: any;
+      if (dossierId) {
+        const res = await uploadEncryptedFile(dossierId, selectedFile.value, '/media/upload', 'file');
+        data = res.data;
+      } else {
+        const formData = new FormData();
+        formData.append('file', selectedFile.value);
+        const res = await api.post('/media/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        data = res.data;
+      }
       source = {
         type: 'upload',
         fileUrl: data.fileUrl,

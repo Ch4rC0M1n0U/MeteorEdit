@@ -404,12 +404,20 @@ export async function uploadFile(req: AuthRequest, res: Response): Promise<void>
     }
     const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
     const absFilePath = path.join(uploadDir, req.file.filename);
-    const fileHash = await computeFileHash(absFilePath);
+
+    // If client sent a plainHash (encrypted upload), use it instead of computing server-side hash
+    const plainHash = req.body.plainHash;
+    const fileHash = plainHash || await computeFileHash(absFilePath);
+    const originalContentType = req.body.originalContentType;
+    const originalFileSize = req.body.originalFileSize ? parseInt(req.body.originalFileSize, 10) : undefined;
 
     node.fileUrl = `/uploads/${req.file.filename}`;
     node.fileName = req.file.originalname;
-    node.fileSize = req.file.size;
+    node.fileSize = originalFileSize || req.file.size;
     node.fileHash = fileHash;
+    if (originalContentType) {
+      (node as any).originalContentType = originalContentType;
+    }
     await node.save();
 
     // Create evidence record
@@ -421,7 +429,7 @@ export async function uploadFile(req: AuthRequest, res: Response): Promise<void>
       originalHash: fileHash,
       fileHash,
       filePath: absFilePath,
-      fileSize: req.file.size,
+      fileSize: originalFileSize || req.file.size,
       sourceUrl: null,
       evidenceType: 'file',
     });
@@ -511,7 +519,8 @@ export async function uploadImage(req: AuthRequest, res: Response): Promise<void
       return;
     }
     const url = `/uploads/${req.file.filename}`;
-    res.json({ url });
+    const originalContentType = req.body?.originalContentType;
+    res.json({ url, originalContentType });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

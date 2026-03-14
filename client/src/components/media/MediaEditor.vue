@@ -214,11 +214,13 @@ import { useI18n } from 'vue-i18n';
 import type { DossierNode, MediaAnnotation, MediaMetadata } from '../../types';
 import api, { SERVER_URL } from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
+import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import MediaMetadataDialog from './MediaMetadataDialog.vue';
 import ImageAnnotator from '../editor/ImageAnnotator.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();
+const { uploadEncryptedImage } = useEncryptedUpload();
 
 const props = defineProps<{
   node: DossierNode;
@@ -436,14 +438,25 @@ async function captureFrame() {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = canvas.toDataURL('image/png');
 
-      const { data } = await api.post('/media/capture', {
-        nodeId: props.node._id,
-        dossierId: props.node.dossierId,
-        imageData,
-        timestamp: ts,
-      });
+      // Encrypt capture if dossier has encryption enabled
+      const dossierId = props.node.dossierId?.toString();
+      let data: any;
+      if (dossierId) {
+        const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+        const captureFile = new File([blob], `capture-${Date.now()}.png`, { type: 'image/png' });
+        const url = await uploadEncryptedImage(dossierId, captureFile);
+        data = { screenshotUrl: url.replace(/^\//, '') };
+      } else {
+        const imageData = canvas.toDataURL('image/png');
+        const res = await api.post('/media/capture', {
+          nodeId: props.node._id,
+          dossierId: props.node.dossierId,
+          imageData,
+          timestamp: ts,
+        });
+        data = res.data;
+      }
 
       const annotation: MediaAnnotation = {
         id: crypto.randomUUID(),
