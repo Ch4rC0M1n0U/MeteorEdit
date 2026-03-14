@@ -94,7 +94,7 @@ export async function deriveKeyFromPassword(
     {
       name: 'PBKDF2',
       salt,
-      iterations: 100000,
+      iterations: 600000,
       hash: 'SHA-256',
     },
     passwordKey,
@@ -236,4 +236,47 @@ export async function decryptContent(
   );
   const decoder = new TextDecoder();
   return JSON.parse(decoder.decode(decrypted));
+}
+
+// --- File Encryption ---
+
+/**
+ * Encrypt a binary file (ArrayBuffer) with AES-256-GCM.
+ * Returns: IV (12 bytes) + ciphertext + auth tag
+ */
+export async function encryptFile(key: CryptoKey, data: ArrayBuffer): Promise<ArrayBuffer> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    data
+  );
+  const result = new Uint8Array(iv.byteLength + encrypted.byteLength);
+  result.set(iv, 0);
+  result.set(new Uint8Array(encrypted), iv.byteLength);
+  return result.buffer;
+}
+
+/**
+ * Decrypt a binary file (ArrayBuffer) encrypted with AES-256-GCM.
+ * Expects: IV (12 bytes) + ciphertext + auth tag
+ */
+export async function decryptFile(key: CryptoKey, data: ArrayBuffer): Promise<ArrayBuffer> {
+  const dataArray = new Uint8Array(data);
+  const iv = dataArray.slice(0, 12);
+  const ciphertext = dataArray.slice(12);
+  return crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    ciphertext
+  );
+}
+
+/**
+ * Compute SHA-256 hash of an ArrayBuffer, return hex string.
+ */
+export async function hashFile(data: ArrayBuffer): Promise<string> {
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
