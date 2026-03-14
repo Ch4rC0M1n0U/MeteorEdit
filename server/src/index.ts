@@ -53,7 +53,10 @@ app.use(cors());
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 
+// Branding files - public
 app.use('/uploads/branding', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads', 'branding')));
+// Legacy fallback - serve all uploads statically (will be removed after migration)
+app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads')));
 
 // Swagger API documentation (public, no auth required)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
