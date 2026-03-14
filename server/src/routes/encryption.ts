@@ -6,6 +6,7 @@ import {
   getUserPublicKey,
   storeDossierKey,
   getDossierKeys,
+  removeDossierKey,
 } from '../controllers/encryptionController';
 
 const router = Router();
@@ -173,5 +174,35 @@ router.get('/keys/:userId', authenticate, getUserPublicKey);
  */
 router.put('/dossier/:dossierId', authenticate, storeDossierKey);
 router.get('/dossier/:dossierId', authenticate, getDossierKeys);
+
+/**
+ * @swagger
+ * /api/encryption/dossier/{dossierId}/key/{userId}:
+ *   delete:
+ *     tags: [Encryption]
+ *     summary: Supprimer la cle de chiffrement d'un utilisateur pour un dossier
+ *     description: Retire la cle AES chiffree d'un collaborateur. Seul le proprietaire peut effectuer cette operation.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: dossierId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Cle supprimee
+ *       403:
+ *         description: Seul le proprietaire peut gerer les cles
+ *       404:
+ *         description: Dossier non trouve
+ */
+router.delete('/dossier/:dossierId/key/:userId', authenticate, removeDossierKey);
 
 export default router;

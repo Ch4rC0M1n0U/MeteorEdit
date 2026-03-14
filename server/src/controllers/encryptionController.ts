@@ -87,6 +87,28 @@ export async function storeDossierKey(req: AuthRequest, res: Response): Promise<
   }
 }
 
+export async function removeDossierKey(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { dossierId, userId } = req.params;
+    const dossier = await Dossier.findById(dossierId);
+    if (!dossier) {
+      res.status(404).json({ message: 'Dossier non trouve' });
+      return;
+    }
+    if (dossier.owner.toString() !== req.user!.userId) {
+      res.status(403).json({ message: 'Seul le proprietaire peut gerer les cles' });
+      return;
+    }
+    dossier.encryptionKeys = dossier.encryptionKeys.filter(
+      (k: any) => k.userId.toString() !== userId
+    );
+    await dossier.save();
+    res.json({ message: 'Cle supprimee' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+}
+
 export async function getDossierKeys(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { dossierId } = req.params;

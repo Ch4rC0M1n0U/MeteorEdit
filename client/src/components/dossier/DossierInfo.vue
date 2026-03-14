@@ -1034,6 +1034,13 @@ async function removeCollaborator(userId: string) {
   try {
     const { data } = await api.patch(`/dossiers/${dossierStore.currentDossier._id}/collaborators`, { collaborators: newCollabIds });
     dossierStore.currentDossier = data;
+
+    // Remove the collaborator's encryption key
+    try {
+      await api.delete(`/encryption/dossier/${dossierStore.currentDossier._id}/key/${userId}`);
+    } catch (err) {
+      console.warn('Could not remove encryption key for collaborator:', err);
+    }
   } catch (e) {
     console.error('Failed to remove collaborator:', e);
   }
