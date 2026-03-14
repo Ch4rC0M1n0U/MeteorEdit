@@ -124,7 +124,7 @@ export async function uploadLogo(req: AuthRequest, res: Response): Promise<void>
     if (settings?.logoPath) {
       deleteFileIfExists(settings.logoPath);
     }
-    const logoPath = `uploads/${req.file.filename}`;
+    const logoPath = `uploads/branding/${req.file.filename}`;
     const updated = await SiteSettings.findOneAndUpdate({}, { logoPath }, { new: true, upsert: true });
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     await logActivity(req.user!.userId, 'settings.logo_upload', 'system', null, {}, ip);
@@ -159,7 +159,7 @@ export async function uploadFavicon(req: AuthRequest, res: Response): Promise<vo
     if (settings?.faviconPath) {
       deleteFileIfExists(settings.faviconPath);
     }
-    const faviconPath = `uploads/${req.file.filename}`;
+    const faviconPath = `uploads/branding/${req.file.filename}`;
     const updated = await SiteSettings.findOneAndUpdate({}, { faviconPath }, { new: true, upsert: true });
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     await logActivity(req.user!.userId, 'settings.favicon_upload', 'system', null, {}, ip);
@@ -194,7 +194,7 @@ export async function uploadLoginBackground(req: AuthRequest, res: Response): Pr
     if (settings?.loginBackgroundPath) {
       deleteFileIfExists(settings.loginBackgroundPath);
     }
-    const loginBackgroundPath = `uploads/${req.file.filename}`;
+    const loginBackgroundPath = `uploads/branding/${req.file.filename}`;
     const updated = await SiteSettings.findOneAndUpdate({}, { loginBackgroundPath }, { new: true, upsert: true });
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     await logActivity(req.user!.userId, 'settings.login_background_upload', 'system', null, {}, ip);

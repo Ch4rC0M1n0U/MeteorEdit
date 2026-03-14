@@ -6,7 +6,7 @@ import { exportBackup, importBackup, getStorageInfo, scanOrphans, cleanOrphans }
 import { getStats } from '../controllers/statsController';
 import { getPluginSettings, updatePluginSettings } from '../controllers/pluginSettingsController';
 import { listOllamaModels, pullOllamaModel, cancelPullOllamaModel, deleteOllamaModel, updateOllamaSettings } from '../controllers/aiController';
-import { upload } from '../config/upload';
+import { upload, brandingUpload } from '../config/upload';
 
 const router = Router();
 router.use(authenticate, requireAdmin);
@@ -252,7 +252,7 @@ router.put('/settings', updateSettings);
  *             schema:
  *               $ref: '#/components/schemas/SiteSettings'
  */
-router.post('/settings/logo', upload.single('logo'), uploadLogo);
+router.post('/settings/logo', brandingUpload.single('logo'), uploadLogo);
 router.delete('/settings/logo', deleteLogo);
 
 /**
@@ -291,7 +291,7 @@ router.delete('/settings/logo', deleteLogo);
  *       200:
  *         description: Favicon supprime
  */
-router.post('/settings/favicon', upload.single('favicon'), uploadFavicon);
+router.post('/settings/favicon', brandingUpload.single('favicon'), uploadFavicon);
 router.delete('/settings/favicon', deleteFavicon);
 
 /**
@@ -330,7 +330,7 @@ router.delete('/settings/favicon', deleteFavicon);
  *       200:
  *         description: Image supprimee
  */
-router.post('/settings/login-background', upload.single('loginBackground'), uploadLoginBackground);
+router.post('/settings/login-background', brandingUpload.single('loginBackground'), uploadLoginBackground);
 router.delete('/settings/login-background', deleteLoginBackground);
 
 /**
