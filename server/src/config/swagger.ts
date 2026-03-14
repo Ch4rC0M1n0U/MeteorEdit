@@ -94,7 +94,6 @@ const options: swaggerJsdoc.Options = {
             investigator: { $ref: '#/components/schemas/Investigator' },
             owner: { type: 'string' },
             collaborators: { type: 'array', items: { type: 'string' } },
-            isEncrypted: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },

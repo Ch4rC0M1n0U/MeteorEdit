@@ -7,9 +7,12 @@ import {
   getTrash, restoreNode, purgeNode, emptyTrash, viewNode,
 } from '../controllers/nodeController';
 import { getComments, createComment, deleteComment, getCommentCount } from '../controllers/commentController';
+import { serveFile } from '../controllers/fileController';
 
 const router = Router();
 router.use(authenticate);
+
+router.get('/files/:filename', serveFile);
 
 /**
  * @swagger

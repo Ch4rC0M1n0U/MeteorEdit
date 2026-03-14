@@ -83,7 +83,6 @@ export interface IDossier extends Document {
   owner: Types.ObjectId;
   collaborators: Types.ObjectId[];
   encryptionKeys: { userId: Types.ObjectId; encryptedKey: string }[];
-  isEncrypted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -103,6 +102,8 @@ export interface IDossierNode extends Document {
   fileName: string | null;
   fileSize: number | null;
   fileHash: string | null;
+  originalContentType: string | null;
+  originalFileSize: number | null;
   hashVerifiedAt: Date | null;
   lastVerificationStatus: 'valid' | 'tampered' | 'missing' | null;
   deletedAt: Date | null;

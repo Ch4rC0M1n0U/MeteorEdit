@@ -60,7 +60,7 @@ export async function getUserPublicKey(req: AuthRequest, res: Response): Promise
 export async function storeDossierKey(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { dossierId } = req.params;
-    const { encryptedKeys, isEncrypted } = req.body;
+    const { encryptedKeys } = req.body;
 
     const dossier = await Dossier.findById(dossierId);
     if (!dossier) {
@@ -77,9 +77,6 @@ export async function storeDossierKey(req: AuthRequest, res: Response): Promise<
     if (encryptedKeys !== undefined) {
       dossier.encryptionKeys = encryptedKeys;
     }
-    if (isEncrypted !== undefined) {
-      dossier.isEncrypted = isEncrypted;
-    }
     await dossier.save();
 
     // Re-fetch with populated fields
@@ -93,14 +90,14 @@ export async function storeDossierKey(req: AuthRequest, res: Response): Promise<
 export async function getDossierKeys(req: AuthRequest, res: Response): Promise<void> {
   try {
     const { dossierId } = req.params;
-    const dossier = await Dossier.findById(dossierId).select('encryptionKeys isEncrypted owner');
+    const dossier = await Dossier.findById(dossierId).select('encryptionKeys owner');
     if (!dossier) {
       res.status(404).json({ message: 'Dossier non trouve' });
       return;
     }
     res.json({
       encryptionKeys: dossier.encryptionKeys || [],
-      isEncrypted: dossier.isEncrypted || false,
+      isEncrypted: true, // Encryption is now always enabled
     });
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur' });

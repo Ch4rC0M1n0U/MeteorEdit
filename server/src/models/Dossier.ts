@@ -48,7 +48,6 @@ const dossierSchema = new Schema<IDossier>(
       userId: { type: Schema.Types.ObjectId, ref: 'User' },
       encryptedKey: { type: String },
     }],
-    isEncrypted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

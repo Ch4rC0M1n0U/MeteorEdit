@@ -62,7 +62,6 @@ export async function importJSON(req: AuthRequest, res: Response): Promise<void>
       investigator: dossierData.investigator || {},
       owner: userId,
       collaborators: [],
-      isEncrypted: false, // Don't import encryption state
     });
 
     // Map old node IDs to new IDs

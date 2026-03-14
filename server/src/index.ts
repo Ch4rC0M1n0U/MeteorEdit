@@ -53,7 +53,7 @@ app.use(cors());
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 
-app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads')));
+app.use('/uploads/branding', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads', 'branding')));
 
 // Swagger API documentation (public, no auth required)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
