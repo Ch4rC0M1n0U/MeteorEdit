@@ -8,6 +8,7 @@ import {
   purgeMissingEvidence,
   getDossierEvidence,
   rehashNodeEvidence,
+  clientVerifyIntegrity,
 } from '../controllers/evidenceController';
 
 const router = Router();
@@ -118,6 +119,55 @@ router.post('/nodes/:nodeId/evidence/verify-all', verifyAllNodeEvidence);
  *         description: Node ou records non trouves
  */
 router.post('/nodes/:nodeId/evidence/rehash', rehashNodeEvidence);
+
+/**
+ * @swagger
+ * /api/nodes/{nodeId}/evidence/client-verify:
+ *   post:
+ *     tags: [Evidence]
+ *     summary: Verification d'integrite cote client (fichiers chiffres)
+ *     description: Le client dechiffre le fichier, calcule le hash SHA-256 et l'envoie pour comparaison avec le hash original.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: nodeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - computedHash
+ *             properties:
+ *               computedHash:
+ *                 type: string
+ *                 description: SHA-256 hex hash computed client-side on decrypted file
+ *     responses:
+ *       200:
+ *         description: Resultat de la verification
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [valid, tampered, enriched]
+ *                 originalHash:
+ *                   type: string
+ *                 computedHash:
+ *                   type: string
+ *       400:
+ *         description: computedHash manquant
+ *       404:
+ *         description: Node ou record non trouve
+ */
+router.post('/nodes/:nodeId/evidence/client-verify', clientVerifyIntegrity);
 
 /**
  * @swagger

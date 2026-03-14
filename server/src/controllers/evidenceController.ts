@@ -321,6 +321,64 @@ export async function verifyAllNodeEvidence(req: AuthRequest, res: Response) {
   }
 }
 
+// POST /api/nodes/:nodeId/evidence/client-verify
+export async function clientVerifyIntegrity(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const { nodeId } = req.params;
+    const { computedHash } = req.body;
+
+    if (!computedHash) {
+      res.status(400).json({ error: 'computedHash required' });
+      return;
+    }
+
+    const node = await DossierNode.findById(nodeId);
+    if (!node) { res.status(404).json({ error: 'Node not found' }); return; }
+    if (!(await checkAccess(req, node.dossierId.toString()))) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    const evidence = await EvidenceRecord.findOne({ nodeId }).sort({ capturedAt: -1 });
+    if (!evidence) {
+      res.status(404).json({ error: 'No evidence record found' });
+      return;
+    }
+
+    // Compare client-computed hash with stored original
+    let status: 'valid' | 'tampered' | 'enriched';
+    if (computedHash === evidence.originalHash) {
+      status = 'valid';
+    } else if (computedHash === evidence.fileHash && evidence.fileHash !== evidence.originalHash) {
+      status = 'enriched';
+    } else {
+      status = 'tampered';
+    }
+
+    evidence.verifications.push({
+      verifiedAt: new Date(),
+      verifiedBy: userId as any,
+      status,
+      computedHash,
+    });
+    evidence.lastVerifiedAt = new Date();
+    evidence.lastVerificationStatus = status;
+    await evidence.save();
+
+    node.set('hashVerifiedAt', new Date());
+    node.set('lastVerificationStatus', status);
+    await node.save();
+
+    await logActivity(userId, 'evidence.client_verified', 'node', node._id.toString(), { status, nodeTitle: node.title }, getIp(req));
+
+    res.json({ status, originalHash: evidence.originalHash, computedHash });
+  } catch (err) {
+    console.error('clientVerifyIntegrity error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
 // POST /api/nodes/:nodeId/evidence/rehash
 export async function rehashNodeEvidence(req: AuthRequest, res: Response) {
   try {
