@@ -2,7 +2,7 @@
   <node-view-wrapper as="span" class="resizable-image-wrapper" :class="{ selected: selected }">
     <div class="ri-container" :style="{ width: imgWidth + 'px' }">
       <img
-        :src="node.attrs.src"
+        :src="decryptedSrc || node.attrs.src"
         :alt="node.attrs.alt || ''"
         :title="node.attrs.title || ''"
         :width="imgWidth"
@@ -58,12 +58,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3';
 import ImageAnnotator from './ImageAnnotator.vue';
 import api, { SERVER_URL } from '../../services/api';
+import { useDecryptedFile } from '../../composables/useDecryptedFile';
+import { useDossierStore } from '../../stores/dossier';
 
 const props = defineProps(nodeViewProps);
+const { getDecryptedUrl } = useDecryptedFile();
+const dossierStore = useDossierStore();
+const decryptedSrc = ref('');
+
+// Watch the image src and decrypt when needed
+watch(() => props.node?.attrs?.src, async (src) => {
+  if (!src) return;
+  if (src.includes('/uploads/') && dossierStore.currentDossier) {
+    try {
+      decryptedSrc.value = await getDecryptedUrl(
+        dossierStore.currentDossier._id,
+        src,
+        'image/png'
+      );
+    } catch {
+      decryptedSrc.value = src; // Fallback
+    }
+  } else {
+    decryptedSrc.value = src;
+  }
+}, { immediate: true });
 
 const imgWidth = ref<number>(0);
 const selected = ref(false);
@@ -77,12 +100,13 @@ let startWidth = 0;
 onMounted(() => {
   imgWidth.value = props.node.attrs.width || 0;
   if (!imgWidth.value) {
-    // Load natural width
+    // Load natural width — use decrypted URL when available
     const img = new window.Image();
     img.onload = () => {
       imgWidth.value = Math.min(img.naturalWidth, 700);
     };
-    img.src = props.node.attrs.src;
+    const srcToUse = decryptedSrc.value || props.node.attrs.src;
+    img.src = srcToUse;
   }
   document.addEventListener('click', handleOutsideClick);
   document.addEventListener('keydown', handleKeydown);
@@ -114,7 +138,7 @@ function setSize(w: number | null) {
       imgWidth.value = Math.min(img.naturalWidth, 700);
       updateAttrs();
     };
-    img.src = props.node.attrs.src;
+    img.src = decryptedSrc.value || props.node.attrs.src;
     return;
   }
   imgWidth.value = w;
@@ -150,7 +174,8 @@ function stopResize() {
 
 async function copyImage() {
   try {
-    const response = await fetch(props.node.attrs.src);
+    const imgSrc = decryptedSrc.value || props.node.attrs.src;
+    const response = await fetch(imgSrc);
     const blob = await response.blob();
     await navigator.clipboard.write([
       new ClipboardItem({ [blob.type]: blob }),
@@ -181,9 +206,13 @@ function deleteNode() {
 }
 
 function openAnnotator() {
-  // Force a fresh image URL to bypass browser cache
-  const base = (props.node.attrs.src as string).split('?')[0];
-  annotatorImageSrc.value = `${base}?t=${Date.now()}`;
+  // Use decrypted URL (Object URL) if available, otherwise fall back to raw src
+  if (decryptedSrc.value && decryptedSrc.value.startsWith('blob:')) {
+    annotatorImageSrc.value = decryptedSrc.value;
+  } else {
+    const base = (props.node.attrs.src as string).split('?')[0];
+    annotatorImageSrc.value = `${base}?t=${Date.now()}`;
+  }
   annotatorOpen.value = true;
 }
 
@@ -192,9 +221,13 @@ async function onAnnotationSave(annotations: any[]) {
   try {
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
-    // Use a fresh cache-bust URL to ensure we load the latest version from server
-    const baseSrc = (props.node.attrs.src as string).split('?')[0];
-    img.src = `${baseSrc}?t=${Date.now()}`;
+    // Use decrypted URL (Object URL) if available, otherwise use cache-bust raw src
+    if (decryptedSrc.value && decryptedSrc.value.startsWith('blob:')) {
+      img.src = decryptedSrc.value;
+    } else {
+      const baseSrc = (props.node.attrs.src as string).split('?')[0];
+      img.src = `${baseSrc}?t=${Date.now()}`;
+    }
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
       img.onerror = reject;

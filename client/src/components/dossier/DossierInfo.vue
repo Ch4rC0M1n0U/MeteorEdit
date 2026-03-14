@@ -149,7 +149,7 @@
           <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
             <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
             <div class="di-doc-info">
-              <a :href="`${SERVER_URL}/${doc.filePath}`" target="_blank" class="di-doc-name">{{ doc.fileName }}</a>
+              <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName }}</a>
               <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
             </div>
             <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
@@ -210,7 +210,7 @@
                 <img
                   v-for="(photo, pi) in entity.photos.slice(0, 2)"
                   :key="pi"
-                  :src="`${SERVER_URL}/${photo}`"
+                  :src="getEntityPhotoUrl(photo)"
                   class="di-el-thumb"
                 />
                 <span v-if="entity.photos.length > 2" class="di-el-thumb-more mono">+{{ entity.photos.length - 2 }}</span>
@@ -418,7 +418,7 @@
             </div>
             <div v-if="newEntity.photos.length" class="di-entity-photos-grid">
               <div v-for="(photo, pi) in newEntity.photos" :key="pi" class="di-entity-photo-item">
-                <img :src="`${SERVER_URL}/${photo}`" class="di-entity-photo-img" />
+                <img :src="getEntityPhotoUrl(photo)" class="di-entity-photo-img" />
                 <button
                   class="di-entity-photo-delete"
                   @click="deleteEntityPhoto(editingEntityIndex!, photo)"
@@ -452,6 +452,7 @@ import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
+import { useDecryptedFile } from '../../composables/useDecryptedFile';
 
 const { t } = useI18n();
 const { confirm: customConfirm } = useConfirm();
@@ -459,6 +460,7 @@ const dossierStore = useDossierStore();
 const authStore = useAuthStore();
 const encryptionStore = useEncryptionStore();
 const { uploadEncryptedFile } = useEncryptedUpload();
+const { getDecryptedUrl } = useDecryptedFile();
 
 const editing = ref(false);
 const entityDialog = ref(false);
@@ -468,10 +470,24 @@ const showIconPicker = ref(false);
 const logoInput = ref<HTMLInputElement | null>(null);
 const dossierIcons = DOSSIER_ICONS;
 
-const dossierLogoUrl = computed(() => {
+const dossierLogoUrl = ref<string | null>(null);
+
+watch(() => dossierStore.currentDossier?.logoPath, async (logoPath) => {
+  if (!logoPath) {
+    dossierLogoUrl.value = null;
+    return;
+  }
   const d = dossierStore.currentDossier;
-  return d?.logoPath ? `${SERVER_URL}/${d.logoPath}` : null;
-});
+  if (d && logoPath.includes('uploads/')) {
+    try {
+      dossierLogoUrl.value = await getDecryptedUrl(d._id, logoPath, 'image/png');
+    } catch {
+      dossierLogoUrl.value = `${SERVER_URL}/${logoPath}`;
+    }
+  } else {
+    dossierLogoUrl.value = `${SERVER_URL}/${logoPath}`;
+  }
+}, { immediate: true });
 
 const statusOptions = computed(() => [
   { title: t('dossier.statusOpen'), value: 'open' },
@@ -527,6 +543,50 @@ const form = reactive({
 const newEntity = reactive({ name: '', type: '', description: '', photos: [] as string[] });
 const entityPhotoInput = ref<HTMLInputElement | null>(null);
 const uploadingEntityPhoto = ref(false);
+
+// Decrypted entity photo URLs cache
+const decryptedPhotoUrls = ref<Record<string, string>>({});
+
+function getEntityPhotoUrl(photo: string): string {
+  const cached = decryptedPhotoUrls.value[photo];
+  if (cached) return cached;
+  // Trigger async decryption
+  decryptEntityPhoto(photo);
+  return `${SERVER_URL}/${photo}`;
+}
+
+async function decryptEntityPhoto(photo: string) {
+  if (decryptedPhotoUrls.value[photo]) return;
+  const d = dossierStore.currentDossier;
+  if (!d) return;
+  try {
+    const url = await getDecryptedUrl(d._id, photo, 'image/png');
+    decryptedPhotoUrls.value[photo] = url;
+  } catch {
+    // Fallback: use direct URL
+  }
+}
+
+function getDocDownloadUrl(filePath: string): string {
+  return `${SERVER_URL}/${filePath}`;
+}
+
+async function downloadDecryptedDoc(doc: { fileName: string; filePath: string }) {
+  const d = dossierStore.currentDossier;
+  if (!d) return;
+  try {
+    const url = await getDecryptedUrl(d._id, doc.filePath, 'application/octet-stream');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = doc.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch {
+    // Fallback: open direct URL
+    window.open(`${SERVER_URL}/${doc.filePath}`, '_blank');
+  }
+}
 
 const statusLabel = computed(() => {
   switch (form.status) {
