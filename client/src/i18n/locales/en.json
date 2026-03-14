@@ -394,7 +394,12 @@
     "confidential": "CONFIDENTIAL",
     "deleteHandwrittenSignature": "Delete handwritten signature",
     "signatureProtected": "Signature protected against screen capture",
-    "signatureCity": "City"
+    "signatureCity": "City",
+    "encryption": {
+      "title": "Data Security",
+      "status": "Your files are end-to-end encrypted",
+      "details": "Only you and authorized members of your dossiers can read them"
+    }
   },
   "preferences": {
     "title": "Preferences",
@@ -739,7 +744,16 @@
     "varSignature": "User signature (from profile)",
     "recMistralDesc": "Good performance/quality balance. ~4 GB RAM. Excellent in French.",
     "recPhi3Desc": "Very lightweight (~2.3 GB RAM). Faster but weaker in French.",
-    "recGemma2Desc": "Ultra-lightweight (~1.5 GB RAM). For very limited VPS."
+    "recGemma2Desc": "Ultra-lightweight (~1.5 GB RAM). For very limited VPS.",
+    "encryption": {
+      "title": "Encryption",
+      "allEncrypted": "All files are encrypted and unreadable on the server",
+      "allEncryptedDetail": "End-to-end encryption is active. No investigation data is readable server-side.",
+      "algorithm": "Algorithm",
+      "keyDerivation": "Key Derivation",
+      "zeroKnowledge": "Zero-Knowledge",
+      "zeroKnowledgeDesc": "The server can never access plaintext data"
+    }
   },
   "search": {
     "placeholder": "Search a command, case, or page...",

@@ -31,6 +31,7 @@
       <ProfileData v-else-if="activeSection === 'data'" />
       <ProfileShortcuts v-else-if="activeSection === 'shortcuts'" />
       <ProfileActivity v-else-if="activeSection === 'activity'" />
+      <ProfileEncryption v-else-if="activeSection === 'encryption'" />
     </main>
   </div>
 </template>
@@ -48,6 +49,7 @@ import NotificationPreferences from '../components/profile/NotificationPreferenc
 import ProfileData from '../components/profile/ProfileData.vue';
 import ProfileShortcuts from '../components/profile/ProfileShortcuts.vue';
 import ProfileActivity from '../components/profile/ProfileActivity.vue';
+import ProfileEncryption from '../components/profile/ProfileEncryption.vue';
 
 const route = useRoute();
 const { t } = useI18n();
@@ -68,6 +70,7 @@ const navItems = computed<NavItem[]>(() => [
   { type: 'group', label: t('profile.security') },
   { id: 'security', label: t('profile.passwordAnd2FA'), icon: 'mdi-shield-lock-outline' },
   { id: 'security-advanced', label: t('profile.sessionsAndScore'), icon: 'mdi-shield-check-outline' },
+  { id: 'encryption', label: t('profile.encryption.title'), icon: 'mdi-shield-key-outline' },
 
   { type: 'group', label: t('profile.settings') },
   { id: 'preferences', label: t('profile.preferences'), icon: 'mdi-cog-outline' },

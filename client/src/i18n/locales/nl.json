@@ -394,7 +394,12 @@
     "confidential": "VERTROUWELIJK",
     "deleteHandwrittenSignature": "Handgeschreven handtekening verwijderen",
     "signatureProtected": "Handtekening beschermd tegen schermopname",
-    "signatureCity": "Stad"
+    "signatureCity": "Stad",
+    "encryption": {
+      "title": "Gegevensbeveiliging",
+      "status": "Uw bestanden zijn end-to-end versleuteld",
+      "details": "Alleen u en geautoriseerde leden van uw dossiers kunnen ze lezen"
+    }
   },
   "preferences": {
     "title": "Voorkeuren",
@@ -739,7 +744,16 @@
     "varSignature": "Gebruikershandtekening (vanuit profiel)",
     "recMistralDesc": "Goede balans prestatie/kwaliteit. ~4 GB RAM. Uitstekend in het Frans.",
     "recPhi3Desc": "Zeer licht (~2.3 GB RAM). Sneller maar minder goed in het Frans.",
-    "recGemma2Desc": "Ultra-licht (~1.5 GB RAM). Voor zeer beperkte VPS."
+    "recGemma2Desc": "Ultra-licht (~1.5 GB RAM). Voor zeer beperkte VPS.",
+    "encryption": {
+      "title": "Encryptie",
+      "allEncrypted": "Alle bestanden zijn versleuteld en onleesbaar op de server",
+      "allEncryptedDetail": "End-to-end encryptie is actief. Geen onderzoeksdata is leesbaar aan serverzijde.",
+      "algorithm": "Algoritme",
+      "keyDerivation": "Sleutelafleiding",
+      "zeroKnowledge": "Zero-Knowledge",
+      "zeroKnowledgeDesc": "De server heeft nooit toegang tot onversleutelde gegevens"
+    }
   },
   "search": {
     "placeholder": "Zoek een opdracht, dossier of pagina...",

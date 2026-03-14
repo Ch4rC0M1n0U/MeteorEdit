@@ -394,7 +394,12 @@
     "confidential": "CONFIDENTIEL",
     "deleteHandwrittenSignature": "Supprimer la signature manuscrite",
     "signatureProtected": "Signature protégée contre la capture d'écran",
-    "signatureCity": "Ville"
+    "signatureCity": "Ville",
+    "encryption": {
+      "title": "Sécurité des données",
+      "status": "Vos fichiers sont chiffrés de bout en bout",
+      "details": "Seul vous et les membres autorisés de vos dossiers peuvent les lire"
+    }
   },
   "preferences": {
     "title": "Préférences",
@@ -739,7 +744,16 @@
     "varSignature": "Signature de l'utilisateur (depuis le profil)",
     "recMistralDesc": "Bon équilibre performance/qualité. ~4 Go RAM. Excellent en français.",
     "recPhi3Desc": "Très léger (~2.3 Go RAM). Plus rapide mais moins bon en français.",
-    "recGemma2Desc": "Ultra-léger (~1.5 Go RAM). Pour les VPS très limités."
+    "recGemma2Desc": "Ultra-léger (~1.5 Go RAM). Pour les VPS très limités.",
+    "encryption": {
+      "title": "Chiffrement",
+      "allEncrypted": "Tous les fichiers sont chiffrés et illisibles sur le serveur",
+      "allEncryptedDetail": "Le chiffrement de bout en bout est actif. Aucune donnée d'investigation n'est lisible côté serveur.",
+      "algorithm": "Algorithme",
+      "keyDerivation": "Dérivation de clé",
+      "zeroKnowledge": "Zero-Knowledge",
+      "zeroKnowledgeDesc": "Le serveur ne peut jamais accéder aux données en clair"
+    }
   },
   "search": {
     "placeholder": "Rechercher une commande, un dossier, une page...",

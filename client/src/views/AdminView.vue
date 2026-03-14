@@ -39,6 +39,7 @@
       <AdminBackup v-else-if="activeSection === 'backup'" />
       <AdminAI v-else-if="activeSection === 'ai'" />
       <AdminPlugins v-else-if="activeSection === 'plugins'" />
+      <AdminEncryptionStatus v-else-if="activeSection === 'encryption'" />
     </main>
   </div>
 </template>
@@ -59,6 +60,7 @@ import AdminBackup from '../components/admin/AdminBackup.vue';
 import AdminAudit from '../components/admin/AdminAudit.vue';
 import AdminPlugins from '../components/admin/AdminPlugins.vue';
 import AdminAI from '../components/admin/AdminAI.vue';
+import AdminEncryptionStatus from '../components/admin/AdminEncryptionStatus.vue';
 
 const { t } = useI18n();
 
@@ -72,6 +74,7 @@ const navItems = computed(() => [
   { type: 'group' as const, label: t('admin.configuration') },
   { type: 'item' as const, id: 'branding', label: t('admin.appearance'), icon: 'mdi-palette-outline' },
   { type: 'item' as const, id: 'security', label: t('admin.security'), icon: 'mdi-shield-lock-outline' },
+  { type: 'item' as const, id: 'encryption', label: t('admin.encryption.title'), icon: 'mdi-shield-key-outline' },
   { type: 'item' as const, id: 'storage', label: t('admin.storage'), icon: 'mdi-harddisk' },
   { type: 'item' as const, id: 'defaults', label: t('admin.defaults'), icon: 'mdi-cog-outline' },
   { type: 'item' as const, id: 'network', label: t('admin.networkAnnouncements'), icon: 'mdi-lan' },
