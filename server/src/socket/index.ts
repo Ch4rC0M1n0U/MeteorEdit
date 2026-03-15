@@ -133,6 +133,23 @@ export function setupSocket(httpServer: HttpServer) {
       });
     });
 
+    // Dossier metadata sync (logo, title, etc.)
+    socket.on('dossier-update', (data: { dossierId: string; dossier: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('dossier-updated', {
+        dossier: data.dossier,
+        userId: user.userId,
+      });
+    });
+
+    // Media data sync (annotations, captures)
+    socket.on('media-update', (data: { dossierId: string; nodeId: string; mediaData: any }) => {
+      socket.to(`dossier:${data.dossierId}`).emit('media-updated', {
+        nodeId: data.nodeId,
+        mediaData: data.mediaData,
+        userId: user.userId,
+      });
+    });
+
     // Map marker events
     socket.on('map-marker-add', (data: { dossierId: string; nodeId: string; marker: any }) => {
       socket.to(`dossier:${data.dossierId}`).emit('map-marker-added', {

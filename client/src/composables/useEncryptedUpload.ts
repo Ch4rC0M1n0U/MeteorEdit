@@ -33,7 +33,10 @@ export function useEncryptedUpload() {
       formData.append('originalFileSize', file.size.toString());
       formData.append('plainHash', plainHash);
     } else {
-      // No encryption key available — upload plaintext
+      console.warn(`[Encryption] No dossier key for ${dossierId} — uploading file in plaintext. Is encryption unlocked?`, {
+        isUnlocked: encryptionStore.isUnlocked,
+        hasKeys: encryptionStore.hasKeys,
+      });
       formData.append(fieldName, file);
     }
 
@@ -59,6 +62,10 @@ export function useEncryptedUpload() {
       formData.append('image', encryptedFile);
       formData.append('originalContentType', file.type);
     } else {
+      console.warn(`[Encryption] No dossier key for ${dossierId} — uploading image in plaintext. Is encryption unlocked?`, {
+        isUnlocked: encryptionStore.isUnlocked,
+        hasKeys: encryptionStore.hasKeys,
+      });
       formData.append('image', file);
     }
 

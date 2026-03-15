@@ -6,7 +6,6 @@ import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { logActivity } from '../utils/activityLogger';
 import { computeFileHash } from '../utils/hashFile';
-import EvidenceRecord from '../models/EvidenceRecord';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 
@@ -461,25 +460,8 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
       content: tiptapContent,
       contentText: textContent || content.replace(/<[^>]+>/g, ' ').substring(0, 50000),
       fileUrl: screenshotPath || undefined,
-      fileHash: screenshotHash,
       order: lastNode ? lastNode.order + 1 : 0,
     });
-
-    // Create evidence record for the screenshot
-    if (screenshotHash && screenshotAbsPath) {
-      await EvidenceRecord.create({
-        nodeId: node._id,
-        dossierId,
-        capturedBy: userId,
-        capturedAt: new Date(),
-        originalHash: screenshotHash,
-        fileHash: screenshotHash,
-        filePath: screenshotAbsPath,
-        fileSize: screenshotSize,
-        sourceUrl: url || null,
-        evidenceType: 'screenshot',
-      });
-    }
 
     const dossierDoc = await Dossier.findById(dossierId).select('isEmbargo').lean();
     if (!dossierDoc?.isEmbargo) {

@@ -320,7 +320,8 @@ async function uploadImageFile(file: File): Promise<string | null> {
     formData.append('image', file);
     const { data } = await api.post('/upload/image', formData);
     return `${SERVER_URL}${data.url}`;
-  } catch {
+  } catch (err) {
+    console.error('Image upload failed:', err);
     return null;
   }
 }
@@ -390,7 +391,7 @@ const editor = useEditor({
             if (url && editor.value) {
               editor.value.chain().focus().setImage({ src: url }).run();
             }
-          });
+          }).catch(err => console.error('Paste image failed:', err));
           return true;
         }
       }
@@ -411,7 +412,8 @@ const editor = useEditor({
               if (url && editor.value) {
                 editor.value.chain().focus().setImage({ src: url }).run();
               }
-            });
+            })
+            .catch(err => console.error('Paste base64 image failed:', err));
           return true;
         }
       }
@@ -430,7 +432,7 @@ const editor = useEditor({
             if (url && editor.value) {
               editor.value.chain().focus().setImage({ src: url }).run();
             }
-          });
+          }).catch(err => console.error('Drop image failed:', err));
           return true;
         }
       }

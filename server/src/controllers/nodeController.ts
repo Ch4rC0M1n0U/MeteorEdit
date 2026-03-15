@@ -6,18 +6,15 @@ import { AuthRequest } from '../middleware/auth';
 import { extractTextFromTipTap } from '../utils/extractText';
 import { logActivity } from '../utils/activityLogger';
 import { createNotification } from '../utils/notifier';
-import { computeFileHash } from '../utils/hashFile';
-import EvidenceRecord from '../models/EvidenceRecord';
 import path from 'path';
 import fs from 'fs';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 
 /**
- * Delete physical files and evidence records associated with a node.
+ * Delete physical files associated with a node.
  */
 async function cleanupNodeFiles(node: any): Promise<void> {
-  // Delete physical file if exists (fileUrl is relative like "uploads/screenshots/clip-xxx.png")
   if (node.fileUrl) {
     const filePath = path.resolve(UPLOAD_DIR, '..', node.fileUrl);
     try {
@@ -26,8 +23,6 @@ async function cleanupNodeFiles(node: any): Promise<void> {
       console.warn(`Failed to delete file ${filePath}:`, err);
     }
   }
-  // Delete associated evidence records
-  await EvidenceRecord.deleteMany({ nodeId: node._id });
 }
 
 async function checkDossierAccess(dossierId: string, userId: string): Promise<boolean> {
@@ -50,7 +45,7 @@ export async function getNodes(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
     const nodes = await DossierNode.find({ dossierId, deletedAt: null })
-      .select('_id dossierId parentId type title order fileUrl fileName fileSize fileHash lastVerificationStatus deletedAt createdAt updatedAt')
+      .select('_id dossierId parentId type title order fileUrl fileName fileSize deletedAt createdAt updatedAt')
       .sort({ order: 1 })
       .lean();
     res.json(nodes);
@@ -201,7 +196,7 @@ export async function getTrash(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
     const nodes = await DossierNode.find({ dossierId, deletedAt: { $ne: null } })
-      .select('_id dossierId parentId type title order fileUrl fileName fileSize fileHash lastVerificationStatus deletedAt createdAt updatedAt')
+      .select('_id dossierId parentId type title order fileUrl fileName fileSize deletedAt createdAt updatedAt')
       .sort({ deletedAt: -1 })
       .lean();
     res.json(nodes);
@@ -405,34 +400,16 @@ export async function uploadFile(req: AuthRequest, res: Response): Promise<void>
     const uploadDir = path.resolve(process.cwd(), process.env.UPLOAD_DIR || './uploads');
     const absFilePath = path.join(uploadDir, req.file.filename);
 
-    // If client sent a plainHash (encrypted upload), use it instead of computing server-side hash
-    const plainHash = req.body.plainHash;
-    const fileHash = plainHash || await computeFileHash(absFilePath);
     const originalContentType = req.body.originalContentType;
     const originalFileSize = req.body.originalFileSize ? parseInt(req.body.originalFileSize, 10) : undefined;
 
     node.fileUrl = `/uploads/${req.file.filename}`;
     node.fileName = req.file.originalname;
     node.fileSize = originalFileSize || req.file.size;
-    node.fileHash = fileHash;
     if (originalContentType) {
       (node as any).originalContentType = originalContentType;
     }
     await node.save();
-
-    // Create evidence record
-    await EvidenceRecord.create({
-      nodeId: node._id,
-      dossierId: node.dossierId,
-      capturedBy: req.user!.userId,
-      capturedAt: new Date(),
-      originalHash: fileHash,
-      fileHash,
-      filePath: absFilePath,
-      fileSize: originalFileSize || req.file.size,
-      sourceUrl: null,
-      evidenceType: 'file',
-    });
 
     res.json(node);
   } catch (error) {

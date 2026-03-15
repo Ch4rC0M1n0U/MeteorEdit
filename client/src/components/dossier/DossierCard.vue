@@ -32,19 +32,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Dossier } from '../../types';
 import { SERVER_URL } from '../../services/api';
+import { useDecryptedFile } from '../../composables/useDecryptedFile';
 
 const { t, locale } = useI18n();
+const { getDecryptedUrl } = useDecryptedFile();
 
 const props = defineProps<{ dossier: Dossier; isFav?: boolean }>();
 defineEmits<{ open: [id: string]; delete: [id: string]; 'toggle-favorite': [id: string] }>();
 
-const logoUrl = computed(() => {
-  return props.dossier.logoPath ? `${SERVER_URL}/${props.dossier.logoPath}` : null;
-});
+const decryptedLogo = ref<string | null>(null);
+
+watch(() => props.dossier.logoPath, async (logoPath) => {
+  decryptedLogo.value = null;
+  if (!logoPath) return;
+  try {
+    decryptedLogo.value = await getDecryptedUrl(props.dossier._id, logoPath, 'image/png');
+  } catch {
+    decryptedLogo.value = `${SERVER_URL}/${logoPath}`;
+  }
+}, { immediate: true });
+
+const logoUrl = computed(() => decryptedLogo.value);
 
 const statusDot = computed(() => {
   switch (props.dossier.status) {

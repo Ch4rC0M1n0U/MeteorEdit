@@ -5,7 +5,7 @@ import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, u
 import { exportBackup, importBackup, getStorageInfo, scanOrphans, cleanOrphans } from '../controllers/backupController';
 import { getStats } from '../controllers/statsController';
 import { getPluginSettings, updatePluginSettings } from '../controllers/pluginSettingsController';
-import { scanEncryptionStatus, migrateBranding, listUnencryptedFiles, listUnencryptedContent, replaceWithEncrypted } from '../controllers/encryptionController';
+import { scanEncryptionStatus, migrateBranding, listUnencryptedFiles, listUnencryptedContent, replaceWithEncrypted, listUnencryptedDossierFiles, replaceDossierFile } from '../controllers/encryptionController';
 import { listOllamaModels, pullOllamaModel, cancelPullOllamaModel, deleteOllamaModel, updateOllamaSettings } from '../controllers/aiController';
 import { upload, brandingUpload } from '../config/upload';
 
@@ -743,6 +743,8 @@ router.get('/encryption/scan', scanEncryptionStatus);
 router.post('/encryption/migrate-branding', migrateBranding);
 router.get('/encryption/unencrypted-files', listUnencryptedFiles);
 router.get('/encryption/unencrypted-content', listUnencryptedContent);
+router.get('/encryption/unencrypted-dossier-files', listUnencryptedDossierFiles);
 router.post('/encryption/replace/:nodeId', upload.single('file'), replaceWithEncrypted);
+router.post('/encryption/replace-dossier/:dossierId', upload.single('file'), replaceDossierFile);
 
 export default router;

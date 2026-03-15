@@ -392,10 +392,7 @@ const categories: Category[] = [
 <p>Cliquez sur le bouton <strong>Éditer les métadonnées</strong> pour compléter ou modifier les informations de la source : plateforme, chaîne, date de publication, description, etc.</p>
 
 <h3>Export</h3>
-<p>Les noeuds média sont inclus dans l'export DOCX avec leurs métadonnées et annotations (format tableau ou séquentiel).</p>
-
-<h3>Intégrité</h3>
-<p>Les captures d'écran sont enregistrées comme preuves avec un <strong>EvidenceRecord</strong> et un hash <strong>SHA-256</strong>, garantissant leur intégrité.</p>`,
+<p>Les noeuds média sont inclus dans l'export DOCX avec leurs métadonnées et annotations (format tableau ou séquentiel).</p>`,
       },
     ],
   },
@@ -421,43 +418,6 @@ const categories: Category[] = [
 <p>Cliquez sur la puce de statut pour faire cycler rapidement entre les états.</p>
 <h3>Filtres</h3>
 <p>Filtrez les tâches par statut pour vous concentrer sur ce qui est pertinent. Une barre de progression indique l'avancement global.</p>`,
-      },
-    ],
-  },
-  {
-    id: 'evidence',
-    label: 'Intégrité et preuves',
-    icon: 'mdi-shield-check-outline',
-    articles: [
-      {
-        id: 'ev-integrity',
-        title: 'Vérification d\'intégrité',
-        keywords: ['intégrité', 'hash', 'sha256', 'preuve', 'vérification', 'certificat', 'evidence'],
-        content: `<h2>Vérification d'intégrité</h2>
-<p>Chaque fichier uploadé ou capture est haché en <strong>SHA-256</strong>. Ce hash permet de prouver que le fichier n'a pas été modifié.</p>
-<h3>Badge d'intégrité</h3>
-<p>Dans l'arborescence, un badge coloré indique le statut de vérification :</p>
-<ul>
-<li><strong>Vert (valide)</strong> — Le hash correspond, le fichier est intact</li>
-<li><strong>Rouge (altéré)</strong> — Le hash ne correspond plus, le fichier a été modifié</li>
-<li><strong>Gris (non vérifié)</strong> — La vérification n'a pas encore été effectuée</li>
-</ul>
-<h3>Panneau de preuve</h3>
-<p>Cliquez sur le bouclier à côté d'un noeud pour voir : le hash SHA-256, la date de capture, l'auteur, la taille du fichier et l'URL source.</p>
-<h3>Certificat PDF</h3>
-<p>Générez un certificat d'intégrité au format PDF pour archivage ou présentation en justice.</p>`,
-      },
-      {
-        id: 'ev-dossier',
-        title: 'Vue intégrité du dossier',
-        keywords: ['intégrité', 'dossier', 'liste', 'preuves', 'evidence'],
-        content: `<h2>Vue intégrité du dossier</h2>
-<p>L'onglet <strong>Intégrité</strong> dans la barre latérale affiche l'ensemble des enregistrements de preuve du dossier.</p>
-<ul>
-<li>Liste de toutes les preuves avec leur statut</li>
-<li>Cliquez sur une preuve pour naviguer vers le noeud correspondant</li>
-<li>Type de preuve : fichier, capture d'écran</li>
-</ul>`,
       },
     ],
   },

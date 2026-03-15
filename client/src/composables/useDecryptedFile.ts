@@ -10,21 +10,17 @@ export function useDecryptedFile() {
   async function getDecryptedUrl(
     dossierId: string,
     fileUrl: string,
-    contentType = 'application/octet-stream'
+    contentType = 'application/octet-stream',
+    noCache = false
   ): Promise<string> {
-    // Extract filename from fileUrl (e.g., "/uploads/abc123.ext" -> "abc123.ext"
-    // or "uploads/media/captures/abc.png" -> "media/captures/abc.png")
-    const uploadsIdx = fileUrl.indexOf('uploads/');
-    let filename: string;
-    if (uploadsIdx !== -1) {
-      filename = fileUrl.substring(uploadsIdx + 'uploads/'.length);
-    } else {
-      filename = fileUrl.split('/').pop() || '';
-    }
+    // Extract bare filename (last segment) from fileUrl
+    // Server searches subdirectories (uploads/, uploads/media/, uploads/media/captures/) automatically
+    const filename = fileUrl.split('/').pop() || '';
     if (!filename) throw new Error('Invalid file URL');
 
     // Fetch encrypted blob via authenticated API route
-    const response = await api.get(`/files/${filename}`, { responseType: 'arraybuffer' });
+    const cacheBust = noCache ? `?t=${Date.now()}` : '';
+    const response = await api.get(`/files/${filename}${cacheBust}`, { responseType: 'arraybuffer' });
 
     // Decrypt
     const dossierKey = await encryptionStore.getDossierKey(dossierId);

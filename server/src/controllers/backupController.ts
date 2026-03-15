@@ -9,7 +9,6 @@ import DossierNode from '../models/DossierNode';
 import SiteSettings from '../models/SiteSettings';
 import PluginSettings from '../models/PluginSettings';
 import ActivityLog from '../models/ActivityLog';
-import EvidenceRecord from '../models/EvidenceRecord';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', 'uploads');
 
@@ -192,22 +191,37 @@ async function getReferencedFiles(): Promise<Set<string>> {
     // Normalize: strip leading slash, strip query params, resolve to absolute
     const clean = p.replace(/^\//, '').split('?')[0];
     if (clean.startsWith('uploads/')) {
-      referenced.add(path.resolve(UPLOAD_DIR, '..', clean));
+      const resolved = path.resolve(UPLOAD_DIR, '..', clean);
+      referenced.add(resolved);
+      // Also mark the .enc variant as referenced (encrypted files)
+      referenced.add(resolved + '.enc');
     }
   };
 
-  // 1. DossierNode: fileUrl + content images
-  const nodes = await DossierNode.find({}, 'fileUrl content').lean();
+  // 1. DossierNode: fileUrl + content images + mediaData captures
+  const nodes = await DossierNode.find({}, 'fileUrl content mediaData').lean();
   for (const node of nodes) {
     addPath(node.fileUrl);
-    // Extract image URLs from TipTap JSON content
+
+    // Extract image URLs from TipTap JSON content (only if content is a string/object, not encrypted binary)
     if (node.content) {
-      const contentStr = typeof node.content === 'string' ? node.content : JSON.stringify(node.content);
-      const imgMatches = contentStr.match(/uploads\/[^"?\s]+/g);
-      if (imgMatches) {
-        for (const m of imgMatches) {
-          referenced.add(path.resolve(UPLOAD_DIR, '..', m));
+      try {
+        const contentStr = typeof node.content === 'string' ? node.content : JSON.stringify(node.content);
+        const imgMatches = contentStr.match(/uploads\/[^"?\s]+/g);
+        if (imgMatches) {
+          for (const m of imgMatches) {
+            addPath(m);
+          }
         }
+      } catch {
+        // Content might be encrypted binary — skip image extraction
+      }
+    }
+
+    // Extract screenshotUrl from mediaData annotations
+    if (node.mediaData && (node.mediaData as any).annotations) {
+      for (const ann of (node.mediaData as any).annotations) {
+        if (ann.screenshotUrl) addPath(ann.screenshotUrl);
       }
     }
   }
@@ -240,13 +254,11 @@ async function getReferencedFiles(): Promise<Set<string>> {
     addPath(s.loginBackgroundPath);
   }
 
-  // 4. EvidenceRecord: filePath (absolute paths)
-  const evidences = await EvidenceRecord.find({}, 'filePath').lean();
-  for (const e of evidences) {
-    if (e.filePath) {
-      // Evidence stores absolute paths
-      referenced.add(path.resolve(e.filePath));
-    }
+  // 4. User: avatarPath, signatureImagePath
+  const users = await User.find({}, 'avatarPath signatureImagePath').lean();
+  for (const u of users) {
+    addPath((u as any).avatarPath);
+    addPath((u as any).signatureImagePath);
   }
 
   return referenced;
@@ -277,8 +289,14 @@ export async function scanOrphans(_req: AuthRequest, res: Response): Promise<voi
     const orphans: { path: string; relativePath: string; size: number }[] = [];
     let totalOrphanSize = 0;
 
+    // Media files (uploads/media/) are referenced inside encrypted mediaData
+    // that the server cannot read — never treat them as orphans.
+    const mediaDir = path.resolve(UPLOAD_DIR, 'media');
+
     for (const filePath of allFiles) {
       const resolved = path.resolve(filePath);
+      // Skip media directory — references are in encrypted content
+      if (resolved.startsWith(mediaDir)) continue;
       if (!referenced.has(resolved)) {
         const stat = fs.statSync(filePath);
         const relativePath = path.relative(path.resolve(UPLOAD_DIR, '..'), filePath).replace(/\\/g, '/');
@@ -304,12 +322,15 @@ export async function cleanOrphans(req: AuthRequest, res: Response): Promise<voi
   try {
     const referenced = await getReferencedFiles();
     const allFiles = getAllFiles(UPLOAD_DIR);
+    const mediaDir = path.resolve(UPLOAD_DIR, 'media');
 
     let deletedCount = 0;
     let freedBytes = 0;
 
     for (const filePath of allFiles) {
       const resolved = path.resolve(filePath);
+      // Skip media directory — references are in encrypted content
+      if (resolved.startsWith(mediaDir)) continue;
       if (!referenced.has(resolved)) {
         const stat = fs.statSync(filePath);
         freedBytes += stat.size;

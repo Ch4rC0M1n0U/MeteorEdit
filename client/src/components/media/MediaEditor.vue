@@ -114,10 +114,10 @@
 
           <img
             v-if="ann.screenshotUrl"
-            :src="screenshotSrc(ann)"
+            :src="decryptedScreenshots[ann.screenshotUrl] || TRANSPARENT_PIXEL"
             class="me-ann-thumb"
             :alt="t('media.capture')"
-            @click="viewerSrc = screenshotSrc(ann)"
+            @click="openViewer(ann)"
           />
 
           <div class="me-ann-content">
@@ -216,11 +216,14 @@ import api, { SERVER_URL } from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
+import { useEncryptionStore } from '../../stores/encryption';
+import { encryptFile } from '../../utils/encryption';
 import MediaMetadataDialog from './MediaMetadataDialog.vue';
 import ImageAnnotator from '../editor/ImageAnnotator.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();
+const encryptionStore = useEncryptionStore();
 const { uploadEncryptedImage } = useEncryptedUpload();
 const { getDecryptedUrl } = useDecryptedFile();
 
@@ -243,8 +246,9 @@ const editingId = ref<string | null>(null);
 const editingComment = ref('');
 const viewerSrc = ref('');
 const annotatorOpen = ref(false);
-const cacheBust = ref(0);
 const expanded = ref(false);
+
+const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -261,23 +265,30 @@ const sourceUrl = computed(() => {
 // Decrypted source URL for uploaded media files
 const decryptedSourceUrl = ref('');
 
-watch(() => props.node.mediaData?.source, async (source) => {
-  if (!source) return;
-  if (source.type === 'upload' && source.fileUrl && dossierStore.currentDossier) {
-    try {
-      const ct = source.mediaType === 'video' ? 'video/mp4' : 'audio/mpeg';
-      decryptedSourceUrl.value = await getDecryptedUrl(
-        dossierStore.currentDossier._id,
-        source.fileUrl,
-        ct
-      );
-    } catch {
-      decryptedSourceUrl.value = `${SERVER_URL}/${source.fileUrl}`;
+// Watch only the source URL/fileUrl — NOT deep, to avoid re-triggering when annotations change
+watch(
+  () => props.node.mediaData?.source?.fileUrl || props.node.mediaData?.source?.url || '',
+  async () => {
+    const source = props.node.mediaData?.source;
+    if (!source) return;
+    if (source.type === 'upload' && source.fileUrl && dossierStore.currentDossier) {
+      try {
+        const ct = source.mediaType === 'video' ? 'video/mp4' : 'audio/mpeg';
+        decryptedSourceUrl.value = await getDecryptedUrl(
+          dossierStore.currentDossier._id,
+          source.fileUrl,
+          ct
+        );
+      } catch (err) {
+        console.error('Failed to decrypt media source:', err);
+        // Don't fallback to raw encrypted URL — it would serve unreadable bytes
+      }
+    } else if (source.url) {
+      decryptedSourceUrl.value = source.url;
     }
-  } else if (source.url) {
-    decryptedSourceUrl.value = source.url;
-  }
-}, { immediate: true, deep: true });
+  },
+  { immediate: true }
+);
 
 const youtubeId = computed(() => {
   const url = props.node.mediaData?.source.url || '';
@@ -310,7 +321,15 @@ const isNativeAudio = computed(() => {
   return md.source.mediaType === 'audio';
 });
 
-const mediaSrc = computed(() => decryptedSourceUrl.value || sourceUrl.value);
+const mediaSrc = computed(() => {
+  // For uploaded files, always wait for the decrypted blob URL — never use the raw server URL
+  // (it would serve encrypted bytes that the browser can't play)
+  const source = props.node.mediaData?.source;
+  if (source?.type === 'upload' && source.fileUrl) {
+    return decryptedSourceUrl.value || '';
+  }
+  return decryptedSourceUrl.value || sourceUrl.value;
+});
 
 const currentMetadata = computed<MediaMetadata>(() => {
   return props.node.mediaData?.metadata || { title: '' };
@@ -393,13 +412,15 @@ onMounted(async () => {
 // --- Time formatting ---
 function formatTime(seconds: number): string {
   const s = Math.floor(seconds);
+  const ms = Math.round((seconds - s) * 1000);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
+  const msStr = String(ms).padStart(3, '0');
   if (h > 0) {
-    return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${msStr}`;
   }
-  return `${m}:${String(sec).padStart(2, '0')}`;
+  return `${m}:${String(sec).padStart(2, '0')}.${msStr}`;
 }
 
 const currentTimeFormatted = computed(() => formatTime(currentTime.value));
@@ -501,12 +522,38 @@ async function captureFrame() {
         timestamp: ts,
       });
 
+      let finalScreenshotUrl = data.screenshotUrl || data.fileUrl;
+
+      // Encrypt the server-generated capture if dossier has encryption
+      const dossierId = props.node.dossierId?.toString();
+      if (dossierId) {
+        const dossierKey = await encryptionStore.getDossierKey(dossierId);
+        if (dossierKey) {
+          try {
+            // Download the plaintext capture from server
+            const filename = finalScreenshotUrl.split('/').pop() || '';
+            const response = await api.get(`/files/${filename}`, { responseType: 'arraybuffer' });
+            // Encrypt it
+            const encryptedBuffer = await encryptFile(dossierKey, response.data);
+            const encryptedBlob = new Blob([encryptedBuffer], { type: 'application/octet-stream' });
+            // Re-upload encrypted version
+            const formData = new FormData();
+            formData.append('file', encryptedBlob, filename + '.enc');
+            formData.append('screenshotUrl', finalScreenshotUrl);
+            const replaceRes = await api.post('/media/replace-capture-encrypted', formData);
+            finalScreenshotUrl = replaceRes.data.screenshotUrl;
+          } catch (err) {
+            console.error('Failed to encrypt embed capture:', err);
+          }
+        }
+      }
+
       const annotation: MediaAnnotation = {
         id: crypto.randomUUID(),
         timestamp: ts,
         type: 'capture',
         comment: '',
-        screenshotUrl: data.screenshotUrl || data.fileUrl,
+        screenshotUrl: finalScreenshotUrl,
         createdAt: new Date().toISOString(),
       };
       props.node.mediaData.annotations.push(annotation);
@@ -595,40 +642,48 @@ function seekTo(timestamp: number) {
 
 // --- Screenshot src (with decryption support) ---
 const decryptedScreenshots = ref<Record<string, string>>({});
+const decryptingScreenshots = new Set<string>();
 
 function screenshotSrc(ann: MediaAnnotation): string {
   if (!ann.screenshotUrl) return '';
-  // Return decrypted URL if available
-  const cached = decryptedScreenshots.value[ann.screenshotUrl];
-  if (cached) {
-    return cached;
-  }
-  // Trigger async decryption
-  decryptScreenshot(ann);
-  // Return fallback while decrypting
-  const base = ann.screenshotUrl.startsWith('http') ? ann.screenshotUrl : `${SERVER_URL}/${ann.screenshotUrl}`;
-  return cacheBust.value ? `${base}?t=${cacheBust.value}` : base;
+  return decryptedScreenshots.value[ann.screenshotUrl] || TRANSPARENT_PIXEL;
 }
 
 async function decryptScreenshot(ann: MediaAnnotation) {
   if (!ann.screenshotUrl || decryptedScreenshots.value[ann.screenshotUrl]) return;
+  if (decryptingScreenshots.has(ann.screenshotUrl)) return;
   if (!dossierStore.currentDossier) return;
+  decryptingScreenshots.add(ann.screenshotUrl);
   try {
+    // Use noCache if annotation was modified (file replaced on server, browser may have cached old version)
+    const needsCacheBust = !!ann.modifiedAt;
     const url = await getDecryptedUrl(
       dossierStore.currentDossier._id,
       ann.screenshotUrl,
-      'image/png'
+      'image/png',
+      needsCacheBust
     );
-    decryptedScreenshots.value[ann.screenshotUrl] = url;
-  } catch {
-    // Fallback: use direct URL (legacy unencrypted)
+    decryptedScreenshots.value = { ...decryptedScreenshots.value, [ann.screenshotUrl]: url };
+  } catch (err) {
+    console.error('Failed to decrypt screenshot:', ann.screenshotUrl, err);
+  } finally {
+    decryptingScreenshots.delete(ann.screenshotUrl!);
   }
 }
 
-// --- Save (debounced) ---
-function saveMediaData() {
+// Proactively decrypt all screenshots when annotations change
+watch(filteredAnnotations, (anns) => {
+  for (const ann of anns) {
+    if (ann.screenshotUrl && !decryptedScreenshots.value[ann.screenshotUrl]) {
+      decryptScreenshot(ann);
+    }
+  }
+}, { immediate: true });
+
+// --- Save (debounced for typing, immediate for file changes) ---
+function saveMediaData(immediate = false) {
   if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(async () => {
+  const doSave = async () => {
     if (!props.node.mediaData) return;
     try {
       await dossierStore.updateNode(props.node._id, {
@@ -637,7 +692,37 @@ function saveMediaData() {
     } catch (err) {
       console.error('Failed to save media data:', err);
     }
-  }, 500);
+  };
+  if (immediate) {
+    doSave();
+  } else {
+    saveTimeout = setTimeout(doSave, 500);
+  }
+}
+
+// --- Open viewer with decrypted URL ---
+async function openViewer(ann: MediaAnnotation) {
+  if (!ann.screenshotUrl) return;
+  // If already decrypted, use it
+  const cached = decryptedScreenshots.value[ann.screenshotUrl];
+  if (cached) {
+    viewerSrc.value = cached;
+    return;
+  }
+  // Otherwise decrypt and then show
+  if (dossierStore.currentDossier) {
+    try {
+      const url = await getDecryptedUrl(
+        dossierStore.currentDossier._id,
+        ann.screenshotUrl,
+        'image/png'
+      );
+      decryptedScreenshots.value = { ...decryptedScreenshots.value, [ann.screenshotUrl]: url };
+      viewerSrc.value = url;
+    } catch (err) {
+      console.error('Failed to decrypt screenshot for viewer:', err);
+    }
+  }
 }
 
 // --- Image annotator ---
@@ -659,11 +744,13 @@ function findAnnotationBySrc(src: string): MediaAnnotation | undefined {
   return props.node.mediaData.annotations.find(a => screenshotSrc(a).split('?')[0] === cleanSrc);
 }
 
-async function onAnnotatorSave(annotations: any[]) {
+async function onAnnotatorSave(drawAnnotations: any[]) {
   try {
-    // Render annotations onto image
+    // 1. Render annotations onto image
     const img = new window.Image();
-    img.crossOrigin = 'anonymous';
+    if (!viewerSrc.value.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.src = viewerSrc.value;
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
@@ -676,7 +763,33 @@ async function onAnnotatorSave(annotations: any[]) {
     const ctx = canvas.getContext('2d')!;
     ctx.drawImage(img, 0, 0);
 
-    for (const a of annotations) {
+    // Keep a copy of the clean image for blur operations
+    const sourceCanvas = document.createElement('canvas');
+    sourceCanvas.width = img.naturalWidth;
+    sourceCanvas.height = img.naturalHeight;
+    sourceCanvas.getContext('2d')!.drawImage(img, 0, 0);
+
+    for (const a of drawAnnotations) {
+      if (a.type === 'blur') {
+        // Pixelate the region
+        const nx = a.x, ny = a.y, nw = Math.abs(a.w), nh = Math.abs(a.h);
+        if (nw > 2 && nh > 2) {
+          const blockSize = 12;
+          const tilesX = Math.max(1, Math.ceil(nw / blockSize));
+          const tilesY = Math.max(1, Math.ceil(nh / blockSize));
+          const off = document.createElement('canvas');
+          off.width = tilesX;
+          off.height = tilesY;
+          const offCtx = off.getContext('2d')!;
+          offCtx.imageSmoothingEnabled = true;
+          offCtx.drawImage(sourceCanvas, nx, ny, nw, nh, 0, 0, tilesX, tilesY);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(off, 0, 0, tilesX, tilesY, nx, ny, nw, nh);
+          ctx.imageSmoothingEnabled = true;
+        }
+        continue;
+      }
+
       ctx.strokeStyle = a.color;
       ctx.fillStyle = a.color;
       ctx.lineWidth = a.strokeWidth;
@@ -715,10 +828,7 @@ async function onAnnotatorSave(annotations: any[]) {
       }
     }
 
-    // Get base64 image data
-    const imageData = canvas.toDataURL('image/png');
-
-    // Find the annotation to get its screenshotUrl
+    // 2. Find the annotation being edited
     const ann = findAnnotationBySrc(viewerSrc.value);
     if (!ann?.screenshotUrl) {
       console.error('Could not find annotation for viewer source');
@@ -726,34 +836,41 @@ async function onAnnotatorSave(annotations: any[]) {
       return;
     }
 
-    // Replace capture file in-place on server (same path, updated hash + evidence)
-    const { data } = await api.post('/media/replace-capture', {
-      screenshotUrl: ann.screenshotUrl,
-      imageData,
-    });
+    // 3. Convert canvas to File and upload via the PROVEN upload path
+    const dossierId = dossierStore.currentDossier?._id;
+    if (!dossierId) {
+      console.error('No dossier context for annotation save');
+      annotatorOpen.value = false;
+      return;
+    }
 
-    // Invalidate decrypted cache for this screenshot so it gets re-fetched
-    if (ann.screenshotUrl && decryptedScreenshots.value[ann.screenshotUrl]) {
-      delete decryptedScreenshots.value[ann.screenshotUrl];
-    }
-    // Force browser cache bust on viewer + thumbnails
-    cacheBust.value = Date.now();
-    // Re-decrypt the updated file
-    if (dossierStore.currentDossier && data.screenshotUrl) {
-      try {
-        const newUrl = await getDecryptedUrl(
-          dossierStore.currentDossier._id,
-          data.screenshotUrl,
-          'image/png'
-        );
-        decryptedScreenshots.value[data.screenshotUrl] = newUrl;
-        viewerSrc.value = newUrl;
-      } catch {
-        viewerSrc.value = `${SERVER_URL}/${data.screenshotUrl}?t=${cacheBust.value}`;
-      }
-    } else {
-      viewerSrc.value = `${SERVER_URL}/${data.screenshotUrl}?t=${cacheBust.value}`;
-    }
+    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
+    const file = new File([blob], `annotated-${Date.now()}.png`, { type: 'image/png' });
+    const newUrl = await uploadEncryptedImage(dossierId, file);
+    // uploadEncryptedImage returns '/uploads/uuid.enc' — strip leading slash
+    const newScreenshotUrl = newUrl.replace(/^\//, '');
+
+    // 4. Delete old file on server
+    const oldUrl = ann.screenshotUrl;
+    api.delete('/media/capture', { data: { screenshotUrl: oldUrl } }).catch(() => {});
+
+    // 5. Invalidate old cache
+    const updatedCache = { ...decryptedScreenshots.value };
+    if (oldUrl) delete updatedCache[oldUrl];
+
+    // 6. Update annotation with NEW URL (no cache issues — it's a brand new file)
+    ann.screenshotUrl = newScreenshotUrl;
+    ann.modifiedAt = new Date().toISOString();
+
+    // 7. Save immediately
+    saveMediaData(true);
+
+    // 8. Create blob URL for immediate display
+    const newBlobUrl = URL.createObjectURL(blob);
+    updatedCache[newScreenshotUrl] = newBlobUrl;
+    decryptedScreenshots.value = updatedCache;
+    viewerSrc.value = newBlobUrl;
+
     annotatorOpen.value = false;
   } catch (err) {
     console.error('Annotation save failed:', err);
@@ -787,24 +904,26 @@ onBeforeUnmount(() => {
   border: 1px solid var(--me-border);
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 /* ── Player Section ── */
 .me-player-section {
   background: var(--me-bg-deep);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-height: 0;
 }
 
 .me-player-video {
   display: block;
   width: 100%;
-  max-height: 520px;
+  max-height: min(520px, 55vh);
   background: #000;
   outline: none;
 }
 .me-editor--expanded .me-player-video {
-  max-height: 780px; /* ~1.5x of 520px */
+  max-height: min(780px, 65vh);
 }
 
 .me-player-audio {
@@ -819,12 +938,14 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   max-width: 960px;
+  max-height: 55vh;
   margin: 0 auto;
   aspect-ratio: 16 / 9;
   background: #000;
 }
 .me-editor--expanded .me-embed-wrapper {
   max-width: 1440px;
+  max-height: 65vh;
 }
 .me-embed-iframe {
   width: 100%;

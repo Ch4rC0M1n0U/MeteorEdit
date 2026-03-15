@@ -5,8 +5,6 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
-import { computeFileHash } from '../utils/hashFile';
-import EvidenceRecord from '../models/EvidenceRecord';
 
 const execFileAsync = promisify(execFile);
 
@@ -207,35 +205,15 @@ export async function captureFrame(req: AuthRequest, res: Response): Promise<voi
     const filePath = path.join(captureDir, filename);
     fs.writeFileSync(filePath, buffer);
 
-    // Compute SHA-256 hash
-    const fileHash = await computeFileHash(filePath);
-    const fileSize = fs.statSync(filePath).size;
-
-    // Create evidence record
-    const evidence = await EvidenceRecord.create({
-      nodeId,
-      dossierId,
-      capturedBy: userId,
-      capturedAt: new Date(),
-      originalHash: fileHash,
-      fileHash,
-      filePath,
-      fileSize,
-      sourceUrl: null,
-      evidenceType: 'media-capture',
-    });
-
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
     await logActivity(userId, 'media_capture', 'node', nodeId, {
       dossierId,
       timestamp,
-      evidenceId: evidence._id.toString(),
     }, ip, ua);
 
     res.json({
       screenshotUrl: `uploads/media/captures/${filename}`,
-      evidenceId: evidence._id,
     });
   } catch (error) {
     console.error('captureFrame error:', error);
@@ -291,36 +269,16 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       filePath,
     ], { timeout: 15000 });
 
-    // Compute hash and file size
-    const fileHash = await computeFileHash(filePath);
-    const fileSize = fs.statSync(filePath).size;
-
-    // Create evidence record
-    const evidence = await EvidenceRecord.create({
-      nodeId,
-      dossierId,
-      capturedBy: userId,
-      capturedAt: new Date(),
-      originalHash: fileHash,
-      fileHash,
-      filePath,
-      fileSize,
-      sourceUrl: url,
-      evidenceType: 'media-capture',
-    });
-
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
     await logActivity(userId, 'media_capture_embed', 'node', nodeId, {
       dossierId,
       url,
       timestamp,
-      evidenceId: evidence._id.toString(),
     }, ip, ua);
 
     res.json({
       screenshotUrl: `uploads/media/captures/${filename}`,
-      evidenceId: evidence._id,
     });
   } catch (error: any) {
     console.error('captureEmbed error:', error?.message || error);
@@ -352,51 +310,58 @@ export async function replaceCapture(req: AuthRequest, res: Response) {
     const buffer = Buffer.from(base64, 'base64');
     fs.writeFileSync(absPath, buffer);
 
-    // Re-compute hash and update evidence record
-    const newHash = await computeFileHash(absPath);
-    const newSize = fs.statSync(absPath).size;
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'media_capture.replaced', 'node', userId, { screenshotUrl }, ip, ua);
 
-    // Normalize path separators for cross-platform matching
-    const normalizedPath = absPath.replace(/\\/g, '/');
-    const record = await EvidenceRecord.findOne({
-      $or: [
-        { filePath: absPath },
-        { filePath: normalizedPath },
-        { filePath: absPath.replace(/\//g, '\\') },
-      ],
-    });
-    if (record) {
-      // Backfill originalHash for old records
-      if (!record.originalHash) {
-        await EvidenceRecord.updateOne(
-          { _id: record._id, originalHash: null },
-          { $set: { originalHash: record.fileHash } },
-        );
-        record.set('originalHash', record.fileHash, { strict: false });
-      }
-      record.fileHash = newHash;
-      record.fileSize = newSize;
-      record.verifications.push({
-        verifiedAt: new Date(),
-        verifiedBy: userId as any,
-        status: 'enriched',
-        computedHash: newHash,
-      });
-      record.lastVerifiedAt = new Date();
-      record.lastVerificationStatus = 'enriched';
-      await record.save();
+    res.json({ screenshotUrl: relativePath });
+  } catch (error: any) {
+    console.error('replaceCapture error:', error?.message || error);
+    res.status(500).json({ error: 'Failed to replace capture' });
+  }
+}
+
+// POST /api/media/replace-capture-encrypted (multipart: file + screenshotUrl)
+export async function replaceCaptureEncrypted(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const { screenshotUrl } = req.body;
+    if (!screenshotUrl || !req.file) {
+      return res.status(400).json({ error: 'Missing screenshotUrl or file' });
+    }
+
+    const relativePath = screenshotUrl.replace(/^\//, '').split('?')[0];
+    const absPath = path.resolve(UPLOAD_DIR, '..', relativePath);
+
+    // Determine target path: if original is not .enc, rename to .enc
+    const needsRename = !absPath.endsWith('.enc');
+    const targetPath = needsRename ? absPath + '.enc' : absPath;
+    const targetRelative = needsRename ? relativePath + '.enc' : relativePath;
+
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // Write the encrypted file blob directly (already encrypted by client)
+    fs.writeFileSync(targetPath, fs.readFileSync(req.file.path));
+    // Clean up multer temp file
+    if (req.file.path !== targetPath && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    // Delete original plaintext file if we renamed
+    if (needsRename && fs.existsSync(absPath)) {
+      fs.unlinkSync(absPath);
     }
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
-    const targetId = record ? record.nodeId.toString() : undefined;
-    if (targetId) {
-      await logActivity(userId, 'media_capture.enriched', 'node', targetId, { screenshotUrl }, ip, ua);
-    }
+    await logActivity(userId, 'media_capture.replaced_encrypted', 'node', userId, { screenshotUrl }, ip, ua);
 
-    res.json({ screenshotUrl: relativePath, hash: newHash });
+    res.json({ screenshotUrl: targetRelative });
   } catch (error: any) {
-    console.error('replaceCapture error:', error?.message || error);
+    console.error('replaceCaptureEncrypted error:', error?.message || error);
     res.status(500).json({ error: 'Failed to replace capture' });
   }
 }
@@ -418,23 +383,13 @@ export async function deleteCapture(req: AuthRequest, res: Response) {
       fs.unlinkSync(absPath);
     }
 
-    // Delete evidence record (normalize path for cross-platform)
-    const normalizedPath = absPath.replace(/\\/g, '/');
-    const result = await EvidenceRecord.deleteMany({
-      $or: [
-        { filePath: absPath },
-        { filePath: normalizedPath },
-        { filePath: absPath.replace(/\//g, '\\') },
-      ],
-    });
-
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
     try {
-      await logActivity(userId, 'media_capture.deleted', 'node', userId, { screenshotUrl, deleted: result.deletedCount }, ip, ua);
+      await logActivity(userId, 'media_capture.deleted', 'node', userId, { screenshotUrl }, ip, ua);
     } catch { /* ignore log errors */ }
 
-    res.json({ deleted: result.deletedCount });
+    res.json({ deleted: true });
   } catch (error: any) {
     console.error('deleteCapture error:', error?.message || error);
     res.status(500).json({ error: 'Failed to delete capture' });

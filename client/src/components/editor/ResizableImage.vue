@@ -2,7 +2,7 @@
   <node-view-wrapper as="span" class="resizable-image-wrapper" :class="{ selected: selected }">
     <div class="ri-container" :style="{ width: imgWidth + 'px' }">
       <img
-        :src="decryptedSrc || node.attrs.src"
+        :src="displaySrc"
         :alt="node.attrs.alt || ''"
         :title="node.attrs.title || ''"
         :width="imgWidth"
@@ -58,22 +58,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3';
 import ImageAnnotator from './ImageAnnotator.vue';
 import api, { SERVER_URL } from '../../services/api';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
+import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import { useDossierStore } from '../../stores/dossier';
+
+const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 const props = defineProps(nodeViewProps);
 const { getDecryptedUrl } = useDecryptedFile();
+const { uploadEncryptedImage } = useEncryptedUpload();
 const dossierStore = useDossierStore();
 const decryptedSrc = ref('');
+const loading = ref(false);
+
+// Show transparent placeholder while loading, decrypted URL when ready, or raw src for external images
+const displaySrc = computed(() => {
+  if (decryptedSrc.value) return decryptedSrc.value;
+  const src = props.node?.attrs?.src || '';
+  // If it's a /uploads/ URL, show placeholder while decrypting (don't hit removed static route)
+  if (src.includes('/uploads/')) return TRANSPARENT_PIXEL;
+  // External URLs or data URIs can be shown directly
+  return src;
+});
 
 // Watch the image src and decrypt when needed
 watch(() => props.node?.attrs?.src, async (src) => {
   if (!src) return;
   if (src.includes('/uploads/') && dossierStore.currentDossier) {
+    loading.value = true;
     try {
       decryptedSrc.value = await getDecryptedUrl(
         dossierStore.currentDossier._id,
@@ -81,7 +97,10 @@ watch(() => props.node?.attrs?.src, async (src) => {
         'image/png'
       );
     } catch {
-      decryptedSrc.value = src; // Fallback
+      // Can't decrypt — try direct URL as last resort
+      decryptedSrc.value = src;
+    } finally {
+      loading.value = false;
     }
   } else {
     decryptedSrc.value = src;
@@ -99,17 +118,19 @@ let startWidth = 0;
 
 onMounted(() => {
   imgWidth.value = props.node.attrs.width || 0;
-  if (!imgWidth.value) {
-    // Load natural width — use decrypted URL when available
+  document.addEventListener('click', handleOutsideClick);
+  document.addEventListener('keydown', handleKeydown);
+});
+
+// Auto-detect natural width once decrypted src is available
+watch(decryptedSrc, (src) => {
+  if (src && !imgWidth.value) {
     const img = new window.Image();
     img.onload = () => {
       imgWidth.value = Math.min(img.naturalWidth, 700);
     };
-    const srcToUse = decryptedSrc.value || props.node.attrs.src;
-    img.src = srcToUse;
+    img.src = src;
   }
-  document.addEventListener('click', handleOutsideClick);
-  document.addEventListener('keydown', handleKeydown);
 });
 
 onBeforeUnmount(() => {
@@ -138,7 +159,7 @@ function setSize(w: number | null) {
       imgWidth.value = Math.min(img.naturalWidth, 700);
       updateAttrs();
     };
-    img.src = decryptedSrc.value || props.node.attrs.src;
+    img.src = decryptedSrc.value || displaySrc.value;
     return;
   }
   imgWidth.value = w;
@@ -206,13 +227,8 @@ function deleteNode() {
 }
 
 function openAnnotator() {
-  // Use decrypted URL (Object URL) if available, otherwise fall back to raw src
-  if (decryptedSrc.value && decryptedSrc.value.startsWith('blob:')) {
-    annotatorImageSrc.value = decryptedSrc.value;
-  } else {
-    const base = (props.node.attrs.src as string).split('?')[0];
-    annotatorImageSrc.value = `${base}?t=${Date.now()}`;
-  }
+  // Always use decrypted URL — raw /uploads/ URLs are no longer served
+  annotatorImageSrc.value = decryptedSrc.value || displaySrc.value;
   annotatorOpen.value = true;
 }
 
@@ -220,14 +236,12 @@ async function onAnnotationSave(annotations: any[]) {
   // Render annotations onto the image using a canvas, then upload as new image
   try {
     const img = new window.Image();
-    img.crossOrigin = 'anonymous';
-    // Use decrypted URL (Object URL) if available, otherwise use cache-bust raw src
-    if (decryptedSrc.value && decryptedSrc.value.startsWith('blob:')) {
-      img.src = decryptedSrc.value;
-    } else {
-      const baseSrc = (props.node.attrs.src as string).split('?')[0];
-      img.src = `${baseSrc}?t=${Date.now()}`;
+    // Only set crossOrigin for remote URLs, not blob URLs
+    const imgSrcToUse = decryptedSrc.value || displaySrc.value;
+    if (!imgSrcToUse.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
     }
+    img.src = imgSrcToUse;
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
       img.onerror = reject;
@@ -305,44 +319,34 @@ async function onAnnotationSave(annotations: any[]) {
       }
     }
 
-    const oldSrc = props.node.attrs.src as string;
-
-    // Check if this is a clipper screenshot or media capture — replace in-place
-    const isEvidenceFile = oldSrc.includes('/uploads/screenshots/') || oldSrc.includes('/uploads/media/captures/');
-
-    if (isEvidenceFile) {
-      // Replace file in-place to preserve evidence integrity
-      const imageData = canvas.toDataURL('image/png');
-      // Strip query params (?t=xxx cache bust) before extracting path
-      const cleanSrc = oldSrc.split('?')[0];
-      const screenshotUrl = cleanSrc.split('/uploads/').pop();
-      if (screenshotUrl) {
-        await api.post('/media/replace-capture', {
-          screenshotUrl: `uploads/${screenshotUrl}`,
-          imageData,
-        });
-        // Force cache bust to refresh the image
-        const cacheBust = Date.now();
-        props.updateAttributes({ src: `${cleanSrc}?t=${cacheBust}` });
-      }
+    // Upload annotated image as a NEW file (proven path, no cache issues)
+    const blob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob((b) => resolve(b!), 'image/png');
+    });
+    const dossierId = dossierStore.currentDossier?._id;
+    let newUrl: string;
+    if (dossierId) {
+      const file = new File([blob], `annotated-${Date.now()}.png`, { type: 'image/png' });
+      const url = await uploadEncryptedImage(dossierId, file);
+      newUrl = `${SERVER_URL}${url}`;
     } else {
-      // Regular editor image: re-upload and delete old
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/png');
-      });
       const formData = new FormData();
       formData.append('image', blob, 'annotated.png');
-      const { data } = await api.post('/upload/image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const oldFilename = oldSrc.split('/uploads/').pop();
-      if (oldFilename) {
-        api.delete(`/upload/${oldFilename}`).catch(() => {});
-      }
-
-      props.updateAttributes({ src: `${SERVER_URL}${data.url}` });
+      const { data } = await api.post('/upload/image', formData);
+      newUrl = `${SERVER_URL}${data.url}`;
     }
+
+    // Delete old file on server
+    const oldSrc = props.node.attrs.src as string;
+    const oldFilename = oldSrc.split('/uploads/').pop()?.split('?')[0];
+    if (oldFilename) {
+      api.delete(`/upload/${oldFilename}`).catch(() => {});
+    }
+
+    // Update TipTap node with new URL — triggers watch → decrypts → displays
+    props.updateAttributes({ src: newUrl });
+    // Update local decrypted src for immediate display
+    decryptedSrc.value = URL.createObjectURL(blob);
 
     annotatorOpen.value = false;
   } catch (err) {

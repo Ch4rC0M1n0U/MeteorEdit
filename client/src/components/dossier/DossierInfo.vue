@@ -149,9 +149,15 @@
           <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
             <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
             <div class="di-doc-info">
-              <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName }}</a>
+              <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
               <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
             </div>
+            <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
+              <v-icon size="14">mdi-eye-outline</v-icon>
+            </button>
+            <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
+              <v-icon size="14">mdi-download</v-icon>
+            </button>
             <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
               <v-icon size="14">mdi-trash-can-outline</v-icon>
             </button>
@@ -438,6 +444,63 @@
         </div>
       </div>
     </v-dialog>
+
+    <!-- Document Viewer Dialog -->
+    <v-dialog v-model="docViewerOpen" max-width="900" content-class="di-viewer-dialog">
+      <div class="glass-card di-viewer-card">
+        <div class="di-viewer-header">
+          <div class="di-viewer-title-row">
+            <v-icon size="18" class="mr-2">{{ docViewerDoc ? docIcon(docViewerDoc.fileName) : 'mdi-file' }}</v-icon>
+            <span class="di-viewer-title">{{ docViewerDoc?.fileName }}</span>
+          </div>
+          <div class="di-viewer-actions">
+            <template v-if="docViewerType === 'image'">
+              <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="zoomOut" :title="$t('dossier.zoomOut')" :disabled="viewerZoom <= 0.25">
+                <v-icon size="16">mdi-minus</v-icon>
+              </button>
+              <span class="di-viewer-zoom-label mono">{{ Math.round(viewerZoom * 100) }}%</span>
+              <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="zoomIn" :title="$t('dossier.zoomIn')" :disabled="viewerZoom >= 5">
+                <v-icon size="16">mdi-plus</v-icon>
+              </button>
+              <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="zoomReset" :title="$t('dossier.zoomReset')">
+                <v-icon size="16">mdi-fit-to-screen-outline</v-icon>
+              </button>
+            </template>
+            <button class="me-btn-ghost me-btn-sm" @click="downloadDecryptedDoc(docViewerDoc!)" :title="$t('dossier.download')">
+              <v-icon size="16" class="mr-1">mdi-download</v-icon>
+              {{ $t('dossier.download') }}
+            </button>
+            <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="docViewerOpen = false">
+              <v-icon size="16">mdi-close</v-icon>
+            </button>
+          </div>
+        </div>
+        <div class="di-viewer-body" ref="viewerBodyRef" @wheel.prevent="onViewerWheel">
+          <div v-if="docViewerLoading" class="di-viewer-loading">
+            <v-progress-circular indeterminate size="40" width="3" />
+          </div>
+          <template v-else-if="docViewerUrl">
+            <div
+              v-if="docViewerType === 'image'"
+              class="di-viewer-image-wrapper"
+              :style="viewerImgBaseW ? { width: `${viewerImgBaseW * viewerZoom}px`, height: `${viewerImgBaseH * viewerZoom}px` } : undefined"
+            >
+              <img
+                :src="docViewerUrl"
+                class="di-viewer-image"
+                :style="viewerImgBaseW ? { width: `${viewerImgBaseW * viewerZoom}px`, height: `${viewerImgBaseH * viewerZoom}px`, cursor: viewerZoom > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default' } : { maxWidth: '100%', maxHeight: '75vh' }"
+                draggable="false"
+                @mousedown.prevent="onPanStart"
+                @load="onViewerImgLoad"
+              />
+            </div>
+            <iframe v-else-if="docViewerType === 'pdf'" :src="docViewerUrl" class="di-viewer-pdf" />
+            <video v-else-if="docViewerType === 'video'" :src="docViewerUrl" controls class="di-viewer-video" />
+            <audio v-else-if="docViewerType === 'audio'" :src="docViewerUrl" controls class="di-viewer-audio" />
+          </template>
+        </div>
+      </div>
+    </v-dialog>
   </div>
 </template>
 
@@ -448,6 +511,7 @@ import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useEncryptionStore } from '../../stores/encryption';
 import api, { SERVER_URL } from '../../services/api';
+import { getSocket } from '../../services/socket';
 import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
@@ -552,7 +616,8 @@ function getEntityPhotoUrl(photo: string): string {
   if (cached) return cached;
   // Trigger async decryption
   decryptEntityPhoto(photo);
-  return `${SERVER_URL}/${photo}`;
+  // Return 1x1 transparent pixel while decrypting (encrypted .enc files can't be served as images)
+  return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 }
 
 async function decryptEntityPhoto(photo: string) {
@@ -563,7 +628,8 @@ async function decryptEntityPhoto(photo: string) {
     const url = await getDecryptedUrl(d._id, photo, 'image/png');
     decryptedPhotoUrls.value[photo] = url;
   } catch {
-    // Fallback: use direct URL
+    // Fallback: use direct URL for legacy unencrypted files
+    decryptedPhotoUrls.value[photo] = `${SERVER_URL}/${photo}`;
   }
 }
 
@@ -578,7 +644,7 @@ async function downloadDecryptedDoc(doc: { fileName: string; filePath: string })
     const url = await getDecryptedUrl(d._id, doc.filePath, 'application/octet-stream');
     const a = document.createElement('a');
     a.href = url;
-    a.download = doc.fileName;
+    a.download = doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -648,6 +714,8 @@ function syncDossierInList(updated: any) {
   dossierStore.currentDossier = updated;
   const idx = dossierStore.dossiers.findIndex(d => d._id === updated._id);
   if (idx >= 0) dossierStore.dossiers[idx] = updated;
+  // Notify collaborators
+  getSocket()?.emit('dossier-update', { dossierId: updated._id, dossier: updated });
 }
 
 async function handleLogoUpload(e: Event) {
@@ -699,7 +767,7 @@ async function handleDeleteDoc(doc: { _id: string; fileName: string }) {
   if (!dossierStore.currentDossier) return;
   const confirmed = await customConfirm({
     title: t('dossier.deleteDocument'),
-    message: t('dossier.deleteDocumentConfirm'),
+    message: t('dossier.deleteDocumentConfirm', { name: doc.fileName }),
     confirmText: t('common.delete'),
   });
   if (!confirmed) return;
@@ -712,8 +780,144 @@ async function handleDeleteDoc(doc: { _id: string; fileName: string }) {
   }
 }
 
+// Document viewer
+const docViewerOpen = ref(false);
+const docViewerDoc = ref<{ fileName: string; filePath: string } | null>(null);
+const docViewerUrl = ref<string | null>(null);
+const docViewerLoading = ref(false);
+const docViewerType = ref<'image' | 'pdf' | 'video' | 'audio'>('image');
+
+const PREVIEW_IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'];
+const PREVIEW_PDF_EXTS = ['pdf'];
+const PREVIEW_VIDEO_EXTS = ['mp4', 'webm', 'ogg'];
+const PREVIEW_AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'aac'];
+
+function getFileExt(fileName: string): string {
+  // Strip .enc suffix to get the real file extension
+  const name = fileName.endsWith('.enc') ? fileName.slice(0, -4) : fileName;
+  return name.split('.').pop()?.toLowerCase() || '';
+}
+
+function isPreviewable(fileName: string, doc?: { originalContentType?: string }): boolean {
+  // If we have originalContentType metadata from encrypted upload, use it
+  if (doc?.originalContentType) {
+    const ct = doc.originalContentType;
+    return ct.startsWith('image/') || ct === 'application/pdf' || ct.startsWith('video/') || ct.startsWith('audio/');
+  }
+  const ext = getFileExt(fileName);
+  return [...PREVIEW_IMAGE_EXTS, ...PREVIEW_PDF_EXTS, ...PREVIEW_VIDEO_EXTS, ...PREVIEW_AUDIO_EXTS].includes(ext);
+}
+
+function getContentType(fileName: string, doc?: { originalContentType?: string }): string {
+  // Use stored originalContentType if available (encrypted uploads)
+  if (doc?.originalContentType) return doc.originalContentType;
+  const ext = getFileExt(fileName);
+  if (PREVIEW_IMAGE_EXTS.includes(ext)) return ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+  if (ext === 'pdf') return 'application/pdf';
+  if (ext === 'mp4') return 'video/mp4';
+  if (ext === 'webm') return 'video/webm';
+  if (ext === 'mp3') return 'audio/mpeg';
+  if (ext === 'wav') return 'audio/wav';
+  if (ext === 'aac') return 'audio/aac';
+  if (ext === 'ogg') return 'audio/ogg';
+  return 'application/octet-stream';
+}
+
+const viewerZoom = ref(1);
+const viewerBodyRef = ref<HTMLElement | null>(null);
+const viewerImgNatW = ref(0);
+const viewerImgNatH = ref(0);
+const viewerImgBaseW = ref(0);
+const viewerImgBaseH = ref(0);
+
+function onViewerImgLoad(e: Event) {
+  const img = e.target as HTMLImageElement;
+  viewerImgNatW.value = img.naturalWidth;
+  viewerImgNatH.value = img.naturalHeight;
+  // Compute fitted size at zoom=1 based on container
+  const body = viewerBodyRef.value;
+  if (body) {
+    const maxW = body.clientWidth - 16;
+    const maxH = body.clientHeight - 16;
+    const ratio = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
+    viewerImgBaseW.value = Math.round(img.naturalWidth * ratio);
+    viewerImgBaseH.value = Math.round(img.naturalHeight * ratio);
+  } else {
+    viewerImgBaseW.value = img.naturalWidth;
+    viewerImgBaseH.value = img.naturalHeight;
+  }
+}
+
+function zoomIn() { viewerZoom.value = Math.min(5, viewerZoom.value + 0.25); }
+function zoomOut() { viewerZoom.value = Math.max(0.25, viewerZoom.value - 0.25); }
+function zoomReset() { viewerZoom.value = 1; }
+function onViewerWheel(e: WheelEvent) {
+  if (docViewerType.value !== 'image') return;
+  if (e.deltaY < 0) zoomIn();
+  else zoomOut();
+}
+
+// Pan (drag to scroll) when zoomed in
+const isPanning = ref(false);
+let panStartX = 0;
+let panStartY = 0;
+let panScrollLeft = 0;
+let panScrollTop = 0;
+
+function onPanStart(e: MouseEvent) {
+  if (viewerZoom.value <= 1 || !viewerBodyRef.value) return;
+  isPanning.value = true;
+  panStartX = e.clientX;
+  panStartY = e.clientY;
+  panScrollLeft = viewerBodyRef.value.scrollLeft;
+  panScrollTop = viewerBodyRef.value.scrollTop;
+  document.addEventListener('mousemove', onPanMove);
+  document.addEventListener('mouseup', onPanEnd);
+}
+
+function onPanMove(e: MouseEvent) {
+  if (!isPanning.value || !viewerBodyRef.value) return;
+  viewerBodyRef.value.scrollLeft = panScrollLeft - (e.clientX - panStartX);
+  viewerBodyRef.value.scrollTop = panScrollTop - (e.clientY - panStartY);
+}
+
+function onPanEnd() {
+  isPanning.value = false;
+  document.removeEventListener('mousemove', onPanMove);
+  document.removeEventListener('mouseup', onPanEnd);
+}
+
+async function openDocViewer(doc: { fileName: string; filePath: string; originalContentType?: string }) {
+  const d = dossierStore.currentDossier;
+  if (!d) return;
+
+  docViewerDoc.value = doc;
+  docViewerUrl.value = null;
+  docViewerLoading.value = true;
+  viewerZoom.value = 1;
+  viewerImgBaseW.value = 0;
+  viewerImgBaseH.value = 0;
+  docViewerOpen.value = true;
+
+  // Detect type from originalContentType (encrypted) or file extension
+  const ct = doc.originalContentType || '';
+  const ext = getFileExt(doc.fileName);
+  if (ct.startsWith('image/') || PREVIEW_IMAGE_EXTS.includes(ext)) docViewerType.value = 'image';
+  else if (ct === 'application/pdf' || PREVIEW_PDF_EXTS.includes(ext)) docViewerType.value = 'pdf';
+  else if (ct.startsWith('video/') || PREVIEW_VIDEO_EXTS.includes(ext)) docViewerType.value = 'video';
+  else if (ct.startsWith('audio/') || PREVIEW_AUDIO_EXTS.includes(ext)) docViewerType.value = 'audio';
+
+  try {
+    docViewerUrl.value = await getDecryptedUrl(d._id, doc.filePath, getContentType(doc.fileName, doc));
+  } catch {
+    docViewerUrl.value = `${SERVER_URL}/${doc.filePath}`;
+  } finally {
+    docViewerLoading.value = false;
+  }
+}
+
 function docIcon(fileName: string): string {
-  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const ext = getFileExt(fileName);
   const map: Record<string, string> = {
     pdf: 'mdi-file-pdf-box',
     doc: 'mdi-file-word-box', docx: 'mdi-file-word-box',
@@ -1701,5 +1905,93 @@ async function removeCollaborator(userId: string) {
   flex: 1;
   display: flex;
   align-items: center;
+}
+/* Document Viewer */
+.di-viewer-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  overflow: hidden;
+}
+.di-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--me-border);
+  flex-shrink: 0;
+}
+.di-viewer-title-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+.di-viewer-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.di-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.di-viewer-body {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: var(--me-bg-secondary);
+}
+.di-viewer-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+}
+.di-viewer-image-wrapper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.di-viewer-image {
+  object-fit: contain;
+  transition: width 0.15s ease, height 0.15s ease;
+  user-select: none;
+}
+.di-viewer-zoom-label {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  min-width: 38px;
+  text-align: center;
+}
+.me-btn-icon {
+  padding: 4px 6px !important;
+  min-width: unset;
+}
+.di-viewer-pdf {
+  width: 100%;
+  height: 75vh;
+  border: none;
+}
+.di-viewer-video {
+  max-width: 100%;
+  max-height: 75vh;
+}
+.di-viewer-audio {
+  width: 90%;
+  margin: 40px auto;
+}
+.me-btn-sm {
+  font-size: 12px;
+  padding: 4px 10px;
 }
 </style>

@@ -101,11 +101,8 @@ export interface IDossierNode extends Document {
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
-  fileHash: string | null;
   originalContentType: string | null;
   originalFileSize: number | null;
-  hashVerifiedAt: Date | null;
-  lastVerificationStatus: 'valid' | 'tampered' | 'missing' | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

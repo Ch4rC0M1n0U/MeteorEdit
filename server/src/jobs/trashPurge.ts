@@ -1,7 +1,6 @@
 import path from 'path';
 import fs from 'fs';
 import DossierNode from '../models/DossierNode';
-import EvidenceRecord from '../models/EvidenceRecord';
 import SiteSettings from '../models/SiteSettings';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', 'uploads');
@@ -15,7 +14,6 @@ async function cleanupNodeFiles(node: any): Promise<void> {
       console.warn(`[TrashPurge] Failed to delete file ${filePath}:`, err);
     }
   }
-  await EvidenceRecord.deleteMany({ nodeId: node._id });
 }
 
 async function runTrashPurge(): Promise<void> {

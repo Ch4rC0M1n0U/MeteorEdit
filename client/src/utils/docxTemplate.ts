@@ -12,6 +12,9 @@ import type { PdfTemplateConfig, FontFamily } from './templateConfig';
 import { loadPdfTemplate, loadImageAsDataUrl, resolveLogoUrl } from './templateConfig';
 import type { ContentBlock } from './contentBlocks';
 import { blocksToPlainText } from './contentBlocks';
+import { useEncryptionStore } from '../stores/encryption';
+import { decryptFile } from './encryption';
+import api from '../services/api';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -38,9 +41,51 @@ function docxFont(tpl: PdfTemplateConfig): string {
 
 // ── Images ──────────────────────────────────────────────────────────
 
-async function fetchImageBuffer(url: string, serverUrl?: string): Promise<{ buffer: ArrayBuffer; w: number; h: number } | null> {
+async function fetchImageBuffer(url: string, serverUrl?: string, dossierId?: string): Promise<{ buffer: ArrayBuffer; w: number; h: number } | null> {
   try {
-    // Resolve relative URLs to the backend server (not the Vite dev server)
+    // Check if this is an uploads URL that might be encrypted
+    const isUploadsUrl = url.includes('/uploads/') || url.startsWith('uploads/');
+    if (isUploadsUrl && dossierId) {
+      // Try to fetch via authenticated API route and decrypt
+      const filename = url.split('/').pop()?.split('?')[0] || '';
+      if (filename) {
+        try {
+          const response = await api.get(`/files/${filename}`, { responseType: 'arraybuffer' });
+          let imageData: ArrayBuffer = response.data;
+
+          // Try to decrypt
+          const encryptionStore = useEncryptionStore();
+          const dossierKey = await encryptionStore.getDossierKey(dossierId);
+          if (dossierKey) {
+            try {
+              imageData = await decryptFile(dossierKey, response.data);
+            } catch {
+              // Decryption failed — use raw data (legacy unencrypted)
+            }
+          }
+
+          // Convert to data URL and get dimensions
+          const blob = new Blob([imageData]);
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve({ buffer: imageData, w: img.naturalWidth, h: img.naturalHeight });
+            img.onerror = () => resolve(null);
+            img.src = dataUrl;
+          });
+        } catch {
+          // Fall through to standard fetch
+        }
+      }
+    }
+
+    // Standard fetch for non-encrypted files (logos, public assets)
     let resolvedUrl = url;
     if (serverUrl && !url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith('http')) {
       resolvedUrl = url.startsWith('/') ? `${serverUrl}${url}` : `${serverUrl}/${url}`;
@@ -547,13 +592,14 @@ async function resolveBlockImages(
   elements: (Paragraph | Table)[],
   images: { src: string; placeholder: Paragraph }[],
   serverUrl?: string,
+  dossierId?: string,
 ): Promise<(Paragraph | Table)[]> {
   if (images.length === 0) return elements;
 
   const resolved = new Map<Paragraph, Paragraph>();
   for (const img of images) {
     try {
-      const imgData = await fetchImageBuffer(img.src, serverUrl);
+      const imgData = await fetchImageBuffer(img.src, serverUrl, dossierId);
       if (imgData) {
         resolved.set(img.placeholder, new Paragraph({
           children: [makeImageRun(imgData, 500, 400)],
@@ -571,11 +617,12 @@ async function resolveBlockImages(
 async function preResolveImages(
   screenshotUrls: string[],
   serverUrl?: string,
+  dossierId?: string,
 ): Promise<Map<string, { buffer: ArrayBuffer; w: number; h: number }>> {
   const map = new Map<string, { buffer: ArrayBuffer; w: number; h: number }>();
   for (const url of screenshotUrls) {
     try {
-      const imgData = await fetchImageBuffer(url, serverUrl);
+      const imgData = await fetchImageBuffer(url, serverUrl, dossierId);
       if (imgData) map.set(url, imgData);
     } catch { /* skip */ }
   }
@@ -656,6 +703,7 @@ export async function renderMediaAnnotationsTableDocx(
   annotations: any[],
   tpl: PdfTemplateConfig,
   serverUrl?: string,
+  dossierId?: string,
 ): Promise<Table> {
   const font = docxFont(tpl);
   const fontSize = ptToHalfPt(tpl.body.fontSize);
@@ -665,7 +713,7 @@ export async function renderMediaAnnotationsTableDocx(
   const captureUrls = sorted
     .filter(a => a.type === 'capture' && a.screenshotUrl)
     .map(a => a.screenshotUrl);
-  const resolvedImages = await preResolveImages(captureUrls, serverUrl);
+  const resolvedImages = await preResolveImages(captureUrls, serverUrl, dossierId);
 
   // Header row — widths must match data rows
   const headerDefs = [
@@ -809,6 +857,7 @@ export interface DocxExportData {
   };
   signatureImagePath?: string;
   serverUrl: string;
+  dossierId?: string;
 }
 
 // ── Document Generation ─────────────────────────────────────────────
@@ -911,12 +960,12 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
 
       if (md.annotations?.length) {
         if (section.mediaFormat === 'table') {
-          const table = await renderMediaAnnotationsTableDocx(md.annotations, tpl, data.serverUrl);
+          const table = await renderMediaAnnotationsTableDocx(md.annotations, tpl, data.serverUrl, data.dossierId);
           docChildren.push(table);
         } else {
           const images: { src: string; placeholder: Paragraph }[] = [];
           const seqElements = renderMediaAnnotationsSequentialDocx(md.annotations, tpl, images);
-          const resolved = await resolveBlockImages(seqElements, images, data.serverUrl);
+          const resolved = await resolveBlockImages(seqElements, images, data.serverUrl, data.dossierId);
           docChildren.push(...resolved);
         }
       }
@@ -924,7 +973,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       // Rich ContentBlock rendering (preferred)
       const images: { src: string; placeholder: Paragraph }[] = [];
       const blockElements = renderBlocksToDocx(section.blocks, tpl, images);
-      const resolved = await resolveBlockImages(blockElements, images, data.serverUrl);
+      const resolved = await resolveBlockImages(blockElements, images, data.serverUrl, data.dossierId);
       docChildren.push(...resolved);
     } else {
       // Fallback: plain text paragraphs

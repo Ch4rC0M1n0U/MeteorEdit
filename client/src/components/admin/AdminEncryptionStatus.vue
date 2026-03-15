@@ -5,60 +5,75 @@
         <v-icon size="20" class="mr-2">mdi-shield-lock-outline</v-icon>
         {{ $t('admin.encryption.title') }}
       </h2>
+      <p class="admin-section-subtitle">{{ $t('admin.encryption.subtitle') }}</p>
     </div>
 
-    <div class="enc-status-card glass-card fade-in fade-in-delay-1 enc-status--active">
-      <v-icon color="success" size="32">mdi-shield-check</v-icon>
-      <div class="enc-status-info">
-        <h3 class="enc-status-text">{{ $t('admin.encryption.allEncrypted') }}</h3>
-        <p class="enc-status-detail">{{ $t('admin.encryption.allEncryptedDetail') }}</p>
+    <!-- Status Card -->
+    <div class="enc-card glass-card fade-in fade-in-delay-1">
+      <div class="enc-card-header">
+        <v-icon size="18" color="var(--me-accent)">mdi-shield-check</v-icon>
+        <h3 class="enc-card-title mono">{{ $t('admin.encryption.statusTitle') }}</h3>
+      </div>
+      <div class="enc-status-row">
+        <v-icon color="success" size="28">mdi-check-circle</v-icon>
+        <div class="enc-status-info">
+          <p class="enc-status-text">{{ $t('admin.encryption.allEncrypted') }}</p>
+          <p class="enc-status-detail">{{ $t('admin.encryption.allEncryptedDetail') }}</p>
+        </div>
       </div>
     </div>
 
-    <div class="enc-info-cards fade-in fade-in-delay-2">
-      <div class="enc-info-card glass-card">
-        <v-icon size="20" color="primary">mdi-key-variant</v-icon>
+    <!-- Crypto Info Card -->
+    <div class="enc-card glass-card fade-in fade-in-delay-1">
+      <div class="enc-card-header">
+        <v-icon size="18" color="var(--me-accent)">mdi-information-outline</v-icon>
+        <h3 class="enc-card-title mono">{{ $t('admin.encryption.cryptoInfoTitle') }}</h3>
+      </div>
+      <div class="enc-info-row">
+        <v-icon size="18" color="var(--me-text-muted)">mdi-key-variant</v-icon>
         <div>
-          <h4 class="enc-info-title mono">{{ $t('admin.encryption.algorithm') }}</h4>
+          <p class="enc-info-label">{{ $t('admin.encryption.algorithm') }}</p>
           <p class="enc-info-value">RSA-OAEP 4096 + AES-256-GCM</p>
         </div>
       </div>
-      <div class="enc-info-card glass-card">
-        <v-icon size="20" color="primary">mdi-lock-outline</v-icon>
+      <div class="enc-divider" />
+      <div class="enc-info-row">
+        <v-icon size="18" color="var(--me-text-muted)">mdi-lock-outline</v-icon>
         <div>
-          <h4 class="enc-info-title mono">{{ $t('admin.encryption.keyDerivation') }}</h4>
+          <p class="enc-info-label">{{ $t('admin.encryption.keyDerivation') }}</p>
           <p class="enc-info-value">PBKDF2 SHA-256 (600 000 iterations)</p>
         </div>
       </div>
-      <div class="enc-info-card glass-card">
-        <v-icon size="20" color="primary">mdi-eye-off-outline</v-icon>
+      <div class="enc-divider" />
+      <div class="enc-info-row">
+        <v-icon size="18" color="var(--me-text-muted)">mdi-eye-off-outline</v-icon>
         <div>
-          <h4 class="enc-info-title mono">{{ $t('admin.encryption.zeroKnowledge') }}</h4>
+          <p class="enc-info-label">{{ $t('admin.encryption.zeroKnowledge') }}</p>
           <p class="enc-info-value">{{ $t('admin.encryption.zeroKnowledgeDesc') }}</p>
         </div>
       </div>
     </div>
 
-    <!-- Scan & Migration Section -->
-    <div class="enc-scan-section fade-in fade-in-delay-3">
-      <h3 class="enc-scan-title mono">
-        <v-icon size="18" class="mr-2">mdi-magnify-scan</v-icon>
-        {{ $t('admin.encryption.scanTitle') }}
-      </h3>
+    <!-- Scan & Branding Migration Card -->
+    <div class="enc-card glass-card fade-in fade-in-delay-2">
+      <div class="enc-card-header">
+        <v-icon size="18" color="var(--me-accent)">mdi-magnify-scan</v-icon>
+        <h3 class="enc-card-title mono">{{ $t('admin.encryption.scanTitle') }}</h3>
+      </div>
 
-      <div class="enc-scan-actions">
-        <button class="me-btn me-btn--outline" :disabled="scanning" @click="runScan">
-          <v-icon size="16" class="mr-1">mdi-radar</v-icon>
+      <div class="enc-actions">
+        <button class="me-btn-ghost" :disabled="scanning" @click="runScan">
+          <v-icon size="14" class="mr-1">mdi-radar</v-icon>
           {{ scanning ? $t('admin.encryption.scanning') : $t('admin.encryption.scanBtn') }}
         </button>
-        <button class="me-btn me-btn--outline" :disabled="migrating" @click="runBrandingMigration">
-          <v-icon size="16" class="mr-1">mdi-folder-move-outline</v-icon>
+        <button class="me-btn-ghost" :disabled="migrating" @click="runBrandingMigration">
+          <v-icon size="14" class="mr-1">mdi-folder-move-outline</v-icon>
           {{ migrating ? $t('admin.encryption.migrating') : $t('admin.encryption.migrateBrandingBtn') }}
         </button>
       </div>
 
       <div v-if="scanResult" class="enc-scan-results">
-        <div class="enc-scan-card glass-card">
+        <div class="enc-scan-grid">
           <div class="enc-scan-stat">
             <span class="enc-scan-label">{{ $t('admin.encryption.totalDossiers') }}</span>
             <span class="enc-scan-value">{{ scanResult.totalDossiers }}</span>
@@ -69,8 +84,6 @@
               {{ scanResult.unencryptedDossiers }}
             </span>
           </div>
-        </div>
-        <div class="enc-scan-card glass-card">
           <div class="enc-scan-stat">
             <span class="enc-scan-label">{{ $t('admin.encryption.totalNodes') }}</span>
             <span class="enc-scan-value">{{ scanResult.totalNodes }}</span>
@@ -90,65 +103,71 @@
         </div>
       </div>
 
-      <div v-if="migrateResult !== null" class="enc-migrate-result glass-card">
-        <v-icon size="18" :color="migrateResult > 0 ? 'success' : 'info'">
+      <div v-if="migrateResult !== null" class="enc-migrate-result">
+        <v-icon size="16" :color="migrateResult > 0 ? 'success' : 'info'">
           {{ migrateResult > 0 ? 'mdi-check-circle' : 'mdi-information-outline' }}
         </v-icon>
         <span>{{ $t('admin.encryption.migrateResult', { count: migrateResult }) }}</span>
       </div>
 
-      <p class="enc-scan-note">{{ $t('admin.encryption.autoEncryptNote') }}</p>
+      <p class="enc-note">{{ $t('admin.encryption.autoEncryptNote') }}</p>
     </div>
 
-    <!-- File Migration Section -->
-    <div class="enc-migrate-section fade-in fade-in-delay-3">
-      <h3 class="enc-scan-title mono">
-        <v-icon size="18" class="mr-2">mdi-file-lock-outline</v-icon>
-        {{ $t('admin.encryption.migrateFilesTitle') }}
-      </h3>
-      <p class="enc-migrate-desc">{{ $t('admin.encryption.migrateFilesDesc') }}</p>
+    <!-- File Migration Card -->
+    <div class="enc-card glass-card fade-in fade-in-delay-2">
+      <div class="enc-card-header">
+        <v-icon size="18" color="var(--me-accent)">mdi-file-lock-outline</v-icon>
+        <h3 class="enc-card-title mono">{{ $t('admin.encryption.migrateFilesTitle') }}</h3>
+      </div>
+      <p class="enc-desc">{{ $t('admin.encryption.migrateFilesDesc') }}</p>
 
-      <div class="enc-scan-actions">
+      <!-- Warning if keys not unlocked -->
+      <div v-if="keysNotUnlocked" class="enc-warning">
+        <v-icon size="16" color="warning" class="mr-1">mdi-alert-outline</v-icon>
+        <span>{{ $t('admin.encryption.keysNotUnlocked') }}</span>
+      </div>
+
+      <div class="enc-actions">
         <button
-          class="me-btn me-btn--primary"
+          class="me-btn-primary"
           :disabled="fileMigrationRunning"
           @click="runFileMigration"
         >
-          <v-icon size="16" class="mr-1">mdi-lock-plus-outline</v-icon>
+          <v-icon size="14" class="mr-1">mdi-lock-plus-outline</v-icon>
           {{ fileMigrationRunning ? $t('admin.encryption.migrateFilesRunning') : $t('admin.encryption.migrateFilesBtn') }}
         </button>
       </div>
 
       <!-- Progress -->
-      <div v-if="fileMigrationRunning || fileMigrationDone" class="enc-migrate-progress glass-card">
-        <div class="enc-migrate-progress-header">
-          <span class="enc-migrate-progress-label">
+      <div v-if="fileMigrationRunning || fileMigrationDone" class="enc-progress">
+        <div class="enc-progress-header">
+          <span class="enc-progress-label">
             {{ $t('admin.encryption.migrateFilesProgress', { current: fileMigrationCurrent, total: fileMigrationTotal }) }}
           </span>
-          <span v-if="fileMigrationRunning" class="enc-migrate-progress-phase">
+          <span v-if="fileMigrationRunning" class="enc-progress-phase">
             {{ fileMigrationPhase }}
           </span>
         </div>
-        <div class="enc-migrate-progress-bar">
+        <div class="enc-progress-bar">
           <div
-            class="enc-migrate-progress-fill"
+            class="enc-progress-fill"
             :style="{ width: fileMigrationPercent + '%' }"
           ></div>
         </div>
 
         <!-- Completion -->
-        <div v-if="fileMigrationDone" class="enc-migrate-done">
-          <v-icon size="18" color="success" class="mr-1">mdi-check-circle</v-icon>
+        <div v-if="fileMigrationDone" class="enc-done">
+          <v-icon size="16" color="success" class="mr-1">mdi-check-circle</v-icon>
           <span>{{ $t('admin.encryption.migrateFilesDone', { files: fileMigrationStats.files, content: fileMigrationStats.content }) }}</span>
         </div>
 
         <!-- Errors -->
-        <div v-if="fileMigrationErrors.length > 0" class="enc-migrate-errors">
-          <div class="enc-migrate-errors-title">
-            <v-icon size="16" color="warning" class="mr-1">mdi-alert-outline</v-icon>
+        <div v-if="fileMigrationErrors.length > 0" class="enc-errors">
+          <div class="enc-errors-title">
+            <v-icon size="14" color="warning" class="mr-1">mdi-alert-outline</v-icon>
             {{ $t('admin.encryption.migrateFilesErrors', { count: fileMigrationErrors.length }) }}
           </div>
-          <ul class="enc-migrate-errors-list">
+          <ul class="enc-errors-list">
             <li v-for="(err, i) in fileMigrationErrors" :key="i">
               <strong>{{ err.title || err.nodeId }}</strong>: {{ err.error }}
             </li>
@@ -204,6 +223,7 @@ const scanning = ref(false);
 const migrating = ref(false);
 const scanResult = ref<ScanResult | null>(null);
 const migrateResult = ref<number | null>(null);
+const keysNotUnlocked = ref(false);
 
 // File migration state
 const fileMigrationRunning = ref(false);
@@ -250,7 +270,9 @@ async function ensureDossierKey(dossierId: string) {
 }
 
 async function runFileMigration() {
+  keysNotUnlocked.value = false;
   if (!encryptionStore.isUnlocked) {
+    keysNotUnlocked.value = true;
     return;
   }
 
@@ -272,7 +294,19 @@ async function runFileMigration() {
     const { data: contentData } = await api.get('/admin/encryption/unencrypted-content');
     const contentNodes: UnencryptedContentNode[] = contentData.contentNodes || [];
 
-    fileMigrationTotal.value = files.length + contentNodes.length;
+    // Phase 3: Get unencrypted dossier files (logo, documents, entity photos)
+    const { data: dossierFileData } = await api.get('/admin/encryption/unencrypted-dossier-files');
+    const dossierFiles: Array<{
+      dossierId: string;
+      dossierTitle: string;
+      type: 'logo' | 'document' | 'entityPhoto';
+      filePath: string;
+      entityIndex?: number;
+      photoIndex?: number;
+      docId?: string;
+    }> = dossierFileData.items || [];
+
+    fileMigrationTotal.value = files.length + contentNodes.length + dossierFiles.length;
 
     // Migrate files
     for (const node of files) {
@@ -290,7 +324,8 @@ async function runFileMigration() {
         }
 
         // Download the plaintext file
-        const response = await fetch(SERVER_URL + node.fileUrl, {
+        const fileUrl = node.fileUrl.startsWith('/') ? node.fileUrl : '/' + node.fileUrl;
+        const response = await fetch(SERVER_URL + fileUrl, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           },
@@ -373,19 +408,31 @@ async function runFileMigration() {
         // Build update payload - encrypt the fields that need it
         const update: Record<string, any> = {};
 
-        if (fullNode.content && !fullNode.content.startsWith('"ENC:')) {
+        const contentStr = typeof fullNode.content === 'string'
+          ? fullNode.content
+          : fullNode.content != null ? JSON.stringify(fullNode.content) : null;
+
+        if (contentStr && !contentStr.startsWith('"ENC:') && !contentStr.startsWith('ENC:')) {
           const { encryptContent } = await import('../../utils/encryption');
-          update.content = '"ENC:' + await encryptContent(fullNode.content, key) + '"';
+          update.content = '"ENC:' + await encryptContent(contentStr, key) + '"';
         }
 
-        if (fullNode.excalidrawData) {
+        const excalidrawStr = typeof fullNode.excalidrawData === 'string'
+          ? fullNode.excalidrawData
+          : fullNode.excalidrawData != null ? JSON.stringify(fullNode.excalidrawData) : null;
+
+        if (excalidrawStr && !excalidrawStr.startsWith('ENC:')) {
           const { encryptContent } = await import('../../utils/encryption');
-          update.excalidrawData = 'ENC:' + await encryptContent(fullNode.excalidrawData, key);
+          update.excalidrawData = 'ENC:' + await encryptContent(excalidrawStr, key);
         }
 
-        if (fullNode.mapData) {
+        const mapStr = typeof fullNode.mapData === 'string'
+          ? fullNode.mapData
+          : fullNode.mapData != null ? JSON.stringify(fullNode.mapData) : null;
+
+        if (mapStr && !mapStr.startsWith('ENC:')) {
           const { encryptContent } = await import('../../utils/encryption');
-          update.mapData = 'ENC:' + await encryptContent(fullNode.mapData, key);
+          update.mapData = 'ENC:' + await encryptContent(mapStr, key);
         }
 
         if (Object.keys(update).length > 0) {
@@ -396,6 +443,61 @@ async function runFileMigration() {
         fileMigrationErrors.value.push({
           nodeId: node._id,
           title: node.title || node._id,
+          error: err.message || String(err),
+        });
+      }
+      fileMigrationCurrent.value++;
+      fileMigrationPercent.value = Math.round((fileMigrationCurrent.value / fileMigrationTotal.value) * 100);
+    }
+
+    // Phase 3: Migrate dossier files (logo, linked documents, entity photos)
+    fileMigrationPhase.value = t('admin.encryption.migratePhaseDossierFiles');
+    for (const item of dossierFiles) {
+      try {
+        const key = await ensureDossierKey(item.dossierId);
+        if (!key) {
+          fileMigrationErrors.value.push({
+            nodeId: item.dossierId,
+            title: item.dossierTitle,
+            error: t('admin.encryption.migrateErrorNoKey'),
+          });
+          fileMigrationCurrent.value++;
+          fileMigrationPercent.value = Math.round((fileMigrationCurrent.value / fileMigrationTotal.value) * 100);
+          continue;
+        }
+
+        // Download the plaintext file
+        const filePath = item.filePath.startsWith('/') ? item.filePath : '/' + item.filePath;
+        const response = await fetch(SERVER_URL + filePath, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const plainBuffer = await response.arrayBuffer();
+
+        // Encrypt
+        const encryptedBuffer = await encryptFile(key, plainBuffer);
+        const encryptedBlob = new Blob([encryptedBuffer], { type: 'application/octet-stream' });
+        const originalName = item.filePath.split('/').pop() || 'file';
+        const encryptedFile = new File([encryptedBlob], originalName + '.enc', { type: 'application/octet-stream' });
+
+        // Upload encrypted version
+        const formData = new FormData();
+        formData.append('file', encryptedFile);
+        formData.append('type', item.type);
+        if (item.entityIndex != null) formData.append('entityIndex', item.entityIndex.toString());
+        if (item.photoIndex != null) formData.append('photoIndex', item.photoIndex.toString());
+        if (item.docId) formData.append('docId', item.docId);
+
+        await api.post(`/admin/encryption/replace-dossier/${item.dossierId}`, formData);
+        fileMigrationStats.value.files++;
+      } catch (err: any) {
+        fileMigrationErrors.value.push({
+          nodeId: item.dossierId,
+          title: `${item.dossierTitle} (${item.type})`,
           error: err.message || String(err),
         });
       }
@@ -422,203 +524,146 @@ async function runFileMigration() {
 <style scoped>
 .admin-section-header { margin-bottom: 20px; }
 .admin-section-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
+.admin-section-subtitle { font-size: 13px; color: var(--me-text-muted); margin-top: 4px; font-family: var(--me-font-mono); }
 
-.enc-status-card {
+/* Card pattern (matches AdminSecurity / AdminBranding) */
+.enc-card { padding: 20px; margin-bottom: 16px; }
+.enc-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--me-border); }
+.enc-card-title { font-size: 14px; font-weight: 700; color: var(--me-text-primary); }
+
+/* Status row */
+.enc-status-row { display: flex; align-items: center; gap: 14px; padding: 4px 0; }
+.enc-status-info { flex: 1; }
+.enc-status-text { font-size: 13px; font-weight: 600; color: var(--me-text-primary); margin: 0; }
+.enc-status-detail { font-size: 12px; color: var(--me-text-muted); margin: 2px 0 0; }
+
+/* Info rows */
+.enc-info-row { display: flex; align-items: flex-start; gap: 12px; padding: 6px 0; }
+.enc-info-label { font-size: 12px; color: var(--me-text-muted); margin: 0 0 2px; }
+.enc-info-value { font-size: 13px; color: var(--me-text-primary); margin: 0; }
+.enc-divider { height: 1px; background: var(--me-border); margin: 8px 0; opacity: 0.5; }
+
+/* Actions */
+.enc-actions { display: flex; gap: 10px; margin-bottom: 16px; }
+
+/* Buttons (matches AdminBranding) */
+.me-btn-ghost {
+  padding: 8px 16px;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-secondary);
+  cursor: pointer;
+  font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  margin-bottom: 20px;
-  border-left: 3px solid var(--me-accent);
 }
-.enc-status--active {
-  border-left-color: #4caf50;
+.me-btn-ghost:hover {
+  border-color: var(--me-border-hover);
+  color: var(--me-text-primary);
 }
-.enc-status-info {
-  flex: 1;
+.me-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
-.enc-status-text {
-  font-size: 15px;
+.me-btn-primary {
+  padding: 8px 16px;
+  border-radius: var(--me-radius-xs);
+  background: var(--me-accent);
+  border: none;
+  color: var(--me-bg-deep);
+  cursor: pointer;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--me-text-primary);
-  margin: 0 0 4px;
-}
-.enc-status-detail {
-  font-size: 13px;
-  color: var(--me-text-muted);
-  margin: 0;
-}
-
-.enc-info-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
-  margin-bottom: 28px;
-}
-.enc-info-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-}
-.enc-info-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--me-text-muted);
-  margin: 0 0 4px;
-}
-.enc-info-value {
-  font-size: 13px;
-  color: var(--me-text-primary);
-  margin: 0;
-}
-
-.enc-scan-section {
-  margin-top: 8px;
-}
-.enc-scan-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--me-text-primary);
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
 }
-.enc-scan-actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
+.me-btn-primary:hover {
+  box-shadow: 0 0 16px var(--me-accent-glow);
 }
-.enc-scan-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+.me-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
-.enc-scan-card {
-  padding: 16px;
+
+/* Scan results */
+.enc-scan-results { margin-bottom: 16px; }
+.enc-scan-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .enc-scan-stat {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 4px 0;
 }
-.enc-scan-label {
-  font-size: 13px;
-  color: var(--me-text-secondary);
-}
-.enc-scan-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--me-text-primary);
-  font-family: var(--me-font-mono);
-}
-.enc-scan-value--warn {
-  color: #ff9800;
-}
-.enc-scan-value--ok {
-  color: #4caf50;
-}
+.enc-scan-label { font-size: 13px; color: var(--me-text-secondary); }
+.enc-scan-value { font-size: 14px; font-weight: 600; color: var(--me-text-primary); font-family: var(--me-font-mono); }
+.enc-scan-value--warn { color: #ff9800; }
+.enc-scan-value--ok { color: #4caf50; }
+
+/* Migrate result inline */
 .enc-migrate-result {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
+  gap: 8px;
+  padding: 8px 0;
   font-size: 13px;
   color: var(--me-text-primary);
-}
-.enc-scan-note {
-  font-size: 12px;
-  color: var(--me-text-muted);
-  font-style: italic;
-  margin: 0;
 }
 
-/* File Migration Section */
-.enc-migrate-section {
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px solid var(--me-border);
+/* Note */
+.enc-note { font-size: 12px; color: var(--me-text-muted); font-style: italic; margin: 0; }
+
+/* Desc */
+.enc-desc { font-size: 13px; color: var(--me-text-secondary); margin: 0 0 16px; line-height: 1.5; }
+
+/* Progress */
+.enc-progress {
+  padding: 14px;
+  margin-top: 4px;
+  background: var(--me-bg-glass);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-xs);
 }
-.enc-migrate-desc {
-  font-size: 13px;
-  color: var(--me-text-secondary);
-  margin: 0 0 16px;
-  line-height: 1.5;
-}
-.enc-migrate-progress {
-  padding: 16px;
-  margin-bottom: 16px;
-}
-.enc-migrate-progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.enc-migrate-progress-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--me-text-primary);
-  font-family: var(--me-font-mono);
-}
-.enc-migrate-progress-phase {
-  font-size: 12px;
-  color: var(--me-text-muted);
-}
-.enc-migrate-progress-bar {
-  height: 6px;
-  background: var(--me-bg-secondary);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-.enc-migrate-progress-fill {
-  height: 100%;
-  background: var(--me-accent);
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-.enc-migrate-done {
+.enc-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.enc-progress-label { font-size: 13px; font-weight: 600; color: var(--me-text-primary); font-family: var(--me-font-mono); }
+.enc-progress-phase { font-size: 12px; color: var(--me-text-muted); }
+.enc-progress-bar { height: 6px; background: var(--me-bg-secondary); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.enc-progress-fill { height: 100%; background: var(--me-accent); border-radius: 3px; transition: width 0.3s ease; }
+
+/* Warning */
+.enc-warning {
   display: flex;
   align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+  border-radius: var(--me-radius-xs);
   font-size: 13px;
-  color: #4caf50;
-  font-weight: 600;
-  margin-top: 8px;
+  color: #ff9800;
+  font-weight: 500;
 }
-.enc-migrate-errors {
-  margin-top: 12px;
+
+/* Done */
+.enc-done { display: flex; align-items: center; font-size: 13px; color: #4caf50; font-weight: 600; margin-top: 6px; }
+
+/* Errors */
+.enc-errors {
+  margin-top: 10px;
   padding: 12px;
   background: rgba(255, 152, 0, 0.08);
-  border-radius: 6px;
+  border-radius: var(--me-radius-xs);
   border: 1px solid rgba(255, 152, 0, 0.2);
 }
-.enc-migrate-errors-title {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ff9800;
-  margin-bottom: 8px;
-}
-.enc-migrate-errors-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 12px;
-  color: var(--me-text-secondary);
-}
-.enc-migrate-errors-list li {
-  padding: 3px 0;
-}
-.enc-migrate-errors-list li strong {
-  color: var(--me-text-primary);
-}
+.enc-errors-title { display: flex; align-items: center; font-size: 13px; font-weight: 600; color: #ff9800; margin-bottom: 6px; }
+.enc-errors-list { list-style: none; padding: 0; margin: 0; font-size: 12px; color: var(--me-text-secondary); }
+.enc-errors-list li { padding: 3px 0; }
+.enc-errors-list li strong { color: var(--me-text-primary); }
+
+.mr-1 { margin-right: 4px; }
 </style>

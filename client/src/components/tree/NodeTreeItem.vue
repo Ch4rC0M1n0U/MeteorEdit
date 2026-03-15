@@ -39,7 +39,6 @@
         @click.stop
       />
       <span v-else class="nti-title" @dblclick.stop="startRename">{{ node.title }}</span>
-      <EvidenceBadge v-if="node.fileHash" :file-hash="node.fileHash" :last-status="node.lastVerificationStatus" />
 
       <v-menu v-model="showMenu" location="end">
         <template #activator="{ props }">
@@ -105,8 +104,6 @@ import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
 import type { DossierNode } from '../../types';
-import EvidenceBadge from '../evidence/EvidenceBadge.vue';
-
 const props = defineProps<{ node: DossierNode; allNodes: DossierNode[]; depth: number; expanded: boolean }>();
 defineEmits<{ create: [type: string, parentId: string]; duplicate: [nodeId: string]; 'toggle-expand': [nodeId: string] }>();
 

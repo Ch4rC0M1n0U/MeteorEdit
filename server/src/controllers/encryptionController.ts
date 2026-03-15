@@ -240,9 +240,6 @@ export async function replaceWithEncrypted(req: AuthRequest, res: Response): Pro
     node.fileUrl = newFileUrl;
     node.originalContentType = req.body.originalContentType || null;
     node.originalFileSize = req.body.originalFileSize ? parseInt(req.body.originalFileSize) : null;
-    if (req.body.plainHash) {
-      node.fileHash = req.body.plainHash;
-    }
     await node.save();
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
@@ -253,6 +250,110 @@ export async function replaceWithEncrypted(req: AuthRequest, res: Response): Pro
     res.json({ message: 'File replaced', fileUrl: newFileUrl });
   } catch (error) {
     console.error('Replace with encrypted error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function listUnencryptedDossierFiles(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossiers = await Dossier.find({}).select('_id title logoPath linkedDocuments entities').lean();
+    const items: Array<{
+      dossierId: string;
+      dossierTitle: string;
+      type: 'logo' | 'document' | 'entityPhoto';
+      filePath: string;
+      entityIndex?: number;
+      photoIndex?: number;
+      docId?: string;
+    }> = [];
+
+    for (const d of dossiers) {
+      // Logo
+      if (d.logoPath && !d.logoPath.endsWith('.enc')) {
+        items.push({ dossierId: d._id.toString(), dossierTitle: d.title, type: 'logo', filePath: d.logoPath });
+      }
+      // Linked documents
+      if (d.linkedDocuments) {
+        for (const doc of d.linkedDocuments) {
+          if (doc.filePath && !doc.filePath.endsWith('.enc')) {
+            items.push({ dossierId: d._id.toString(), dossierTitle: d.title, type: 'document', filePath: doc.filePath, docId: (doc as any)._id?.toString() });
+          }
+        }
+      }
+      // Entity photos
+      if (d.entities) {
+        d.entities.forEach((entity: any, ei: number) => {
+          if (entity.photos) {
+            entity.photos.forEach((photo: string, pi: number) => {
+              if (photo && !photo.endsWith('.enc')) {
+                items.push({ dossierId: d._id.toString(), dossierTitle: d.title, type: 'entityPhoto', filePath: photo, entityIndex: ei, photoIndex: pi });
+              }
+            });
+          }
+        });
+      }
+    }
+
+    res.json({ items });
+  } catch (error) {
+    console.error('List unencrypted dossier files error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function replaceDossierFile(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { dossierId } = req.params;
+    const { type, entityIndex, photoIndex, docId } = req.body;
+
+    if (!req.file) {
+      res.status(400).json({ message: 'No file provided' });
+      return;
+    }
+
+    const dossier = await Dossier.findById(dossierId);
+    if (!dossier) {
+      res.status(404).json({ message: 'Dossier not found' });
+      return;
+    }
+
+    const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
+    const newFileUrl = `/uploads/${req.file.filename}`;
+
+    if (type === 'logo') {
+      // Delete old file
+      if (dossier.logoPath) {
+        const oldPath = path.resolve(UPLOAD_DIR, '..', dossier.logoPath.replace(/^\//, ''));
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      dossier.logoPath = newFileUrl;
+    } else if (type === 'document' && docId) {
+      const doc = (dossier.linkedDocuments as any[]).find((d: any) => d._id?.toString() === docId);
+      if (doc) {
+        const oldPath = path.resolve(UPLOAD_DIR, '..', doc.filePath.replace(/^\//, ''));
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        doc.filePath = newFileUrl;
+      }
+    } else if (type === 'entityPhoto' && entityIndex != null && photoIndex != null) {
+      const entity = (dossier.entities as any[])?.[entityIndex];
+      if (entity?.photos?.[photoIndex]) {
+        const oldPath = path.resolve(UPLOAD_DIR, '..', entity.photos[photoIndex].replace(/^\//, ''));
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        entity.photos[photoIndex] = newFileUrl;
+      }
+    } else {
+      res.status(400).json({ message: 'Invalid type' });
+      return;
+    }
+
+    await dossier.save();
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'encryption.migrate_dossier_file', 'dossier', dossierId as string, { type, newFileUrl }, ip, req.headers['user-agent']?.toString() || '');
+
+    res.json({ message: 'File replaced', fileUrl: newFileUrl });
+  } catch (error) {
+    console.error('Replace dossier file error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 }

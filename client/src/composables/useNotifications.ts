@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 import api from '../services/api';
-import { getSocket } from '../services/socket';
+import { getSocket, connectSocket } from '../services/socket';
 
 interface NotificationItem {
   _id: string;
@@ -58,8 +58,7 @@ export function useNotifications() {
   }
 
   function setupSocketListener() {
-    const socket = getSocket();
-    if (!socket) return;
+    const socket = getSocket() || connectSocket();
     socket.on('notification:new', (notif: NotificationItem) => {
       notifications.value.unshift(notif);
       unreadCount.value++;

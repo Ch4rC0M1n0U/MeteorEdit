@@ -98,39 +98,43 @@ export async function updateTask(req: AuthRequest, res: Response): Promise<void>
   if ('dueDate' in req.body) task.dueDate = dueDate || null;
 
   await task.save();
+
+  // Capture IDs before populate transforms them into objects
+  const newAssigneeId = task.assigneeId?.toString() || null;
+  const dossierId = task.dossierId.toString();
+
   const populated = await task.populate([
     { path: 'assigneeId', select: 'firstName lastName email avatarPath' },
     { path: 'createdBy', select: 'firstName lastName' },
   ]);
 
-  if (!(await isDossierEmbargo(task.dossierId.toString()))) {
+  if (!(await isDossierEmbargo(dossierId))) {
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(userId, 'task.update', 'dossier', task.dossierId.toString(), { taskId, changes: req.body }, ip);
+    await logActivity(userId, 'task.update', 'dossier', dossierId, { taskId, changes: req.body }, ip);
   }
 
   // Notify new assignee if changed
-  const newAssignee = task.assigneeId?.toString() || null;
-  if (newAssignee && newAssignee !== oldAssignee && newAssignee !== userId) {
+  if (newAssigneeId && newAssigneeId !== oldAssignee && newAssigneeId !== userId) {
     const actor = await User.findById(userId);
     const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Quelqu\'un';
     await createNotification(
-      newAssignee,
+      newAssigneeId,
       'task.assigned',
       `${actorName} vous a assigné la tâche "${task.title}"`,
-      task.dossierId.toString(),
+      dossierId,
       userId,
     );
   }
 
   // Notify assignee when status changed to done
-  if (status === 'done' && oldStatus !== 'done' && task.assigneeId && task.assigneeId.toString() !== userId) {
+  if (status === 'done' && oldStatus !== 'done' && newAssigneeId && newAssigneeId !== userId) {
     const actor = await User.findById(userId);
     const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'Quelqu\'un';
     await createNotification(
-      task.assigneeId.toString(),
+      newAssigneeId,
       'task.assigned',
       `${actorName} a terminé la tâche "${task.title}"`,
-      task.dossierId.toString(),
+      dossierId,
       userId,
     );
   }

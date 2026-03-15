@@ -267,6 +267,8 @@ export const useDossierStore = defineStore('dossier', () => {
     socket.off('node-updated');
     socket.off('node-content-updated');
     socket.off('excalidraw-updated');
+    socket.off('media-updated');
+    socket.off('dossier-updated');
     socket.off('node-added');
     socket.off('node-removed');
     socket.off('dossier-presence-list');
@@ -297,6 +299,37 @@ export const useDossierStore = defineStore('dossier', () => {
       }
       if (selectedNode.value?._id === data.nodeId) {
         selectedNode.value = { ...selectedNode.value, content: data.content };
+      }
+    });
+
+    // Media data sync (annotations, captures) from another user
+    socket.on('media-updated', async (data: { nodeId: string; mediaData: any }) => {
+      // Decrypt mediaData if encrypted
+      let mediaData = data.mediaData;
+      if (currentDossier.value && typeof mediaData === 'string' && mediaData.startsWith('ENC:')) {
+        try {
+          const encStore = useEncryptionStore();
+          mediaData = await encStore.decryptForDossier(currentDossier.value._id, mediaData.slice(4));
+        } catch { /* leave as-is */ }
+      }
+      const idx = nodes.value.findIndex(n => n._id === data.nodeId);
+      if (idx >= 0) {
+        nodes.value[idx] = { ...nodes.value[idx], mediaData };
+      }
+      if (selectedNode.value?._id === data.nodeId) {
+        selectedNode.value = { ...selectedNode.value, mediaData };
+      }
+    });
+
+    // Dossier metadata sync (logo, title, etc.)
+    socket.on('dossier-updated', (data: { dossier: any }) => {
+      const updated = data.dossier;
+      if (currentDossier.value?._id === updated._id) {
+        currentDossier.value = { ...currentDossier.value, ...updated };
+      }
+      const idx = dossiers.value.findIndex(d => d._id === updated._id);
+      if (idx >= 0) {
+        dossiers.value[idx] = { ...dossiers.value[idx], ...updated };
       }
     });
 
@@ -378,6 +411,14 @@ export const useDossierStore = defineStore('dossier', () => {
     if (idx >= 0) nodes.value[idx] = decrypted;
     nodeContentCache.value.set(nodeId, decrypted);
     if (selectedNode.value?._id === nodeId) selectedNode.value = decrypted;
+    // Notify collaborators of mediaData changes via socket
+    if (nodeData.mediaData && dossierId) {
+      getSocket()?.emit('media-update', {
+        dossierId,
+        nodeId,
+        mediaData: encryptedNodeData.mediaData,
+      });
+    }
     return decrypted;
   }
 

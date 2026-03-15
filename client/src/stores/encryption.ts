@@ -30,24 +30,14 @@ export const useEncryptionStore = defineStore('encryption', () => {
   const isUnlocked = computed(() => !!privateKey.value);
 
   // --- sessionStorage persistence ---
+  // Keys are stored directly in sessionStorage (tab-scoped, same-origin, cleared on tab close).
+  // No ephemeral encryption layer — it provided no real security since the key was also in memory
+  // and was LOST on page refresh, causing all uploads to silently fall back to plaintext.
   const SESSION_KEY = 'me_crypto_session';
-  let ephemeralKey: CryptoKey | null = null;
-
-  async function getEphemeralKey(): Promise<CryptoKey> {
-    if (!ephemeralKey) {
-      ephemeralKey = await window.crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-      );
-    }
-    return ephemeralKey;
-  }
 
   async function saveToSession(): Promise<void> {
     if (!privateKey.value) return;
     try {
-      const key = await getEphemeralKey();
       const privateKeyJwk = await exportPrivateKey(privateKey.value);
       // Serialize dossier key cache
       const dossierKeysObj: Record<string, string> = {};
@@ -60,15 +50,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
         }
         dossierKeysObj[id] = btoa(binary);
       }
-      const data = JSON.stringify({ privateKeyJwk, dossierKeys: dossierKeysObj });
-      const encoded = new TextEncoder().encode(data);
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
-      const encrypted = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
-      const payload = {
-        iv: btoa(String.fromCharCode(...iv)),
-        data: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
-      };
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ privateKeyJwk, dossierKeys: dossierKeysObj }));
     } catch (e) {
       console.error('Failed to save crypto session:', e);
     }
@@ -76,20 +58,20 @@ export const useEncryptionStore = defineStore('encryption', () => {
 
   async function tryRestoreFromSession(): Promise<boolean> {
     const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw || !ephemeralKey) return false;
+    if (!raw) return false;
     try {
-      const { iv, data } = JSON.parse(raw);
-      const ivArr = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
-      const dataArr = Uint8Array.from(atob(data), c => c.charCodeAt(0));
-      const decrypted = await window.crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: ivArr },
-        ephemeralKey,
-        dataArr
-      );
-      const parsed = JSON.parse(new TextDecoder().decode(decrypted));
+      const parsed = JSON.parse(raw);
 
       // Restore private key
       privateKey.value = await importPrivateKey(parsed.privateKeyJwk);
+
+      // Restore public key from server
+      try {
+        const { data } = await api.get('/encryption/keys');
+        if (data.publicKey) {
+          publicKey.value = await importPublicKey(data.publicKey);
+        }
+      } catch { /* non-critical */ }
 
       // Restore dossier keys
       if (parsed.dossierKeys) {
@@ -114,7 +96,6 @@ export const useEncryptionStore = defineStore('encryption', () => {
 
   function clearSession(): void {
     sessionStorage.removeItem(SESSION_KEY);
-    ephemeralKey = null;
   }
 
   /**

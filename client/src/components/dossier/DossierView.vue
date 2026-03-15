@@ -44,14 +44,6 @@
           >
             <v-icon size="16">mdi-history</v-icon>
           </button>
-          <button
-            v-if="dossierStore.selectedNode?.fileHash"
-            class="dv-action-btn"
-            @click="evidencePanelOpen = true"
-            :title="$t('dossier.evidenceIntegrity')"
-          >
-            <v-icon size="16">mdi-shield-check-outline</v-icon>
-          </button>
           <button class="dv-action-btn" @click="webClipperOpen = true" title="Web Clipper">
             <v-icon size="16">mdi-web</v-icon>
           </button>
@@ -87,20 +79,11 @@
           <v-icon size="18">mdi-checkbox-marked-outline</v-icon>
           <span>{{ $t('dossier.tasks') }}</span>
         </button>
-        <button class="dv-nav-item" :class="{ active: sidebarTab === 'evidence' }" @click="sidebarTab = 'evidence'">
-          <v-icon size="18">mdi-shield-check-outline</v-icon>
-          <span>{{ $t('dossier.integrity') }}</span>
-        </button>
       </div>
 
       <div class="dv-sidebar-content">
         <NodeTree v-show="sidebarTab === 'tree'" @create="handleCreateNode" @duplicate="handleDuplicateNode" @file-drop="handleFileDrop" />
         <TaskPanel v-if="sidebarTab === 'tasks'" />
-        <DossierEvidenceView
-          v-if="sidebarTab === 'evidence' && dossierStore.currentDossier"
-          :dossier-id="dossierStore.currentDossier._id"
-          @select-node="onEvidenceSelectNode"
-        />
       </div>
     </aside>
 
@@ -135,9 +118,9 @@
 
       <div v-else-if="dossierStore.selectedNode.type === 'note'" class="dv-editor-wrap">
         <!-- Clip screenshot annotator -->
-        <div v-if="annotatorOpen && dossierStore.selectedNode.fileUrl" class="dv-clip-annotator">
+        <div v-if="annotatorOpen && dossierStore.selectedNode.fileUrl && decryptedFileUrl" class="dv-clip-annotator">
           <ImageAnnotator
-            :image-src="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+            :image-src="decryptedFileUrl"
             :initial-annotations="dossierStore.selectedNode.content?.annotations"
             :key="'clip-annot-' + dossierStore.selectedNode._id"
             @save="onAnnotationsSave"
@@ -221,8 +204,8 @@
               <v-icon size="16">mdi-draw</v-icon>
             </button>
             <a
-              v-if="dossierStore.selectedNode.fileUrl"
-              :href="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+              v-if="dossierStore.selectedNode.fileUrl && decryptedFileUrl"
+              :href="decryptedFileUrl"
               target="_blank"
               class="dv-action-btn"
               :title="$t('dossier.openFile')"
@@ -232,27 +215,27 @@
           </div>
         </div>
         <!-- Image preview with optional annotator -->
-        <div v-if="isImageFile(dossierStore.selectedNode.fileName) && dossierStore.selectedNode.fileUrl" class="dv-doc-image-area">
+        <div v-if="isImageFile(dossierStore.selectedNode.fileName) && dossierStore.selectedNode.fileUrl && decryptedFileUrl" class="dv-doc-image-area">
           <ImageAnnotator
             v-if="annotatorOpen"
-            :image-src="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+            :image-src="decryptedFileUrl"
             :initial-annotations="dossierStore.selectedNode.content?.annotations"
             :key="'annot-' + dossierStore.selectedNode._id"
             @save="onAnnotationsSave"
           />
           <img
             v-else
-            :src="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
+            :src="decryptedFileUrl"
             class="dv-doc-image-preview"
           />
         </div>
         <!-- Non-image file info -->
-        <div v-else-if="dossierStore.selectedNode.fileUrl" class="dv-doc-file-info">
+        <div v-else-if="dossierStore.selectedNode.fileUrl && decryptedFileUrl" class="dv-doc-file-info">
           <v-icon size="48" class="dv-doc-file-icon">mdi-file-document-outline</v-icon>
           <p class="text-muted">{{ dossierStore.selectedNode.fileName }}</p>
           <a
-            :href="SERVER_URL + '/' + dossierStore.selectedNode.fileUrl"
-            target="_blank"
+            :href="decryptedFileUrl"
+            :download="dossierStore.selectedNode.fileName"
             class="dv-doc-download-btn"
           >
             <v-icon size="14" class="mr-1">mdi-download</v-icon>
@@ -270,19 +253,6 @@
         <p class="text-muted">{{ $t('dossier.folderLabel') }}</p>
       </div>
     </main>
-
-    <!-- Evidence Panel -->
-    <v-dialog v-model="evidencePanelOpen" max-width="480">
-      <div class="glass-card" style="max-height: 80vh; overflow: hidden;">
-        <EvidencePanel
-          v-if="dossierStore.selectedNode"
-          :node-id="dossierStore.selectedNode._id"
-          :node-title="dossierStore.selectedNode.title"
-          :record-id="evidenceRecordId"
-          @close="evidencePanelOpen = false"
-        />
-      </div>
-    </v-dialog>
 
     <!-- Media Create -->
     <MediaCreateDialog
@@ -572,10 +542,12 @@ const MediaEditor = defineAsyncComponent(() =>
 );
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import type { MediaData } from '../../types';
-import EvidencePanel from '../evidence/EvidencePanel.vue';
-import DossierEvidenceView from '../evidence/DossierEvidenceView.vue';
+import { useDecryptedFile } from '../../composables/useDecryptedFile';
+import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 
 const { t } = useI18n();
+const { getDecryptedUrl } = useDecryptedFile();
+const { uploadEncryptedFile } = useEncryptedUpload();
 
 const webClipperOpen = ref(false);
 const exportSelectOpen = ref(false);
@@ -624,10 +596,37 @@ const createTitle = ref('');
 const selectedTemplateId = ref<string | null>(null);
 
 // Sidebar
-const sidebarTab = ref<'tree' | 'tasks' | 'evidence'>('tree');
-const evidencePanelOpen = ref(false);
-const evidenceRecordId = ref<string | undefined>();
+const sidebarTab = ref<'tree' | 'tasks'>('tree');
 const annotatorOpen = ref(false);
+
+// Decrypted URLs for encrypted files
+const decryptedFileUrl = ref<string | null>(null);
+const decryptedLogoUrl = ref<string | null>(null);
+
+// Watch selected node to decrypt its fileUrl
+watch(() => dossierStore.selectedNode?.fileUrl, async (fileUrl) => {
+  decryptedFileUrl.value = null;
+  if (!fileUrl || !dossierStore.currentDossier) return;
+  try {
+    const ext = (dossierStore.selectedNode?.fileName || '').toLowerCase();
+    const isImg = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'].some(e => ext.endsWith(e));
+    const ct = isImg ? 'image/png' : 'application/octet-stream';
+    decryptedFileUrl.value = await getDecryptedUrl(dossierStore.currentDossier._id, fileUrl, ct);
+  } catch {
+    decryptedFileUrl.value = `${SERVER_URL}/${fileUrl}`;
+  }
+}, { immediate: true });
+
+// Watch dossier logo to decrypt
+watch(() => dossierStore.currentDossier?.logoPath, async (logoPath) => {
+  decryptedLogoUrl.value = null;
+  if (!logoPath || !dossierStore.currentDossier) return;
+  try {
+    decryptedLogoUrl.value = await getDecryptedUrl(dossierStore.currentDossier._id, logoPath, 'image/png');
+  } catch {
+    decryptedLogoUrl.value = `${SERVER_URL}/${logoPath}`;
+  }
+}, { immediate: true });
 
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
 
@@ -644,7 +643,8 @@ async function onAnnotationsSave(annotations: any[]) {
   // If node has a fileUrl (clipper screenshot), replace file in-place with annotations baked in
   if (node.fileUrl) {
     try {
-      const imgSrc = `${SERVER_URL}/${node.fileUrl}`;
+      // Use decrypted blob URL if available, fallback to direct URL
+      const imgSrc = decryptedFileUrl.value || `${SERVER_URL}/${node.fileUrl}`;
       console.log('onAnnotationsSave: loading image from', imgSrc);
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
@@ -724,18 +724,8 @@ watch(() => dossierStore.selectedNode?._id, () => {
   annotatorOpen.value = false;
 });
 
-function onEvidenceSelectNode(nodeId: string, recordId?: string) {
-  const node = dossierStore.nodes.find(n => n._id === nodeId);
-  if (node) {
-    dossierStore.selectNode(node);
-    evidenceRecordId.value = recordId;
-    evidencePanelOpen.value = true;
-  }
-}
-
 const dossierLogoUrl = computed(() => {
-  const d = dossierStore.currentDossier;
-  return d?.logoPath ? `${SERVER_URL}/${d.logoPath}` : null;
+  return decryptedLogoUrl.value;
 });
 
 // Focus mode
@@ -1000,6 +990,7 @@ async function downloadAiReportAsDocx() {
       signature: sig?.name ? sig : undefined,
       signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
       serverUrl: SERVER_URL,
+      dossierId: dossierStore.currentDossier!._id,
     };
 
     await generateDocx(data);
@@ -1088,12 +1079,9 @@ async function handleFileDrop(files: FileList, parentId: string | null) {
         title: file.name,
         parentId,
       });
-      // Upload the file to the node
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data: updated } = await api.post(`/nodes/${node._id}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Upload the file to the node (encrypted if dossier has encryption key)
+      const dossierId = dossierStore.currentDossier!._id;
+      const { data: updated } = await uploadEncryptedFile(dossierId, file, `/nodes/${node._id}/upload`);
       // Update local node with file info
       const idx = dossierStore.nodes.findIndex(n => n._id === node._id);
       if (idx >= 0) dossierStore.nodes[idx] = updated;
@@ -1343,6 +1331,7 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaF
       signature: sig?.name ? sig : undefined,
       signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
       serverUrl: SERVER_URL,
+      dossierId: dossierStore.currentDossier!._id,
     };
 
     await generateDocx(data);

@@ -25,7 +25,6 @@ import taskRoutes from './routes/tasks';
 import clipperRoutes from './routes/clipper';
 import mediaRoutes from './routes/media';
 import encryptionRoutes from './routes/encryption';
-import evidenceRoutes from './routes/evidence';
 import SiteSettings from './models/SiteSettings';
 import { startYjsServer } from './yjs-server';
 import { checkMaintenance, loadMaintenanceState } from './middleware/maintenance';
@@ -53,10 +52,11 @@ app.use(cors());
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 
-// Branding files - public
+// Branding files - public (logos, favicons, login backgrounds)
 app.use('/uploads/branding', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads', 'branding')));
-// Legacy fallback - serve all uploads statically (will be removed after migration)
-app.use('/uploads', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads')));
+// All other uploads: served with .enc fallback (sensitive files are E2E encrypted — the encryption IS the security layer)
+import { serveUploadFile } from './controllers/fileController';
+app.get('/uploads/*filepath', serveUploadFile);
 
 // Swagger API documentation (public, no auth required)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -89,7 +89,6 @@ app.use('/api', taskRoutes);
 app.use('/api/clip', clipperRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/encryption', encryptionRoutes);
-app.use('/api', evidenceRoutes);
 
 setupSocket(httpServer);
 

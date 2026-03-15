@@ -31,7 +31,13 @@ export const useAuthStore = defineStore('auth', () => {
       if (!restored) {
         const hasKeys = await encStore.checkKeys();
         if (hasKeys) {
-          await encStore.unlockKeys(password);
+          const unlocked = await encStore.unlockKeys(password);
+          if (!unlocked) {
+            // Keys exist but can't be decrypted (e.g. PBKDF2 iterations changed)
+            // Re-initialize with current password
+            console.warn('Encryption keys could not be decrypted, re-initializing...');
+            await encStore.initializeKeys(password);
+          }
         } else {
           // Legacy user without keys - initialize them now
           await encStore.initializeKeys(password);
@@ -59,9 +65,12 @@ export const useAuthStore = defineStore('auth', () => {
         if (!restored) {
           const hasKeys = await encStore.checkKeys();
           if (hasKeys) {
-            await encStore.unlockKeys(pendingPassword);
+            const unlocked = await encStore.unlockKeys(pendingPassword);
+            if (!unlocked) {
+              console.warn('Encryption keys could not be decrypted, re-initializing...');
+              await encStore.initializeKeys(pendingPassword);
+            }
           } else {
-            // Legacy user without keys - initialize them now
             await encStore.initializeKeys(pendingPassword);
           }
         }
@@ -120,6 +129,11 @@ export const useAuthStore = defineStore('auth', () => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       await fetchMe();
+      // Restore encryption keys from sessionStorage after page refresh
+      if (user.value) {
+        const encStore = useEncryptionStore();
+        await encStore.tryRestoreFromSession();
+      }
     }
   }
 
