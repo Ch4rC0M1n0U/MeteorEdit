@@ -45,7 +45,7 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     osint: {
       maxVideoSize: { type: Number, default: 200 * 1024 * 1024 },
       maxConcurrentDownloads: { type: Number, default: 5 },
-      enabledPlatforms: { type: [String], default: ['youtube', 'instagram', 'tiktok', 'snapchat', 'facebook', 'x', 'whatsapp', 'telegram'] },
+      enabledPlatforms: { type: [String], default: ['youtube', 'instagram', 'tiktok', 'snapchat', 'facebook', 'x', 'whatsapp', 'telegram', 'strava'] },
       ytdlpPath: { type: String, default: 'yt-dlp' },
       ffmpegPath: { type: String, default: 'ffmpeg' },
       ytdlpVersion: { type: String, default: '' },

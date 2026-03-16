@@ -51,6 +51,7 @@ const PLATFORM_LOGIN_URLS: Record<string, string> = {
   x: 'https://x.com/i/flow/login',
   threads: 'https://www.threads.net/login',
   linkedin: 'https://www.linkedin.com/login',
+  strava: 'https://www.strava.com/login',
 };
 
 const POST_LOGIN_INDICATORS: Record<string, string[]> = {
@@ -62,6 +63,7 @@ const POST_LOGIN_INDICATORS: Record<string, string[]> = {
   x: ['x.com/home', 'twitter.com/home'],
   threads: ['threads.net/@', 'threads.net/home'],
   linkedin: ['linkedin.com/feed', 'linkedin.com/mynetwork'],
+  strava: ['strava.com/dashboard', 'strava.com/athlete/'],
 };
 
 // Session cookies that prove actual authentication (not just cookie consent)
@@ -74,6 +76,7 @@ const AUTH_COOKIE_NAMES: Record<string, string[]> = {
   x: ['auth_token', 'ct0'],
   threads: ['sessionid', 'ds_user_id'],
   linkedin: ['li_at', 'JSESSIONID'],
+  strava: ['_strava4_session', 'strava_remember_id'],
 };
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -150,6 +153,7 @@ export async function socialLogin(req: AuthRequest, res: Response): Promise<void
       x: ['x.com', 'twitter.com'],
       threads: ['threads.net', 'instagram.com'],
       linkedin: ['linkedin.com'],
+      strava: ['strava.com', 'google.com', 'accounts.google.com', 'facebook.com', 'appleid.apple.com'],
     };
     const domainsToClean = PLATFORM_COOKIE_DOMAINS[platform] || [];
     let clearedCount = 0;
@@ -324,6 +328,58 @@ export async function deleteCookies(req: AuthRequest, res: Response): Promise<vo
   } catch (err: any) {
     console.error('[SocialAuth] Error deleting cookies:', err);
     res.status(500).json({ message: 'Erreur lors de la suppression des cookies' });
+  }
+}
+
+/**
+ * Import cookies manually (from browser extension export like Cookie-Editor).
+ * Accepts an array of cookie objects and stores them encrypted.
+ */
+export async function importCookies(req: AuthRequest, res: Response): Promise<void> {
+  const platform = req.params.platform as string;
+  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+  const ua = req.headers['user-agent'] || '';
+
+  try {
+    const { cookies } = req.body;
+
+    if (!cookies || !Array.isArray(cookies) || cookies.length === 0) {
+      res.status(400).json({ message: 'Aucun cookie fourni' });
+      return;
+    }
+
+    // Normalize cookies to Puppeteer format
+    const normalized = cookies.map((c: any) => ({
+      name: c.name,
+      value: c.value,
+      domain: c.domain,
+      path: c.path || '/',
+      expires: c.expirationDate || c.expires || -1,
+      httpOnly: c.httpOnly ?? false,
+      secure: c.secure ?? false,
+      sameSite: (c.sameSite || 'Lax'),
+    })).filter((c: any) => c.name && c.value);
+
+    if (normalized.length === 0) {
+      res.status(400).json({ message: 'Aucun cookie valide trouvé' });
+      return;
+    }
+
+    const encrypted = encryptCookies(normalized);
+
+    await SocialCookie.findOneAndUpdate(
+      { userId: req.user!.userId, platform },
+      { cookies: encrypted },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    await logActivity(req.user!.userId, 'social.importCookies', 'system', null, { platform, cookieCount: normalized.length }, ip, ua);
+
+    console.log(`[SocialAuth] Imported ${normalized.length} cookies for ${platform}`);
+    res.json({ message: 'Cookies importés avec succès', platform, cookieCount: normalized.length });
+  } catch (err: any) {
+    console.error(`[SocialAuth] Error importing cookies for ${platform}:`, err);
+    res.status(500).json({ message: 'Erreur lors de l\'import des cookies' });
   }
 }
 

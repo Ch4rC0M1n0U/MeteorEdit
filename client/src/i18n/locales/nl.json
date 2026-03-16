@@ -1218,7 +1218,19 @@
       "confirmDisconnectMsg": "Sessiecookies voor {platform} verwijderen? U moet opnieuw verbinding maken om content te downloaden.",
       "disconnecting": "Loskoppelen...",
       "loginError": "Fout bij het inloggen",
-      "notConnected": "Niet verbonden"
+      "notConnected": "Niet verbonden",
+      "importCookies": "Cookies importeren",
+      "importCookiesTitle": "Cookies importeren — {platform}",
+      "importCookiesHint": "Plak hier de cookies die u hebt geëxporteerd uit uw browser met de Cookie-Editor extensie.",
+      "importStep1": "Installeer de Cookie-Editor extensie in uw browser:",
+      "importStep2": "Log in op {domain} in uw browser",
+      "importStep3": "Open Cookie-Editor → Export → JSON → Plak hieronder",
+      "importPlaceholder": "[{\"name\": \"...\", \"value\": \"...\", \"domain\": \"...\"}]",
+      "importAction": "Importeren",
+      "importing": "Importeren...",
+      "importJsonError": "Ongeldige JSON. Controleer het formaat dat Cookie-Editor exporteert.",
+      "importSuccessMsg": "{count} cookies succesvol geïmporteerd",
+      "importFailed": "Fout bij het importeren van cookies"
     },
     "profile": {
       "title": "Profiel analyseren",

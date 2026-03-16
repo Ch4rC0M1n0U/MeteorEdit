@@ -123,6 +123,7 @@ const PLATFORM_PATTERNS: Array<{ pattern: RegExp; platform: string }> = [
   { pattern: /linktr\.ee/i, platform: 'linktree' },
   { pattern: /(?:paypal\.me|paypalme)/i, platform: 'paypal' },
   { pattern: /(?:t\.me|telegram\.me|telegram\.org)/i, platform: 'telegram' },
+  { pattern: /strava\.com/i, platform: 'strava' },
 ];
 
 const PLATFORM_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
@@ -138,6 +139,7 @@ const PLATFORM_CONFIG: Record<string, { icon: string; color: string; label: stri
   linktree: { icon: 'mdi-link-variant', color: '#43E55E', label: 'Linktree' },
   paypal: { icon: 'mdi-credit-card-outline', color: '#003087', label: 'PayPal' },
   telegram: { icon: 'mdi-send', color: '#0088cc', label: 'Telegram' },
+  strava: { icon: 'mdi-run', color: '#FC4C02', label: 'Strava' },
 };
 
 const platformIcon = computed(() => detectedPlatform.value ? PLATFORM_CONFIG[detectedPlatform.value]?.icon || 'mdi-web' : 'mdi-web');

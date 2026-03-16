@@ -1218,7 +1218,19 @@
       "confirmDisconnectMsg": "Supprimer les cookies de session pour {platform} ? Vous devrez vous reconnecter pour télécharger du contenu.",
       "disconnecting": "Déconnexion...",
       "loginError": "Erreur lors de la connexion",
-      "notConnected": "Non connecté"
+      "notConnected": "Non connecté",
+      "importCookies": "Importer des cookies",
+      "importCookiesTitle": "Importer cookies — {platform}",
+      "importCookiesHint": "Collez ici les cookies exportés depuis votre navigateur avec l'extension Cookie-Editor.",
+      "importStep1": "Installez l'extension Cookie-Editor dans votre navigateur :",
+      "importStep2": "Connectez-vous à {domain} dans votre navigateur",
+      "importStep3": "Ouvrez Cookie-Editor → Export → JSON → Collez ci-dessous",
+      "importPlaceholder": "[{\"name\": \"...\", \"value\": \"...\", \"domain\": \"...\"}]",
+      "importAction": "Importer",
+      "importing": "Import en cours...",
+      "importJsonError": "JSON invalide. Vérifiez le format exporté par Cookie-Editor.",
+      "importSuccessMsg": "{count} cookies importés avec succès",
+      "importFailed": "Erreur lors de l'import des cookies"
     },
     "profile": {
       "title": "Analyser un profil",

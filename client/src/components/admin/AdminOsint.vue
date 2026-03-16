@@ -126,7 +126,6 @@
           </div>
         </div>
       </div>
-    </div>
 
       <!-- Telegram API Configuration -->
       <div class="branding-card glass-card">
@@ -226,6 +225,7 @@ const platforms = [
   { key: 'linktree', name: 'Linktree', icon: 'mdi-link-variant' },
   { key: 'paypal', name: 'PayPal', icon: 'mdi-credit-card-outline' },
   { key: 'telegram', name: 'Telegram', icon: 'mdi-send' },
+  { key: 'strava', name: 'Strava', icon: 'mdi-run' },
 ];
 
 function isPlatformEnabled(key: string): boolean {

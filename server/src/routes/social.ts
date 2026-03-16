@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { socialLogin, listCookies, deleteCookies } from '../controllers/socialAuthController';
+import { socialLogin, listCookies, deleteCookies, importCookies } from '../controllers/socialAuthController';
 import { scrapeProfile } from '../controllers/scrapeController';
 
 const router = Router();
@@ -117,6 +117,50 @@ router.get('/cookies', authenticate, listCookies);
  *         description: Erreur serveur
  */
 router.delete('/cookies/:platform', authenticate, deleteCookies);
+
+/**
+ * @swagger
+ * /api/social/cookies/{platform}/import:
+ *   post:
+ *     tags: [Social]
+ *     summary: Importer des cookies manuellement
+ *     description: Importe des cookies exportes depuis une extension navigateur (Cookie-Editor, EditThisCookie). Utile pour les plateformes dont le login OAuth bloque Puppeteer (ex. Strava via Google).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: platform
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [cookies]
+ *             properties:
+ *               cookies:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                     value:
+ *                       type: string
+ *                     domain:
+ *                       type: string
+ *     responses:
+ *       200:
+ *         description: Cookies importes avec succes
+ *       400:
+ *         description: Aucun cookie valide fourni
+ *       401:
+ *         description: Non authentifie
+ */
+router.post('/cookies/:platform/import', authenticate, importCookies);
 
 /**
  * @swagger

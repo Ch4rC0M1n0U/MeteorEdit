@@ -44,20 +44,30 @@
           </div>
         </div>
 
-        <button
-          v-if="!isConnected(p.key)"
-          class="ssm-btn ssm-btn--connect"
-          @click="openLoginDialog(p)"
-        >
-          {{ $t('social.session.connect') }}
-        </button>
-        <button
-          v-else
-          class="ssm-btn ssm-btn--disconnect"
-          @click="confirmDisconnect(p)"
-        >
-          {{ $t('social.session.disconnect') }}
-        </button>
+        <div class="ssm-platform-actions">
+          <button
+            v-if="!isConnected(p.key)"
+            class="ssm-btn ssm-btn--connect"
+            @click="openLoginDialog(p)"
+          >
+            {{ $t('social.session.connect') }}
+          </button>
+          <button
+            v-if="!isConnected(p.key)"
+            class="ssm-btn ssm-btn--import"
+            @click="openImportDialog(p)"
+            :title="$t('social.session.importCookies')"
+          >
+            <v-icon size="14">mdi-cookie</v-icon>
+          </button>
+          <button
+            v-if="isConnected(p.key)"
+            class="ssm-btn ssm-btn--disconnect"
+            @click="confirmDisconnect(p)"
+          >
+            {{ $t('social.session.disconnect') }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -151,6 +161,64 @@
       </div>
     </v-dialog>
 
+    <!-- Import Cookies Dialog -->
+    <v-dialog v-model="importDialog" max-width="520" persistent>
+      <div class="ssm-dialog glass-card">
+        <div class="ssm-dialog-header">
+          <div class="ssm-dialog-icon" :style="iconStyle(importPlatform!, true)">
+            <v-icon size="22" color="#fff">mdi-cookie</v-icon>
+          </div>
+          <span class="ssm-dialog-title">
+            {{ $t('social.session.importCookiesTitle', { platform: importPlatform?.name }) }}
+          </span>
+          <button class="ssm-close-btn" @click="importDialog = false" :disabled="importing">
+            <v-icon size="16">mdi-close</v-icon>
+          </button>
+        </div>
+
+        <div class="ssm-dialog-body">
+          <p class="ssm-import-hint">
+            {{ $t('social.session.importCookiesHint') }}
+          </p>
+          <ol class="ssm-import-steps">
+            <li>
+              {{ $t('social.session.importStep1') }}
+              <a href="https://cookie-editor.com" target="_blank" rel="noopener" class="ssm-import-link">
+                cookie-editor.com
+                <v-icon size="11" class="ml-1">mdi-open-in-new</v-icon>
+              </a>
+            </li>
+            <li>{{ $t('social.session.importStep2', { domain: importPlatform?.name }) }}</li>
+            <li>{{ $t('social.session.importStep3') }}</li>
+          </ol>
+          <v-textarea
+            v-model="importJson"
+            :placeholder="$t('social.session.importPlaceholder')"
+            rows="6"
+            density="compact"
+            hide-details
+            class="ssm-import-textarea mono"
+          />
+          <p v-if="importError" class="ssm-import-error">{{ importError }}</p>
+          <p v-if="importSuccess" class="ssm-import-success">{{ importSuccess }}</p>
+        </div>
+
+        <div class="ssm-dialog-actions">
+          <button
+            class="ssm-btn ssm-btn--primary"
+            :disabled="importing || !importJson.trim()"
+            @click="doImportCookies"
+          >
+            <v-icon size="14" class="mr-1">mdi-import</v-icon>
+            {{ importing ? $t('social.session.importing') : $t('social.session.importAction') }}
+          </button>
+          <button class="ssm-btn ssm-btn--ghost" @click="importDialog = false" :disabled="importing">
+            {{ $t('common.close') }}
+          </button>
+        </div>
+      </div>
+    </v-dialog>
+
     <!-- Disconnect Confirm Dialog -->
     <v-dialog v-model="disconnectDialog" max-width="380">
       <div class="ssm-dialog glass-card">
@@ -217,6 +285,7 @@ const platformList: Platform[] = [
   { key: 'whatsapp', name: 'WhatsApp', icon: 'mdi-whatsapp', color: '#25D366' },
   { key: 'threads', name: 'Threads', icon: 'mdi-at', color: '#000000' },
   { key: 'linkedin', name: 'LinkedIn', icon: 'mdi-linkedin', color: '#0A66C2' },
+  { key: 'strava', name: 'Strava', icon: 'mdi-run', color: '#FC4C02' },
 ];
 
 // --- State ---
@@ -236,6 +305,14 @@ const loginErrorMessage = ref('');
 const loginElapsed = ref(0);
 let loginTimerInterval: ReturnType<typeof setInterval> | null = null;
 let loginAbortController: AbortController | null = null;
+
+// Import dialog
+const importDialog = ref(false);
+const importPlatform = ref<Platform | null>(null);
+const importJson = ref('');
+const importing = ref(false);
+const importError = ref('');
+const importSuccess = ref('');
 
 // Disconnect dialog
 const disconnectDialog = ref(false);
@@ -359,6 +436,49 @@ function clearLoginTimer() {
   if (loginTimerInterval) {
     clearInterval(loginTimerInterval);
     loginTimerInterval = null;
+  }
+}
+
+// --- Import flow ---
+function openImportDialog(platform: Platform) {
+  importPlatform.value = platform;
+  importJson.value = '';
+  importError.value = '';
+  importSuccess.value = '';
+  importing.value = false;
+  importDialog.value = true;
+}
+
+async function doImportCookies() {
+  if (!importPlatform.value || !importJson.value.trim()) return;
+  importing.value = true;
+  importError.value = '';
+  importSuccess.value = '';
+
+  try {
+    let cookies: any[];
+    try {
+      cookies = JSON.parse(importJson.value.trim());
+    } catch {
+      importError.value = t('social.session.importJsonError');
+      importing.value = false;
+      return;
+    }
+
+    if (!Array.isArray(cookies)) {
+      importError.value = t('social.session.importJsonError');
+      importing.value = false;
+      return;
+    }
+
+    const { data } = await api.post(`/social/cookies/${importPlatform.value.key}/import`, { cookies });
+    importSuccess.value = t('social.session.importSuccessMsg', { count: data.cookieCount });
+    await fetchStatus();
+    setTimeout(() => { importDialog.value = false; }, 1500);
+  } catch (err: any) {
+    importError.value = err.response?.data?.message || t('social.session.importFailed');
+  } finally {
+    importing.value = false;
   }
 }
 
@@ -741,6 +861,67 @@ onUnmounted(() => {
 @keyframes ssm-pulse {
   0%, 100% { opacity: 0.1; transform: scale(0.95); }
   50% { opacity: 0.3; transform: scale(1.05); }
+}
+
+/* Platform actions row */
+.ssm-platform-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Import button */
+.ssm-btn--import {
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-muted);
+  padding: 6px 8px;
+  border-radius: var(--me-radius-xs);
+}
+.ssm-btn--import:hover:not(:disabled) {
+  border-color: var(--me-accent);
+  color: var(--me-accent);
+  background: var(--me-accent-glow);
+}
+
+/* Import dialog */
+.ssm-import-hint {
+  font-size: 13px;
+  color: var(--me-text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.ssm-import-steps {
+  font-size: 12px;
+  color: var(--me-text-muted);
+  margin: 0 0 16px 16px;
+  line-height: 1.8;
+  padding: 0;
+}
+.ssm-import-steps li {
+  margin-bottom: 2px;
+}
+.ssm-import-link {
+  color: var(--me-accent);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.ssm-import-link:hover {
+  text-decoration: underline;
+}
+.ssm-import-textarea {
+  font-size: 11px !important;
+}
+.ssm-import-error {
+  font-size: 12px;
+  color: #f87171;
+  margin-top: 8px;
+}
+.ssm-import-success {
+  font-size: 12px;
+  color: #34d399;
+  margin-top: 8px;
 }
 
 /* Utilities */

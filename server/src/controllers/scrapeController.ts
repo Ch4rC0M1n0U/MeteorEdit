@@ -27,6 +27,7 @@ import * as linkedinScraper from '../scrapers/linkedin';
 import * as linktreeScraper from '../scrapers/linktree';
 import * as paypalScraper from '../scrapers/paypal';
 import * as telegramScraper from '../scrapers/telegram';
+import * as stravaScraper from '../scrapers/strava';
 
 const CHROME_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -44,6 +45,7 @@ const PLATFORM_PATTERNS: Array<{ pattern: RegExp; platform: string }> = [
   { pattern: /linktr\.ee/i, platform: 'linktree' },
   { pattern: /(?:paypal\.me|paypalme)/i, platform: 'paypal' },
   { pattern: /(?:t\.me|telegram\.me|telegram\.org)/i, platform: 'telegram' },
+  { pattern: /strava\.com/i, platform: 'strava' },
 ];
 
 const SCRAPERS: Record<string, { scrape: (page: any, url: string) => Promise<ProfileData> }> = {
@@ -59,6 +61,7 @@ const SCRAPERS: Record<string, { scrape: (page: any, url: string) => Promise<Pro
   linktree: linktreeScraper,
   paypal: paypalScraper,
   telegram: telegramScraper,
+  strava: stravaScraper,
 };
 
 const PLATFORM_EMOJIS: Record<string, string> = {
@@ -74,6 +77,7 @@ const PLATFORM_EMOJIS: Record<string, string> = {
   linktree: '\u{1F332}',   // tree
   paypal: '\u{1F4B3}',     // credit card
   telegram: '\u{2708}',    // airplane (Telegram paper plane)
+  strava: '\u{1F3C3}',     // runner
 };
 
 function detectPlatform(url: string): string | null {
@@ -190,6 +194,18 @@ function buildTipTapContent(profile: ProfileData, platform: string, sourceUrl?: 
   if (meta.lastSeen) rows.push(['Dernière connexion', meta.lastSeen]);
   if (meta.birthday) rows.push(['Anniversaire', String(meta.birthday)]);
   if (meta.paypalUrl) rows.push(['PayPal URL', meta.paypalUrl]);
+  // Strava-specific
+  if (meta.premium) rows.push(['Strava Premium', 'Oui']);
+  if (meta.summit) rows.push(['Strava Summit', 'Oui']);
+  if (meta.clubType) rows.push(['Type de club', meta.clubType]);
+  if (meta.memberCount) rows.push(['Membres', meta.memberCount]);
+  if (meta.activityTitle) rows.push(['Activité', meta.activityTitle]);
+  if (meta.activityType) rows.push(['Type d\'activité', meta.activityType]);
+  if (meta.activityDate) rows.push(['Date activité', meta.activityDate]);
+  if (meta.kudos) rows.push(['Kudos', meta.kudos]);
+  if (meta.commentsCount) rows.push(['Commentaires', meta.commentsCount]);
+  if (meta.activityRange) rows.push(['Période d\'activité', meta.activityRange]);
+  if (meta.activeYears?.length > 0) rows.push(['Années actives', meta.activeYears.join(', ')]);
   if (meta.socialLinks?.length > 0) {
     for (const sl of meta.socialLinks) {
       const type = (sl.type || '').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
@@ -223,6 +239,9 @@ function buildTipTapContent(profile: ProfileData, platform: string, sourceUrl?: 
     employees: 'Employés',
     status: 'Statut',
     commonChats: 'Groupes en commun',
+    activities: 'Activités',
+    mutualFriends: 'Amis en commun',
+    members: 'Membres',
   };
   for (const [key, value] of Object.entries(profile.stats)) {
     const label = STATS_LABELS[key] || key;
@@ -365,6 +384,95 @@ function buildTipTapContent(profile: ProfileData, platform: string, sourceUrl?: 
     content.push({ type: 'bulletList', content: eduItems });
   }
 
+  // ── Recent Activities (Strava) ──
+  if (meta.recentActivities && Array.isArray(meta.recentActivities) && meta.recentActivities.length > 0) {
+    content.push({
+      type: 'heading',
+      attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Activités récentes' }],
+    });
+    const actItems = meta.recentActivities.map((act: any) => {
+      const parts = [act.title || 'Activité', act.type ? `(${act.type})` : '', act.time || '', act.stats || ''].filter(Boolean);
+      const textContent: any[] = [{ type: 'text', text: parts.join(' — ') }];
+      if (act.link) {
+        textContent.push(
+          { type: 'text', text: ' ' },
+          { type: 'text', marks: [{ type: 'link', attrs: { href: act.link, target: '_blank' } }], text: '[lien]' },
+        );
+      }
+      return {
+        type: 'listItem',
+        content: [{ type: 'paragraph', content: textContent }],
+      };
+    });
+    content.push({ type: 'bulletList', content: actItems });
+  }
+
+  // ── Clubs (Strava) ──
+  if (meta.clubs && Array.isArray(meta.clubs) && meta.clubs.length > 0) {
+    content.push({
+      type: 'heading',
+      attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Clubs' }],
+    });
+    const clubItems = meta.clubs.map((club: any) => ({
+      type: 'listItem',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: typeof club === 'string' ? club : club.name || '' }] }],
+    }));
+    content.push({ type: 'bulletList', content: clubItems });
+  }
+
+  // ── Segments (Strava activity) ──
+  if (meta.segments && Array.isArray(meta.segments) && meta.segments.length > 0) {
+    content.push({
+      type: 'heading',
+      attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Segments' }],
+    });
+    const segItems = meta.segments.map((seg: any) => ({
+      type: 'listItem',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: `${seg.name}${seg.time ? ' — ' + seg.time : ''}` }] }],
+    }));
+    content.push({ type: 'bulletList', content: segItems });
+  }
+
+  // ── Members (Strava club) ──
+  if (meta.members && Array.isArray(meta.members) && meta.members.length > 0) {
+    content.push({
+      type: 'heading',
+      attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Membres' }],
+    });
+    const memberItems = meta.members.map((m: any) => {
+      const textContent: any[] = [{ type: 'text', text: m.name || 'Athlète' }];
+      if (m.profileUrl) {
+        textContent.push(
+          { type: 'text', text: ' — ' },
+          { type: 'text', marks: [{ type: 'link', attrs: { href: m.profileUrl, target: '_blank' } }], text: m.profileUrl },
+        );
+      }
+      return {
+        type: 'listItem',
+        content: [{ type: 'paragraph', content: textContent }],
+      };
+    });
+    content.push({ type: 'bulletList', content: memberItems });
+  }
+
+  // ── Trophies (Strava) ──
+  if (meta.trophies && Array.isArray(meta.trophies) && meta.trophies.length > 0) {
+    content.push({
+      type: 'heading',
+      attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Trophées / Badges' }],
+    });
+    const trophyItems = meta.trophies.map((t: any) => ({
+      type: 'listItem',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: typeof t === 'string' ? t : t.name || '' }] }],
+    }));
+    content.push({ type: 'bulletList', content: trophyItems });
+  }
+
   // ── Extra images ──
   if (profile.extraImages.length > 0) {
     content.push({
@@ -429,6 +537,18 @@ function buildTipTapContent(profile: ProfileData, platform: string, sourceUrl?: 
   delete displayMeta.education;
   delete displayMeta.screenshotPath;
   delete displayMeta.pageAnalysis;
+  delete displayMeta.recentActivities;
+  delete displayMeta.clubs;
+  delete displayMeta.segments;
+  delete displayMeta.members;
+  delete displayMeta.trophies;
+  delete displayMeta.apiAthlete;
+  delete displayMeta.apiActivity;
+  delete displayMeta.apiClub;
+  delete displayMeta.serverData;
+  delete displayMeta.trainingLog;
+  delete displayMeta.activeYears;
+  delete displayMeta.trainingTotals;
 
   content.push({
     type: 'heading',
