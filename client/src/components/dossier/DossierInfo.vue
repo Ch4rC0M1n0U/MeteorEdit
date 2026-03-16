@@ -501,6 +501,72 @@
         </div>
       </div>
     </v-dialog>
+
+    <!-- AI Enrichment streaming dialog -->
+    <v-dialog v-model="enrichDialog" max-width="640" persistent>
+      <div class="glass-card dialog-card">
+        <div class="dialog-header">
+          <h3 class="mono">
+            <v-icon size="18" class="mr-1">mdi-robot-outline</v-icon>
+            {{ $t('dossier.enrichAITitle') }}
+          </h3>
+          <button class="me-close-btn" @click="closeEnrichDialog" :disabled="enrichStreaming">
+            <v-icon size="18">mdi-close</v-icon>
+          </button>
+        </div>
+
+        <!-- Logs -->
+        <div v-if="enrichLogs.length" class="enrich-logs-panel">
+          <div class="enrich-logs-header" @click="enrichLogsExpanded = !enrichLogsExpanded">
+            <v-icon size="14" class="mr-1" :class="{ 'spin': enrichStreaming }">{{ enrichStreaming ? 'mdi-loading' : 'mdi-console' }}</v-icon>
+            <span class="mono">Logs</span>
+            <span class="enrich-log-count mono">{{ enrichLogs.length }}</span>
+            <v-icon size="14" class="ml-auto">{{ enrichLogsExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+          </div>
+          <div v-if="enrichLogsExpanded" class="enrich-logs-content" ref="enrichLogsRef">
+            <div v-for="(log, i) in enrichLogs" :key="i" class="enrich-log-line mono">
+              <span class="enrich-log-time">{{ log.time }}</span>
+              <span :class="['enrich-log-msg', log.type === 'error' ? 'enrich-log-error' : '']">{{ log.message }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Streaming content -->
+        <div class="dialog-body enrich-body" ref="enrichBodyRef">
+          <div v-if="enrichStreaming && !enrichContent" class="enrich-generating">
+            <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
+            <p>{{ $t('dossier.enrichPreparing') }}</p>
+          </div>
+
+          <div v-if="enrichContent" class="enrich-content">
+            <div class="enrich-meta mono">
+              <span>{{ enrichEntityName }} ({{ enrichEntityType }})</span>
+              <span v-if="enrichTokenCount" class="ml-auto">{{ enrichTokenCount }} tokens</span>
+            </div>
+            <pre class="enrich-text">{{ enrichContent }}<span v-if="enrichStreaming" class="enrich-cursor">|</span></pre>
+          </div>
+
+          <div v-if="enrichError" class="enrich-error">
+            <v-icon size="20" color="#f87171" class="mr-2">mdi-alert-circle-outline</v-icon>
+            {{ enrichError }}
+          </div>
+        </div>
+
+        <div class="dialog-footer">
+          <button v-if="enrichStreaming" class="enrich-cancel-btn" @click="cancelEnrich">
+            <v-icon size="14" class="mr-1">mdi-stop-circle-outline</v-icon>
+            {{ $t('dossier.stopEnrichment') }}
+          </button>
+          <div v-else class="enrich-footer-actions">
+            <button class="me-btn-ghost" @click="closeEnrichDialog">{{ $t('common.close') }}</button>
+            <button v-if="enrichContent && !enrichError" class="me-btn-primary" @click="applyEnrichResult">
+              <v-icon size="14" class="mr-1">mdi-check</v-icon>
+              {{ $t('dossier.applyEnrichment') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </v-dialog>
   </div>
 </template>
 
@@ -1148,23 +1214,146 @@ async function deleteEntityPhoto(entityIndex: number, photoPath: string) {
   }
 }
 
-// --- Enrichissement AI ---
+// --- Enrichissement AI (streaming SSE) ---
 const enrichingIndex = ref<number | null>(null);
+const enrichDialog = ref(false);
+const enrichStreaming = ref(false);
+const enrichContent = ref('');
+const enrichError = ref('');
+const enrichTokenCount = ref(0);
+const enrichEntityName = ref('');
+const enrichEntityType = ref('');
+const enrichLogs = ref<Array<{ time: string; message: string; type: string }>>([]);
+const enrichLogsExpanded = ref(true);
+const enrichBodyRef = ref<HTMLElement | null>(null);
+const enrichLogsRef = ref<HTMLElement | null>(null);
+let enrichAbortController: AbortController | null = null;
+
+function enrichLogTime() {
+  return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
 
 async function enrichEntityAI(index: number) {
-  if (!dossierStore.currentDossier || enrichingIndex.value !== null) return;
+  if (!dossierStore.currentDossier || enrichStreaming.value) return;
+  const entity = form.entities[index];
+  if (!entity) return;
+
   enrichingIndex.value = index;
+  enrichDialog.value = true;
+  enrichStreaming.value = true;
+  enrichContent.value = '';
+  enrichError.value = '';
+  enrichTokenCount.value = 0;
+  enrichEntityName.value = entity.name;
+  enrichEntityType.value = entity.type;
+  enrichLogs.value = [];
+  enrichLogsExpanded.value = true;
+
+  enrichAbortController = new AbortController();
+  const token = localStorage.getItem('accessToken');
+  const dossierId = dossierStore.currentDossier._id;
+
+  enrichLogs.value.push({ time: enrichLogTime(), message: t('dossier.enrichSending'), type: 'info' });
+
   try {
-    const { data } = await api.post('/ai/enrich-entity', {
-      dossierId: dossierStore.currentDossier._id,
-      entityIndex: index,
+    const response = await fetch(`${SERVER_URL}/api/ai/enrich-entity`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ dossierId, entityIndex: index }),
+      signal: enrichAbortController.signal,
     });
-    form.entities[index].description = data.description;
+
+    if (!response.ok || !response.body) {
+      throw new Error(`Status ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+
+          if (event.type === 'token') {
+            enrichContent.value += event.token;
+            enrichTokenCount.value = event.tokenCount;
+            if (enrichBodyRef.value) {
+              enrichBodyRef.value.scrollTop = enrichBodyRef.value.scrollHeight;
+            }
+          } else if (event.type === 'log') {
+            enrichLogs.value.push({ time: enrichLogTime(), message: event.message, type: 'info' });
+            scrollEnrichLogs();
+          } else if (event.type === 'done') {
+            // Server already saved, update local form
+            form.entities[index].description = event.description;
+            enrichLogs.value.push({ time: enrichLogTime(), message: t('dossier.enrichDone'), type: 'info' });
+            enrichLogsExpanded.value = false;
+          } else if (event.type === 'error') {
+            enrichError.value = event.message;
+            enrichLogs.value.push({ time: enrichLogTime(), message: event.message, type: 'error' });
+          } else if (event.type === 'cancelled') {
+            enrichLogs.value.push({ time: enrichLogTime(), message: t('dossier.enrichCancelled'), type: 'error' });
+          }
+        } catch {
+          // skip malformed events
+        }
+      }
+    }
   } catch (err: any) {
-    console.error('Enrich error:', err);
+    if (err.name === 'AbortError') {
+      enrichLogs.value.push({ time: enrichLogTime(), message: t('dossier.enrichCancelled'), type: 'error' });
+    } else {
+      enrichError.value = `Erreur: ${err.message}`;
+      enrichLogs.value.push({ time: enrichLogTime(), message: `Erreur: ${err.message}`, type: 'error' });
+    }
   } finally {
+    enrichStreaming.value = false;
+    enrichAbortController = null;
     enrichingIndex.value = null;
   }
+}
+
+function scrollEnrichLogs() {
+  setTimeout(() => {
+    if (enrichLogsRef.value) enrichLogsRef.value.scrollTop = enrichLogsRef.value.scrollHeight;
+  }, 50);
+}
+
+async function cancelEnrich() {
+  if (enrichAbortController) enrichAbortController.abort();
+  if (dossierStore.currentDossier && enrichingIndex.value !== null) {
+    try {
+      await api.post('/ai/enrich-entity/cancel', {
+        dossierId: dossierStore.currentDossier._id,
+        entityIndex: enrichingIndex.value,
+      });
+    } catch {
+      // best-effort
+    }
+  }
+}
+
+function closeEnrichDialog() {
+  if (enrichStreaming.value) return;
+  enrichDialog.value = false;
+}
+
+function applyEnrichResult() {
+  // Description already updated by 'done' event, just close
+  enrichDialog.value = false;
 }
 
 // --- Chiffrement E2E (toujours actif, plus de toggle) ---
@@ -1999,5 +2188,125 @@ async function removeCollaborator(userId: string) {
 .me-btn-sm {
   font-size: 12px;
   padding: 4px 10px;
+}
+
+/* AI Enrichment streaming dialog */
+.enrich-logs-panel {
+  border-bottom: 1px solid var(--me-border);
+}
+.enrich-logs-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--me-text-secondary);
+  gap: 4px;
+}
+.enrich-logs-header:hover {
+  background: rgba(var(--me-accent-rgb, 100, 100, 100), 0.05);
+}
+.enrich-log-count {
+  background: var(--me-bg-elevated);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+.enrich-logs-content {
+  max-height: 100px;
+  overflow-y: auto;
+  padding: 0 16px 8px;
+}
+.enrich-log-line {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.enrich-log-time {
+  color: var(--me-text-muted);
+  flex-shrink: 0;
+}
+.enrich-log-msg {
+  color: var(--me-text-secondary);
+}
+.enrich-log-error {
+  color: #f87171;
+}
+.enrich-body {
+  min-height: 150px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+.enrich-generating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: var(--me-text-secondary);
+}
+.enrich-content {
+  font-size: 13px;
+}
+.enrich-meta {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--me-text-muted);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--me-border);
+  margin-bottom: 12px;
+}
+.enrich-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--me-text-primary);
+  background: none;
+  margin: 0;
+  padding: 0;
+}
+.enrich-cursor {
+  animation: blink 0.8s step-end infinite;
+  color: var(--me-accent);
+  font-weight: bold;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.enrich-error {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: rgba(248, 113, 113, 0.08);
+  border-radius: var(--me-radius-sm);
+  color: #f87171;
+  font-size: 13px;
+}
+.enrich-cancel-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: var(--me-radius-sm);
+  border: 1px solid #f87171;
+  color: #f87171;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.enrich-cancel-btn:hover {
+  background: rgba(248, 113, 113, 0.1);
+}
+.enrich-footer-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-end;
 }
 </style>

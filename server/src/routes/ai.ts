@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { getAiStatus, generateReport, cancelGenerateReport, enrichEntity, summarizeContent } from '../controllers/aiController';
+import { getAiStatus, generateReport, cancelGenerateReport, enrichEntity, cancelEnrichEntity, summarizeContent } from '../controllers/aiController';
 
 const router = Router();
 router.use(authenticate);
@@ -100,8 +100,8 @@ router.post('/generate-report/cancel', cancelGenerateReport);
  * /api/ai/enrich-entity:
  *   post:
  *     tags: [AI]
- *     summary: Enrichir une entite via l'IA
- *     description: Utilise Ollama pour generer une description detaillee de l'entite.
+ *     summary: Enrichir une entite via l'IA (SSE)
+ *     description: Utilise Ollama pour generer une description detaillee de l'entite avec streaming SSE temps reel.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -119,24 +119,47 @@ router.post('/generate-report/cancel', cancelGenerateReport);
  *                 description: Index de l'entite dans le tableau entities du dossier
  *     responses:
  *       200:
- *         description: Description enrichie
+ *         description: Flux SSE avec tokens et logs
  *         content:
- *           application/json:
+ *           text/event-stream:
  *             schema:
- *               type: object
- *               properties:
- *                 description:
- *                   type: string
+ *               type: string
  *       400:
  *         description: Parametres manquants ou IA non configuree
  *       403:
  *         description: Acces refuse
  *       404:
  *         description: Dossier ou entite non trouve
- *       502:
- *         description: Erreur Ollama
  */
 router.post('/enrich-entity', enrichEntity);
+
+/**
+ * @swagger
+ * /api/ai/enrich-entity/cancel:
+ *   post:
+ *     tags: [AI]
+ *     summary: Annuler l'enrichissement d'une entite
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [dossierId, entityIndex]
+ *             properties:
+ *               dossierId:
+ *                 type: string
+ *               entityIndex:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Enrichissement annule
+ *       404:
+ *         description: Aucun enrichissement actif
+ */
+router.post('/enrich-entity/cancel', cancelEnrichEntity);
 
 /**
  * @swagger

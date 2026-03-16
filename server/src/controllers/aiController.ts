@@ -195,8 +195,9 @@ export async function updateOllamaSettings(req: AuthRequest, res: Response) {
   res.json(settings.ollama);
 }
 
-// Track active report generations for cancellation
+// Track active operations for cancellation
 const activeGenerations = new Map<string, AbortController>();
+const activeEnrichments = new Map<string, AbortController>();
 
 // POST /api/ai/generate-report - Generate AI report with SSE streaming
 export async function generateReport(req: AuthRequest, res: Response) {
@@ -389,7 +390,7 @@ export async function generateReport(req: AuthRequest, res: Response) {
   }
 }
 
-// POST /api/ai/enrich-entity - Enrich entity info using Ollama
+// POST /api/ai/enrich-entity - Enrich entity info using Ollama with SSE streaming
 export async function enrichEntity(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
   const { dossierId, entityIndex } = req.body;
@@ -413,6 +414,21 @@ export async function enrichEntity(req: AuthRequest, res: Response) {
   const entity = dossier.entities?.[entityIndex];
   if (!entity) return res.status(404).json({ message: 'Entite non trouvee' });
 
+  // Set up SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const abortController = new AbortController();
+  const enrichId = `${userId}-${dossierId}-${entityIndex}`;
+  activeEnrichments.set(enrichId, abortController);
+
+  const sendEvent = (data: any) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
   const prompt = `Tu es un analyste OSINT. Enrichis les informations sur l'entite suivante en fournissant une description detaillee et pertinente pour une investigation.
 
 Entite: ${entity.name}
@@ -424,6 +440,9 @@ ${dossier.description ? `Description du dossier: ${dossier.description}` : ''}
 
 Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des informations factuelles potentielles, des pistes de recherche OSINT, et des elements a verifier. Reponds uniquement avec la description enrichie, sans introduction ni conclusion.`;
 
+  sendEvent({ type: 'log', message: `Enrichissement de "${entity.name}" (${entity.type})...` });
+  sendEvent({ type: 'log', message: `Modele: ${config.selectedModel}` });
+
   try {
     const response = await fetch(`${config.baseUrl}/api/generate`, {
       method: 'POST',
@@ -431,16 +450,77 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
       body: JSON.stringify({
         model: config.selectedModel,
         prompt,
-        stream: false,
+        stream: true,
         options: { temperature: 0.3, num_predict: 1024 },
       }),
+      signal: abortController.signal,
     });
 
-    if (!response.ok) throw new Error(`Ollama status ${response.status}`);
-    const data = await response.json() as { response?: string };
-    const enrichedDescription = data.response?.trim() || entity.description;
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `Ollama status ${response.status}`);
+    }
 
-    // Update entity description
+    sendEvent({ type: 'log', message: 'Generation en cours...' });
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      sendEvent({ type: 'error', message: 'No response body' });
+      res.end();
+      activeEnrichments.delete(enrichId);
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+    let tokenCount = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const parsed = JSON.parse(line) as {
+            response?: string;
+            done?: boolean;
+            total_duration?: number;
+            eval_count?: number;
+            eval_duration?: number;
+          };
+
+          if (parsed.response) {
+            fullContent += parsed.response;
+            tokenCount++;
+            sendEvent({ type: 'token', token: parsed.response, tokenCount });
+          }
+
+          if (parsed.done) {
+            const durationSec = parsed.total_duration
+              ? (parsed.total_duration / 1e9).toFixed(1)
+              : '?';
+            const tokensPerSec = parsed.eval_count && parsed.eval_duration
+              ? (parsed.eval_count / (parsed.eval_duration / 1e9)).toFixed(1)
+              : '?';
+            sendEvent({
+              type: 'log',
+              message: `Enrichissement termine - ${tokenCount} tokens en ${durationSec}s (${tokensPerSec} tokens/s)`,
+            });
+          }
+        } catch {
+          // skip malformed lines
+        }
+      }
+    }
+
+    // Save enriched description
+    const enrichedDescription = fullContent.trim() || entity.description;
     dossier.entities![entityIndex].description = enrichedDescription;
     await dossier.save();
 
@@ -450,9 +530,30 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
       await logActivity(userId, 'entity.enrich', 'dossier', dossierId, { entityName: entity.name, entityType: entity.type }, ip, ua);
     }
 
-    res.json({ description: enrichedDescription });
+    sendEvent({ type: 'done', description: enrichedDescription, model: config.selectedModel });
   } catch (err: any) {
-    res.status(502).json({ message: `Erreur IA: ${err.message}` });
+    if (err.name === 'AbortError') {
+      sendEvent({ type: 'cancelled', message: 'Enrichissement annule' });
+    } else {
+      sendEvent({ type: 'error', message: `Erreur IA: ${err.message}` });
+    }
+  } finally {
+    activeEnrichments.delete(enrichId);
+    res.end();
+  }
+}
+
+// POST /api/ai/enrich-entity/cancel - Cancel active enrichment
+export async function cancelEnrichEntity(req: AuthRequest, res: Response) {
+  const { dossierId, entityIndex } = req.body;
+  const enrichId = `${req.user!.userId}-${dossierId}-${entityIndex}`;
+  const controller = activeEnrichments.get(enrichId);
+  if (controller) {
+    controller.abort();
+    activeEnrichments.delete(enrichId);
+    res.json({ message: 'Enrichissement annule' });
+  } else {
+    res.status(404).json({ message: 'Aucun enrichissement actif' });
   }
 }
 
