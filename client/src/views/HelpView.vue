@@ -1019,7 +1019,7 @@ const categories: Category[] = [
 <h3>Génération de note</h3>
 <p>L'analyse génère automatiquement une <strong>note TipTap structurée</strong> contenant toutes les informations collectées. Cette note est créée dans le dossier courant et peut être éditée, annotée et enrichie comme toute autre note.</p>
 <h3>Plateformes prises en charge</h3>
-<p><strong>YouTube</strong>, <strong>Instagram</strong>, <strong>TikTok</strong>, <strong>Snapchat</strong>, <strong>Facebook</strong>, <strong>X (Twitter)</strong>, <strong>WhatsApp</strong>, <strong>Threads</strong>, <strong>LinkedIn</strong>.</p>
+<p><strong>YouTube</strong>, <strong>Instagram</strong>, <strong>TikTok</strong>, <strong>Snapchat</strong>, <strong>Facebook</strong>, <strong>X (Twitter)</strong>, <strong>WhatsApp</strong>, <strong>Threads</strong>, <strong>LinkedIn</strong>, <strong>Telegram</strong>, <strong>Strava</strong>.</p>
 <h3>Techniques d'extraction</h3>
 <p>Le système utilise une approche multi-stratégie pour maximiser les données récupérées :</p>
 <ul>
@@ -1030,9 +1030,92 @@ const categories: Category[] = [
 </ul>`,
       },
       {
+        id: 'osint-strava',
+        title: 'Strava OSINT',
+        keywords: ['strava', 'sport', 'gps', 'activité', 'course', 'vélo', 'athlète', 'club', 'segment', 'training', 'trace', 'géolocalisation', 'routine'],
+        content: `<h2>Strava — Analyse OSINT</h2>
+<p>Le module Strava permet d'extraire des données OSINT à partir de profils d'athlètes, d'activités et de clubs sur la plateforme Strava.</p>
+<h3>Intérêt OSINT</h3>
+<p>Strava est une mine d'or pour l'OSINT. L'affaire <strong>StravaLeaks</strong> (Le Monde, 2024) a révélé la possibilité d'identifier des agents de sécurité et des militaires via leurs activités sportives. Les données Strava permettent de :</p>
+<ul>
+<li><strong>Identifier des lieux de vie</strong> — Les points de départ/arrivée récurrents des activités révèlent l'adresse du domicile</li>
+<li><strong>Établir des routines</strong> — Horaires de course, trajets habituels, lieux fréquentés</li>
+<li><strong>Cartographier des déplacements</strong> — Traces GPS complètes des activités</li>
+<li><strong>Découvrir des relations sociales</strong> — Clubs, amis mutuels, kudos échangés</li>
+<li><strong>Identifier des lieux sensibles</strong> — Activités réalisées sur des bases militaires, sites gouvernementaux, etc.</li>
+</ul>
+<h3>Types d'URL supportés</h3>
+<ul>
+<li><strong>Profil d'athlète</strong> — <code>strava.com/athletes/{id}</code> — Données de profil, statistiques, activités récentes, clubs</li>
+<li><strong>Activité</strong> — <code>strava.com/activities/{id}</code> — Détails d'une activité (distance, durée, carte, segments, photos)</li>
+<li><strong>Club</strong> — <code>strava.com/clubs/{slug}</code> — Membres, activités récentes du club</li>
+</ul>
+<h3>Données extraites</h3>
+<ul>
+<li><strong>Profil</strong> — Nom, localisation, bio, photo, statut premium/summit, nombre d'activités, d'amis, de trophées</li>
+<li><strong>Activités</strong> — Type, date, distance, dénivelé, durée, carte, segments, kudos</li>
+<li><strong>Historique complet</strong> — Le scraper charge automatiquement l'historique via défilement infini et navigation dans le journal d'entraînement</li>
+<li><strong>Clubs</strong> — Nom, type, nombre de membres, description, activités récentes</li>
+</ul>
+<h3>Session requise</h3>
+<p>Strava limite fortement le contenu visible aux utilisateurs non connectés. Utilisez le <strong>gestionnaire de sessions</strong> ou l'<strong>import de cookies</strong> pour accéder aux données complètes.</p>`,
+      },
+      {
+        id: 'osint-telegram',
+        title: 'Telegram',
+        keywords: ['telegram', 'channel', 'group', 'bot', 'api', 'mtproto', 'message', 'scraping', 'osint'],
+        content: `<h2>Telegram — Analyse OSINT</h2>
+<p>Le module Telegram permet d'extraire des données depuis des profils, canaux et groupes Telegram.</p>
+<h3>Méthodes d'extraction</h3>
+<p>Le système utilise deux approches complémentaires :</p>
+<ul>
+<li><strong>API MTProto</strong> — Connexion directe à l'API Telegram pour des données complètes (nécessite une configuration API dans l'admin)</li>
+<li><strong>Fallback t.me</strong> — Extraction depuis les pages publiques t.me lorsque l'API n'est pas configurée</li>
+</ul>
+<h3>Données extraites</h3>
+<ul>
+<li><strong>Profil</strong> — Nom d'utilisateur, nom affiché, bio, photo de profil</li>
+<li><strong>Canal/Groupe</strong> — Titre, description, nombre de membres, messages récents</li>
+<li><strong>Messages</strong> — Texte, médias, date, vues, réactions</li>
+</ul>
+<h3>Configuration API (admin)</h3>
+<p>Pour l'extraction complète via MTProto, un administrateur doit configurer les identifiants API Telegram depuis <strong>Administration > OSINT > Telegram</strong> :</p>
+<ol>
+<li>Créer une application sur <strong>my.telegram.org</strong></li>
+<li>Copier l'<strong>API ID</strong> et l'<strong>API Hash</strong></li>
+<li>Les renseigner dans la configuration OSINT</li>
+<li>Entrer un <strong>numéro de téléphone</strong> et valider avec le code reçu</li>
+</ol>`,
+      },
+      {
+        id: 'osint-elephantastic',
+        title: 'Import Elephantastic',
+        keywords: ['elephantastic', 'import', 'json', 'ndjson', 'provider', 'données', 'osint', 'enrichissement'],
+        content: `<h2>Import Elephantastic</h2>
+<p>MeteorEdit permet d'importer des données collectées par <strong>Elephantastic</strong>, un outil d'extraction de données OSINT multi-providers.</p>
+<h3>Utilisation</h3>
+<ol>
+<li>Depuis l'outil d'analyse de profil, cliquez sur l'onglet <strong>Import Elephantastic</strong></li>
+<li>Sélectionnez le fichier JSON ou NDJSON exporté par Elephantastic</li>
+<li>Le système parse automatiquement les résultats et affiche un aperçu par provider</li>
+<li>Cochez/décochez les providers à importer</li>
+<li>Validez pour créer les notes correspondantes dans votre dossier</li>
+</ol>
+<h3>Providers supportés</h3>
+<p>Chaque provider est affiché avec son icône et ses résultats : <strong>Google</strong>, <strong>Holehe</strong>, <strong>Social Analyzer</strong>, <strong>Maigret</strong>, <strong>Sherlock</strong>, et d'autres. Les résultats sont regroupés par provider avec un compteur d'éléments.</p>
+<h3>Données générées</h3>
+<ul>
+<li>Une <strong>note structurée TipTap</strong> est créée pour chaque provider importé</li>
+<li>Les images distantes sont <strong>téléchargées localement</strong> pour garantir leur pérennité</li>
+<li>Les métadonnées brutes sont incluses en fin de note pour référence</li>
+</ul>
+<h3>Export Word</h3>
+<p>Lors de l'export Word, les métadonnées brutes peuvent être exclues en décochant l'option <strong>Métadonnées</strong> dans la boîte de dialogue d'export.</p>`,
+      },
+      {
         id: 'osint-sessions',
         title: 'Gestion des sessions',
-        keywords: ['session', 'cookie', 'authentification', 'login', 'plateforme', 'social', 'connexion', 'osint'],
+        keywords: ['session', 'cookie', 'authentification', 'login', 'plateforme', 'social', 'connexion', 'osint', 'import', 'cookie-editor', 'strava', 'telegram'],
         content: `<h2>Gestion des sessions sociales</h2>
 <p>Certaines actions OSINT (téléchargement de contenus privés, analyse de profils restreints) nécessitent une <strong>authentification par cookies</strong> sur la plateforme cible.</p>
 <h3>Fonctionnement</h3>
@@ -1053,7 +1136,19 @@ const categories: Category[] = [
 <li><strong>WhatsApp</strong> — Données de profil</li>
 <li><strong>Threads</strong> — Profils, pivot vers Instagram/Facebook</li>
 <li><strong>LinkedIn</strong> — Profils professionnels, expérience, compétences</li>
+<li><strong>Telegram</strong> — Canaux, groupes, profils publics</li>
+<li><strong>Strava</strong> — Profils d'athlètes, activités, clubs</li>
 </ul>
+<h3>Import de cookies</h3>
+<p>Pour les plateformes utilisant OAuth (Google, Apple, Facebook), la connexion automatique peut être bloquée. Utilisez l'<strong>import de cookies</strong> comme alternative :</p>
+<ol>
+<li>Installez l'extension <strong>Cookie-Editor</strong> dans votre navigateur (disponible sur <a href="https://cookie-editor.com" target="_blank">cookie-editor.com</a>)</li>
+<li>Connectez-vous manuellement à la plateforme dans votre navigateur</li>
+<li>Exportez les cookies au format JSON via Cookie-Editor</li>
+<li>Dans le gestionnaire de sessions, cliquez sur l'icône <strong>cookie</strong> à côté de la plateforme</li>
+<li>Collez le JSON exporté et validez</li>
+</ol>
+<p>Les cookies sont automatiquement normalisés et stockés de manière chiffrée.</p>
 <h3>Sécurité</h3>
 <p>Les cookies de session sont <strong>stockés de manière chiffrée</strong> côté serveur. Ils ne sont jamais exposés dans l'interface et sont utilisés uniquement lors des requêtes vers la plateforme concernée.</p>`,
       },
@@ -1070,8 +1165,15 @@ const categories: Category[] = [
 </ul>
 <h3>Plateformes</h3>
 <ul>
-<li>Activez ou désactivez individuellement chaque plateforme (YouTube, Instagram, TikTok, Snapchat, Facebook, X, WhatsApp, Threads, LinkedIn)</li>
+<li>Activez ou désactivez individuellement chaque plateforme (YouTube, Instagram, TikTok, Snapchat, Facebook, X, WhatsApp, Threads, LinkedIn, Telegram, Strava)</li>
 <li>Configurez les paramètres spécifiques par plateforme si nécessaire</li>
+</ul>
+<h3>Configuration Telegram</h3>
+<p>Le module Telegram nécessite une configuration API spécifique :</p>
+<ul>
+<li><strong>API ID et API Hash</strong> — Obtenus sur <a href="https://my.telegram.org" target="_blank">my.telegram.org</a></li>
+<li><strong>Numéro de téléphone</strong> — Pour l'authentification MTProto</li>
+<li><strong>Test de connexion</strong> — Envoi d'un code de vérification pour valider la configuration</li>
 </ul>
 <h3>Limites et restrictions</h3>
 <ul>

@@ -1368,7 +1368,7 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaF
           if (block.type === 'heading') {
             // HeadingBlock has children array with TextBlock items
             const headingText = (block as any).children?.map((c: any) => c.text || '').join('') || '';
-            if (headingText.includes('Métadonnées brutes') || headingText.includes('Raw metadata')) {
+            if (headingText.includes('Métadonnées brutes') || headingText.includes('Données brutes') || headingText.includes('Raw metadata')) {
               skipNext = true;
               continue;
             }
