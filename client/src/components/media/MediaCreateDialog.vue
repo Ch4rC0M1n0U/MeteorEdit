@@ -163,7 +163,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'created': [title: string, mediaData: MediaData];
+  'created': [title: string, mediaData: MediaData, downloadUrl?: string];
 }>();
 
 const mode = ref<'url' | 'upload'>('url');
@@ -386,7 +386,11 @@ async function confirm() {
     annotations: [],
   };
 
-  emit('created', title.value.trim(), mediaData);
+  // Pass the URL as downloadUrl if it's a social media platform (for auto-download)
+  const socialPattern = /youtube\.com|youtu\.be|instagram\.com|tiktok\.com|snapchat\.com|facebook\.com|fb\.watch|twitter\.com|x\.com/i;
+  const downloadUrl = mode.value === 'url' && socialPattern.test(urlInput.value) ? urlInput.value.trim() : undefined;
+
+  emit('created', title.value.trim(), mediaData, downloadUrl);
   model.value = false;
 }
 

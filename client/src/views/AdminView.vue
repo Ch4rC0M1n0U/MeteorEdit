@@ -40,6 +40,7 @@
       <AdminAI v-else-if="activeSection === 'ai'" />
       <AdminPlugins v-else-if="activeSection === 'plugins'" />
       <AdminEncryptionStatus v-else-if="activeSection === 'encryption'" />
+      <AdminOsint v-else-if="activeSection === 'osint'" />
     </main>
   </div>
 </template>
@@ -61,6 +62,7 @@ import AdminAudit from '../components/admin/AdminAudit.vue';
 import AdminPlugins from '../components/admin/AdminPlugins.vue';
 import AdminAI from '../components/admin/AdminAI.vue';
 import AdminEncryptionStatus from '../components/admin/AdminEncryptionStatus.vue';
+import AdminOsint from '../components/admin/AdminOsint.vue';
 
 const { t } = useI18n();
 
@@ -82,6 +84,7 @@ const navItems = computed(() => [
   { type: 'item' as const, id: 'email', label: t('admin.emailSmtp'), icon: 'mdi-email-outline' },
   { type: 'item' as const, id: 'clipper', label: t('admin.webClipper'), icon: 'mdi-scissors-cutting' },
   { type: 'item' as const, id: 'ai', label: t('admin.ai'), icon: 'mdi-robot-outline' },
+  { type: 'item' as const, id: 'osint', label: 'OSINT', icon: 'mdi-earth-arrow-right' },
   { type: 'item' as const, id: 'plugins', label: t('admin.plugins'), icon: 'mdi-puzzle-outline' },
   { type: 'group' as const, label: t('admin.maintenance') },
   { type: 'item' as const, id: 'backup', label: t('admin.backup'), icon: 'mdi-backup-restore' },

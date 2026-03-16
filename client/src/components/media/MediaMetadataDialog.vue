@@ -56,6 +56,21 @@
           </div>
         </div>
 
+        <!-- Source URL (original page) -->
+        <div v-if="local.sourceUrl" class="md-field">
+          <label class="md-label">{{ $t('media.originalUrl') }}</label>
+          <div class="md-url-row">
+            <input
+              v-model="local.sourceUrl"
+              type="text"
+              class="md-input"
+            />
+            <a v-if="local.sourceUrl" :href="local.sourceUrl" target="_blank" rel="noopener" class="md-copy-btn" :title="$t('media.openInBrowser')">
+              <v-icon size="16">mdi-open-in-new</v-icon>
+            </a>
+          </div>
+        </div>
+
         <!-- Channel name + URL row -->
         <div class="md-row">
           <div class="md-field md-field--grow">
@@ -98,6 +113,22 @@
               />
               <span v-if="local.duration" class="md-duration-display">{{ formatDuration(local.duration) }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Engagement stats -->
+        <div v-if="local.viewCount || local.likeCount || local.commentCount" class="md-stats-row">
+          <div v-if="local.viewCount != null" class="md-stat">
+            <v-icon size="14">mdi-eye-outline</v-icon>
+            <span>{{ formatNumber(local.viewCount) }}</span>
+          </div>
+          <div v-if="local.likeCount != null" class="md-stat">
+            <v-icon size="14">mdi-heart-outline</v-icon>
+            <span>{{ formatNumber(local.likeCount) }}</span>
+          </div>
+          <div v-if="local.commentCount != null" class="md-stat">
+            <v-icon size="14">mdi-comment-outline</v-icon>
+            <span>{{ formatNumber(local.commentCount) }}</span>
           </div>
         </div>
 
@@ -195,11 +226,40 @@ const platformLogos: Record<string, FunctionalComponent> = {
   dailymotion: () => h('svg', { viewBox: '0 0 24 24', width: '24', height: '24' }, [
     h('path', { d: 'M11.903 20.284c-1.197 0-2.273-.344-3.169-1.015-.905-.68-1.548-1.607-1.882-2.717l-.055-.178v4.388H3.238V3.238h3.559v7.3l.055-.176c.346-1.102.977-2.019 1.882-2.694.896-.668 1.972-1.01 3.169-1.01 1.147 0 2.2.312 3.13.929.932.618 1.674 1.463 2.207 2.513.53 1.042.8 2.208.8 3.462 0 1.261-.27 2.43-.8 3.472-.533 1.048-1.275 1.891-2.208 2.505-.93.614-1.982.924-3.13.924zm-.635-3.174c.96 0 1.755-.35 2.364-1.038.612-.693.922-1.568.922-2.599 0-1.025-.31-1.896-.922-2.589-.61-.688-1.404-1.037-2.364-1.037-.96 0-1.757.349-2.37 1.037-.613.693-.924 1.564-.924 2.589 0 1.031.311 1.906.924 2.599.613.688 1.41 1.038 2.37 1.038z', fill: '#0D0D8B' }),
   ]),
+  instagram: () => h('svg', { viewBox: '0 0 24 24', width: '24', height: '24' }, [
+    h('defs', [h('linearGradient', { id: 'ig-grad', x1: '0', y1: '1', x2: '1', y2: '0' }, [
+      h('stop', { offset: '0%', 'stop-color': '#FFDC80' }),
+      h('stop', { offset: '25%', 'stop-color': '#F77737' }),
+      h('stop', { offset: '50%', 'stop-color': '#E1306C' }),
+      h('stop', { offset: '75%', 'stop-color': '#C13584' }),
+      h('stop', { offset: '100%', 'stop-color': '#833AB4' }),
+    ])]),
+    h('rect', { x: '2', y: '2', width: '20', height: '20', rx: '6', fill: 'url(#ig-grad)' }),
+    h('circle', { cx: '12', cy: '12', r: '5', fill: 'none', stroke: '#fff', 'stroke-width': '2' }),
+    h('circle', { cx: '17.5', cy: '6.5', r: '1.5', fill: '#fff' }),
+  ]),
+  tiktok: () => h('svg', { viewBox: '0 0 24 24', width: '24', height: '24' }, [
+    h('path', { d: 'M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.75a8.18 8.18 0 0 0 4.77 1.52V6.84a4.84 4.84 0 0 1-1.01-.15Z', fill: '#000' }),
+  ]),
+  x: () => h('svg', { viewBox: '0 0 24 24', width: '24', height: '24' }, [
+    h('path', { d: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z', fill: '#000' }),
+  ]),
+  facebook: () => h('svg', { viewBox: '0 0 24 24', width: '24', height: '24' }, [
+    h('path', { d: 'M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z', fill: '#1877F2' }),
+  ]),
+  snapchat: () => h('svg', { viewBox: '0 0 24 24', width: '24', height: '24' }, [
+    h('path', { d: 'M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12.923-.26.14-.075.42-.21.63-.21.18 0 .36.075.48.18.165.165.225.39.195.585-.045.24-.225.405-.405.51-.21.12-.435.195-.645.24-.09.015-.18.045-.27.06a.79.79 0 0 0-.57.63c-.045.3.09.63.405.93 1.2 1.155 2.16 1.54 2.73 1.635.135.015.24.045.345.06.12.03.18.12.18.21 0 .21-.135.39-.42.54-.435.24-1.065.37-1.83.39l-.18.015c-.12.015-.18.015-.24.03-.09.015-.105.06-.12.12 0 .03 0 .06-.015.09-.075.255-.24.525-.66.525-.165 0-.36-.03-.585-.075a7.78 7.78 0 0 0-1.56-.18c-.285 0-.57.015-.84.06-1.17.195-2.085.96-2.94 1.665l-.03.03c-.285.24-.555.465-.84.645-.315.195-.69.315-1.11.315s-.795-.12-1.11-.315a7.39 7.39 0 0 1-.84-.645c-.84-.705-1.755-1.47-2.925-1.665a6.86 6.86 0 0 0-.84-.06c-.45 0-1.005.06-1.56.18-.225.045-.42.075-.585.075-.42 0-.585-.27-.66-.525l-.015-.09c-.015-.06-.015-.105-.12-.12-.06-.015-.12-.015-.24-.03l-.18-.015c-.765-.015-1.395-.15-1.83-.39-.285-.15-.42-.33-.42-.54 0-.09.06-.18.18-.21.105-.015.21-.045.345-.06.57-.105 1.53-.48 2.73-1.635.315-.3.45-.63.405-.93a.79.79 0 0 0-.57-.63c-.09-.015-.18-.045-.27-.06-.21-.045-.435-.12-.645-.24-.18-.105-.36-.27-.405-.51-.03-.195.03-.42.195-.585.12-.105.3-.18.48-.18.21 0 .48.135.63.21.27.135.63.27.93.255.195 0 .33-.045.39-.09-.015-.18-.015-.345-.03-.525l-.003-.06c-.105-1.628-.225-3.654.3-4.848C7.653 1.07 11.016.793 12.006.793h.2z', fill: '#FFFC00', stroke: '#000', 'stroke-width': '0.5' }),
+  ]),
 };
 
 const platformIcon = computed(() => {
   const p = (local.value.platform || '').toLowerCase().trim();
   if (p.includes('youtube')) return platformLogos.youtube;
+  if (p.includes('instagram')) return platformLogos.instagram;
+  if (p.includes('tiktok')) return platformLogos.tiktok;
+  if (p.includes('facebook')) return platformLogos.facebook;
+  if (p.includes('snapchat')) return platformLogos.snapchat;
+  if (p === 'x' || p.includes('twitter')) return platformLogos.x;
   if (p.includes('vimeo')) return platformLogos.vimeo;
   if (p.includes('soundcloud')) return platformLogos.soundcloud;
   if (p.includes('dailymotion')) return platformLogos.dailymotion;
@@ -222,16 +282,26 @@ watch(model, (open) => {
       platform: props.metadata.platform ?? '',
       channelName: props.metadata.channelName ?? '',
       channelUrl: props.metadata.channelUrl ?? '',
+      sourceUrl: props.metadata.sourceUrl ?? '',
       publishedAt: toDateInputValue(props.metadata.publishedAt),
       duration: props.metadata.duration ?? 0,
       description: props.metadata.description ?? '',
       tags: [...(props.metadata.tags ?? [])],
       thumbnailUrl: props.metadata.thumbnailUrl ?? '',
+      viewCount: props.metadata.viewCount,
+      likeCount: props.metadata.likeCount,
+      commentCount: props.metadata.commentCount,
     };
     newTag.value = '';
     copied.value = false;
   }
 });
+
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return n.toLocaleString();
+}
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -300,11 +370,15 @@ function save() {
     platform: local.value.platform || undefined,
     channelName: local.value.channelName || undefined,
     channelUrl: local.value.channelUrl || undefined,
+    sourceUrl: local.value.sourceUrl || undefined,
     publishedAt: local.value.publishedAt || undefined,
     duration: local.value.duration || undefined,
     description: local.value.description || undefined,
     tags: local.value.tags?.length ? local.value.tags : undefined,
     thumbnailUrl: local.value.thumbnailUrl || undefined,
+    viewCount: local.value.viewCount ?? undefined,
+    likeCount: local.value.likeCount ?? undefined,
+    commentCount: local.value.commentCount ?? undefined,
   };
   emit('save', cleaned);
   model.value = false;
@@ -390,6 +464,17 @@ function cancel() {
   transition: opacity 0.15s;
 }
 .md-tag-remove:hover { opacity: 1; }
+
+/* Engagement stats */
+.md-stats-row {
+  display: flex; gap: 16px; padding: 8px 12px;
+  background: var(--me-bg-deep); border-radius: var(--me-radius-xs, 6px);
+  border: 1px solid var(--me-border);
+}
+.md-stat {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 500; color: var(--me-text-secondary);
+}
 
 .md-thumb-preview { margin-top: 4px; }
 .md-thumb-preview img { max-width: 100%; max-height: 100px; border-radius: var(--me-radius-xs, 6px); object-fit: cover; }

@@ -215,6 +215,8 @@ const categories: Category[] = [
 <li><strong>Édition simultanée</strong> — Plusieurs utilisateurs peuvent éditer la même note en temps réel</li>
 <li><strong>Curseurs en direct</strong> — Voyez où vos collaborateurs éditent</li>
 <li><strong>Indicateurs de présence</strong> — Les avatars (ou initiales) des collaborateurs connectés au même dossier s'affichent dans la barre latérale, sous le titre du dossier, avec un point vert indiquant leur statut en ligne. Le nombre de collaborateurs en ligne est également affiché.</li>
+<li><strong>Sync média</strong> — Les captures et annotations média sont synchronisées instantanément entre collaborateurs</li>
+<li><strong>Sync métadonnées</strong> — Les modifications du dossier (logo, description, statut) sont visibles en temps réel par tous les membres</li>
 </ul>
 <h3>Mentions</h3>
 <p>Dans une note, mentionnez un collaborateur avec <strong>@nom</strong> pour lui envoyer une notification.</p>`,
@@ -339,7 +341,7 @@ const categories: Category[] = [
 <ul>
 <li>Upload de fichiers (images, PDF, documents)</li>
 <li>Preview des images directement dans l'application</li>
-<li>Hash SHA-256 calculé automatiquement pour la preuve d'intégrité</li>
+<li>Chiffrement automatique des fichiers uploadés (E2E)</li>
 <li>Métadonnées conservées (nom, taille, date d'upload)</li>
 <li>Téléchargement direct des fichiers non-image</li>
 </ul>
@@ -383,10 +385,14 @@ const categories: Category[] = [
 <h3>Annotations horodatées</h3>
 <p>Cliquez sur le bouton <strong>Note</strong> pour créer une annotation textuelle associée au timecode actuel de la vidéo. Les annotations sont affichées sous le lecteur :</p>
 <ul>
+<li><strong>Horodatage précis</strong> — Les timecodes sont affichés avec une précision à la milliseconde (ex: 1:23.456), idéal pour l'analyse audio</li>
 <li><strong>Horodatage cliquable</strong> — Cliquez sur un timecode pour revenir à ce point dans la vidéo</li>
 <li><strong>Filtre et tri</strong> — Filtrez et triez vos annotations pour retrouver rapidement une information</li>
 <li><strong>Édition et suppression</strong> — Modifiez ou supprimez une annotation à tout moment</li>
 </ul>
+
+<h3>Collaboration en temps réel</h3>
+<p>Les captures et annotations sont <strong>synchronisées en temps réel</strong> entre tous les collaborateurs du dossier. Lorsqu'un utilisateur ajoute une capture ou une annotation, les autres membres voient les modifications instantanément sans rafraîchir la page.</p>
 
 <h3>Métadonnées</h3>
 <p>Cliquez sur le bouton <strong>Éditer les métadonnées</strong> pour compléter ou modifier les informations de la source : plateforme, chaîne, date de publication, description, etc.</p>
@@ -416,6 +422,8 @@ const categories: Category[] = [
 <li><strong>Terminé</strong> — Tâche complétée</li>
 </ul>
 <p>Cliquez sur la puce de statut pour faire cycler rapidement entre les états.</p>
+<h3>Notifications en temps réel</h3>
+<p>Lorsqu'une tâche vous est assignée, vous recevez une <strong>notification instantanée</strong> (cloche + son). Les changements d'assignation sont également notifiés en temps réel.</p>
 <h3>Filtres</h3>
 <p>Filtrez les tâches par statut pour vous concentrer sur ce qui est pertinent. Une barre de progression indique l'avancement global.</p>`,
       },
@@ -443,7 +451,7 @@ const categories: Category[] = [
 <ul>
 <li>Un screenshot pleine page est pris automatiquement</li>
 <li>Les bannières de cookies et modals de connexion sont supprimés automatiquement</li>
-<li>Le hash SHA-256 est calculé pour la preuve d'intégrité</li>
+<li>Les captures sont chiffrées de bout en bout</li>
 </ul>
 <h3>Annoter une capture</h3>
 <p>Les captures d'écran sont insérées comme images dans la note. Vous pouvez les annoter directement en cliquant sur l'image puis sur l'icône crayon (voir <strong>Notes > Annotation d'images</strong>).</p>
@@ -763,6 +771,7 @@ const categories: Category[] = [
 <p>La cloche dans la barre supérieure affiche vos notifications :</p>
 <ul>
 <li>Mentions par des collaborateurs</li>
+<li>Tâches assignées ou réassignées</li>
 <li>Mises à jour de dossiers</li>
 <li>Alertes système</li>
 </ul>
@@ -895,7 +904,7 @@ const categories: Category[] = [
 <h3>Régional</h3>
 <ul>
 <li><strong>Format de date</strong> — DD/MM/YYYY, YYYY-MM-DD ou MM/DD/YYYY</li>
-<li><strong>Langue</strong> — Français (anglais bientôt disponible)</li>
+<li><strong>Langue</strong> — Français, English, Nederlands</li>
 </ul>
 <h3>Comportement</h3>
 <ul>
@@ -960,6 +969,117 @@ const categories: Category[] = [
 <li><strong>Dossiers</strong> — Nouveau noeud (Ctrl+N), suppression (Delete), renommer (F2)</li>
 <li><strong>Général</strong> — Préférences (Ctrl+,), fermeture (Escape)</li>
 </ul>`,
+      },
+    ],
+  },
+  {
+    id: 'osint-social',
+    label: 'OSINT & Médias sociaux',
+    icon: 'mdi-earth-arrow-right',
+    articles: [
+      {
+        id: 'osint-video',
+        title: 'Téléchargement vidéo',
+        keywords: ['osint', 'vidéo', 'télécharger', 'download', 'youtube', 'tiktok', 'instagram', 'snapchat', 'facebook', 'twitter', 'x', 'yt-dlp', 'média social', 'social'],
+        content: `<h2>Téléchargement vidéo</h2>
+<p>MeteorEdit intègre un outil de téléchargement de vidéos depuis les principales plateformes de médias sociaux, basé sur <strong>yt-dlp</strong>.</p>
+<h3>Plateformes supportées</h3>
+<ul>
+<li><strong>YouTube</strong> — Vidéos, Shorts, playlists</li>
+<li><strong>Instagram</strong> — Reels, stories, publications vidéo</li>
+<li><strong>TikTok</strong> — Vidéos publiques et privées (avec session)</li>
+<li><strong>Snapchat</strong> — Stories publiques</li>
+<li><strong>Facebook</strong> — Vidéos et lives</li>
+<li><strong>X (Twitter)</strong> — Vidéos intégrées aux tweets</li>
+</ul>
+<h3>Utilisation</h3>
+<ol>
+<li>Depuis un noeud <strong>Média</strong>, collez l'URL de la vidéo</li>
+<li>Le système détecte automatiquement la plateforme</li>
+<li>Sélectionnez la qualité souhaitée si disponible</li>
+<li>La vidéo est téléchargée et stockée localement dans votre dossier</li>
+</ol>
+<h3>Authentification</h3>
+<p>Certaines plateformes nécessitent une session authentifiée pour accéder au contenu privé ou protégé. Configurez vos sessions depuis la section <strong>Gestion des sessions</strong>.</p>`,
+      },
+      {
+        id: 'osint-profile',
+        title: 'Analyse de profil',
+        keywords: ['osint', 'profil', 'scraping', 'analyse', 'métadonnées', 'social', 'instagram', 'tiktok', 'facebook', 'x', 'twitter', 'threads', 'linkedin', 'note', 'extraction'],
+        content: `<h2>Analyse de profil</h2>
+<p>L'outil d'analyse de profil permet d'extraire des métadonnées à partir de profils publics sur les réseaux sociaux. Les images de profil sont <strong>téléchargées localement</strong> pour éviter l'expiration des liens CDN.</p>
+<h3>Informations extraites</h3>
+<ul>
+<li><strong>Identité</strong> — Nom d'utilisateur, nom affiché, biographie</li>
+<li><strong>Statistiques</strong> — Nombre d'abonnés, abonnements, publications, amis, connexions</li>
+<li><strong>Médias</strong> — Photo de profil (HD), bannière, photo de couverture</li>
+<li><strong>Liens</strong> — Sites web, liens croisés vers d'autres plateformes, identifiants inter-réseaux</li>
+<li><strong>Métadonnées</strong> — Localisation, profession, formation, compétences, vérification, catégorie de compte</li>
+</ul>
+<h3>Génération de note</h3>
+<p>L'analyse génère automatiquement une <strong>note TipTap structurée</strong> contenant toutes les informations collectées. Cette note est créée dans le dossier courant et peut être éditée, annotée et enrichie comme toute autre note.</p>
+<h3>Plateformes prises en charge</h3>
+<p><strong>YouTube</strong>, <strong>Instagram</strong>, <strong>TikTok</strong>, <strong>Snapchat</strong>, <strong>Facebook</strong>, <strong>X (Twitter)</strong>, <strong>WhatsApp</strong>, <strong>Threads</strong>, <strong>LinkedIn</strong>.</p>
+<h3>Techniques d'extraction</h3>
+<p>Le système utilise une approche multi-stratégie pour maximiser les données récupérées :</p>
+<ul>
+<li><strong>Interception API</strong> — Capture des réponses GraphQL/REST pendant le chargement de la page</li>
+<li><strong>Appels API directs</strong> — Utilisation des API internes des plateformes (Voyager, web_profile_info, etc.)</li>
+<li><strong>JSON embarqué</strong> — Extraction des données structurées (JSON-LD, __NEXT_DATA__, _sharedData)</li>
+<li><strong>DOM</strong> — Fallback sur le contenu HTML visible</li>
+</ul>`,
+      },
+      {
+        id: 'osint-sessions',
+        title: 'Gestion des sessions',
+        keywords: ['session', 'cookie', 'authentification', 'login', 'plateforme', 'social', 'connexion', 'osint'],
+        content: `<h2>Gestion des sessions sociales</h2>
+<p>Certaines actions OSINT (téléchargement de contenus privés, analyse de profils restreints) nécessitent une <strong>authentification par cookies</strong> sur la plateforme cible.</p>
+<h3>Fonctionnement</h3>
+<ol>
+<li>Depuis le <strong>menu utilisateur</strong> (icône profil en haut à droite), cliquez sur <strong>Sessions sociales</strong></li>
+<li>Sélectionnez la plateforme à configurer</li>
+<li>Un navigateur intégré s'ouvre pour vous connecter à la plateforme</li>
+<li>Le système capture et chiffre automatiquement les cookies de session</li>
+</ol>
+<h3>Plateformes supportées</h3>
+<ul>
+<li><strong>YouTube</strong> — Accès aux vidéos avec restriction d'âge ou privées</li>
+<li><strong>Instagram</strong> — Profils privés, stories, photos de profil HD</li>
+<li><strong>TikTok</strong> — Contenu restreint par région ou par compte</li>
+<li><strong>Snapchat</strong> — Stories et contenus authentifiés</li>
+<li><strong>Facebook</strong> — Profils et groupes privés, données GraphQL enrichies</li>
+<li><strong>X (Twitter)</strong> — Tweets protégés, espaces</li>
+<li><strong>WhatsApp</strong> — Données de profil</li>
+<li><strong>Threads</strong> — Profils, pivot vers Instagram/Facebook</li>
+<li><strong>LinkedIn</strong> — Profils professionnels, expérience, compétences</li>
+</ul>
+<h3>Sécurité</h3>
+<p>Les cookies de session sont <strong>stockés de manière chiffrée</strong> côté serveur. Ils ne sont jamais exposés dans l'interface et sont utilisés uniquement lors des requêtes vers la plateforme concernée.</p>`,
+      },
+      {
+        id: 'osint-admin',
+        title: 'Configuration OSINT (admin)',
+        keywords: ['osint', 'admin', 'configuration', 'yt-dlp', 'plateforme', 'limite', 'détection', 'paramètres'],
+        content: `<h2>Configuration OSINT — Administration</h2>
+<p>Depuis <strong>Administration > OSINT</strong>, les administrateurs peuvent configurer les outils OSINT.</p>
+<h3>Détection des outils</h3>
+<ul>
+<li><strong>yt-dlp</strong> — Le système détecte automatiquement si yt-dlp est installé sur le serveur. Un indicateur visuel confirme la disponibilité de l'outil</li>
+<li><strong>Version</strong> — La version installée est affichée pour faciliter le diagnostic</li>
+</ul>
+<h3>Plateformes</h3>
+<ul>
+<li>Activez ou désactivez individuellement chaque plateforme (YouTube, Instagram, TikTok, Snapchat, Facebook, X, WhatsApp, Threads, LinkedIn)</li>
+<li>Configurez les paramètres spécifiques par plateforme si nécessaire</li>
+</ul>
+<h3>Limites et restrictions</h3>
+<ul>
+<li><strong>Taille maximale de téléchargement</strong> — Limite en MB pour les vidéos téléchargées</li>
+<li><strong>Formats autorisés</strong> — Restriction des formats vidéo acceptés</li>
+<li><strong>Quota</strong> — Nombre maximum de téléchargements par utilisateur (optionnel)</li>
+</ul>
+<p><em>Note : yt-dlp doit être installé sur le serveur pour que les fonctionnalités de téléchargement vidéo soient disponibles.</em></p>`,
       },
     ],
   },

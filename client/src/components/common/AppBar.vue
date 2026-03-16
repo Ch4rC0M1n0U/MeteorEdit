@@ -48,6 +48,10 @@
             <v-icon size="16" class="mr-2">mdi-file-document-check-outline</v-icon>
             {{ t('nav.templates') }}
           </router-link>
+          <button class="me-dropdown-item" @click="sessionManagerOpen = true">
+            <v-icon size="16" class="mr-2">mdi-shield-account-outline</v-icon>
+            {{ t('nav.sessions') }}
+          </button>
           <router-link to="/help" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-help-circle-outline</v-icon>
             {{ t('nav.help') }}
@@ -60,11 +64,16 @@
         </div>
       </v-menu>
     </div>
+
+    <!-- Social Session Manager Dialog -->
+    <v-dialog v-model="sessionManagerOpen" max-width="560">
+      <SocialSessionManager v-if="sessionManagerOpen" />
+    </v-dialog>
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/auth';
@@ -74,6 +83,7 @@ import { useBrandingStore } from '../../stores/branding';
 import { SERVER_URL } from '../../services/api';
 import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
+import SocialSessionManager from '../media/SocialSessionManager.vue';
 
 
 const authStore = useAuthStore();
@@ -82,6 +92,7 @@ const dossierStore = useDossierStore();
 const brandingStore = useBrandingStore();
 const router = useRouter();
 const { t } = useI18n();
+const sessionManagerOpen = ref(false);
 
 const initials = computed(() => {
   const f = authStore.user?.firstName?.[0] || '';

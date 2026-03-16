@@ -47,8 +47,11 @@
           <button class="dv-action-btn" @click="webClipperOpen = true" title="Web Clipper">
             <v-icon size="16">mdi-web</v-icon>
           </button>
-          <button v-if="aiEnabled" class="dv-action-btn" @click="runSummary" :disabled="summarizing" :title="$t('dossier.aiSummaryTitle')">
-            <v-icon size="16" :class="{ 'ai-spin': summarizing }">{{ summarizing ? 'mdi-loading' : 'mdi-robot-outline' }}</v-icon>
+          <button class="dv-action-btn" @click="profileAnalyzerOpen = true" :title="$t('social.profile.title')">
+            <v-icon size="16">mdi-account-search-outline</v-icon>
+          </button>
+          <button class="dv-action-btn" @click="elephantasticOpen = true" :title="$t('elephantastic.title')">
+            <v-icon size="16">mdi-elephant</v-icon>
           </button>
         </div>
       </div>
@@ -185,7 +188,7 @@
       </div>
 
       <div v-else-if="dossierStore.selectedNode.type === 'media'" class="dv-editor-wrap">
-        <MediaEditor :node="dossierStore.selectedNode" />
+        <MediaEditor :node="dossierStore.selectedNode" :initial-download-url="pendingDownloadUrl" @download-started="pendingDownloadUrl = ''" />
       </div>
 
       <div v-else-if="dossierStore.selectedNode.type === 'document'" class="dv-content-panel dv-document-panel">
@@ -264,6 +267,25 @@
     <!-- Web Clipper -->
     <WebClipperDialog v-model="webClipperOpen" />
 
+    <!-- Profile Analyzer -->
+    <v-dialog v-model="profileAnalyzerOpen" max-width="500" persistent>
+      <ProfileAnalyzer
+        v-if="profileAnalyzerOpen && dossierStore.currentDossier"
+        :dossier-id="dossierStore.currentDossier._id"
+        :parent-id="dossierStore.selectedNode?.type === 'folder' ? dossierStore.selectedNode._id : undefined"
+        @node-created="handleProfileNodeCreated"
+        @close="profileAnalyzerOpen = false"
+      />
+    </v-dialog>
+
+    <!-- Elephantastic Import -->
+    <ElephantasticImportDialog
+      v-model="elephantasticOpen"
+      v-if="elephantasticOpen && dossierStore.currentDossier"
+      :dossier-id="dossierStore.currentDossier._id"
+      @imported="handleElephantasticImport"
+    />
+
     <!-- Export Selection -->
     <ExportSelectDialog
       v-model="exportSelectOpen"
@@ -271,34 +293,6 @@
       @export="handleSelectiveExport"
     />
 
-    <!-- AI Summary dialog -->
-    <v-dialog v-model="summaryDialog" max-width="600">
-      <div class="glass-card dialog-card">
-        <div class="dialog-header">
-          <h3 class="mono">
-            <v-icon size="18" class="mr-1">mdi-robot-outline</v-icon>
-            {{ $t('dossier.aiSummaryTitle') }}
-          </h3>
-          <button class="me-close-btn" @click="summaryDialog = false">
-            <v-icon size="18">mdi-close</v-icon>
-          </button>
-        </div>
-        <div class="dialog-body" style="max-height: 400px; overflow-y: auto;">
-          <div v-if="summarizing" style="text-align: center; padding: 32px;">
-            <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
-            <p style="margin-top: 12px; color: var(--me-text-muted); font-size: 13px;">{{ $t('dossier.generatingSummary') }}</p>
-          </div>
-          <pre v-else class="ai-summary-text">{{ summaryContent }}</pre>
-        </div>
-        <div class="dialog-footer">
-          <button class="me-btn-ghost" @click="summaryDialog = false">{{ $t('common.close') }}</button>
-          <button v-if="summaryContent" class="me-btn-primary" @click="copySummary">
-            <v-icon size="14" class="mr-1">mdi-content-copy</v-icon>
-            {{ $t('dossier.copy') }}
-          </button>
-        </div>
-      </div>
-    </v-dialog>
   </div>
 
   <!-- Snapshot panel -->
@@ -510,11 +504,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
+import { useEncryptionStore } from '../../stores/encryption';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
 import { loadImageAsDataUrl, cleanControlChars } from '../../utils/templateConfig';
@@ -541,6 +536,8 @@ const MediaEditor = defineAsyncComponent(() =>
   import('../media/MediaEditor.vue')
 );
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
+import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';
+import ElephantasticImportDialog from './ElephantasticImportDialog.vue';
 import type { MediaData } from '../../types';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
@@ -550,37 +547,12 @@ const { getDecryptedUrl } = useDecryptedFile();
 const { uploadEncryptedFile } = useEncryptedUpload();
 
 const webClipperOpen = ref(false);
+const profileAnalyzerOpen = ref(false);
+const elephantasticOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
 const mediaCreateParentId = ref<string | null>(null);
 
-// AI Summary
-const summaryDialog = ref(false);
-const summaryContent = ref('');
-const summarizing = ref(false);
-
-async function runSummary() {
-  if (!dossierStore.currentDossier || summarizing.value) return;
-  summarizing.value = true;
-  summaryContent.value = '';
-  summaryDialog.value = true;
-  try {
-    const payload: Record<string, string> = { dossierId: dossierStore.currentDossier._id };
-    if (dossierStore.selectedNode && dossierStore.selectedNode.type === 'note') {
-      payload.nodeId = dossierStore.selectedNode._id;
-    }
-    const { data } = await api.post('/ai/summarize', payload);
-    summaryContent.value = data.summary;
-  } catch (err: any) {
-    summaryContent.value = `Erreur: ${err.response?.data?.message || err.message}`;
-  } finally {
-    summarizing.value = false;
-  }
-}
-
-function copySummary() {
-  navigator.clipboard.writeText(summaryContent.value);
-}
 
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
@@ -719,9 +691,10 @@ async function onAnnotationsSave(annotations: any[]) {
   annotatorOpen.value = false;
 }
 
-// Reset annotator when node changes
+// Reset annotator and pending download URL when node changes
 watch(() => dossierStore.selectedNode?._id, () => {
   annotatorOpen.value = false;
+  pendingDownloadUrl.value = '';
 });
 
 const dossierLogoUrl = computed(() => {
@@ -1049,14 +1022,36 @@ async function confirmCreate() {
   createDialog.value = false;
 }
 
-async function handleMediaCreated(title: string, mediaData: MediaData) {
-  await dossierStore.createNode({
+const pendingDownloadUrl = ref('');
+
+async function handleMediaCreated(title: string, mediaData: MediaData, downloadUrl?: string) {
+  const node = await dossierStore.createNode({
     type: 'media',
     title,
     parentId: mediaCreateParentId.value,
     mediaData,
   });
   showMediaCreateDialog.value = false;
+  // Set download URL AFTER selecting the node so the watch on selectedNode._id
+  // fires first (resetting to '') and then we override with the actual URL
+  if (node) {
+    await dossierStore.selectNode(node);
+    await nextTick();
+    pendingDownloadUrl.value = downloadUrl || '';
+  }
+}
+
+function handleProfileNodeCreated(node: any) {
+  profileAnalyzerOpen.value = false;
+  dossierStore.selectNode(node);
+}
+
+function handleElephantasticImport(nodes: any[]) {
+  elephantasticOpen.value = false;
+  // Select the folder (first node)
+  if (nodes.length > 0) {
+    dossierStore.selectNode(nodes[0]);
+  }
 }
 
 async function handleDuplicateNode(nodeId: string) {
@@ -1219,8 +1214,8 @@ function nextSectionNumber(counter: SectionCounter, level: 'h1' | 'h2' | 'h3'): 
   }
 }
 
-function handleSelectiveExport(format: string, selectedIds: string[], includeToc: boolean, mediaFormat?: 'table' | 'sequential') {
-  exportDOCX(selectedIds, includeToc, mediaFormat);
+function handleSelectiveExport(format: string, selectedIds: string[], includeToc: boolean, mediaFormat?: 'table' | 'sequential', includeRawMetadata?: boolean) {
+  exportDOCX(selectedIds, includeToc, mediaFormat, includeRawMetadata);
 }
 
 // Collect dossier info lines for report header (only non-empty fields)
@@ -1313,21 +1308,85 @@ function buildDocxSections(dossier: any, nodes: any[], mediaFormat: 'table' | 's
   return sections;
 }
 
-async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaFormat: 'table' | 'sequential' = 'sequential') {
+async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaFormat: 'table' | 'sequential' = 'sequential', includeRawMetadata = false) {
   if (!dossierStore.currentDossier) return;
   try {
     const dossier = dossierStore.currentDossier;
     const allNodes = dossierStore.nodes;
-    const nodes = selectedNodeIds ? allNodes.filter(n => selectedNodeIds.includes(n._id)) : allNodes;
+    const filteredNodes = selectedNodeIds ? allNodes.filter(n => selectedNodeIds.includes(n._id)) : allNodes;
+
+    // Ensure full content is loaded for all nodes that need it (notes, media)
+    // Nodes loaded in lightweight mode don't have content/mediaData
+    const nodesToLoad = filteredNodes.filter(n =>
+      (n.type === 'note' && n.content === undefined) ||
+      (n.type === 'media' && n.mediaData === undefined)
+    );
+    if (nodesToLoad.length > 0) {
+      await Promise.all(nodesToLoad.map(async (node) => {
+        try {
+          const { data } = await api.get(`/nodes/${node._id}`);
+          const dossierId = dossier._id;
+          const encStore = useEncryptionStore();
+          let fullNode = data;
+          if (encStore.isUnlocked) {
+            // Decrypt content/mediaData inline
+            if (fullNode.content && typeof fullNode.content === 'string' && fullNode.content.startsWith('ENC:')) {
+              try { fullNode.content = await encStore.decryptForDossier(dossierId, fullNode.content.slice(4)); } catch { /* */ }
+            }
+            if (fullNode.mediaData && typeof fullNode.mediaData === 'string' && fullNode.mediaData.startsWith('ENC:')) {
+              try { fullNode.mediaData = await encStore.decryptForDossier(dossierId, fullNode.mediaData.slice(4)); } catch { /* */ }
+            }
+          }
+          // Update in the nodes array
+          const idx = allNodes.findIndex(n => n._id === node._id);
+          if (idx >= 0) {
+            dossierStore.nodes[idx] = { ...dossierStore.nodes[idx], ...fullNode };
+          }
+        } catch { /* skip nodes that fail to load */ }
+      }));
+    }
+
+    // Re-filter after loading full content
+    const nodes = selectedNodeIds ? dossierStore.nodes.filter(n => selectedNodeIds.includes(n._id)) : dossierStore.nodes;
     const sig = (authStore.user as any)?.signature;
+
+    let sections = buildDocxSections(dossier, nodes, mediaFormat);
+
+    // Filter out raw metadata blocks if not requested
+    if (!includeRawMetadata) {
+      for (const section of sections) {
+        if (!section.blocks) continue;
+        // Find heading "Métadonnées brutes" and remove it + the following codeBlock
+        const filtered: typeof section.blocks = [];
+        let skipNext = false;
+        for (const block of section.blocks) {
+          if (skipNext && block.type === 'codeBlock') {
+            skipNext = false;
+            continue;
+          }
+          skipNext = false;
+          if (block.type === 'heading') {
+            // HeadingBlock has children array with TextBlock items
+            const headingText = (block as any).children?.map((c: any) => c.text || '').join('') || '';
+            if (headingText.includes('Métadonnées brutes') || headingText.includes('Raw metadata')) {
+              skipNext = true;
+              continue;
+            }
+          }
+          filtered.push(block);
+        }
+        section.blocks = filtered;
+      }
+    }
 
     const data: DocxExportData = {
       dossierTitle: dossier.title,
       infoLines: buildDossierInfoLines(dossier),
-      sections: buildDocxSections(dossier, nodes, mediaFormat),
+      sections,
       closingDate: new Date().toLocaleDateString('fr-FR'),
       closingCity: (authStore.user as any)?.signature?.city || 'Bruxelles',
       includeToc,
+      includeRawMetadata,
       signature: sig?.name ? sig : undefined,
       signatureImagePath: (authStore.user as any)?.signatureImagePath || undefined,
       serverUrl: SERVER_URL,

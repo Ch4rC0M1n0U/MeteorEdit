@@ -29,7 +29,7 @@
               {{ item.ok ? 'mdi-check-circle' : 'mdi-circle-outline' }}
             </v-icon>
             <span :class="['score-item-label', { 'score-item-label--ok': item.ok }]">{{ item.label }}</span>
-            <span class="score-item-points mono">+25%</span>
+            <span class="score-item-points mono">+{{ item.points }}%</span>
           </div>
         </div>
       </div>
@@ -115,22 +115,21 @@ const encryptionStore = useEncryptionStore();
 
 // --- Security Score ---
 const hasEncryptionKeys = ref(false);
-const passwordChangedRecently = ref(false);
 
 interface ScoreItem {
   label: string;
   ok: boolean;
+  points: number;
 }
 
 const scoreItems = computed<ScoreItem[]>(() => [
-  { label: t('securityAdvanced.passwordDefined'), ok: true },
-  { label: t('securityAdvanced.twoFaActive'), ok: !!authStore.user?.twoFactorEnabled },
-  { label: t('securityAdvanced.encryptionKeys'), ok: hasEncryptionKeys.value },
-  { label: t('securityAdvanced.recentPassword'), ok: passwordChangedRecently.value },
+  { label: t('securityAdvanced.passwordDefined'), ok: true, points: 33 },
+  { label: t('securityAdvanced.twoFaActive'), ok: !!authStore.user?.twoFactorEnabled, points: 34 },
+  { label: t('securityAdvanced.encryptionKeys'), ok: hasEncryptionKeys.value, points: 33 },
 ]);
 
 const securityScore = computed(() => {
-  return scoreItems.value.filter(i => i.ok).length * 25;
+  return scoreItems.value.filter(i => i.ok).reduce((sum, i) => sum + i.points, 0);
 });
 
 const scoreColor = computed(() => {
@@ -267,33 +266,8 @@ async function checkEncryptionKeys() {
   }
 }
 
-async function checkPasswordAge() {
-  try {
-    const { data } = await api.get('/auth/me');
-    if (data.passwordChangedAt) {
-      const changed = new Date(data.passwordChangedAt);
-      const now = new Date();
-      const diffDays = (now.getTime() - changed.getTime()) / (1000 * 60 * 60 * 24);
-      passwordChangedRecently.value = diffDays < 90;
-    } else {
-      // If no passwordChangedAt field, fall back to createdAt
-      if (data.createdAt) {
-        const created = new Date(data.createdAt);
-        const now = new Date();
-        const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-        passwordChangedRecently.value = diffDays < 90;
-      } else {
-        passwordChangedRecently.value = false;
-      }
-    }
-  } catch {
-    passwordChangedRecently.value = false;
-  }
-}
-
 onMounted(() => {
   checkEncryptionKeys();
-  checkPasswordAge();
   fetchLoginHistory();
   fetchSessions();
 });

@@ -41,6 +41,21 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     announcementEnabled: { type: Boolean, default: false },
     announcementMessage: { type: String, default: '' },
     announcementVariant: { type: String, default: 'info', enum: ['info', 'warning', 'error'] },
+    // OSINT
+    osint: {
+      maxVideoSize: { type: Number, default: 200 * 1024 * 1024 },
+      maxConcurrentDownloads: { type: Number, default: 5 },
+      enabledPlatforms: { type: [String], default: ['youtube', 'instagram', 'tiktok', 'snapchat', 'facebook', 'x', 'whatsapp', 'telegram'] },
+      ytdlpPath: { type: String, default: 'yt-dlp' },
+      ffmpegPath: { type: String, default: 'ffmpeg' },
+      ytdlpVersion: { type: String, default: '' },
+      ffmpegVersion: { type: String, default: '' },
+      telegramConfig: {
+        apiId: { type: Number, default: 0 },
+        apiHash: { type: String, default: '' },
+        session: { type: String, default: '' },
+      },
+    },
   },
   { collection: 'sitesettings' }
 );

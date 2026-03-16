@@ -1,11 +1,15 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import nodemailer from 'nodemailer';
 import SiteSettings from '../models/SiteSettings';
 import { AuthRequest } from '../middleware/auth';
 import { setMaintenanceState } from '../middleware/maintenance';
 import { logActivity } from '../utils/activityLogger';
+
+const execFileAsync = promisify(execFile);
 
 export async function getBranding(_req: Request, res: Response): Promise<void> {
   try {
@@ -63,6 +67,16 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
       }
     }
 
+    // OSINT settings
+    if (body.osint && typeof body.osint === 'object') {
+      const o = body.osint;
+      if (typeof o.maxVideoSize === 'number') update['osint.maxVideoSize'] = Math.max(50, Math.min(500, o.maxVideoSize));
+      if (typeof o.maxConcurrentDownloads === 'number') update['osint.maxConcurrentDownloads'] = Math.max(1, Math.min(10, o.maxConcurrentDownloads));
+      if (Array.isArray(o.enabledPlatforms)) update['osint.enabledPlatforms'] = o.enabledPlatforms.filter((p: any) => typeof p === 'string');
+      if (typeof o.ytdlpPath === 'string') update['osint.ytdlpPath'] = o.ytdlpPath;
+      if (typeof o.ffmpegPath === 'string') update['osint.ffmpegPath'] = o.ffmpegPath;
+    }
+
     const settings = await SiteSettings.findOneAndUpdate({}, update, { new: true, upsert: true });
 
     // Sync in-memory maintenance state
@@ -95,6 +109,9 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
     }
     if (changedKeys.some(k => ['announcementEnabled', 'announcementMessage', 'announcementVariant'].includes(k))) {
       await logActivity(req.user!.userId, 'settings.announcement_update', 'system', null, { announcementEnabled: update.announcementEnabled }, ip);
+    }
+    if (changedKeys.some(k => k.startsWith('osint.'))) {
+      await logActivity(req.user!.userId, 'settings.osint_update', 'system', null, { fields: changedKeys.filter(k => k.startsWith('osint.')) }, ip);
     }
 
     res.json(settings);
@@ -248,5 +265,44 @@ export async function testEmail(req: AuthRequest, res: Response): Promise<void> 
     res.json({ message: 'Email de test envoye avec succes' });
   } catch (error: any) {
     res.status(502).json({ message: `Erreur SMTP: ${error.message || 'Connexion impossible'}` });
+  }
+}
+
+export async function detectOsintTools(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const settings = await SiteSettings.findOne();
+    if (!settings) { res.status(500).json({ message: 'No settings' }); return; }
+
+    const ytdlpPath = settings.osint?.ytdlpPath || 'yt-dlp';
+    const ffmpegPath = settings.osint?.ffmpegPath || 'ffmpeg';
+
+    let ytdlpVersion = '';
+    let ffmpegVersion = '';
+
+    try {
+      const { stdout } = await execFileAsync(ytdlpPath, ['--version']);
+      ytdlpVersion = stdout.trim();
+    } catch { /* not found */ }
+
+    try {
+      const { stdout } = await execFileAsync(ffmpegPath, ['-version']);
+      const firstLine = stdout.split('\n')[0] || '';
+      const match = firstLine.match(/ffmpeg version (\S+)/);
+      ffmpegVersion = match ? match[1] : firstLine.trim();
+    } catch { /* not found */ }
+
+    await SiteSettings.updateOne({}, {
+      $set: {
+        'osint.ytdlpVersion': ytdlpVersion,
+        'osint.ffmpegVersion': ffmpegVersion,
+      },
+    });
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(req.user!.userId, 'settings.osint_detect', 'system', null, { ytdlpVersion, ffmpegVersion }, ip);
+
+    res.json({ ytdlpVersion, ffmpegVersion });
+  } catch {
+    res.status(500).json({ message: 'Detection error' });
   }
 }

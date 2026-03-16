@@ -51,7 +51,43 @@
           {{ error }}
         </v-alert>
 
-        <v-form v-if="!show2FA" @submit.prevent="handleLogin" :disabled="authStore.loading">
+        <!-- Remembered user card -->
+        <div v-if="rememberedUser && !show2FA" class="remembered-card glass-card">
+          <div class="remembered-avatar">
+            <img v-if="avatarUrl && !avatarError" :src="avatarUrl" alt="" class="remembered-avatar-img" @error="avatarError = true" />
+            <span v-else class="remembered-initials">{{ initials }}</span>
+          </div>
+          <p class="remembered-welcome">{{ $t('auth.welcomeBack') }}</p>
+          <h3 class="remembered-name">{{ rememberedUser.firstName }} {{ rememberedUser.lastName }}</h3>
+
+          <v-form @submit.prevent="handleLogin" :disabled="authStore.loading" class="remembered-form">
+            <v-text-field
+              v-model="password"
+              :placeholder="$t('auth.passwordPlaceholder')"
+              :type="showPassword ? 'text' : 'password'"
+              prepend-inner-icon="mdi-lock-outline"
+              :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+              @click:append-inner="showPassword = !showPassword"
+              variant="outlined"
+              density="comfortable"
+              required
+              autofocus
+              class="mb-4"
+            />
+            <v-btn type="submit" block size="large" :loading="authStore.loading" class="btn-accent login-submit-btn">
+              <v-icon start size="18">mdi-login-variant</v-icon>
+              {{ $t('auth.loginAction') }}
+            </v-btn>
+          </v-form>
+
+          <button class="remembered-not-me" @click="clearRememberedUser">
+            <v-icon size="14" class="mr-1">mdi-account-switch-outline</v-icon>
+            {{ $t('auth.notMe') }}
+          </button>
+        </div>
+
+        <!-- Classic login form -->
+        <v-form v-if="!show2FA && !rememberedUser" @submit.prevent="handleLogin" :disabled="authStore.loading">
           <label class="login-field-label">{{ $t('auth.email') }}</label>
           <v-text-field
             v-model="email"
@@ -74,8 +110,14 @@
             variant="outlined"
             density="comfortable"
             required
-            class="mb-5"
+            class="mb-3"
           />
+          <div class="remember-me-row">
+            <label class="remember-me-label">
+              <input type="checkbox" v-model="rememberMe" class="remember-me-checkbox" />
+              <span>{{ $t('auth.rememberMe') }}</span>
+            </label>
+          </div>
           <v-btn
             type="submit"
             block
@@ -123,11 +165,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
 import { useBrandingStore } from '../stores/branding';
+import { SERVER_URL } from '../services/api';
+
+interface RememberedUser {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -141,6 +191,52 @@ const error = ref('');
 const show2FA = ref(false);
 const tempToken = ref('');
 const tfaCode = ref('');
+const rememberMe = ref(false);
+const rememberedUser = ref<RememberedUser | null>(null);
+const avatarError = ref(false);
+
+onMounted(() => {
+  const stored = localStorage.getItem('rememberedUser');
+  if (stored) {
+    try {
+      rememberedUser.value = JSON.parse(stored);
+      email.value = rememberedUser.value!.email;
+      rememberMe.value = true;
+    } catch {
+      localStorage.removeItem('rememberedUser');
+    }
+  }
+});
+
+watch(() => rememberedUser.value, () => { avatarError.value = false; });
+
+const avatarUrl = computed(() => {
+  if (!rememberedUser.value) return null;
+  return `${SERVER_URL}/api/auth/avatar/${rememberedUser.value.userId}`;
+});
+
+const initials = computed(() => {
+  if (!rememberedUser.value) return '';
+  return ((rememberedUser.value.firstName?.[0] || '') + (rememberedUser.value.lastName?.[0] || '')).toUpperCase();
+});
+
+function clearRememberedUser() {
+  rememberedUser.value = null;
+  email.value = '';
+  password.value = '';
+  localStorage.removeItem('rememberedUser');
+}
+
+function saveRememberedUser() {
+  if (rememberMe.value && authStore.user) {
+    localStorage.setItem('rememberedUser', JSON.stringify({
+      userId: authStore.user.id,
+      email: authStore.user.email,
+      firstName: authStore.user.firstName,
+      lastName: authStore.user.lastName,
+    }));
+  }
+}
 
 async function handleLogin() {
   error.value = '';
@@ -151,6 +247,7 @@ async function handleLogin() {
       show2FA.value = true;
       return;
     }
+    saveRememberedUser();
     router.push('/');
   } catch (e: any) {
     error.value = e.response?.data?.message || t('auth.loginError');
@@ -161,6 +258,7 @@ async function handle2FA() {
   error.value = '';
   try {
     await authStore.validate2FA(tempToken.value, tfaCode.value);
+    saveRememberedUser();
     router.push('/');
   } catch (e: any) {
     error.value = e.response?.data?.message || t('auth.invalidCode');
@@ -351,6 +449,85 @@ async function handle2FA() {
   text-transform: none;
   border-radius: 10px;
   height: 48px;
+}
+
+/* ─── Remember me ─── */
+.remember-me-row {
+  margin-bottom: 20px;
+}
+.remember-me-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--me-text-secondary);
+  cursor: pointer;
+}
+.remember-me-checkbox {
+  accent-color: var(--me-accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ─── Remembered user card ─── */
+.remembered-card {
+  text-align: center;
+  padding: 32px 24px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+.remembered-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  margin: 0 auto 16px;
+  overflow: hidden;
+  background: var(--me-bg-card);
+  border: 2px solid rgba(var(--me-accent-rgb, 59, 130, 246), 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.remembered-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.remembered-initials {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--me-accent);
+  font-family: var(--me-font-mono);
+}
+.remembered-welcome {
+  font-size: 13px;
+  color: var(--me-text-muted);
+  margin-bottom: 2px;
+}
+.remembered-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  margin-bottom: 20px;
+}
+.remembered-form {
+  text-align: left;
+}
+.remembered-not-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+  background: none;
+  border: none;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+.remembered-not-me:hover {
+  color: var(--me-accent);
 }
 
 /* ─── 2FA ─── */

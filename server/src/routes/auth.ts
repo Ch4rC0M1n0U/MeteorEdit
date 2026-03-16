@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { register, login, me, refresh, getPreferences, updatePreferences, uploadTemplateLogo, getNotificationPreferences, updateNotificationPreferences } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import { upload } from '../config/upload';
-import { updateProfile, uploadAvatar, deleteAvatar, changePassword, updateSignature, uploadSignatureImage, saveDrawnSignature, deleteSignatureImage, getSessions, getLoginHistory, getStorageUsage, exportUserData, deleteAccount, getActivity } from '../controllers/profileController';
+import { updateProfile, uploadAvatar, deleteAvatar, getPublicAvatar, changePassword, updateSignature, uploadSignatureImage, saveDrawnSignature, deleteSignatureImage, getSessions, getLoginHistory, getStorageUsage, exportUserData, deleteAccount, getActivity } from '../controllers/profileController';
 import { setup2FA, verify2FA, disable2FA, validate2FA } from '../controllers/twoFactorController';
 import { searchUsers } from '../controllers/userSearchController';
 
@@ -250,6 +250,32 @@ router.get('/me', authenticate, me);
  *         description: Refresh token invalide
  */
 router.post('/refresh', refresh);
+
+/**
+ * @swagger
+ * /api/auth/avatar/{userId}:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Obtenir l'avatar public d'un utilisateur
+ *     description: Route publique (sans authentification) pour afficher l'avatar sur l'ecran de connexion.
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Image avatar
+ *         content:
+ *           image/*:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Avatar non trouve
+ */
+router.get('/avatar/:userId', getPublicAvatar);
 
 /**
  * @swagger

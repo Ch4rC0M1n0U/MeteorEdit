@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -35,6 +35,24 @@ export async function updateProfile(req: AuthRequest, res: Response): Promise<vo
     await logActivity(req.user!.userId, 'profile.update', 'user', req.user!.userId, { fields: Object.keys(update) }, ip, req.headers['user-agent'] || '');
     res.json(user);
   } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function getPublicAvatar(req: Request, res: Response): Promise<void> {
+  try {
+    const user = await User.findById(req.params.userId).select('avatarPath').lean();
+    if (!user?.avatarPath) {
+      res.status(404).json({ message: 'No avatar' });
+      return;
+    }
+    const fullPath = path.resolve(__dirname, '..', '..', user.avatarPath);
+    if (!fs.existsSync(fullPath)) {
+      res.status(404).json({ message: 'File not found' });
+      return;
+    }
+    res.sendFile(fullPath);
+  } catch {
     res.status(500).json({ message: 'Server error' });
   }
 }

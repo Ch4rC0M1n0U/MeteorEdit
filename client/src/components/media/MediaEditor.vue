@@ -70,12 +70,30 @@
             <v-icon size="14">mdi-information-outline</v-icon>
             {{ t('media.metadata') }}
           </button>
+          <button class="me-btn me-btn--download" @click="showDownloader = !showDownloader" :title="t('media.download.title')">
+            <v-icon size="14">mdi-download</v-icon>
+          </button>
           <button class="me-btn me-btn--expand" @click="expanded = !expanded" :title="expanded ? t('media.shrinkPlayer') : t('media.expandPlayer')">
             <v-icon size="14">{{ expanded ? 'mdi-arrow-collapse' : 'mdi-arrow-expand' }}</v-icon>
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Social Media Downloader Section (toggle via button or auto-show when no media) -->
+    <MediaDownloader
+      v-if="showDownloader || !hasMedia || !!props.initialDownloadUrl"
+      :dossier-id="props.node.dossierId?.toString() || ''"
+      :node-id="props.node._id"
+      :initial-url="props.initialDownloadUrl"
+      @downloaded="onMediaDownloaded"
+      @open-session-manager="sessionManagerOpen = true"
+    />
+
+    <!-- Social Session Manager Dialog -->
+    <v-dialog v-model="sessionManagerOpen" max-width="560">
+      <SocialSessionManager v-if="sessionManagerOpen" />
+    </v-dialog>
 
     <!-- Annotations Section -->
     <div class="me-annotations-section">
@@ -169,7 +187,7 @@
     <MediaMetadataDialog
       v-model="showMetadata"
       :metadata="currentMetadata"
-      :source-url="props.node.mediaData?.source.url"
+      :source-url="props.node.mediaData?.source?.url"
       @save="onMetadataSave"
     />
 
@@ -219,6 +237,8 @@ import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import { useEncryptionStore } from '../../stores/encryption';
 import { encryptFile } from '../../utils/encryption';
 import MediaMetadataDialog from './MediaMetadataDialog.vue';
+import MediaDownloader from './MediaDownloader.vue';
+import SocialSessionManager from './SocialSessionManager.vue';
 import ImageAnnotator from '../editor/ImageAnnotator.vue';
 
 const { t } = useI18n();
@@ -229,6 +249,11 @@ const { getDecryptedUrl } = useDecryptedFile();
 
 const props = defineProps<{
   node: DossierNode;
+  initialDownloadUrl?: string;
+}>();
+
+const emit = defineEmits<{
+  'download-started': [];
 }>();
 
 // --- Refs ---
@@ -240,6 +265,7 @@ const currentTime = ref(0);
 const duration = ref(0);
 const capturing = ref(false);
 const showMetadata = ref(false);
+const sessionManagerOpen = ref(false);
 const filter = ref('');
 const sortAsc = ref(true);
 const editingId = ref<string | null>(null);
@@ -247,6 +273,14 @@ const editingComment = ref('');
 const viewerSrc = ref('');
 const annotatorOpen = ref(false);
 const expanded = ref(false);
+const showDownloader = ref(false);
+
+// Has any media loaded (file or embed URL)?
+const hasMedia = computed(() => {
+  const md = props.node.mediaData;
+  if (!md) return false;
+  return !!(md.source?.fileUrl || md.source?.url);
+});
 
 const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
@@ -255,7 +289,7 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 // --- Computed: source detection ---
 const sourceUrl = computed(() => {
   const md = props.node.mediaData;
-  if (!md) return '';
+  if (!md?.source) return '';
   if (md.source.type === 'upload' && md.source.fileUrl) {
     return `${SERVER_URL}/${md.source.fileUrl}`;
   }
@@ -273,7 +307,7 @@ watch(
     if (!source) return;
     if (source.type === 'upload' && source.fileUrl && dossierStore.currentDossier) {
       try {
-        const ct = source.mediaType === 'video' ? 'video/mp4' : 'audio/mpeg';
+        const ct = source.mimeType || (source.mediaType === 'video' ? 'video/mp4' : 'audio/mpeg');
         decryptedSourceUrl.value = await getDecryptedUrl(
           dossierStore.currentDossier._id,
           source.fileUrl,
@@ -291,7 +325,7 @@ watch(
 );
 
 const youtubeId = computed(() => {
-  const url = props.node.mediaData?.source.url || '';
+  const url = props.node.mediaData?.source?.url || '';
   if (!url) return null;
   // youtube.com/watch?v=ID or youtu.be/ID
   const m1 = url.match(/(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([\w-]{11})/);
@@ -299,7 +333,7 @@ const youtubeId = computed(() => {
 });
 
 const vimeoId = computed(() => {
-  const url = props.node.mediaData?.source.url || '';
+  const url = props.node.mediaData?.source?.url || '';
   if (!url) return null;
   const m = url.match(/vimeo\.com\/(\d+)/);
   return m ? m[1] : null;
@@ -310,14 +344,14 @@ const isEmbed = computed(() => !!youtubeId.value || !!vimeoId.value);
 const isNativeVideo = computed(() => {
   if (isEmbed.value) return false;
   const md = props.node.mediaData;
-  if (!md) return false;
+  if (!md?.source) return false;
   return md.source.mediaType === 'video';
 });
 
 const isNativeAudio = computed(() => {
   if (isEmbed.value) return false;
   const md = props.node.mediaData;
-  if (!md) return false;
+  if (!md?.source) return false;
   return md.source.mediaType === 'audio';
 });
 
@@ -436,6 +470,12 @@ function onTimeUpdate() {
 function onLoadedMetadata() {
   if (playerRef.value) {
     duration.value = playerRef.value.duration;
+    // Auto-fill metadata duration if missing or zero
+    if (duration.value > 0 && props.node.mediaData?.metadata && !props.node.mediaData.metadata.duration) {
+      props.node.mediaData.metadata.duration = Math.round(duration.value);
+      // Persist to server
+      api.put(`/nodes/${props.node._id}`, { mediaData: props.node.mediaData }).catch(() => {});
+    }
   }
 }
 
@@ -514,7 +554,7 @@ async function captureFrame() {
       saveMediaData();
     } else if (isEmbed.value) {
       // Embed (YouTube/Vimeo): extract frame server-side via yt-dlp + ffmpeg
-      const url = props.node.mediaData.source.url || '';
+      const url = props.node.mediaData?.source?.url || '';
       const { data } = await api.post('/media/capture-embed', {
         nodeId: props.node._id,
         dossierId: props.node.dossierId,
@@ -877,6 +917,35 @@ async function onAnnotatorSave(drawAnnotations: any[]) {
   }
 }
 
+// --- Media download completed ---
+async function onMediaDownloaded(nodeData: any) {
+  // Refresh the node data to pick up the newly downloaded media
+  try {
+    const { data } = await api.get(`/nodes/${props.node._id}`);
+    if (data.mediaData && typeof data.mediaData === 'object') {
+      // Update node type + mediaData to trigger all watchers/computed
+      props.node.type = 'media';
+      props.node.mediaData = { ...data.mediaData };
+      props.node.title = data.title || props.node.title;
+      props.node.fileSize = data.fileSize;
+
+      // Force re-decrypt the new source
+      const source = data.mediaData.source;
+      if (source?.type === 'upload' && source.fileUrl && dossierStore.currentDossier) {
+        const ct = source.mimeType || (source.mediaType === 'video' ? 'video/mp4' : 'audio/mpeg');
+        decryptedSourceUrl.value = await getDecryptedUrl(
+          dossierStore.currentDossier._id,
+          source.fileUrl,
+          ct,
+          true // noCache
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Failed to refresh node after download:', err);
+  }
+}
+
 // --- Metadata save ---
 function onMetadataSave(metadata: MediaMetadata) {
   if (!props.node.mediaData) return;
@@ -1040,6 +1109,15 @@ onBeforeUnmount(() => {
 .me-btn--meta:hover {
   border-color: var(--me-text-secondary);
   color: var(--me-text-primary);
+}
+
+.me-btn--download {
+  color: var(--me-accent);
+  border-color: rgba(var(--me-accent-rgb), 0.3);
+}
+.me-btn--download:hover {
+  background: rgba(var(--me-accent-rgb), 0.1);
+  border-color: var(--me-accent);
 }
 
 .me-btn--expand {

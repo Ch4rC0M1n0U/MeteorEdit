@@ -97,8 +97,11 @@ watch(() => props.node?.attrs?.src, async (src) => {
         'image/png'
       );
     } catch {
-      // Can't decrypt — try direct URL as last resort
-      decryptedSrc.value = src;
+      // Can't decrypt — only fall back to direct URL for non-encrypted files
+      if (!src.includes('.enc')) {
+        decryptedSrc.value = src;
+      }
+      // For .enc files, leave as transparent pixel — encrypted binary can't be displayed
     } finally {
       loading.value = false;
     }

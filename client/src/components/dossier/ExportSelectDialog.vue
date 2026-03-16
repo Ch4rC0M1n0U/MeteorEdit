@@ -43,6 +43,10 @@
             <input type="checkbox" v-model="includeToc" />
             <span>{{ $t('dossier.includeToc') }}</span>
           </label>
+          <label class="es-toc-check">
+            <input type="checkbox" v-model="includeRawMetadata" />
+            <span>{{ $t('dossier.includeRawMetadata') }}</span>
+          </label>
           <div v-if="hasMediaNodes" class="es-media-format">
             <span class="es-media-format-label">{{ $t('media.mediaExportFormat') }}</span>
             <label class="es-radio"><input type="radio" v-model="mediaFormat" value="table" /> {{ $t('media.formatTable') }}</label>
@@ -72,7 +76,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  export: [format: 'docx', selectedIds: string[], includeToc: boolean, mediaFormat: 'table' | 'sequential'];
+  export: [format: 'docx', selectedIds: string[], includeToc: boolean, mediaFormat: 'table' | 'sequential', includeRawMetadata: boolean];
 }>();
 
 const NODE_ICONS: Record<string, string> = {
@@ -87,6 +91,7 @@ const NODE_ICONS: Record<string, string> = {
 
 const selectedIds = ref<Set<string>>(new Set());
 const includeToc = ref(true);
+const includeRawMetadata = ref(false);
 const mediaFormat = ref<'table' | 'sequential'>('sequential');
 
 const allNodes = computed(() => props.nodes.filter(n => !n.deletedAt));
@@ -168,7 +173,7 @@ function toggleNode(nodeId: string) {
 }
 
 function doExport(format: 'docx') {
-  emit('export', format, Array.from(selectedIds.value), includeToc.value, mediaFormat.value);
+  emit('export', format, Array.from(selectedIds.value), includeToc.value, mediaFormat.value, includeRawMetadata.value);
   model.value = false;
 }
 

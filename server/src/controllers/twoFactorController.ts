@@ -136,7 +136,7 @@ export async function validate2FA(req: Request, res: Response): Promise<void> {
       const tokens = generateTokens(user._id.toString(), user.role);
       res.json({
         ...tokens,
-        user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
+        user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, avatarPath: user.avatarPath || null, twoFactorEnabled: user.twoFactorEnabled },
       });
       return;
     }
@@ -159,7 +159,7 @@ export async function validate2FA(req: Request, res: Response): Promise<void> {
       const tokens = generateTokens(user._id.toString(), user.role);
       res.json({
         ...tokens,
-        user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
+        user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, avatarPath: user.avatarPath || null, twoFactorEnabled: user.twoFactorEnabled },
         backupCodeUsed: true,
       });
       return;

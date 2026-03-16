@@ -9,3 +9,9 @@ docs
 docs/plans
 yjs-docs/
 desktop/release/
+
+# Puppeteer / Chromium temp profiles
+.chromium-login-profile/
+server/.chromium-login-profile/
+**/puppeteer_dev_profile/
+**/chrome-data/

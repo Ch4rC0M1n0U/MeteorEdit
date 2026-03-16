@@ -4,7 +4,11 @@ import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import dotenv from 'dotenv';
+
+const execFileAsync = promisify(execFile);
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { connectDB } from './config/database';
@@ -24,6 +28,7 @@ import reportTemplateRoutes from './routes/reportTemplates';
 import taskRoutes from './routes/tasks';
 import clipperRoutes from './routes/clipper';
 import mediaRoutes from './routes/media';
+import socialRoutes from './routes/social';
 import encryptionRoutes from './routes/encryption';
 import SiteSettings from './models/SiteSettings';
 import { startYjsServer } from './yjs-server';
@@ -88,9 +93,50 @@ app.use('/api', snapshotRoutes);
 app.use('/api', taskRoutes);
 app.use('/api/clip', clipperRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/social', socialRoutes);
 app.use('/api/encryption', encryptionRoutes);
 
 setupSocket(httpServer);
+
+async function detectOsintTools() {
+  try {
+    const settings = await SiteSettings.findOne();
+    if (!settings) return;
+
+    const ytdlpPath = settings.osint?.ytdlpPath || 'yt-dlp';
+    const ffmpegPath = settings.osint?.ffmpegPath || 'ffmpeg';
+
+    let ytdlpVersion = '';
+    let ffmpegVersion = '';
+
+    try {
+      const { stdout } = await execFileAsync(ytdlpPath, ['--version']);
+      ytdlpVersion = stdout.trim();
+      console.log(`[OSINT] yt-dlp detected: v${ytdlpVersion}`);
+    } catch {
+      console.warn('[OSINT] yt-dlp not found or not executable');
+    }
+
+    try {
+      const { stdout } = await execFileAsync(ffmpegPath, ['-version']);
+      const firstLine = stdout.split('\n')[0] || '';
+      const match = firstLine.match(/ffmpeg version (\S+)/);
+      ffmpegVersion = match ? match[1] : firstLine.trim();
+      console.log(`[OSINT] ffmpeg detected: v${ffmpegVersion}`);
+    } catch {
+      console.warn('[OSINT] ffmpeg not found or not executable');
+    }
+
+    await SiteSettings.updateOne({}, {
+      $set: {
+        'osint.ytdlpVersion': ytdlpVersion,
+        'osint.ffmpegVersion': ffmpegVersion,
+      },
+    });
+  } catch (err) {
+    console.error('[OSINT] Error detecting tools:', err);
+  }
+}
 
 async function start() {
   await connectDB();
@@ -100,6 +146,7 @@ async function start() {
     console.log('SiteSettings initialized');
   }
   await loadMaintenanceState();
+  await detectOsintTools();
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

@@ -5,6 +5,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
+import DossierNode from '../models/DossierNode';
 
 const execFileAsync = promisify(execFile);
 
@@ -72,10 +73,34 @@ export async function fetchOembed(req: AuthRequest, res: Response): Promise<void
       // noembed failed, will try fallback
     }
 
+    // Instagram-specific: try Instagram's oEmbed endpoint (works without token for public content)
+    if (!metadata.thumbnailUrl && url.includes('instagram.com')) {
+      try {
+        const igOembedUrl = `https://www.instagram.com/api/v1/oembed/?url=${encodeURIComponent(url)}`;
+        const igResp = await fetch(igOembedUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (igResp.ok) {
+          const igData = await igResp.json() as Record<string, any>;
+          metadata.thumbnailUrl = igData.thumbnail_url || null;
+          metadata.title = metadata.title || igData.title || null;
+          metadata.channelName = metadata.channelName || igData.author_name || null;
+          metadata.platform = metadata.platform || 'Instagram';
+        }
+      } catch {
+        // Instagram oEmbed failed
+      }
+    }
+
     // Always fetch HTML to enrich metadata (duration, description, publishedAt, tags)
     try {
       const htmlResponse = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+        },
         signal: AbortSignal.timeout(10000),
       });
       if (htmlResponse.ok) {
@@ -99,7 +124,6 @@ export async function fetchOembed(req: AuthRequest, res: Response): Promise<void
         // Published date
         const datePublished = getMetaContent('datePublished') || getMetaContent('uploadDate') || getMetaContent('article:published_time') || getMetaContent('og:video:release_date');
         if (datePublished) {
-          // Normalize to YYYY-MM-DD
           const parsed = new Date(datePublished);
           metadata.publishedAt = isNaN(parsed.getTime()) ? datePublished : parsed.toISOString().slice(0, 10);
         }
@@ -114,6 +138,71 @@ export async function fetchOembed(req: AuthRequest, res: Response): Promise<void
         const keywords = getMetaContent('keywords');
         if (keywords) {
           metadata.tags = keywords.split(',').map(k => k.trim()).filter(Boolean);
+        }
+
+        // ── Snapchat-specific: parse __NEXT_DATA__ for rich metadata ──
+        const isSnapchat = /snapchat\.com/i.test(url);
+        if (isSnapchat) {
+          metadata.platform = metadata.platform || 'Snapchat';
+          const nextDataMatch = html.match(/<script\s+id="__NEXT_DATA__"\s+type="application\/json">\s*(\{[\s\S]*?\})\s*<\/script>/);
+          if (nextDataMatch) {
+            try {
+              const nextData = JSON.parse(nextDataMatch[1]);
+              const pageProps = nextData?.props?.pageProps;
+              if (pageProps) {
+                // Username & display name
+                const profile = pageProps.publicUserProfile || pageProps.userProfile;
+                const username = profile?.username || pageProps.username;
+                const displayName = profile?.displayName || profile?.title;
+                if (username) {
+                  metadata.channelName = displayName ? `${displayName} (@${username})` : username;
+                  metadata.channelUrl = `https://www.snapchat.com/add/${username}`;
+                }
+
+                // Title from various sources
+                const pageTitle = pageProps.pageMetadata?.title || pageProps.title;
+                if (pageTitle && !metadata.title) {
+                  metadata.title = pageTitle;
+                }
+
+                // Thumbnail
+                const snapThumbnail = pageProps.pageMetadata?.previewImageUrl
+                  || pageProps.story?.snapList?.[0]?.thumbnailUrl;
+                if (snapThumbnail && !metadata.thumbnailUrl) {
+                  metadata.thumbnailUrl = snapThumbnail;
+                }
+
+                // Creation timestamp
+                const story = pageProps.story || pageProps.highlight;
+                const snapMeta = story?.snapList?.[0] || story?.snaps?.[0];
+                const creationTs = snapMeta?.creationTimestampMs || story?.creationTimestampMs;
+                if (creationTs && !metadata.publishedAt) {
+                  const d = new Date(typeof creationTs === 'string' ? parseInt(creationTs, 10) : creationTs);
+                  if (!isNaN(d.getTime())) metadata.publishedAt = d.toISOString().slice(0, 10);
+                }
+              }
+            } catch {
+              // __NEXT_DATA__ parse failed, continue with what we have
+            }
+          }
+
+          // Clean Snapchat title: remove trailing " (1)" and "| Spotlight" etc.
+          if (metadata.title) {
+            metadata.title = metadata.title.replace(/\s*\(\d+\)\s*$/, '').trim();
+            // If title contains pipe-separated metadata, extract the actual title part
+            const parts = metadata.title.split(' | ').map((p: string) => p.trim());
+            if (parts.length >= 3) {
+              const titleParts = parts.filter((p: string) =>
+                !p.match(/^\d[\d.,]*\s*K?\s*likes?/i) &&
+                !p.match(/\(@\w+\)/) &&
+                !p.match(/^(?:Date de publication|Published)/i) &&
+                !p.match(/^Spotlight\s*\(/i)
+              );
+              if (titleParts.length > 0) {
+                metadata.title = titleParts[0];
+              }
+            }
+          }
         }
       }
     } catch {
@@ -363,6 +452,59 @@ export async function replaceCaptureEncrypted(req: AuthRequest, res: Response) {
   } catch (error: any) {
     console.error('replaceCaptureEncrypted error:', error?.message || error);
     res.status(500).json({ error: 'Failed to replace capture' });
+  }
+}
+
+/**
+ * Replace a downloaded media file with its encrypted version.
+ * POST /api/media/encrypt-file
+ * Body (multipart): file (encrypted blob) + fileUrl (original relative path)
+ */
+export async function encryptMediaFile(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.userId;
+    const { fileUrl } = req.body;
+    if (!fileUrl || !req.file) {
+      return res.status(400).json({ error: 'Missing fileUrl or file' });
+    }
+
+    // Resolve the original file path
+    const relativePath = fileUrl.replace(/^\//, '');
+    const absPath = path.resolve(UPLOAD_DIR, '..', relativePath);
+    const encPath = absPath + '.enc';
+
+    const dir = path.dirname(encPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // Write encrypted blob
+    fs.writeFileSync(encPath, fs.readFileSync(req.file.path));
+    // Clean up multer temp
+    if (req.file.path !== encPath && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    // Delete plaintext original
+    if (fs.existsSync(absPath)) {
+      fs.unlinkSync(absPath);
+    }
+
+    // Update DossierNode fileUrl to .enc
+    const newFileUrl = relativePath + '.enc';
+    const filename = path.basename(relativePath);
+    await DossierNode.updateMany(
+      { 'mediaData.source.fileUrl': { $regex: new RegExp(`${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) } },
+      { $set: { 'mediaData.source.fileUrl': newFileUrl } }
+    );
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'media.encrypt_file', 'node', null, { fileUrl, newFileUrl }, ip, ua);
+
+    res.json({ fileUrl: newFileUrl });
+  } catch (error: any) {
+    console.error('encryptMediaFile error:', error?.message || error);
+    res.status(500).json({ error: 'Failed to encrypt file' });
   }
 }
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { listUsers, updateUser, deleteUser, resetUserPassword, resetUser2FA, getAuditLogs, getAuditStats } from '../controllers/adminController';
-import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, uploadLoginBackground, deleteLoginBackground, testEmail } from '../controllers/settingsController';
+import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, uploadLoginBackground, deleteLoginBackground, testEmail, detectOsintTools } from '../controllers/settingsController';
 import { exportBackup, importBackup, getStorageInfo, scanOrphans, cleanOrphans } from '../controllers/backupController';
 import { getStats } from '../controllers/statsController';
 import { getPluginSettings, updatePluginSettings } from '../controllers/pluginSettingsController';
@@ -379,6 +379,9 @@ router.delete('/settings/login-background', deleteLoginBackground);
  *                     type: object
  */
 router.get('/stats', getStats);
+
+// OSINT detection
+router.post('/settings/detect-osint', detectOsintTools);
 
 // Email
 router.post('/settings/test-email', testEmail);

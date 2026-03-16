@@ -153,6 +153,16 @@ export interface ISiteSettings extends Document {
   announcementEnabled: boolean;
   announcementMessage: string;
   announcementVariant: 'info' | 'warning' | 'error';
+  // OSINT
+  osint?: {
+    maxVideoSize: number;
+    maxConcurrentDownloads: number;
+    enabledPlatforms: string[];
+    ytdlpPath: string;
+    ffmpegPath: string;
+    ytdlpVersion: string;
+    ffmpegVersion: string;
+  };
 }
 
 export interface IActivityLog extends Document {

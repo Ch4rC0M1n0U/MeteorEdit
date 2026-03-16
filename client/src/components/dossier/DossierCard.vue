@@ -52,7 +52,10 @@ watch(() => props.dossier.logoPath, async (logoPath) => {
   try {
     decryptedLogo.value = await getDecryptedUrl(props.dossier._id, logoPath, 'image/png');
   } catch {
-    decryptedLogo.value = `${SERVER_URL}/${logoPath}`;
+    // Only fall back to direct URL for non-encrypted files
+    if (logoPath && !logoPath.includes('.enc')) {
+      decryptedLogo.value = `${SERVER_URL}/${logoPath}`;
+    }
   }
 }, { immediate: true });
 

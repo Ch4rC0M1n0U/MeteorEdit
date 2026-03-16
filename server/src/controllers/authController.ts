@@ -107,7 +107,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     res.json({
       ...tokens,
-      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
+      user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, avatarPath: user.avatarPath || null, twoFactorEnabled: user.twoFactorEnabled },
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

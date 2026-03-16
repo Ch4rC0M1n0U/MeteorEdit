@@ -97,11 +97,15 @@ export interface MediaMetadata {
   platform?: string;
   channelName?: string;
   channelUrl?: string;
+  sourceUrl?: string;
   publishedAt?: string;
   duration?: number;
   thumbnailUrl?: string;
   description?: string;
   tags?: string[];
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
 }
 
 export interface MediaAnnotation {

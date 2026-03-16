@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { exportJSON, importJSON } from '../controllers/exportController';
+import { exportJSON, importJSON, importElephantastic } from '../controllers/exportController';
 
 const router = Router();
 
@@ -80,5 +80,43 @@ router.get('/dossiers/:id/export/json', authenticate, exportJSON);
  *         description: Donnees invalides
  */
 router.post('/dossiers/import/json', authenticate, importJSON);
+
+/**
+ * @swagger
+ * /api/dossiers/{id}/import-elephantastic:
+ *   post:
+ *     tags: [Export]
+ *     summary: Importer des donnees Elephantastic
+ *     description: Cree un dossier avec des notes a partir d'un export Elephantastic JSON.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du dossier cible
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [entityName, items]
+ *             properties:
+ *               entityName:
+ *                 type: string
+ *               items:
+ *                 type: array
+ *               parentId:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Import reussi
+ *       400:
+ *         description: Donnees invalides
+ */
+router.post('/dossiers/:id/import-elephantastic', authenticate, importElephantastic);
 
 export default router;

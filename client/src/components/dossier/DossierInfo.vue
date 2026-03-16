@@ -546,7 +546,10 @@ watch(() => dossierStore.currentDossier?.logoPath, async (logoPath) => {
     try {
       dossierLogoUrl.value = await getDecryptedUrl(d._id, logoPath, 'image/png');
     } catch {
-      dossierLogoUrl.value = `${SERVER_URL}/${logoPath}`;
+      // Only fall back to direct URL for non-encrypted files
+      if (!logoPath.includes('.enc')) {
+        dossierLogoUrl.value = `${SERVER_URL}/${logoPath}`;
+      }
     }
   } else {
     dossierLogoUrl.value = `${SERVER_URL}/${logoPath}`;
@@ -628,8 +631,11 @@ async function decryptEntityPhoto(photo: string) {
     const url = await getDecryptedUrl(d._id, photo, 'image/png');
     decryptedPhotoUrls.value[photo] = url;
   } catch {
-    // Fallback: use direct URL for legacy unencrypted files
-    decryptedPhotoUrls.value[photo] = `${SERVER_URL}/${photo}`;
+    // Fallback: only use direct URL for non-encrypted files
+    if (!photo.includes('.enc')) {
+      decryptedPhotoUrls.value[photo] = `${SERVER_URL}/${photo}`;
+    }
+    // For .enc files, leave uncached — encrypted binary can't be displayed as image
   }
 }
 

@@ -13,6 +13,7 @@ import { loadPdfTemplate, loadImageAsDataUrl, resolveLogoUrl } from './templateC
 import type { ContentBlock } from './contentBlocks';
 import { blocksToPlainText } from './contentBlocks';
 import { useEncryptionStore } from '../stores/encryption';
+import { useDossierStore } from '../stores/dossier';
 import { decryptFile } from './encryption';
 import api from '../services/api';
 
@@ -41,51 +42,94 @@ function docxFont(tpl: PdfTemplateConfig): string {
 
 // ── Images ──────────────────────────────────────────────────────────
 
-async function fetchImageBuffer(url: string, serverUrl?: string, dossierId?: string): Promise<{ buffer: ArrayBuffer; w: number; h: number } | null> {
+/** Detect image MIME type from magic bytes. Returns empty string if not a known image format. */
+function detectImageMime(buf: ArrayBuffer): string {
+  if (buf.byteLength < 4) return '';
+  const arr = new Uint8Array(buf, 0, Math.min(12, buf.byteLength));
+  if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47) return 'image/png';
+  if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) return 'image/jpeg';
+  if (arr[0] === 0x47 && arr[1] === 0x49 && arr[2] === 0x46) return 'image/gif';
+  if (buf.byteLength >= 12 && arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46 &&
+      arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50) return 'image/webp';
+  return '';
+}
+
+/** Check if buffer starts with known image magic bytes */
+function isValidImageBuffer(buf: ArrayBuffer): boolean {
+  return detectImageMime(buf) !== '';
+}
+
+/** Get docx image type from MIME */
+function mimeToDocxType(mime: string): 'png' | 'jpg' | 'gif' | 'bmp' {
+  if (mime === 'image/jpeg') return 'jpg';
+  if (mime === 'image/gif') return 'gif';
+  if (mime === 'image/bmp') return 'bmp';
+  return 'png';
+}
+
+/** Create Image + data URL from buffer to get dimensions */
+function bufferToImageData(imageData: ArrayBuffer, mime: string): Promise<{ buffer: ArrayBuffer; w: number; h: number; mime: string } | null> {
+  const blob = new Blob([imageData], { type: mime });
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      const img = new window.Image();
+      img.onload = () => resolve({ buffer: imageData, w: img.naturalWidth, h: img.naturalHeight, mime });
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function fetchImageBuffer(url: string, serverUrl?: string, dossierId?: string): Promise<{ buffer: ArrayBuffer; w: number; h: number; mime?: string } | null> {
   try {
+    // Resolve dossierId: use param or fallback to current dossier from store
+    const effectiveDossierId = dossierId || useDossierStore().currentDossier?._id;
+
     // Check if this is an uploads URL that might be encrypted
     const isUploadsUrl = url.includes('/uploads/') || url.startsWith('uploads/');
-    if (isUploadsUrl && dossierId) {
-      // Try to fetch via authenticated API route and decrypt
+    if (isUploadsUrl) {
       const filename = url.split('/').pop()?.split('?')[0] || '';
       if (filename) {
         try {
           const response = await api.get(`/files/${filename}`, { responseType: 'arraybuffer' });
           let imageData: ArrayBuffer = response.data;
 
-          // Try to decrypt
-          const encryptionStore = useEncryptionStore();
-          const dossierKey = await encryptionStore.getDossierKey(dossierId);
-          if (dossierKey) {
-            try {
-              imageData = await decryptFile(dossierKey, response.data);
-            } catch {
-              // Decryption failed — use raw data (legacy unencrypted)
+          // Check if data is already a valid image (plaintext/legacy file)
+          if (isValidImageBuffer(imageData)) {
+            const mime = detectImageMime(imageData);
+            return await bufferToImageData(imageData, mime);
+          }
+
+          // Data is not a recognizable image — try to decrypt
+          if (effectiveDossierId) {
+            const encryptionStore = useEncryptionStore();
+            const dossierKey = await encryptionStore.getDossierKey(effectiveDossierId);
+            if (dossierKey) {
+              try {
+                const decrypted = await decryptFile(dossierKey, response.data);
+                if (isValidImageBuffer(decrypted)) {
+                  const mime = detectImageMime(decrypted);
+                  return await bufferToImageData(decrypted, mime);
+                }
+              } catch {
+                // Decryption failed — try returning raw data as last resort
+              }
             }
           }
 
-          // Convert to data URL and get dimensions
-          const blob = new Blob([imageData]);
-          const dataUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve({ buffer: imageData, w: img.naturalWidth, h: img.naturalHeight });
-            img.onerror = () => resolve(null);
-            img.src = dataUrl;
-          });
+          // Last resort: pass raw data through (may be unrecognized format like BMP/TIFF)
+          return await bufferToImageData(imageData, 'image/png');
         } catch {
-          // Fall through to standard fetch
+          // Fall through to standard fetch (404 or other error)
         }
       }
     }
 
-    // Standard fetch for non-encrypted files (logos, public assets)
+    // Standard fetch for non-encrypted files (logos, public assets, external URLs)
     let resolvedUrl = url;
     if (serverUrl && !url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith('http')) {
       resolvedUrl = url.startsWith('/') ? `${serverUrl}${url}` : `${serverUrl}/${url}`;
@@ -95,17 +139,16 @@ async function fetchImageBuffer(url: string, serverUrl?: string, dossierId?: str
     const bin = atob(base64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const mime = detectImageMime(bytes.buffer) || 'image/png';
     return new Promise((resolve) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
-        resolve({ buffer: bytes.buffer, w: img.naturalWidth, h: img.naturalHeight });
+        resolve({ buffer: bytes.buffer, w: img.naturalWidth, h: img.naturalHeight, mime });
       };
-      img.onerror = () => {
-        resolve(null);
-      };
+      img.onerror = () => resolve(null);
       img.src = dataUrl;
     });
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -125,12 +168,13 @@ async function loadLogos(tpl: PdfTemplateConfig, serverUrl: string): Promise<Doc
   return { left, right };
 }
 
-function makeImageRun(imgData: { buffer: ArrayBuffer; w: number; h: number }, maxW: number, maxH: number): ImageRun {
+function makeImageRun(imgData: { buffer: ArrayBuffer; w: number; h: number; mime?: string }, maxW: number, maxH: number): ImageRun {
   const ratio = Math.min(maxW / imgData.w, maxH / imgData.h, 1);
+  const imgType = mimeToDocxType(imgData.mime || detectImageMime(imgData.buffer));
   return new ImageRun({
     data: imgData.buffer,
     transformation: { width: Math.round(imgData.w * ratio), height: Math.round(imgData.h * ratio) },
-    type: 'png',
+    type: imgType,
   } as IImageOptions);
 }
 
@@ -606,7 +650,9 @@ async function resolveBlockImages(
           spacing: { before: 80, after: 80 },
         }));
       }
-    } catch { /* keep placeholder */ }
+    } catch {
+      // Image could not be resolved — placeholder text stays
+    }
   }
 
   if (resolved.size === 0) return elements;
@@ -848,6 +894,7 @@ export interface DocxExportData {
   closingDate: string;
   closingCity?: string;
   includeToc?: boolean;
+  includeRawMetadata?: boolean;
   signature?: {
     title?: string;
     name?: string;
@@ -957,6 +1004,18 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       const md = section.mediaData;
       const metaObj = { ...md.metadata, url: md.source?.url };
       docChildren.push(...renderMediaMetadataDocx(metaObj, tpl));
+
+      // Thumbnail: always show as video preview when available
+      const thumbUrl = md.metadata?.thumbnailUrl;
+      if (thumbUrl) {
+        const thumbData = await fetchImageBuffer(thumbUrl, data.serverUrl, data.dossierId);
+        if (thumbData) {
+          docChildren.push(new Paragraph({
+            children: [makeImageRun(thumbData, 450, 300)],
+            spacing: { before: 80, after: 80 },
+          }));
+        }
+      }
 
       if (md.annotations?.length) {
         if (section.mediaFormat === 'table') {

@@ -59,11 +59,16 @@ export async function serveUploadFile(req: Request, res: Response): Promise<void
     const requestedPath = path.join(UPLOAD_DIR, rawPath);
     let filePath = requestedPath;
 
-    // If file not found, try .enc variant
+    // If file not found, try .enc variants:
+    // 1. uuid.png.enc (appended)
+    // 2. uuid.enc (extension replaced — encryption migration format)
     if (!fs.existsSync(filePath)) {
-      const encPath = filePath + '.enc';
-      if (fs.existsSync(encPath)) {
-        filePath = encPath;
+      const appendedEnc = filePath + '.enc';
+      const replacedEnc = filePath.replace(/\.[^.]+$/, '.enc');
+      if (fs.existsSync(appendedEnc)) {
+        filePath = appendedEnc;
+      } else if (replacedEnc !== filePath && fs.existsSync(replacedEnc)) {
+        filePath = replacedEnc;
       } else {
         res.status(404).json({ message: 'File not found' });
         return;
@@ -123,7 +128,11 @@ export async function serveFile(req: AuthRequest, res: Response): Promise<void> 
     // Also check for .enc variant (file may have been encrypted after original URL was saved)
     const dirs = [UPLOAD_DIR, path.join(UPLOAD_DIR, 'media'), path.join(UPLOAD_DIR, 'media', 'captures')];
     const variants = [filename];
-    if (!filename.endsWith('.enc')) variants.push(filename + '.enc');
+    if (!filename.endsWith('.enc')) {
+      variants.push(filename + '.enc'); // appended: uuid.png.enc
+      const replaced = filename.replace(/\.[^.]+$/, '.enc'); // replaced: uuid.enc
+      if (replaced !== filename && replaced !== filename + '.enc') variants.push(replaced);
+    }
 
     let filePath: string | null = null;
     for (const dir of dirs) {
