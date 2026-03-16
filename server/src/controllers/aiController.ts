@@ -282,6 +282,14 @@ export async function generateReport(req: AuthRequest, res: Response) {
   sendEvent({ type: 'log', message: 'Connexion au modele IA...' });
   sendEvent({ type: 'log', message: `Modele: ${config.selectedModel}` });
   sendEvent({ type: 'log', message: `Dossier: ${dossier.title} (${nodes.length} elements)` });
+  sendEvent({ type: 'log', message: 'Chargement du modele en memoire (peut prendre un moment)...' });
+
+  // Heartbeat to keep connection alive and show progress during model loading
+  let elapsedSec = 0;
+  const heartbeat = setInterval(() => {
+    elapsedSec += 5;
+    sendEvent({ type: 'log', message: `Attente du modele... ${elapsedSec}s` });
+  }, 5000);
 
   try {
     const response = await fetch(`${config.baseUrl}/api/generate`, {
@@ -298,6 +306,8 @@ export async function generateReport(req: AuthRequest, res: Response) {
       }),
       signal: abortController.signal,
     });
+
+    clearInterval(heartbeat);
 
     if (!response.ok) {
       const text = await response.text();
@@ -379,6 +389,7 @@ export async function generateReport(req: AuthRequest, res: Response) {
       model: config.selectedModel,
     });
   } catch (err: any) {
+    clearInterval(heartbeat);
     if (err.name === 'AbortError') {
       sendEvent({ type: 'cancelled', message: 'Generation annulee' });
     } else {
@@ -443,6 +454,13 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
   sendEvent({ type: 'log', message: `Enrichissement de "${entity.name}" (${entity.type})...` });
   sendEvent({ type: 'log', message: `Modele: ${config.selectedModel}` });
 
+  // Heartbeat during model loading
+  let enrichElapsed = 0;
+  const enrichHeartbeat = setInterval(() => {
+    enrichElapsed += 5;
+    sendEvent({ type: 'log', message: `Attente du modele... ${enrichElapsed}s` });
+  }, 5000);
+
   try {
     const response = await fetch(`${config.baseUrl}/api/generate`, {
       method: 'POST',
@@ -455,6 +473,8 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
       }),
       signal: abortController.signal,
     });
+
+    clearInterval(enrichHeartbeat);
 
     if (!response.ok) {
       const text = await response.text();
@@ -532,6 +552,7 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
 
     sendEvent({ type: 'done', description: enrichedDescription, model: config.selectedModel });
   } catch (err: any) {
+    clearInterval(enrichHeartbeat);
     if (err.name === 'AbortError') {
       sendEvent({ type: 'cancelled', message: 'Enrichissement annule' });
     } else {

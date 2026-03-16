@@ -425,6 +425,7 @@
         <div v-if="aiGenerating && !aiReportContent" class="ai-generating">
           <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
           <p>{{ $t('dossier.preparingReport') }}</p>
+          <span v-if="aiElapsedSec > 0" class="ai-elapsed mono">{{ aiElapsedSec }}s</span>
         </div>
 
         <div v-if="aiReportContent" class="ai-report-content">
@@ -762,7 +763,9 @@ const aiLogs = ref<Array<{ time: string; message: string; type: string }>>([]);
 const aiLogsExpanded = ref(true);
 const aiReportBodyRef = ref<HTMLElement | null>(null);
 const aiLogsRef = ref<HTMLElement | null>(null);
+const aiElapsedSec = ref(0);
 let aiAbortController: AbortController | null = null;
+let aiElapsedTimer: ReturnType<typeof setInterval> | null = null;
 
 function aiLogTime() {
   return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -804,6 +807,9 @@ async function generateAiReport(templateId?: string | null) {
   aiTokenCount.value = 0;
   aiLogs.value = [];
   aiLogsExpanded.value = true;
+  aiElapsedSec.value = 0;
+  if (aiElapsedTimer) clearInterval(aiElapsedTimer);
+  aiElapsedTimer = setInterval(() => { aiElapsedSec.value++; }, 1000);
 
   aiAbortController = new AbortController();
   const token = localStorage.getItem('accessToken');
@@ -847,6 +853,7 @@ async function generateAiReport(templateId?: string | null) {
           const event = JSON.parse(line.slice(6));
 
           if (event.type === 'token') {
+            if (aiElapsedTimer) { clearInterval(aiElapsedTimer); aiElapsedTimer = null; }
             aiReportContent.value += event.token;
             aiTokenCount.value = event.tokenCount;
             // Auto-scroll report body
@@ -879,6 +886,7 @@ async function generateAiReport(templateId?: string | null) {
       aiLogs.value.push({ time: aiLogTime(), message: `Erreur: ${err.message}`, type: 'error' });
     }
   } finally {
+    if (aiElapsedTimer) { clearInterval(aiElapsedTimer); aiElapsedTimer = null; }
     aiGenerating.value = false;
     aiAbortController = null;
   }
@@ -2014,6 +2022,11 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 .ai-generating p {
   margin-top: 12px;
+}
+.ai-elapsed {
+  font-size: 12px;
+  color: var(--me-text-muted);
+  margin-top: 4px;
 }
 .ai-report-content {
   font-size: 13px;
