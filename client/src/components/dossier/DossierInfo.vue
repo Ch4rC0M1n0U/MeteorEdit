@@ -10,8 +10,8 @@
 
     <!-- MODE LECTURE -->
     <div v-if="!editing" class="di-form fade-in fade-in-delay-1">
-      <!-- Icon / Logo -->
-      <div class="di-section di-icon-section">
+      <!-- HEADER: Icon/Logo + Title + Status -->
+      <div class="di-section di-icon-section di-full-width">
         <div class="di-icon-display">
           <div v-if="dossierLogoUrl" class="di-logo-wrap">
             <img :src="dossierLogoUrl" alt="Logo" class="di-logo-img" />
@@ -21,6 +21,10 @@
           </div>
           <v-icon v-else-if="form.icon" size="32" class="di-icon-large">{{ form.icon }}</v-icon>
           <v-icon v-else size="32" class="di-icon-large di-icon-default">mdi-folder-outline</v-icon>
+          <div class="di-header-meta">
+            <span class="di-header-title">{{ form.title || '—' }}</span>
+            <span class="di-status-badge" :class="`di-status-${form.status}`">{{ statusLabel }}</span>
+          </div>
           <div class="di-icon-actions" v-if="isOwner">
             <button class="me-btn-small" @click="showIconPicker = !showIconPicker">
               <v-icon size="14" class="mr-1">mdi-palette-outline</v-icon>
@@ -52,28 +56,19 @@
         </div>
       </div>
 
+      <!-- LEFT COLUMN: Facts, Objectives, Description, Tags -->
       <div class="di-section">
-        <div class="di-row">
-          <div class="di-field">
-            <span class="di-label mono">{{ $t('common.title') }}</span>
-            <span class="di-value">{{ form.title || '—' }}</span>
-          </div>
-          <div class="di-field" style="max-width: 200px;">
-            <span class="di-label mono">{{ $t('common.status') }}</span>
-            <span class="di-status-badge" :class="`di-status-${form.status}`">{{ statusLabel }}</span>
-          </div>
-        </div>
-        <div class="di-field" v-if="form.objectives">
-          <span class="di-label mono">{{ $t('dossier.objectives') }}</span>
-          <span class="di-value di-value-block">{{ form.objectives }}</span>
-        </div>
         <div class="di-field" v-if="form.judicialFacts">
           <span class="di-label mono">{{ $t('dossier.judicialFacts') }}</span>
           <span class="di-value di-value-block">{{ form.judicialFacts }}</span>
         </div>
+        <div class="di-field" v-if="form.objectives">
+          <span class="di-label mono">{{ $t('dossier.objectives') }}</span>
+          <div class="di-value di-value-rich" v-html="form.objectives" />
+        </div>
         <div class="di-field" v-if="form.description">
           <span class="di-label mono">{{ $t('dossier.synthesis') }}</span>
-          <span class="di-value di-value-block">{{ form.description }}</span>
+          <div class="di-value di-value-rich" v-html="form.description" />
         </div>
         <div class="di-field di-tags-field">
           <span class="di-label mono">{{ $t('dossier.tags') }}</span>
@@ -92,8 +87,9 @@
         </div>
       </div>
 
-      <!-- CLASSIFICATION & MAGISTRAT -->
-      <div class="di-section">
+      <!-- RIGHT COLUMN: Classification + Investigator -->
+      <div class="di-section di-sidebar-section">
+        <!-- Classification & Magistrat -->
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
           {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
@@ -118,7 +114,7 @@
             {{ $t('dossier.isEmbargo') }}
           </span>
         </div>
-        <div class="di-row-3">
+        <div class="di-row">
           <div class="di-field">
             <span class="di-label mono">{{ $t('dossier.isFirstRequest') }}</span>
             <span class="di-value">{{ form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest') }}</span>
@@ -127,55 +123,10 @@
             <span class="di-label mono">{{ $t('dossier.dossierLanguage') }}</span>
             <span class="di-value">{{ form.dossierLanguage === 'nl' ? $t('dossier.langNl') : $t('dossier.langFr') }}</span>
           </div>
-          <div class="di-field"></div>
         </div>
-      </div>
 
-      <!-- DOCUMENTS LIES -->
-      <div class="di-section">
-        <div class="di-section-header">
-          <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-paperclip</v-icon>
-            {{ $t('dossier.linkedDocuments') }}
-            <span v-if="form.linkedDocuments.length" class="di-count">{{ form.linkedDocuments.length }}</span>
-          </h3>
-          <button class="me-btn-small" @click="triggerDocInput">
-            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
-            {{ $t('dossier.addDocument') }}
-          </button>
-          <input ref="docInput" type="file" hidden multiple @change="handleDocUpload" />
-        </div>
-        <div v-if="form.linkedDocuments.length" class="di-doc-list">
-          <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
-            <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
-            <div class="di-doc-info">
-              <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
-              <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
-            </div>
-            <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
-              <v-icon size="14">{{ isAudioFile(doc) ? 'mdi-volume-high' : 'mdi-eye-outline' }}</v-icon>
-            </button>
-            <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
-              <v-icon size="14">mdi-download</v-icon>
-            </button>
-            <button class="di-el-btn" @click="transferDoc(doc)" :title="getTransferTooltip(doc)" :disabled="transferringDocId === doc._id">
-              <v-icon v-if="transferringDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
-              <v-icon v-else size="14">mdi-file-move-outline</v-icon>
-            </button>
-            <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
-              <v-icon size="14">mdi-trash-can-outline</v-icon>
-            </button>
-          </div>
-        </div>
-        <div v-else class="di-empty mono">{{ $t('dossier.noLinkedDocuments') }}</div>
-        <div v-if="uploadingDoc" class="di-uploading mono">
-          <v-progress-circular indeterminate size="16" width="2" class="mr-2" />
-          {{ $t('dossier.uploading') }}
-        </div>
-      </div>
-
-      <div class="di-section">
-        <h3 class="di-section-title mono">
+        <!-- Enquêteur (dans le même panneau) -->
+        <h3 class="di-section-title mono" style="margin-top: 16px;">
           <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
           {{ $t('dossier.investigator') }}
         </h3>
@@ -183,15 +134,17 @@
           <div class="di-field"><span class="di-label mono">{{ $t('common.name') }}</span><span class="di-value">{{ form.investigator.name || '—' }}</span></div>
           <div class="di-field"><span class="di-label mono">{{ $t('dossier.service') }}</span><span class="di-value">{{ form.investigator.service || '—' }}</span></div>
         </div>
-        <div class="di-row-3">
+        <div class="di-row">
           <div class="di-field"><span class="di-label mono">{{ $t('dossier.unit') }}</span><span class="di-value">{{ form.investigator.unit || '—' }}</span></div>
-          <div class="di-field"><span class="di-label mono">{{ $t('dossier.phone') }}</span><span class="di-value">{{ form.investigator.phone || '—' }}</span></div>
-          <div class="di-field"><span class="di-label mono">{{ $t('common.email') }}</span><span class="di-value">{{ form.investigator.email || '—' }}</span></div>
+          <div class="di-field"><span class="di-label mono">{{ $t('dossier.phone') }}</span><span class="di-value"><a v-if="form.investigator.phone" :href="`tel:${form.investigator.phone}`" class="di-link">{{ form.investigator.phone }}</a><template v-else>—</template></span></div>
+        </div>
+        <div class="di-field">
+          <span class="di-label mono">{{ $t('common.email') }}</span><span class="di-value"><a v-if="form.investigator.email" :href="`sip:${form.investigator.email}`" class="di-link">{{ form.investigator.email }}</a><template v-else>—</template></span>
         </div>
       </div>
 
-      <!-- ENTITES -->
-      <div class="di-section">
+      <!-- ENTITES (priorité haute) -->
+      <div class="di-section di-full-width">
         <div class="di-section-header">
           <h3 class="di-section-title mono">
             <v-icon size="16" class="mr-2">mdi-account-group-outline</v-icon>
@@ -247,22 +200,8 @@
         <div v-else class="di-empty mono">{{ $t('dossier.noEntities') }}</div>
       </div>
 
-      <!-- CHIFFREMENT E2E (toujours actif) -->
-      <div class="di-section" v-if="dossierStore.currentDossier">
-        <div class="di-section-header">
-          <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-lock-outline</v-icon>
-            {{ $t('dossier.encryption') }}
-          </h3>
-        </div>
-        <p class="di-encryption-info mono">
-          <v-icon size="14" class="mr-1" color="success">mdi-shield-check-outline</v-icon>
-          {{ $t('dossier.encryptionActive') }}
-        </p>
-      </div>
-
       <!-- COLLABORATEURS -->
-      <div class="di-section" v-if="dossierStore.currentDossier">
+      <div class="di-section di-full-width" v-if="dossierStore.currentDossier">
         <div class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-account-multiple-outline</v-icon>
           {{ $t('dossier.collaborators') }}
@@ -314,66 +253,151 @@
           </div>
         </div>
       </div>
+
+      <!-- DOCUMENTS LIES -->
+      <div class="di-section di-full-width">
+        <div class="di-section-header">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-paperclip</v-icon>
+            {{ $t('dossier.linkedDocuments') }}
+            <span v-if="form.linkedDocuments.length" class="di-count">{{ form.linkedDocuments.length }}</span>
+          </h3>
+          <button class="me-btn-small" @click="triggerDocInput">
+            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+            {{ $t('dossier.addDocument') }}
+          </button>
+          <input ref="docInput" type="file" hidden multiple @change="handleDocUpload" />
+        </div>
+        <div v-if="form.linkedDocuments.length" class="di-doc-list">
+          <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
+            <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
+            <div class="di-doc-info">
+              <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
+              <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
+            </div>
+            <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
+              <v-icon size="14">{{ isAudioFile(doc) ? 'mdi-volume-high' : 'mdi-eye-outline' }}</v-icon>
+            </button>
+            <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
+              <v-icon size="14">mdi-download</v-icon>
+            </button>
+            <button class="di-el-btn" @click="transferDoc(doc)" :title="getTransferTooltip(doc)" :disabled="transferringDocId === doc._id">
+              <v-icon v-if="transferringDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
+              <v-icon v-else size="14">mdi-file-move-outline</v-icon>
+            </button>
+            <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
+              <v-icon size="14">mdi-trash-can-outline</v-icon>
+            </button>
+          </div>
+        </div>
+        <div v-else class="di-empty mono">{{ $t('dossier.noLinkedDocuments') }}</div>
+        <div v-if="uploadingDoc" class="di-uploading mono">
+          <v-progress-circular indeterminate size="16" width="2" class="mr-2" />
+          {{ $t('dossier.uploading') }}
+        </div>
+      </div>
+
+      <!-- CHIFFREMENT E2E (toujours actif, en dernier) -->
+      <div class="di-section di-full-width" v-if="dossierStore.currentDossier">
+        <div class="di-section-header">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-lock-outline</v-icon>
+            {{ $t('dossier.encryption') }}
+          </h3>
+        </div>
+        <p class="di-encryption-info mono">
+          <v-icon size="14" class="mr-1" color="success">mdi-shield-check-outline</v-icon>
+          {{ $t('dossier.encryptionActive') }}
+        </p>
+      </div>
     </div>
 
     <!-- MODE EDITION -->
-    <v-form v-else @submit.prevent="handleSave" class="di-form fade-in">
+    <v-form v-else @submit.prevent="handleSave" class="di-edit-form fade-in">
+      <!-- Header : Titre + Statut + Flags -->
       <div class="di-section">
-        <div class="di-row">
-          <v-text-field v-model="form.title" :label="$t('dossier.dossierTitle')" />
-          <v-select v-model="form.status" :items="statusOptions" :label="$t('common.status')" style="max-width: 200px;" />
-        </div>
-        <v-textarea v-model="form.objectives" :label="$t('dossier.objectives')" rows="3" class="mb-1" />
-        <v-textarea v-model="form.judicialFacts" :label="$t('dossier.judicialFacts')" rows="3" class="mb-1" />
-        <v-textarea v-model="form.description" :label="$t('dossier.synthesis')" rows="3" />
-      </div>
-
-      <div class="di-section">
-        <h3 class="di-section-title mono">
-          <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
-          {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
-        </h3>
-        <div class="di-row">
-          <v-select v-model="form.classification" :items="classificationOptions" :label="$t('dossier.classification')" />
-          <v-text-field v-model="form.magistrate" :label="$t('dossier.magistrate')" />
-        </div>
-        <div class="di-row">
-          <v-checkbox v-model="form.isUrgent" :label="$t('dossier.isUrgent')" color="error" density="compact" hide-details />
-          <v-checkbox :model-value="form.isEmbargo" :label="$t('dossier.isEmbargo')" color="warning" density="compact" hide-details @update:model-value="toggleEmbargo" />
-        </div>
-        <div class="di-row">
-          <v-select v-model="form.dossierLanguage" :items="dossierLanguageOptions" :label="$t('dossier.dossierLanguage')" style="max-width: 200px;" />
-          <div class="di-switch-field">
-            <v-switch
-              v-model="form.isFirstRequest"
-              :label="form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest')"
-              color="primary"
-              density="compact"
-              hide-details
-            />
+        <div class="di-edit-header">
+          <v-text-field v-model="form.title" :label="$t('dossier.dossierTitle')" density="compact" hide-details class="di-edit-title-field" />
+          <div class="di-edit-meta">
+            <div class="di-status-select-wrap">
+              <div class="di-status-select" @click="showStatusDropdown = !showStatusDropdown" tabindex="0" @blur="showStatusDropdown = false">
+                <span class="di-status-dot" :class="`di-dot-${form.status}`" />
+                <span>{{ statusLabel }}</span>
+                <v-icon size="14" class="di-status-chevron" :class="{ 'di-chevron-open': showStatusDropdown }">mdi-chevron-down</v-icon>
+              </div>
+              <div v-if="showStatusDropdown" class="di-status-dropdown">
+                <div v-for="opt in statusOptions" :key="opt.value" class="di-status-option" :class="{ 'di-status-option-active': form.status === opt.value }" @mousedown.prevent="form.status = opt.value; showStatusDropdown = false">
+                  <span class="di-status-dot" :class="`di-dot-${opt.value}`" />
+                  {{ opt.title }}
+                </div>
+              </div>
+            </div>
+            <button type="button" class="di-flag-toggle" :class="{ 'di-flag-toggle-active di-flag-urgent-active': form.isUrgent }" @click="form.isUrgent = !form.isUrgent">
+              <v-icon size="14">mdi-alert-circle-outline</v-icon>
+              {{ $t('dossier.isUrgent') }}
+            </button>
+            <button type="button" class="di-flag-toggle" :class="{ 'di-flag-toggle-active di-flag-embargo-active': form.isEmbargo }" @click="toggleEmbargo(!form.isEmbargo)">
+              <v-icon size="14">mdi-lock-clock</v-icon>
+              {{ $t('dossier.isEmbargo') }}
+            </button>
           </div>
         </div>
+        <v-textarea v-model="form.judicialFacts" :label="$t('dossier.judicialFacts')" rows="2" density="compact" class="mt-3" hide-details />
       </div>
 
-      <div class="di-section">
-        <h3 class="di-section-title mono">
-          <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
-          {{ $t('dossier.investigator') }}
-        </h3>
-        <div class="di-row">
-          <v-text-field v-model="form.investigator.name" :label="$t('common.name')" />
-          <v-text-field v-model="form.investigator.service" :label="$t('dossier.service')" />
+      <!-- Objectifs + Description côte à côte -->
+      <div class="di-edit-row">
+        <MiniEditor v-model="form.objectives" :label="$t('dossier.objectives')" :placeholder="$t('dossier.objectives')" />
+        <MiniEditor v-model="form.description" :label="$t('dossier.synthesis')" :placeholder="$t('dossier.synthesis')" />
+      </div>
+
+      <!-- Classification + Enquêteur côte à côte -->
+      <div class="di-edit-row">
+        <div class="di-section">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
+            {{ $t('dossier.classification') }}
+          </h3>
+          <div class="di-row">
+            <v-select v-model="form.classification" :items="classificationOptions" :label="$t('dossier.classification')" density="compact" />
+            <v-text-field v-model="form.magistrate" :label="$t('dossier.magistrate')" density="compact" />
+          </div>
+          <div class="di-edit-bottom-row">
+            <div class="di-lang-options">
+              <button type="button" class="di-lang-btn" :class="{ 'di-lang-btn-active': form.dossierLanguage === 'fr' }" @click="form.dossierLanguage = 'fr'">
+                <svg viewBox="0 0 640 480" width="18" height="13"><path fill="#002395" d="M0 0h213.3v480H0z"/><path fill="#fff" d="M213.3 0h213.4v480H213.3z"/><path fill="#ed2939" d="M426.7 0H640v480H426.7z"/></svg>
+                FR
+              </button>
+              <button type="button" class="di-lang-btn" :class="{ 'di-lang-btn-active': form.dossierLanguage === 'nl' }" @click="form.dossierLanguage = 'nl'">
+                <svg viewBox="0 0 640 480" width="18" height="13"><path fill="#21468b" d="M0 320h640v160H0z"/><path fill="#fff" d="M0 160h640v160H0z"/><path fill="#ae1c28" d="M0 0h640v160H0z"/></svg>
+                NL
+              </button>
+            </div>
+            <v-switch v-model="form.isFirstRequest" :label="form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest')" color="primary" density="compact" hide-details />
+          </div>
         </div>
-        <div class="di-row-3">
-          <v-text-field v-model="form.investigator.unit" :label="$t('dossier.unit')" />
-          <v-text-field v-model="form.investigator.phone" :label="$t('dossier.phone')" />
-          <v-text-field v-model="form.investigator.email" :label="$t('common.email')" />
+
+        <div class="di-section">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
+            {{ $t('dossier.investigator') }}
+          </h3>
+          <div class="di-row">
+            <v-text-field v-model="form.investigator.name" :label="$t('common.name')" density="compact" />
+            <v-text-field v-model="form.investigator.service" :label="$t('dossier.service')" density="compact" />
+          </div>
+          <div class="di-row">
+            <v-text-field v-model="form.investigator.unit" :label="$t('dossier.unit')" density="compact" />
+            <v-text-field v-model="form.investigator.phone" :label="$t('dossier.phone')" density="compact" />
+          </div>
+          <v-text-field v-model="form.investigator.email" :label="$t('common.email')" density="compact" />
         </div>
       </div>
 
+      <!-- Actions -->
       <div class="di-actions">
         <button type="button" class="me-btn-ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
-        <button type="submit" class="me-btn-primary">
+        <button type="button" class="me-btn-primary" @click="handleSave">
           <v-icon size="16" class="mr-1">mdi-content-save-outline</v-icon>
           {{ $t('common.save') }}
         </button>
@@ -589,6 +613,7 @@ import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
+import MiniEditor from '../editor/MiniEditor.vue';
 
 const { t } = useI18n();
 const { confirm: customConfirm } = useConfirm();
@@ -603,6 +628,7 @@ const aiConfig = ref<{ isCommercial: boolean; disclaimerMessage: string } | null
 const disclaimerDismissed = ref(false);
 
 const editing = ref(false);
+const showStatusDropdown = ref(false);
 const entityDialog = ref(false);
 const copiedIndex = ref<number | null>(null);
 const editingEntityIndex = ref<number | null>(null);
@@ -1114,6 +1140,7 @@ async function toggleEmbargo(newValue: boolean | null) {
       title: t('dossier.embargoWarningTitle'),
       message: t('dossier.embargoWarningMessage'),
       confirmText: t('dossier.embargoConfirm'),
+      variant: 'warning',
     });
     if (!confirmed) return;
     form.isEmbargo = true;
@@ -1524,7 +1551,7 @@ async function removeCollaborator(userId: string) {
 .dossier-info {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 48px;
+  padding: 24px 32px;
   height: 100%;
   overflow-y: auto;
 }
@@ -1621,7 +1648,7 @@ async function removeCollaborator(userId: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 16px;
 }
 .di-title {
   font-size: 20px;
@@ -1631,27 +1658,47 @@ async function removeCollaborator(userId: string) {
 .di-form {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 14px;
 }
 @media (min-width: 1200px) {
   .di-form {
     grid-template-columns: 1fr 1fr;
   }
-  .di-form > .di-section:first-child {
-    grid-column: 1 / -1;
-  }
+}
+.di-full-width {
+  grid-column: 1 / -1;
 }
 .di-section {
   background: var(--me-bg-surface);
   border: 1px solid var(--me-border);
   border-radius: var(--me-radius);
-  padding: 20px;
+  padding: 16px;
+}
+.di-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.di-header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.di-header-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .di-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .di-section-header .di-section-title {
   margin-bottom: 0;
@@ -1662,7 +1709,7 @@ async function removeCollaborator(userId: string) {
   color: var(--me-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
 }
@@ -1694,11 +1741,36 @@ async function removeCollaborator(userId: string) {
   font-size: 14px;
   color: var(--me-text-primary);
 }
+.di-link {
+  color: var(--me-accent);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.di-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
 .di-value-block {
   white-space: pre-wrap;
   line-height: 1.6;
   color: var(--me-text-secondary);
   font-size: 13px;
+}
+.di-value-rich {
+  line-height: 1.6;
+  color: var(--me-text-secondary);
+  font-size: 13px;
+}
+.di-value-rich :deep(p) {
+  margin: 0 0 4px;
+}
+.di-value-rich :deep(ul),
+.di-value-rich :deep(ol) {
+  padding-left: 20px;
+  margin: 4px 0;
+}
+.di-value-rich :deep(strong) {
+  color: var(--me-text-primary);
 }
 .di-status-badge {
   display: inline-block;
@@ -1910,6 +1982,193 @@ async function removeCollaborator(userId: string) {
   color: var(--me-text-muted);
   text-align: center;
   padding: 16px;
+}
+
+/* Status select */
+.di-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.di-edit-title-field {
+  flex: 1;
+  min-width: 200px;
+}
+.di-edit-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.di-edit-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+}
+.di-status-select-wrap {
+  position: relative;
+}
+.di-status-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-sm);
+  background: var(--me-bg-surface);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--me-text-primary);
+  transition: border-color 0.15s;
+}
+.di-status-select:hover,
+.di-status-select:focus {
+  border-color: var(--me-accent);
+  outline: none;
+}
+.di-status-chevron {
+  margin-left: auto;
+  color: var(--me-text-muted);
+  transition: transform 0.15s;
+}
+.di-chevron-open {
+  transform: rotate(180deg);
+}
+.di-status-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin-top: 4px;
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.di-status-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--me-text-primary);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.di-status-option:hover {
+  background: var(--me-accent-glow);
+}
+.di-status-option-active {
+  background: var(--me-accent-glow);
+  font-weight: 600;
+}
+.di-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.di-dot-open {
+  background: var(--me-accent);
+}
+.di-dot-in_progress {
+  background: var(--me-warning, #fbbf24);
+}
+.di-dot-closed {
+  background: var(--me-success, #34d38b);
+}
+
+/* Flag toggles (Urgent / Embargo) */
+.di-flag-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--me-border);
+  background: none;
+  color: var(--me-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.di-flag-toggle:hover {
+  border-color: var(--me-text-secondary);
+  color: var(--me-text-secondary);
+}
+.di-flag-toggle-active {
+  font-weight: 600;
+}
+.di-flag-urgent-active {
+  border-color: var(--me-error);
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--me-error);
+}
+.di-flag-urgent-active:hover {
+  border-color: var(--me-error);
+  color: var(--me-error);
+}
+.di-flag-embargo-active {
+  border-color: var(--me-warning);
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--me-warning);
+}
+.di-flag-embargo-active:hover {
+  border-color: var(--me-warning);
+  color: var(--me-warning);
+}
+
+/* Language selector */
+.di-lang-options {
+  display: flex;
+  gap: 6px;
+}
+.di-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--me-radius-sm);
+  border: 1px solid var(--me-border);
+  background: none;
+  color: var(--me-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.di-lang-btn:hover {
+  border-color: var(--me-text-secondary);
+  color: var(--me-text-primary);
+}
+.di-lang-btn-active {
+  border-color: var(--me-accent);
+  background: var(--me-accent-glow);
+  color: var(--me-accent);
+  font-weight: 600;
+}
+.di-lang-btn svg {
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Edit form layout */
+.di-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.di-edit-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 1200px) {
+  .di-edit-row {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Actions */

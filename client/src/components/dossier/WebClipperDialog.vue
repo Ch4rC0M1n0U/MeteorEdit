@@ -24,12 +24,7 @@
         </div>
         <div class="wc-field">
           <label class="wc-label">{{ $t('clipper.parentFolder') }}</label>
-          <select v-model="parentId" class="wc-input">
-            <option value="">{{ $t('clipper.rootFolder') }}</option>
-            <option v-for="folder in folders" :key="folder._id" :value="folder._id">
-              {{ folder.title }}
-            </option>
-          </select>
+          <FolderPicker v-model="parentId" />
         </div>
 
         <!-- Bookmarklet section -->
@@ -70,6 +65,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
+import FolderPicker from '../common/FolderPicker.vue';
 
 const { t } = useI18n();
 const model = defineModel<boolean>({ default: false });
@@ -81,10 +77,6 @@ const title = ref('');
 const content = ref('');
 const parentId = ref('');
 const clipping = ref(false);
-
-const folders = computed(() =>
-  dossierStore.nodes.filter(n => n.type === 'folder' && !n.deletedAt)
-);
 
 const bookmarkletCode = computed(() => {
   const baseUrl = window.location.origin;

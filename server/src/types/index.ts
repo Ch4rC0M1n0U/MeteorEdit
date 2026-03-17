@@ -5,6 +5,10 @@ export interface IUser extends Document {
   password: string;
   firstName: string;
   lastName: string;
+  grade: string;
+  matricule: string;
+  service: string;
+  unit: string;
   role: 'admin' | 'user';
   isActive: boolean;
   preferences: Record<string, any>;
@@ -132,6 +136,7 @@ export interface ISiteSettings extends Document {
   passwordRequireSpecial: boolean;
   maxLoginAttempts: number;
   lockoutDurationMinutes: number;
+  allowedEmailDomains: string[];
   trashAutoDeleteDays: number;
   // Storage
   maxFileSizeMB: number;

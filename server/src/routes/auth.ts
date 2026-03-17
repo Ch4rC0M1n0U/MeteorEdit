@@ -67,6 +67,10 @@ router.post('/register', [
   body('password').isLength({ min: 8 }),
   body('firstName').trim().notEmpty(),
   body('lastName').trim().notEmpty(),
+  body('grade').optional().trim(),
+  body('matricule').optional().trim(),
+  body('service').optional().trim(),
+  body('unit').optional().trim(),
 ], register);
 
 /**

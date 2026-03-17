@@ -31,7 +31,9 @@
     "print": "Print",
     "system": "System",
     "node": "Node",
-    "dossier": "Dossier"
+    "dossier": "Dossier",
+    "soon": "Soon",
+    "rootFolder": "Dossier root"
   },
   "auth": {
     "login": "Login",
@@ -62,6 +64,14 @@
     "rememberMe": "Remember me",
     "notMe": "Not me",
     "welcomeBack": "Welcome back,",
+    "grade": "Rank",
+    "gradePlaceholder": "Inspector, Commissioner...",
+    "matricule": "Badge number",
+    "matriculePlaceholder": "Your badge number",
+    "service": "Service",
+    "servicePlaceholder": "Your service",
+    "unit": "Unit",
+    "unitPlaceholder": "Your unit",
     "osintPlatform": "OSINT investigation platform",
     "features": {
       "dossierManagement": "Investigation case management",
@@ -168,6 +178,7 @@
     "tasks": "Tasks",
     "online": "{count} online",
     "export": "Export",
+    "import": "Import",
     "exportPrint": "Export / Print",
     "exportDocx": "Export to Word",
     "includeToc": "Include table of contents",
@@ -277,7 +288,10 @@
     "rename": "Rename",
     "duplicate": "Duplicate",
     "moveToTrashConfirm": "Move \"{title}\" to trash?",
-    "media": "Media"
+    "media": "Media",
+    "tools": "Tools",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all"
   },
   "editor": {
     "undo": "Undo (Ctrl+Z)",
@@ -626,6 +640,10 @@
     "maxAttemptsDesc": "0 = no limit",
     "lockoutDuration": "Lockout duration (minutes)",
     "lockoutDurationDesc": "Wait time after too many failed attempts",
+    "allowedEmailDomains": "Allowed email domains",
+    "allowedEmailDomainsDesc": "Restrict registration to specific email domains. Leave empty to allow all.",
+    "domainPlaceholder": "example.com",
+    "noDomainsRestriction": "No restriction — all domains are accepted",
     "storageSubtitle": "Upload management and disk space",
     "uploadLimits": "Upload limits",
     "maxFileSizeMB": "Max file size (MB)",
@@ -1358,6 +1376,28 @@
     "catPersonal": "Personal",
     "catTechnical": "Technical",
     "catChecker": "Checker"
+  },
+  "epieos": {
+    "title": "Epieos Import",
+    "description": "Import a JSON file exported from Epieos to automatically create a folder with analysis results.",
+    "dropOrClick": "Drop a JSON file or click to browse",
+    "services": "services",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "import": "Import",
+    "importing": "Importing...",
+    "parseError": "Parse error",
+    "invalidFormat": "Invalid format: file does not contain Epieos data (metadata.query and data required)",
+    "noServices": "No services found in file",
+    "duplicate": "Duplicate",
+    "operator": "Operator",
+    "country": "Country",
+    "user": "User",
+    "business": "Business",
+    "registered": "Registered",
+    "name": "Name",
+    "number": "Number",
+    "device": "Device"
   },
   "ai": {
     "disclaimer": {

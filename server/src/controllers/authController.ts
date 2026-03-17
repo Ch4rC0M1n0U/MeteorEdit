@@ -22,7 +22,17 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, grade, matricule, service, unit } = req.body;
+
+    // Email domain check
+    if (settings && settings.allowedEmailDomains && settings.allowedEmailDomains.length > 0) {
+      const emailDomain = email.split('@')[1]?.toLowerCase();
+      const allowed = settings.allowedEmailDomains.map((d: string) => d.toLowerCase().trim());
+      if (!allowed.includes(emailDomain)) {
+        res.status(400).json({ message: `Ce domaine email n'est pas autorise. Domaines acceptes : ${allowed.join(', ')}` });
+        return;
+      }
+    }
 
     // Password policy check
     if (settings) {
@@ -50,7 +60,13 @@ export async function register(req: Request, res: Response): Promise<void> {
       res.status(400).json({ message: 'Email already registered' });
       return;
     }
-    const user = await User.create({ email, password, firstName, lastName });
+    const user = await User.create({
+      email, password, firstName, lastName,
+      grade: grade || '',
+      matricule: matricule || '',
+      service: service || '',
+      unit: unit || '',
+    });
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
     await logActivity(user._id.toString(), 'auth.register', 'user', user._id.toString(), { email: user.email }, ip, ua);

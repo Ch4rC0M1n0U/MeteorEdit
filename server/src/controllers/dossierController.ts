@@ -356,7 +356,7 @@ export async function transferDocumentToNode(req: AuthRequest, res: Response): P
     // Prepare node data — returned to frontend for creation via store (handles encryption)
     let nodeData: any = {
       title: displayTitle,
-      parentId: req.body.parentId || null,
+      parentId: req.body?.parentId || null,
     };
 
     if (imageExts.includes(ext)) {

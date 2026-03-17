@@ -3,6 +3,10 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  grade: string;
+  matricule: string;
+  service: string;
+  unit: string;
   role: 'admin' | 'user';
   isActive: boolean;
   avatarPath: string | null;

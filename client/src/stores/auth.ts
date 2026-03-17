@@ -81,10 +81,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(email: string, password: string, firstName: string, lastName: string): Promise<{ autoLoginSuccess?: boolean }> {
+  async function register(email: string, password: string, firstName: string, lastName: string, extra?: { grade?: string; matricule?: string; service?: string; unit?: string }): Promise<{ autoLoginSuccess?: boolean }> {
     loading.value = true;
     try {
-      await api.post('/auth/register', { email, password, firstName, lastName });
+      await api.post('/auth/register', { email, password, firstName, lastName, ...extra });
 
       // Try auto-login after registration to initialize encryption keys
       try {

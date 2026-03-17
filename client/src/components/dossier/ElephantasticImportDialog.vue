@@ -80,6 +80,11 @@
             </div>
           </div>
         </div>
+
+        <div class="ei-field" style="margin-top: 12px;">
+          <label class="ei-field-label">{{ $t('clipper.parentFolder') }}</label>
+          <FolderPicker v-model="selectedParentId" />
+        </div>
       </div>
 
       <div v-if="parsedEntries.length" class="ei-footer">
@@ -110,6 +115,7 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
+import FolderPicker from '../common/FolderPicker.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();
@@ -145,6 +151,7 @@ const parsedEntries = ref<ParsedEntry[]>([]);
 const entityLabel = ref('');
 const parseError = ref('');
 const importing = ref(false);
+const selectedParentId = ref('');
 
 const selectedCount = computed(() => parsedEntries.value.filter(e => e.selected).length);
 
@@ -345,6 +352,7 @@ function resetEntries() {
   parsedEntries.value = [];
   entityLabel.value = '';
   parseError.value = '';
+  selectedParentId.value = '';
 }
 
 function close() {
@@ -376,7 +384,7 @@ async function doImport() {
     const { data } = await api.post(`/dossiers/${props.dossierId}/import-elephantastic`, {
       entityName: entityLabel.value,
       items: selectedItems,
-      parentId: dossierStore.selectedNode?.type === 'folder' ? dossierStore.selectedNode._id : null,
+      parentId: selectedParentId.value || null,
     });
 
     // Add created nodes to store
@@ -418,6 +426,8 @@ async function doImport() {
 .ei-drop-hint { font-size: 11px; color: var(--me-text-muted); font-family: var(--me-font-mono); }
 
 .ei-error { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 10px; border-radius: 8px; background: rgba(244,67,54,0.12); color: #ef5350; font-size: 12px; }
+.ei-field { display: flex; flex-direction: column; gap: 4px; }
+.ei-field-label { font-size: 12px; color: var(--me-text-secondary); font-weight: 500; }
 
 .ei-entity-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .ei-entity-info { display: flex; align-items: center; gap: 8px; }

@@ -31,7 +31,9 @@
     "print": "Imprimer",
     "system": "Système",
     "node": "Noeud",
-    "dossier": "Dossier"
+    "dossier": "Dossier",
+    "soon": "Bientôt",
+    "rootFolder": "Racine du dossier"
   },
   "auth": {
     "login": "Connexion",
@@ -62,6 +64,14 @@
     "rememberMe": "Se souvenir de moi",
     "notMe": "Pas moi",
     "welcomeBack": "Bon retour,",
+    "grade": "Grade",
+    "gradePlaceholder": "Inspecteur, Commissaire...",
+    "matricule": "Matricule",
+    "matriculePlaceholder": "Votre matricule",
+    "service": "Service",
+    "servicePlaceholder": "Votre service",
+    "unit": "Unité",
+    "unitPlaceholder": "Votre unité",
     "osintPlatform": "Plateforme d'investigation OSINT",
     "features": {
       "dossierManagement": "Gestion de dossiers d'investigation",
@@ -168,6 +178,7 @@
     "tasks": "Tâches",
     "online": "{count} en ligne",
     "export": "Exporter",
+    "import": "Importer",
     "exportPrint": "Exporter / Imprimer",
     "exportDocx": "Exporter en Word",
     "includeToc": "Inclure la table des matières",
@@ -277,7 +288,10 @@
     "rename": "Renommer",
     "duplicate": "Dupliquer",
     "moveToTrashConfirm": "Envoyer \"{title}\" dans la corbeille ?",
-    "media": "Media"
+    "media": "Media",
+    "tools": "Outils",
+    "expandAll": "Tout développer",
+    "collapseAll": "Tout replier"
   },
   "editor": {
     "undo": "Annuler (Ctrl+Z)",
@@ -626,6 +640,10 @@
     "maxAttemptsDesc": "0 = pas de limite",
     "lockoutDuration": "Durée de verrouillage (minutes)",
     "lockoutDurationDesc": "Temps d'attente après trop de tentatives échouées",
+    "allowedEmailDomains": "Domaines email autorisés",
+    "allowedEmailDomainsDesc": "Restreindre l'inscription à certains domaines email. Laissez vide pour tout autoriser.",
+    "domainPlaceholder": "exemple.com",
+    "noDomainsRestriction": "Aucune restriction — tous les domaines sont acceptés",
     "storageSubtitle": "Gestion des uploads et de l'espace disque",
     "uploadLimits": "Limites d'upload",
     "maxFileSizeMB": "Taille max par fichier (MB)",
@@ -1358,6 +1376,28 @@
     "catPersonal": "Personnel",
     "catTechnical": "Technique",
     "catChecker": "Vérification"
+  },
+  "epieos": {
+    "title": "Import Epieos",
+    "description": "Importez un fichier JSON exporté depuis Epieos pour créer automatiquement un dossier avec les résultats d'analyse.",
+    "dropOrClick": "Glissez un fichier JSON ou cliquez pour parcourir",
+    "services": "services",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "import": "Importer",
+    "importing": "Import en cours...",
+    "parseError": "Erreur de parsing",
+    "invalidFormat": "Format invalide : le fichier ne contient pas de données Epieos (metadata.query et data requis)",
+    "noServices": "Aucun service trouvé dans le fichier",
+    "duplicate": "Doublon",
+    "operator": "Opérateur",
+    "country": "Pays",
+    "user": "Utilisateur",
+    "business": "Business",
+    "registered": "Inscrit",
+    "name": "Nom",
+    "number": "Numéro",
+    "device": "Appareil"
   },
   "ai": {
     "disclaimer": {

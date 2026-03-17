@@ -66,6 +66,26 @@
               <v-text-field v-model="lastName" :placeholder="$t('auth.lastNamePlaceholder')" variant="outlined" density="comfortable" required />
             </div>
           </div>
+          <div class="d-flex ga-3 mb-3">
+            <div style="flex: 1">
+              <label class="login-field-label">{{ $t('auth.grade') }}</label>
+              <v-text-field v-model="grade" :placeholder="$t('auth.gradePlaceholder')" prepend-inner-icon="mdi-star-outline" variant="outlined" density="comfortable" />
+            </div>
+            <div style="flex: 1">
+              <label class="login-field-label">{{ $t('auth.matricule') }}</label>
+              <v-text-field v-model="matricule" :placeholder="$t('auth.matriculePlaceholder')" prepend-inner-icon="mdi-identifier" variant="outlined" density="comfortable" />
+            </div>
+          </div>
+          <div class="d-flex ga-3 mb-3">
+            <div style="flex: 1">
+              <label class="login-field-label">{{ $t('auth.service') }}</label>
+              <v-text-field v-model="service" :placeholder="$t('auth.servicePlaceholder')" prepend-inner-icon="mdi-domain" variant="outlined" density="comfortable" />
+            </div>
+            <div style="flex: 1">
+              <label class="login-field-label">{{ $t('auth.unit') }}</label>
+              <v-text-field v-model="unit" :placeholder="$t('auth.unitPlaceholder')" prepend-inner-icon="mdi-account-group-outline" variant="outlined" density="comfortable" />
+            </div>
+          </div>
           <label class="login-field-label">{{ $t('auth.email') }}</label>
           <v-text-field v-model="email" type="email" :placeholder="$t('auth.emailPlaceholder')" prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable" required class="mb-3" />
           <label class="login-field-label">{{ $t('auth.password') }}</label>
@@ -116,6 +136,10 @@ const router = useRouter();
 
 const firstName = ref('');
 const lastName = ref('');
+const grade = ref('');
+const matricule = ref('');
+const service = ref('');
+const unit = ref('');
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
@@ -125,7 +149,12 @@ const success = ref(false);
 async function handleRegister() {
   error.value = '';
   try {
-    const result = await authStore.register(email.value, password.value, firstName.value, lastName.value);
+    const result = await authStore.register(email.value, password.value, firstName.value, lastName.value, {
+      grade: grade.value,
+      matricule: matricule.value,
+      service: service.value,
+      unit: unit.value,
+    });
     if (result?.autoLoginSuccess) {
       // Auto-login succeeded, redirect to home
       router.push('/');

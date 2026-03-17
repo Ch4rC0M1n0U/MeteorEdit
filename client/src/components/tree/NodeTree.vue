@@ -11,6 +11,13 @@
 
     <div class="nt-section-label">
       <span>{{ $t('tree.content') }}</span>
+      <button
+        class="nt-expand-toggle"
+        :title="allExpanded ? $t('tree.collapseAll') : $t('tree.expandAll')"
+        @click="toggleAll"
+      >
+        <v-icon size="14">{{ allExpanded ? 'mdi-unfold-less-horizontal' : 'mdi-unfold-more-horizontal' }}</v-icon>
+      </button>
     </div>
 
     <div
@@ -53,41 +60,6 @@
         />
       </RecycleScroller>
     </div>
-
-    <v-menu>
-      <template #activator="{ props }">
-        <button v-bind="props" class="nt-add-btn">
-          <v-icon size="16" class="mr-1">mdi-plus</v-icon>
-          <span class="mono">{{ $t('tree.add') }}</span>
-        </button>
-      </template>
-      <div class="glass-card nt-add-menu">
-        <button class="nt-add-option" @click="$emit('create', 'folder', null)">
-          <v-icon size="16">mdi-folder-plus-outline</v-icon>
-          <span>{{ $t('tree.folder') }}</span>
-        </button>
-        <button class="nt-add-option" @click="$emit('create', 'note', null)">
-          <v-icon size="16">mdi-note-plus-outline</v-icon>
-          <span>{{ $t('tree.note') }}</span>
-        </button>
-        <button class="nt-add-option" @click="$emit('create', 'mindmap', null)">
-          <v-icon size="16">mdi-vector-polyline</v-icon>
-          <span>{{ $t('tree.mindmap') }}</span>
-        </button>
-        <button class="nt-add-option" @click="$emit('create', 'map', null)">
-          <v-icon size="16">mdi-map-outline</v-icon>
-          <span>{{ $t('tree.map') }}</span>
-        </button>
-        <button class="nt-add-option" @click="$emit('create', 'dataset', null)">
-          <v-icon size="16">mdi-table</v-icon>
-          <span>{{ $t('tree.dataset') }}</span>
-        </button>
-        <button class="nt-add-option" @click="$emit('create', 'media', null)">
-          <v-icon size="16">mdi-play-circle-outline</v-icon>
-          <span>{{ $t('tree.media') }}</span>
-        </button>
-      </div>
-    </v-menu>
 
     <!-- Corbeille -->
     <div class="nt-section-label" style="margin-top: 8px;">
@@ -152,11 +124,54 @@ const rootDragCounter = ref(0);
 
 // Virtualization: flatten tree with expand/collapse state
 const expandedIds = ref<Set<string>>(new Set());
+const knownFolderIds = ref<Set<string>>(new Set());
+
+function storageKey() {
+  const id = dossierStore.currentDossier?._id;
+  return id ? `me-tree-expanded-${id}` : null;
+}
+
+function saveExpandedState() {
+  const key = storageKey();
+  if (key) {
+    localStorage.setItem(key, JSON.stringify([...expandedIds.value]));
+  }
+}
+
+function loadExpandedState(): Set<string> | null {
+  const key = storageKey();
+  if (!key) return null;
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  try {
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return null;
+  }
+}
+
+// When dossier changes, load saved state or default to all expanded
+watch(() => dossierStore.currentDossier?._id, () => {
+  knownFolderIds.value.clear();
+  const saved = loadExpandedState();
+  if (saved) {
+    expandedIds.value = saved;
+    // Mark all current folders as known so the nodes watch doesn't re-expand them
+    for (const n of dossierStore.nodes) {
+      if (n.type === 'folder') knownFolderIds.value.add(n._id);
+    }
+  } else {
+    expandedIds.value = new Set();
+  }
+}, { immediate: true });
 
 watch(() => dossierStore.nodes, (newNodes) => {
   for (const n of newNodes) {
-    if (n.type === 'folder' && !expandedIds.value.has(n._id)) {
+    if (n.type === 'folder' && !knownFolderIds.value.has(n._id)) {
+      // Only auto-expand truly new folders (not previously seen ones after a refetch)
+      knownFolderIds.value.add(n._id);
       expandedIds.value.add(n._id);
+      saveExpandedState();
     }
   }
 }, { immediate: true });
@@ -167,6 +182,27 @@ function toggleExpanded(nodeId: string) {
   } else {
     expandedIds.value.add(nodeId);
   }
+  saveExpandedState();
+}
+
+// Expand all / Collapse all
+const allFolderIds = computed(() =>
+  dossierStore.nodes.filter(n => n.type === 'folder').map(n => n._id)
+);
+
+const allExpanded = computed(() =>
+  allFolderIds.value.length > 0 && allFolderIds.value.every(id => expandedIds.value.has(id))
+);
+
+function toggleAll() {
+  if (allExpanded.value) {
+    expandedIds.value.clear();
+  } else {
+    for (const id of allFolderIds.value) {
+      expandedIds.value.add(id);
+    }
+  }
+  saveExpandedState();
 }
 
 interface FlatNode {
@@ -336,6 +372,8 @@ async function handleEmptyTrash() {
 
 /* Section labels */
 .nt-section-label {
+  display: flex;
+  align-items: center;
   padding: 12px 12px 4px;
   font-size: 11px;
   font-weight: 600;
@@ -343,6 +381,25 @@ async function handleEmptyTrash() {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   user-select: none;
+}
+.nt-expand-toggle {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  opacity: 0.6;
+}
+.nt-expand-toggle:hover {
+  opacity: 1;
+  color: var(--me-accent);
+  background: var(--me-accent-glow);
 }
 
 .nt-root-drop {
@@ -357,50 +414,6 @@ async function handleEmptyTrash() {
   outline-offset: -2px;
   border-radius: 8px;
 }
-.nt-add-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 8px 12px;
-  margin-top: 4px;
-  border-radius: 8px;
-  background: none;
-  border: 1px dashed var(--me-border);
-  color: var(--me-text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.nt-add-btn:hover {
-  border-color: var(--me-accent);
-  color: var(--me-accent);
-  background: var(--me-accent-glow);
-}
-.nt-add-menu {
-  padding: 6px;
-  min-width: 180px;
-}
-.nt-add-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  color: var(--me-text-secondary);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.nt-add-option:hover {
-  background: var(--me-accent-glow);
-  color: var(--me-text-primary);
-}
-
 /* Trash section */
 .nt-trash-header {
   display: flex;

@@ -31,7 +31,9 @@
     "print": "Afdrukken",
     "system": "Systeem",
     "node": "Knooppunt",
-    "dossier": "Dossier"
+    "dossier": "Dossier",
+    "soon": "Binnenkort",
+    "rootFolder": "Dossiermap"
   },
   "auth": {
     "login": "Inloggen",
@@ -62,6 +64,14 @@
     "rememberMe": "Onthoud mij",
     "notMe": "Niet ik",
     "welcomeBack": "Welkom terug,",
+    "grade": "Rang",
+    "gradePlaceholder": "Inspecteur, Commissaris...",
+    "matricule": "Stamnummer",
+    "matriculePlaceholder": "Uw stamnummer",
+    "service": "Dienst",
+    "servicePlaceholder": "Uw dienst",
+    "unit": "Eenheid",
+    "unitPlaceholder": "Uw eenheid",
     "osintPlatform": "OSINT-onderzoeksplatform",
     "features": {
       "dossierManagement": "Beheer van onderzoeksdossiers",
@@ -277,7 +287,10 @@
     "rename": "Hernoemen",
     "duplicate": "Dupliceren",
     "moveToTrashConfirm": "\"{title}\" naar de prullenbak verplaatsen?",
-    "media": "Media"
+    "media": "Media",
+    "tools": "Hulpmiddelen",
+    "expandAll": "Alles uitvouwen",
+    "collapseAll": "Alles invouwen"
   },
   "editor": {
     "undo": "Ongedaan maken (Ctrl+Z)",
@@ -626,6 +639,10 @@
     "maxAttemptsDesc": "0 = geen limiet",
     "lockoutDuration": "Vergrendelingsduur (minuten)",
     "lockoutDurationDesc": "Wachttijd na te veel mislukte pogingen",
+    "allowedEmailDomains": "Toegestane e-maildomeinen",
+    "allowedEmailDomainsDesc": "Beperk registratie tot specifieke e-maildomeinen. Laat leeg om alles toe te staan.",
+    "domainPlaceholder": "voorbeeld.com",
+    "noDomainsRestriction": "Geen beperking — alle domeinen worden geaccepteerd",
     "storageSubtitle": "Uploadbeheer en schijfruimte",
     "uploadLimits": "Uploadlimieten",
     "maxFileSizeMB": "Max bestandsgrootte (MB)",
@@ -1358,6 +1375,28 @@
     "catPersonal": "Persoonlijk",
     "catTechnical": "Technisch",
     "catChecker": "Verificatie"
+  },
+  "epieos": {
+    "title": "Epieos Import",
+    "description": "Importeer een JSON-bestand geëxporteerd vanuit Epieos om automatisch een map aan te maken met analyseresultaten.",
+    "dropOrClick": "Sleep een JSON-bestand of klik om te bladeren",
+    "services": "diensten",
+    "selectAll": "Alles selecteren",
+    "deselectAll": "Alles deselecteren",
+    "import": "Importeren",
+    "importing": "Importeren...",
+    "parseError": "Parsefout",
+    "invalidFormat": "Ongeldig formaat: het bestand bevat geen Epieos-gegevens (metadata.query en data vereist)",
+    "noServices": "Geen diensten gevonden in het bestand",
+    "duplicate": "Duplicaat",
+    "operator": "Operator",
+    "country": "Land",
+    "user": "Gebruiker",
+    "business": "Zakelijk",
+    "registered": "Geregistreerd",
+    "name": "Naam",
+    "number": "Nummer",
+    "device": "Apparaat"
   },
   "ai": {
     "disclaimer": {

@@ -14,6 +14,59 @@
           </h3>
         </div>
         <div class="dv-sidebar-actions">
+          <!-- Nouveau -->
+          <v-menu>
+            <template #activator="{ props: menuProps }">
+              <button v-bind="menuProps" class="dv-action-btn" :title="$t('tree.newElement')">
+                <v-icon size="16">mdi-plus</v-icon>
+              </button>
+            </template>
+            <div class="glass-card dv-export-menu">
+              <button class="dv-export-option" @click="handleCreateNode('folder', null)">
+                <v-icon size="16">mdi-folder-plus-outline</v-icon>
+                <span>{{ $t('tree.folder') }}</span>
+              </button>
+              <button class="dv-export-option" @click="handleCreateNode('note', null)">
+                <v-icon size="16">mdi-note-plus-outline</v-icon>
+                <span>{{ $t('tree.note') }}</span>
+              </button>
+              <button class="dv-export-option" @click="handleCreateNode('mindmap', null)">
+                <v-icon size="16">mdi-vector-polyline</v-icon>
+                <span>{{ $t('tree.mindmap') }}</span>
+              </button>
+              <button class="dv-export-option" @click="handleCreateNode('map', null)">
+                <v-icon size="16">mdi-map-outline</v-icon>
+                <span>{{ $t('tree.map') }}</span>
+              </button>
+              <button class="dv-export-option" @click="handleCreateNode('dataset', null)">
+                <v-icon size="16">mdi-table</v-icon>
+                <span>{{ $t('tree.dataset') }}</span>
+              </button>
+              <button class="dv-export-option" @click="handleCreateNode('media', null)">
+                <v-icon size="16">mdi-play-circle-outline</v-icon>
+                <span>{{ $t('tree.media') }}</span>
+              </button>
+            </div>
+          </v-menu>
+          <!-- Outils -->
+          <v-menu>
+            <template #activator="{ props: menuProps }">
+              <button v-bind="menuProps" class="dv-action-btn" :title="$t('tree.tools')">
+                <v-icon size="16">mdi-toolbox-outline</v-icon>
+              </button>
+            </template>
+            <div class="glass-card dv-export-menu">
+              <button class="dv-export-option" @click="webClipperOpen = true">
+                <v-icon size="16">mdi-web</v-icon>
+                <span>Web Clipper</span>
+              </button>
+              <button class="dv-export-option" @click="profileAnalyzerOpen = true">
+                <v-icon size="16">mdi-account-search-outline</v-icon>
+                <span>{{ $t('social.profile.title') }}</span>
+              </button>
+            </div>
+          </v-menu>
+          <!-- Export -->
           <v-menu>
             <template #activator="{ props: menuProps }">
               <button v-bind="menuProps" class="dv-action-btn" :title="$t('dossier.export')">
@@ -36,6 +89,30 @@
               </button>
             </div>
           </v-menu>
+          <!-- Import -->
+          <v-menu>
+            <template #activator="{ props: menuProps }">
+              <button v-bind="menuProps" class="dv-action-btn" :title="$t('dossier.import')">
+                <v-icon size="16">mdi-upload-outline</v-icon>
+              </button>
+            </template>
+            <div class="glass-card dv-export-menu">
+              <button class="dv-export-option" @click="elephantasticOpen = true">
+                <v-icon size="16">mdi-elephant</v-icon>
+                <span>{{ $t('elephantastic.title') }}</span>
+              </button>
+              <button class="dv-export-option" disabled>
+                <v-icon size="16">mdi-graph-outline</v-icon>
+                <span>Import Tangles</span>
+                <span class="dv-soon-badge mono">{{ $t('common.soon') }}</span>
+              </button>
+              <button class="dv-export-option" @click="epieosOpen = true">
+                <v-icon size="16">mdi-magnify-scan</v-icon>
+                <span>{{ $t('epieos.title') }}</span>
+              </button>
+            </div>
+          </v-menu>
+          <!-- Historique -->
           <button
             v-if="dossierStore.selectedNode && ['note', 'mindmap', 'map'].includes(dossierStore.selectedNode.type)"
             class="dv-action-btn"
@@ -44,14 +121,9 @@
           >
             <v-icon size="16">mdi-history</v-icon>
           </button>
-          <button class="dv-action-btn" @click="webClipperOpen = true" title="Web Clipper">
-            <v-icon size="16">mdi-web</v-icon>
-          </button>
-          <button class="dv-action-btn" @click="profileAnalyzerOpen = true" :title="$t('social.profile.title')">
-            <v-icon size="16">mdi-account-search-outline</v-icon>
-          </button>
-          <button class="dv-action-btn" @click="elephantasticOpen = true" :title="$t('elephantastic.title')">
-            <v-icon size="16">mdi-elephant</v-icon>
+          <!-- Corbeille -->
+          <button class="dv-action-btn" @click="scrollToTrash" :title="$t('tree.trash')">
+            <v-icon size="16">mdi-delete-outline</v-icon>
           </button>
         </div>
       </div>
@@ -85,7 +157,7 @@
       </div>
 
       <div class="dv-sidebar-content">
-        <NodeTree v-show="sidebarTab === 'tree'" @create="handleCreateNode" @duplicate="handleDuplicateNode" @file-drop="handleFileDrop" />
+        <NodeTree v-show="sidebarTab === 'tree'" @create="handleCreateNode" @duplicate="handleDuplicateNode" @file-drop="handleFileDrop" @tool="handleTool" />
         <TaskPanel v-if="sidebarTab === 'tasks'" />
       </div>
     </aside>
@@ -284,6 +356,14 @@
       v-if="elephantasticOpen && dossierStore.currentDossier"
       :dossier-id="dossierStore.currentDossier._id"
       @imported="handleElephantasticImport"
+    />
+
+    <!-- Epieos Import -->
+    <EpieosImportDialog
+      v-model="epieosOpen"
+      v-if="epieosOpen && dossierStore.currentDossier"
+      :dossier-id="dossierStore.currentDossier._id"
+      @imported="handleEpieosImport"
     />
 
     <!-- Export Selection -->
@@ -540,6 +620,7 @@ const MediaEditor = defineAsyncComponent(() =>
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';
 import ElephantasticImportDialog from './ElephantasticImportDialog.vue';
+import EpieosImportDialog from './EpieosImportDialog.vue';
 import AiDisclaimerModal from '../AiDisclaimerModal.vue';
 import type { MediaData } from '../../types';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
@@ -556,6 +637,7 @@ const disclaimerDismissed = ref(false);
 const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);
 const elephantasticOpen = ref(false);
+const epieosOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
 const mediaCreateParentId = ref<string | null>(null);
@@ -1023,6 +1105,19 @@ function onMapUpdate(val: any) {
   }
 }
 
+function handleTool(name: string) {
+  if (name === 'webclipper') webClipperOpen.value = true;
+  else if (name === 'profile') profileAnalyzerOpen.value = true;
+}
+
+function scrollToTrash() {
+  const trashEl = document.querySelector('.nt-trash-header');
+  if (trashEl) {
+    trashEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    (trashEl as HTMLElement).click();
+  }
+}
+
 function handleCreateNode(type: string, parentId: string | null) {
   if (type === 'media') {
     mediaCreateParentId.value = parentId;
@@ -1086,7 +1181,13 @@ function handleProfileNodeCreated(node: any) {
 
 function handleElephantasticImport(nodes: any[]) {
   elephantasticOpen.value = false;
-  // Select the folder (first node)
+  if (nodes.length > 0) {
+    dossierStore.selectNode(nodes[0]);
+  }
+}
+
+function handleEpieosImport(nodes: any[]) {
+  epieosOpen.value = false;
   if (nodes.length > 0) {
     dossierStore.selectNode(nodes[0]);
   }
@@ -1614,6 +1715,24 @@ function downloadBlob(blob: Blob, filename: string) {
 .dv-export-option:hover {
   background: var(--me-accent-glow);
   color: var(--me-text-primary);
+}
+.dv-export-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.dv-export-option:disabled:hover {
+  background: none;
+  color: var(--me-text-secondary);
+}
+.dv-soon-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--me-bg-elevated);
+  color: var(--me-text-muted);
+  margin-left: auto;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .dv-sidebar-title {
   font-size: 15px;

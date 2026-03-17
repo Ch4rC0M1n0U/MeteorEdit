@@ -20,6 +20,7 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     passwordRequireSpecial: { type: Boolean, default: false },
     maxLoginAttempts: { type: Number, default: 0 },
     lockoutDurationMinutes: { type: Number, default: 15 },
+    allowedEmailDomains: { type: [String], default: [] },
     trashAutoDeleteDays: { type: Number, default: 0 }, // 0 = disabled
     // Storage
     maxFileSizeMB: { type: Number, default: 50 },

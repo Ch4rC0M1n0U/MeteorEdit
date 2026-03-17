@@ -131,6 +131,7 @@ watch(() => confirmState.visible, (val) => {
   font-size: 14px;
   line-height: 1.6;
   color: var(--me-text-secondary);
+  white-space: pre-line;
 }
 .cd-prompt {
   margin-top: 16px;

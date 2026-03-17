@@ -51,12 +51,7 @@
       <!-- Parent folder selection -->
       <div class="pa-field">
         <label class="pa-label">{{ $t('social.profile.parentFolder') }}</label>
-        <select v-model="selectedParentId" class="pa-input">
-          <option value="">{{ $t('social.profile.rootFolder') }}</option>
-          <option v-for="folder in folders" :key="folder._id" :value="folder._id">
-            {{ folder.title }}
-          </option>
-        </select>
+        <FolderPicker v-model="selectedParentId" />
       </div>
 
       <!-- Error -->
@@ -86,6 +81,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
+import FolderPicker from '../common/FolderPicker.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();
@@ -145,10 +141,6 @@ const PLATFORM_CONFIG: Record<string, { icon: string; color: string; label: stri
 const platformIcon = computed(() => detectedPlatform.value ? PLATFORM_CONFIG[detectedPlatform.value]?.icon || 'mdi-web' : 'mdi-web');
 const platformColor = computed(() => detectedPlatform.value ? PLATFORM_CONFIG[detectedPlatform.value]?.color || 'var(--me-accent)' : 'var(--me-accent)');
 const platformLabel = computed(() => detectedPlatform.value ? PLATFORM_CONFIG[detectedPlatform.value]?.label || detectedPlatform.value : '');
-
-const folders = computed(() =>
-  dossierStore.nodes.filter(n => n.type === 'folder' && !n.deletedAt)
-);
 
 const canAnalyze = computed(() => {
   return url.value.trim() && detectedPlatform.value;

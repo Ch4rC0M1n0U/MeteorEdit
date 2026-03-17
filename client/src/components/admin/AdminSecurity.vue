@@ -72,6 +72,44 @@
           @blur="save"
         />
       </div>
+      <div class="sec-divider" />
+      <div>
+        <div class="sec-option" style="margin-bottom: 8px;">
+          <div>
+            <p class="sec-label">{{ $t('admin.allowedEmailDomains') }}</p>
+            <p class="sec-desc">{{ $t('admin.allowedEmailDomainsDesc') }}</p>
+          </div>
+        </div>
+        <div class="d-flex ga-2 align-center mb-2">
+          <v-text-field
+            v-model="newDomain"
+            :placeholder="$t('admin.domainPlaceholder')"
+            density="compact"
+            hide-details
+            variant="outlined"
+            style="max-width: 260px;"
+            @keyup.enter="addDomain"
+          />
+          <v-btn size="small" variant="tonal" color="primary" @click="addDomain" :disabled="!newDomain.trim()">
+            <v-icon size="16" start>mdi-plus</v-icon>
+            {{ $t('common.add') }}
+          </v-btn>
+        </div>
+        <div v-if="form.allowedEmailDomains.length" class="d-flex flex-wrap ga-2">
+          <v-chip
+            v-for="(domain, i) in form.allowedEmailDomains"
+            :key="i"
+            closable
+            size="small"
+            variant="tonal"
+            color="primary"
+            @click:close="removeDomain(i)"
+          >
+            @{{ domain }}
+          </v-chip>
+        </div>
+        <p v-else class="sec-desc" style="font-style: italic;">{{ $t('admin.noDomainsRestriction') }}</p>
+      </div>
     </div>
 
     <!-- Password Policy -->
@@ -178,6 +216,7 @@ const { t } = useI18n();
 
 const loading = ref(true);
 const saved = ref(false);
+const newDomain = ref('');
 
 const form = ref({
   require2FA: false,
@@ -191,6 +230,7 @@ const form = ref({
   passwordRequireSpecial: false,
   maxLoginAttempts: 0,
   lockoutDurationMinutes: 15,
+  allowedEmailDomains: [] as string[],
 });
 
 onMounted(async () => {
@@ -207,12 +247,27 @@ onMounted(async () => {
     form.value.passwordRequireSpecial = !!data.passwordRequireSpecial;
     form.value.maxLoginAttempts = data.maxLoginAttempts || 0;
     form.value.lockoutDurationMinutes = data.lockoutDurationMinutes || 15;
+    form.value.allowedEmailDomains = data.allowedEmailDomains || [];
   } catch {} finally {
     loading.value = false;
   }
 });
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function addDomain() {
+  const d = newDomain.value.trim().toLowerCase().replace(/^@/, '');
+  if (d && !form.value.allowedEmailDomains.includes(d)) {
+    form.value.allowedEmailDomains.push(d);
+    save();
+  }
+  newDomain.value = '';
+}
+
+function removeDomain(index: number) {
+  form.value.allowedEmailDomains.splice(index, 1);
+  save();
+}
 
 function save() {
   if (saveTimeout) clearTimeout(saveTimeout);
