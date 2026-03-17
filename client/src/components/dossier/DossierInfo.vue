@@ -1045,7 +1045,9 @@ function docIcon(fileName: string): string {
     doc: 'mdi-file-word-box', docx: 'mdi-file-word-box',
     xls: 'mdi-file-excel-box', xlsx: 'mdi-file-excel-box',
     ppt: 'mdi-file-powerpoint-box', pptx: 'mdi-file-powerpoint-box',
-    jpg: 'mdi-file-image', jpeg: 'mdi-file-image', png: 'mdi-file-image', gif: 'mdi-file-image', webp: 'mdi-file-image',
+    jpg: 'mdi-file-image', jpeg: 'mdi-file-image', png: 'mdi-file-image', gif: 'mdi-file-image', webp: 'mdi-file-image', bmp: 'mdi-file-image', svg: 'mdi-file-image',
+    mp3: 'mdi-file-music', wav: 'mdi-file-music', ogg: 'mdi-file-music', aac: 'mdi-file-music', m4a: 'mdi-file-music', flac: 'mdi-file-music', opus: 'mdi-file-music',
+    mp4: 'mdi-file-video', webm: 'mdi-file-video', mov: 'mdi-file-video', avi: 'mdi-file-video', mkv: 'mdi-file-video',
     zip: 'mdi-folder-zip', rar: 'mdi-folder-zip', '7z': 'mdi-folder-zip',
     txt: 'mdi-file-document-outline', csv: 'mdi-file-delimited',
   };
