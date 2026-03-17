@@ -1,12 +1,8 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:7
     container_name: meteoredit-db
     restart: unless-stopped
-    ports:
-      - "27017:27017"
     volumes:
       - mongo-data:/data/db
     healthcheck:
@@ -14,6 +10,8 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+    networks:
+      - internal
 
   server:
     build:
@@ -21,20 +19,17 @@ services:
       dockerfile: Dockerfile.server
     container_name: meteoredit-server
     restart: unless-stopped
-    ports:
-      - "100.64.0.2:3101:3001"
-      - "100.64.0.2:3002:3102"
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_ENV=production
       - MONGODB_URI=mongodb://mongodb:27017/meteoredit
-      - JWT_SECRET=${JWT_SECRET:-CHANGE_ME_GENERATE_A_SECURE_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-CHANGE_ME_GENERATE_A_SECURE_SECRET}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       - JWT_EXPIRATION=${JWT_EXPIRATION:-15m}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-7d}
       - PORT=3001
       - YJS_PORT=3002
       - UPLOAD_DIR=./uploads
-      - COOKIE_ENCRYPTION_KEY=${COOKIE_ENCRYPTION_KEY:-CHANGE_ME_GENERATE_A_SECURE_SECRET}
+      - COOKIE_ENCRYPTION_KEY=${COOKIE_ENCRYPTION_KEY:?COOKIE_ENCRYPTION_KEY is required}
       - LANGUAGETOOL_URL=http://languagetool:8010
       - OLLAMA_URL=http://ollama:11434
     depends_on:
@@ -48,6 +43,8 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+    networks:
+      - internal
 
   client:
     build:
@@ -56,36 +53,50 @@ services:
     container_name: meteoredit-client
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "100.64.0.2:5173:80"
     depends_on:
       server:
         condition: service_healthy
+    networks:
+      - internal
 
   ollama:
     image: ollama/ollama:latest
     container_name: meteoredit-ollama
     restart: unless-stopped
-    ports:
-      - "11434:11434"
     volumes:
       - ollama-data:/root/.ollama
-    profiles:
-      - ai
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
 
   languagetool:
     image: erikvl87/languagetool:latest
     container_name: meteoredit-languagetool
     restart: unless-stopped
-    ports:
-      - "8010:8010"
     environment:
       - Java_Xms=256m
       - Java_Xmx=1g
-    profiles:
-      - tools
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/v2/languages"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - internal
 
 volumes:
   mongo-data:
   uploads:
   yjs-data:
   ollama-data:
+
+networks:
+  internal:
+    driver: bridge
