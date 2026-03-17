@@ -159,7 +159,7 @@ const tools = [
 
 const colors = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6', '#ffffff', '#000000'];
 
-const containerRef = ref<HTMLDivElement | null>(null);
+// const containerRef = ref<HTMLDivElement | null>(null);
 const canvasWrapRef = ref<HTMLDivElement | null>(null);
 const canvasInnerRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -540,9 +540,9 @@ function redraw() {
       ctx.stroke();
     } else if (a.type === 'freehand' && a.points?.length) {
       ctx.beginPath();
-      ctx.moveTo(a.points[0].x / scaleX, a.points[0].y / scaleY);
+      ctx.moveTo(a.points[0]!.x / scaleX, a.points[0]!.y / scaleY);
       for (let i = 1; i < a.points.length; i++) {
-        ctx.lineTo(a.points[i].x / scaleX, a.points[i].y / scaleY);
+        ctx.lineTo(a.points[i]!.x / scaleX, a.points[i]!.y / scaleY);
       }
       ctx.stroke();
     } else if (a.type === 'text' && a.text) {

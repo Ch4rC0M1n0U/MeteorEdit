@@ -1353,7 +1353,7 @@ function nextSectionNumber(counter: SectionCounter, level: 'h1' | 'h2' | 'h3'): 
   }
 }
 
-function handleSelectiveExport(format: string, selectedIds: string[], includeToc: boolean, mediaFormat?: 'table' | 'sequential', includeRawMetadata?: boolean) {
+function handleSelectiveExport(_format: string, selectedIds: string[], includeToc: boolean, mediaFormat?: 'table' | 'sequential', includeRawMetadata?: boolean) {
   exportDOCX(selectedIds, includeToc, mediaFormat, includeRawMetadata);
 }
 
@@ -1414,7 +1414,7 @@ function walkTreeDocx(
   }
 }
 
-function buildDocxSections(dossier: any, nodes: any[], mediaFormat: 'table' | 'sequential' = 'sequential'): DocxExportData['sections'] {
+function buildDocxSections(_dossier: any, nodes: any[], mediaFormat: 'table' | 'sequential' = 'sequential'): DocxExportData['sections'] {
   const sections: DocxExportData['sections'] = [];
   const counter: SectionCounter = [0, 0, 0];
 
@@ -1538,7 +1538,7 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaF
   }
 }
 
-function extractTextFromTiptap(json: any): string {
+function _extractTextFromTiptap(json: any): string {
   if (!json) return '';
   if (typeof json === 'string') return json;
   let text = '';

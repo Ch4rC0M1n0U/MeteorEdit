@@ -937,7 +937,7 @@ async function onAnnotatorSave(drawAnnotations: any[]) {
 }
 
 // --- Media download completed ---
-async function onMediaDownloaded(nodeData: any) {
+async function onMediaDownloaded(_nodeData: any) {
   // Refresh the node data to pick up the newly downloaded media
   try {
     const { data } = await api.get(`/nodes/${props.node._id}`);

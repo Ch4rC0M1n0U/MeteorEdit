@@ -178,7 +178,7 @@ function doExport(format: 'docx') {
 }
 
 // Recursive node item component
-const ExportNodeItem = defineComponent({
+const ExportNodeItem: any = defineComponent({
   name: 'ExportNodeItem',
   props: {
     node: { type: Object as () => DossierNode, required: true },

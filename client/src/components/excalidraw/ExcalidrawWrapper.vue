@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api, { SERVER_URL } from '../../services/api';
@@ -258,7 +258,7 @@ async function renderExcalidraw() {
 onMounted(() => {
   renderExcalidraw();
   setupYjs();
-  containerRef.value?.addEventListener('keydown', handleCopycut as EventListener, true);
+  containerRef.value?.addEventListener('keydown', handleCopycut as unknown as EventListener, true);
 });
 
 watch(() => props.nodeId, () => {
@@ -272,7 +272,7 @@ watch(() => props.nodeId, () => {
 });
 
 onBeforeUnmount(() => {
-  containerRef.value?.removeEventListener('keydown', handleCopycut as EventListener, true);
+  containerRef.value?.removeEventListener('keydown', handleCopycut as unknown as EventListener, true);
   flushYjsSync();
   flushSave();
   cleanupYjs();

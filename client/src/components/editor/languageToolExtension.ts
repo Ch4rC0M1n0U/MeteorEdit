@@ -25,7 +25,7 @@ export interface LTDecoSpec {
 export const languageToolPluginKey = new PluginKey('languageTool');
 
 const DEBOUNCE_MS = 800;
-const MAX_FAILURES = 3;
+// const MAX_FAILURES = 3;
 
 function getCategoryClass(match: LTMatch): string {
   const catId = match.rule?.category?.id?.toLowerCase() || '';
@@ -61,10 +61,11 @@ async function checkText(text: string, language: string, signal?: AbortSignal): 
   }
 }
 
-function buildDecorations(paragraphs: ParagraphInfo[], matchesPerParagraph: LTMatch[][]): DecorationSet {
+// @ts-ignore - kept for future use
+function _buildDecorations(paragraphs: ParagraphInfo[], matchesPerParagraph: LTMatch[][]): DecorationSet { // eslint-disable-line
   const decos: Decoration[] = [];
   for (let i = 0; i < paragraphs.length; i++) {
-    const para = paragraphs[i];
+    const para = paragraphs[i]!;
     const matches = matchesPerParagraph[i] || [];
     for (const match of matches) {
       const from = para.from + match.offset;
@@ -183,7 +184,7 @@ export function createLanguageToolExtension(options: {
             const decos: Decoration[] = [];
             let textOffset = 0;
             for (let i = 0; i < paragraphs.length; i++) {
-              const para = paragraphs[i];
+              const para = paragraphs[i]!;
               const paraEnd = textOffset + para.text.length;
 
               for (const match of matches) {
@@ -191,7 +192,7 @@ export function createLanguageToolExtension(options: {
                 const matchEnd = matchStart + match.length;
                 if (matchStart >= textOffset && matchEnd <= paraEnd) {
                   const localOffset = matchStart - textOffset;
-                  const from = para.from + localOffset;
+                  const from = para!.from + localOffset;
                   const to = from + match.length;
                   decos.push(
                     Decoration.inline(from, to, {

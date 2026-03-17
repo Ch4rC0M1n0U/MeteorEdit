@@ -88,13 +88,13 @@ onMounted(() => {
 
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0].isIntersecting && dossierStore.hasMoreDossiers && !dossierStore.loading) {
+      if (entries[0]?.isIntersecting && dossierStore.hasMoreDossiers && !dossierStore.loading) {
         dossierStore.fetchDossiers();
       }
     },
     { threshold: 0.1 }
   );
-  if (sentinelRef.value) observer.observe(sentinelRef.value);
+  if (sentinelRef.value) observer.observe(sentinelRef.value as Element);
 });
 
 onBeforeUnmount(() => {

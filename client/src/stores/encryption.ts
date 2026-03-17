@@ -46,7 +46,7 @@ export const useEncryptionStore = defineStore('encryption', () => {
         const bytes = new Uint8Array(rawBuf);
         let binary = '';
         for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
+          binary += String.fromCharCode(bytes[i]!);
         }
         dossierKeysObj[id] = btoa(binary);
       }

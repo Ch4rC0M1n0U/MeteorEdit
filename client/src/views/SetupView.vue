@@ -25,7 +25,7 @@
       <div v-else class="setup-stepper">
         <!-- Step indicators -->
         <div class="step-indicators">
-          <div v-for="(s, i) in steps" :key="i" class="step-dot" :class="{ active: currentStep === i, done: currentStep > i }" @click="currentStep > i ? currentStep = i : null">
+          <div v-for="(_s, i) in steps" :key="i" class="step-dot" :class="{ active: currentStep === i, done: currentStep > i }" @click="currentStep > i ? currentStep = i : null">
             <v-icon v-if="currentStep > i" size="14">mdi-check</v-icon>
             <span v-else>{{ i + 1 }}</span>
           </div>
@@ -63,8 +63,8 @@
             <div class="env-grid">
               <div class="env-item" v-for="(val, key) in envDisplay" :key="key">
                 <span class="env-key mono">{{ key }}</span>
-                <v-icon :color="val.ok ? '#22c55e' : '#f59e0b'" size="16">{{ val.ok ? 'mdi-check-circle' : 'mdi-alert-circle' }}</v-icon>
-                <span class="env-val">{{ val.label }}</span>
+                <v-icon :color="val?.ok ? '#22c55e' : '#f59e0b'" size="16">{{ val?.ok ? 'mdi-check-circle' : 'mdi-alert-circle' }}</v-icon>
+                <span class="env-val">{{ val?.label }}</span>
               </div>
             </div>
           </div>

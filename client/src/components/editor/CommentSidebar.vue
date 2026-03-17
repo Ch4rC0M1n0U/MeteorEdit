@@ -81,7 +81,7 @@ const comments = ref<CommentData[]>([]);
 const newComment = ref('');
 const loading = ref(false);
 const posting = ref(false);
-const listRef = ref<HTMLElement | null>(null);
+// const listRef = ref<HTMLElement | null>(null);
 
 function hashColor(str: string): string {
   let hash = 0;

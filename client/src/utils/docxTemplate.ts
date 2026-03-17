@@ -135,7 +135,7 @@ async function fetchImageBuffer(url: string, serverUrl?: string, dossierId?: str
       resolvedUrl = url.startsWith('/') ? `${serverUrl}${url}` : `${serverUrl}/${url}`;
     }
     const dataUrl = await loadImageAsDataUrl(resolvedUrl);
-    const base64 = dataUrl.split(',')[1];
+    const base64 = dataUrl.split(',')[1]!;
     const bin = atob(base64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);

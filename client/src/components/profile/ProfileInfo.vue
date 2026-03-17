@@ -158,7 +158,7 @@ import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 
-const { t } = useI18n();
+const { t: _t } = useI18n();
 const authStore = useAuthStore();
 const avatarInput = ref<HTMLInputElement | null>(null);
 const sigImageInput = ref<HTMLInputElement | null>(null);

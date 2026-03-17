@@ -222,7 +222,7 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function parseRawEntries(raw: any[]): { browser: string; os: string; ip: string; timestamp: string; isCurrent?: boolean }[] {
+function parseRawEntries(raw: any[]): { browser: string; os: string; ip: string; timestamp: string; isCurrent: boolean }[] {
   return raw.map(entry => ({
     ip: entry.ip || 'N/A',
     browser: parseBrowser(entry.userAgent || ''),

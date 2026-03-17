@@ -47,7 +47,7 @@
         :item-size="34"
         key-field="id"
         class="nt-scroller"
-        v-slot="{ item }"
+        v-slot="{ item }: any"
       >
         <NodeTreeItem
           :node="item.node"

@@ -64,7 +64,7 @@
         <h1>Centre d'aide</h1>
         <p>Bienvenue dans l'aide de <strong>{{ brandingStore.appName }}</strong>. Sélectionnez une rubrique ou utilisez la recherche pour trouver rapidement ce dont vous avez besoin.</p>
         <div class="help-quick-cards">
-          <button v-for="cat in categories" :key="cat.id" class="help-quick-card glass-card" @click="toggleCategory(cat.id); goToArticle(cat.articles[0]?.id)">
+          <button v-for="cat in categories" :key="cat.id" class="help-quick-card glass-card" @click="toggleCategory(cat.id); goToArticle(cat.articles[0]?.id ?? '')">
             <v-icon size="24">{{ cat.icon }}</v-icon>
             <span>{{ cat.label }}</span>
           </button>

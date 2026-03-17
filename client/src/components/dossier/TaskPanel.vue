@@ -129,7 +129,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import api, { SERVER_URL } from '../../services/api';
+import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import type { Task, CollaboratorUser } from '../../types';
@@ -234,7 +234,7 @@ function editTask(task: Task) {
     title: task.title,
     description: task.description,
     priority: task.priority,
-    dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+    dueDate: task.dueDate ? task.dueDate.split('T')[0]! : '',
     assigneeId: task.assigneeId?._id || '',
   };
   showCreate.value = true;

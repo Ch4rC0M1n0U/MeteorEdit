@@ -186,7 +186,7 @@ function getServiceColor(name: string): string {
   return SERVICE_COLORS[name.toLowerCase()] || 'var(--me-accent)';
 }
 
-function extractHighlights(name: string, data: any): Array<{ label: string; value: string }> {
+function extractHighlights(_name: string, data: any): Array<{ label: string; value: string }> {
   const highlights: Array<{ label: string; value: string }> = [];
   if (!data || typeof data !== 'object') return highlights;
 

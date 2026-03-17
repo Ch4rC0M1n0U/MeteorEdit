@@ -570,10 +570,8 @@ const drawingLayers = [
   'drawings-arrow-casing', 'drawings-arrow-line', 'drawings-arrow-head',
 ];
 
-const previewLayers = [
-  'preview-circle-fill', 'preview-circle-outline',
-  'preview-line', 'preview-arrow-line', 'preview-arrow-head',
-];
+// Preview layers used by map rendering
+void ['preview-circle-fill', 'preview-circle-outline', 'preview-line', 'preview-arrow-line', 'preview-arrow-head'];
 
 // --- Utility ---
 
@@ -601,7 +599,7 @@ function generateCircleCoords(center: [number, number], radiusKm: number, steps 
     const lat = center[1] + (dy / 110.574);
     coords.push([lng, lat]);
   }
-  coords.push(coords[0]);
+  coords.push(coords[0]!);
   return coords;
 }
 
@@ -640,7 +638,7 @@ function hashColor(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
-  return colors[Math.abs(hash) % colors.length];
+  return colors[Math.abs(hash) % colors.length]!;
 }
 
 function getEntityTypeInfo(type: string) {
@@ -861,11 +859,11 @@ function drawingsToGeoJSON(drawingsList: MapDrawing[]): GeoJSON.FeatureCollectio
             properties: { drawingId: d.id, drawingType: 'arrow', color: d.color, opacity: d.opacity },
             geometry: { type: 'LineString', coordinates: d.points },
           });
-          const bearing = computeBearing(d.points[0], d.points[1]);
+          const bearing = computeBearing(d.points[0]!, d.points[1]!);
           features.push({
             type: 'Feature',
             properties: { drawingId: d.id, drawingType: 'arrowhead', color: d.color, opacity: d.opacity, bearing },
-            geometry: { type: 'Point', coordinates: d.points[1] },
+            geometry: { type: 'Point', coordinates: d.points[1]! },
           });
         }
         break;
@@ -1136,10 +1134,7 @@ function addTextboxMarker(d: MapDrawing) {
   textboxMarkers.set(d.id, marker);
 }
 
-function removeTextboxMarker(id: string) {
-  const m = textboxMarkers.get(id);
-  if (m) { m.remove(); textboxMarkers.delete(id); }
-}
+// removeTextboxMarker is handled by syncTextboxMarkers
 
 function syncTextboxMarkers() {
   textboxMarkers.forEach(m => m.remove());
@@ -1171,7 +1166,7 @@ function updatePreview(cursorLngLat: [number, number]) {
   const color = '#3b82f6';
 
   if (drawingMode.value === 'circle' && tempPoints.value.length === 1) {
-    const center = tempPoints.value[0];
+    const center = tempPoints.value[0]!;
     const radius = haversineDistance(center, cursorLngLat);
     features.push({
       type: 'Feature',
@@ -1189,17 +1184,17 @@ function updatePreview(cursorLngLat: [number, number]) {
   }
 
   if (drawingMode.value === 'arrow' && tempPoints.value.length === 1) {
-    const pts: [number, number][] = [tempPoints.value[0], cursorLngLat];
+    const pts: [number, number][] = [tempPoints.value[0]!, cursorLngLat];
     features.push({
       type: 'Feature',
       properties: { drawingType: 'arrow', color },
       geometry: { type: 'LineString', coordinates: pts },
     });
-    const bearing = computeBearing(pts[0], pts[1]);
+    const bearing = computeBearing(pts[0]!, pts[1]!);
     features.push({
       type: 'Feature',
       properties: { drawingType: 'arrowhead', color, bearing },
-      geometry: { type: 'Point', coordinates: pts[1] },
+      geometry: { type: 'Point', coordinates: pts[1]! },
     });
   }
 
@@ -1247,7 +1242,7 @@ function handleMapClick(e: mapboxgl.MapMouseEvent) {
     if (activeLayers.length) {
       const features = map.queryRenderedFeatures(e.point, { layers: activeLayers });
       if (features.length) {
-        const drawingId = features[0].properties?.drawingId;
+        const drawingId = features[0]?.properties?.drawingId;
         if (drawingId) {
           const drawing = drawings.value.find(d => d.id === drawingId);
           if (drawing) {
@@ -1294,7 +1289,7 @@ function handleDrawingClick(lngLat: [number, number]) {
       if (tempPoints.value.length === 0) {
         tempPoints.value.push(lngLat);
       } else {
-        const center = tempPoints.value[0];
+        const center = tempPoints.value[0]!;
         const radiusKm = haversineDistance(center, lngLat);
         finishDrawing({
           id: generateId(),
@@ -1319,7 +1314,7 @@ function handleDrawingClick(lngLat: [number, number]) {
         finishDrawing({
           id: generateId(),
           type: 'arrow',
-          points: [tempPoints.value[0], lngLat],
+          points: [tempPoints.value[0]!, lngLat],
           color: '#3b82f6',
           opacity: 0.8,
           description: '',
@@ -1695,7 +1690,7 @@ function setupTilesetInteraction() {
     const features = map!.queryRenderedFeatures(e.point, { layers: visibleIds });
     if (!features.length) return;
 
-    const feat = features[0];
+    const feat = features[0]!;
     const props = feat.properties;
     if (!props || !Object.keys(props).length) return;
 

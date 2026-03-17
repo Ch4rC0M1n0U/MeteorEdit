@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import api from '../services/api';
-import { connectSocket, disconnectSocket, getSocket } from '../services/socket';
+import { connectSocket, getSocket } from '../services/socket';
 import type { Dossier, DossierNode } from '../types';
 import { useEncryptionStore } from './encryption';
 
@@ -132,7 +132,7 @@ export const useDossierStore = defineStore('dossier', () => {
       if (result.mediaData !== undefined && result.mediaData !== null) {
         if (!(typeof result.mediaData === 'string' && (result.mediaData as string).startsWith('ENC:'))) {
           const encrypted = await encStore.encryptForDossier(dossierId, result.mediaData);
-          result.mediaData = 'ENC:' + encrypted;
+          (result as any).mediaData = 'ENC:' + encrypted;
         }
       }
       // Clear contentText for encrypted dossiers (can't search encrypted content server-side)
@@ -295,10 +295,10 @@ export const useDossierStore = defineStore('dossier', () => {
       nodeContentCache.value.delete(data.nodeId);
       const idx = nodes.value.findIndex(n => n._id === data.nodeId);
       if (idx >= 0) {
-        nodes.value[idx] = { ...nodes.value[idx], content: data.content };
+        nodes.value[idx] = { ...nodes.value[idx], content: data.content } as DossierNode;
       }
       if (selectedNode.value?._id === data.nodeId) {
-        selectedNode.value = { ...selectedNode.value, content: data.content };
+        selectedNode.value = { ...selectedNode.value, content: data.content } as DossierNode;
       }
     });
 
@@ -314,10 +314,10 @@ export const useDossierStore = defineStore('dossier', () => {
       }
       const idx = nodes.value.findIndex(n => n._id === data.nodeId);
       if (idx >= 0) {
-        nodes.value[idx] = { ...nodes.value[idx], mediaData };
+        nodes.value[idx] = { ...nodes.value[idx], mediaData } as DossierNode;
       }
       if (selectedNode.value?._id === data.nodeId) {
-        selectedNode.value = { ...selectedNode.value, mediaData };
+        selectedNode.value = { ...selectedNode.value, mediaData } as DossierNode;
       }
     });
 
@@ -338,20 +338,20 @@ export const useDossierStore = defineStore('dossier', () => {
       nodeContentCache.value.delete(data.nodeId);
       const idx = nodes.value.findIndex(n => n._id === data.nodeId);
       if (idx >= 0) {
-        nodes.value[idx] = { ...nodes.value[idx], content: data.content, fileUrl: data.fileUrl };
+        nodes.value[idx] = { ...nodes.value[idx], content: data.content, fileUrl: data.fileUrl ?? null } as DossierNode;
       }
       if (selectedNode.value?._id === data.nodeId) {
-        selectedNode.value = { ...selectedNode.value, content: data.content, fileUrl: data.fileUrl };
+        selectedNode.value = { ...selectedNode.value, content: data.content, fileUrl: data.fileUrl ?? null } as DossierNode;
       }
     });
 
     socket.on('excalidraw-updated', (data: { nodeId: string; elements: any }) => {
       const idx = nodes.value.findIndex(n => n._id === data.nodeId);
       if (idx >= 0) {
-        nodes.value[idx] = { ...nodes.value[idx], excalidrawData: data.elements };
+        nodes.value[idx] = { ...nodes.value[idx], excalidrawData: data.elements } as DossierNode;
       }
       if (selectedNode.value?._id === data.nodeId) {
-        selectedNode.value = { ...selectedNode.value, excalidrawData: data.elements };
+        selectedNode.value = { ...selectedNode.value, excalidrawData: data.elements } as DossierNode;
       }
     });
 

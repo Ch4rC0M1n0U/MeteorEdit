@@ -505,7 +505,7 @@ function savePreset() {
   const existing = presets.value.findIndex(p => p.name === name);
   const config = JSON.parse(JSON.stringify(tpl)) as PdfTemplateConfig;
   if (existing >= 0) {
-    presets.value[existing].config = config;
+    presets.value[existing]!.config = config;
   } else {
     presets.value.push({ name, config });
   }
@@ -583,7 +583,7 @@ async function uploadLogo(slot: 'headerLeft' | 'headerRight', event: Event) {
   if (!input.files?.length) return;
   const file = input.files[0];
   const formData = new FormData();
-  formData.append('templateLogo', file);
+  formData.append('templateLogo', file!);
   formData.append('slot', slot);
   try {
     const { data } = await api.post('/auth/template-logo', formData);
@@ -595,7 +595,7 @@ async function uploadLogo(slot: 'headerLeft' | 'headerRight', event: Event) {
       if (slot === 'headerLeft') tpl.header.logoLeft = reader.result as string;
       else tpl.header.logoRight = reader.result as string;
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file!);
   }
   input.value = '';
 }
@@ -649,7 +649,7 @@ function importTemplate(event: Event) {
       showSnack('Fichier invalide');
     }
   };
-  reader.readAsText(input.files[0]);
+  reader.readAsText(input.files[0]!);
   input.value = '';
 }
 

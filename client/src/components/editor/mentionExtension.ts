@@ -52,10 +52,10 @@ export function createMentionExtension(onMention?: (userId: string, label: strin
 
             if (!props.clientRect) return;
 
-            popup = tippy('body', {
+            popup = tippy(document.body as any, {
               getReferenceClientRect: props.clientRect,
               appendTo: () => document.body,
-              content: component.element,
+              content: component.element as Element,
               showOnCreate: true,
               interactive: true,
               trigger: 'manual',

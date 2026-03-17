@@ -263,7 +263,7 @@ function triggerFileInput() {
 function onFileSelected(e: Event) {
   const input = e.target as HTMLInputElement;
   if (input.files?.length) {
-    handleFile(input.files[0]);
+    handleFile(input.files[0]!);
   }
 }
 

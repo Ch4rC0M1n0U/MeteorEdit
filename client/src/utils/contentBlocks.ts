@@ -233,7 +233,7 @@ function convertNode(node: TipTapNode): ContentBlock | null {
       // Unknown node: try to convert children, skip if empty
       const fallback = convertNodes(node.content);
       if (fallback.length === 0) return null;
-      if (fallback.length === 1) return fallback[0];
+      if (fallback.length === 1) return fallback[0]!;
       return { type: 'paragraph', children: fallback };
     }
   }

@@ -111,7 +111,7 @@ const userName = authStore.user ? `${authStore.user.firstName} ${authStore.user.
 const userColor = hashColor(authStore.user?.id || 'default');
 
 function getRandomColor(): string {
-  return COLORS[Math.floor(Math.random() * COLORS.length)];
+  return COLORS[Math.floor(Math.random() * COLORS.length)]!;
 }
 
 function generateId(): string {
@@ -140,8 +140,8 @@ function initFromData(data: any) {
 
 function getData(): MindmapData {
   return {
-    nodes: nodes.value.map(n => ({ ...n })),
-    edges: edges.value.map(e => ({ ...e })),
+    nodes: JSON.parse(JSON.stringify(nodes.value)),
+    edges: JSON.parse(JSON.stringify(edges.value)),
   };
 }
 
@@ -189,9 +189,9 @@ function addNode() {
   let y = 200 + Math.random() * 200;
 
   if (parentId) {
-    const parent = nodes.value.find(n => n.id === parentId);
+    const parent = (nodes.value as any[]).find((n: any) => n.id === parentId);
     if (parent) {
-      const childCount = edges.value.filter(e => e.source === parentId).length;
+      const childCount = (edges.value as any[]).filter((e: any) => e.source === parentId).length;
       x = parent.position.x + 250;
       y = parent.position.y + (childCount * 100) - 50;
     }
@@ -221,11 +221,11 @@ function addNode() {
 function removeSelected() {
   if (!selectedNodeId.value) return;
   const id = selectedNodeId.value;
-  const node = nodes.value.find(n => n.id === id);
+  const node = (nodes.value as any[]).find((n: any) => n.id === id);
   if (node?.data?.isRoot) return; // Don't delete root
 
-  nodes.value = nodes.value.filter(n => n.id !== id);
-  edges.value = edges.value.filter(e => e.source !== id && e.target !== id);
+  nodes.value = (nodes.value as any[]).filter((n: any) => n.id !== id) as any;
+  edges.value = (edges.value as any[]).filter((e: any) => e.source !== id && e.target !== id) as any;
   selectedNodeId.value = null;
   emitAndSave();
 }

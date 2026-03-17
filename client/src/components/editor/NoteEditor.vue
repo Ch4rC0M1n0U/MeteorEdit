@@ -281,7 +281,7 @@ function toggleSpellCheck() {
   );
 }
 
-function handleMention(userId: string, label: string) {
+function handleMention(userId: string, _label: string) {
   api.post(`/nodes/${props.nodeId}/mention`, { mentionedUserId: userId }).catch(() => {});
 }
 
@@ -435,7 +435,7 @@ const editor = useEditor({
     }, 30000);
   },
   editorProps: {
-    handlePaste: (view, event) => {
+    handlePaste: (_view, event) => {
       const items = event.clipboardData?.items;
       if (!items) return false;
 
@@ -460,7 +460,7 @@ const editor = useEditor({
         const match = html.match(/<img[^>]+src="(data:[^"]+)"/);
         if (match) {
           event.preventDefault();
-          fetch(match[1])
+          fetch(match[1]!)
             .then(r => r.blob())
             .then(blob => {
               const file = new File([blob], 'pasted-image.png', { type: blob.type });
@@ -478,7 +478,7 @@ const editor = useEditor({
 
       return false;
     },
-    handleDrop: (view, event, slice, moved) => {
+    handleDrop: (_view, event, _slice, moved) => {
       if (moved) return false;
       const files = event.dataTransfer?.files;
       if (!files?.length) return false;
@@ -497,7 +497,7 @@ const editor = useEditor({
       return false;
     },
     handleDOMEvents: {
-      contextmenu: (view, event) => {
+      contextmenu: (_view, event) => {
         const target = event.target as HTMLElement;
         if (target.tagName === 'IMG') {
           event.preventDefault();
