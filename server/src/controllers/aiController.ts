@@ -6,20 +6,295 @@ import DossierNode from '../models/DossierNode';
 import User from '../models/User';
 import ReportTemplate from '../models/ReportTemplate';
 import { logActivity } from '../utils/activityLogger';
+import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
+interface AiConfig {
+  provider: 'ollama' | 'claude' | 'openai';
+  ollamaBaseUrl: string;
+  ollamaModel: string;
+  claudeApiKey: string;
+  claudeModel: string;
+  openaiApiKey: string;
+  openaiModel: string;
+  enabled: boolean;
+  reportPrompt: string;
+  model: string; // resolved model name
+}
+
+async function getAiConfig(userId?: string): Promise<AiConfig & { isCommercial: boolean }> {
+  let settings = await PluginSettings.findOne();
+  if (!settings) settings = await PluginSettings.create({});
+
+  const provider = settings.aiProvider || 'ollama';
+  const claude = settings.claude || { apiKey: '', selectedModel: 'claude-sonnet-4-20250514', enabled: false };
+  const openai = settings.openai || { apiKey: '', selectedModel: 'gpt-4o', enabled: false };
+
+  // Check user-level config if individual mode is enabled
+  let userProvider: string | null = null;
+  let userClaudeKey = '';
+  let userClaudeModel = '';
+  let userOpenaiKey = '';
+  let userOpenaiModel = '';
+
+  if (settings.aiIndividualMode && userId) {
+    const user = await User.findById(userId).select('preferences');
+    if (user?.preferences) {
+      const prefs = user.preferences;
+      userClaudeKey = prefs.claudeApiKey || '';
+      userClaudeModel = prefs.claudeModel || 'claude-sonnet-4-20250514';
+      userOpenaiKey = prefs.openaiApiKey || '';
+      userOpenaiModel = prefs.openaiModel || 'gpt-4o';
+      if (prefs.aiProvider) userProvider = prefs.aiProvider;
+    }
+  }
+
+  // Resolve provider: user preference > admin config
+  let resolvedProvider: 'ollama' | 'claude' | 'openai' = 'ollama';
+  let enabled = settings.ollama.enabled;
+  let model = settings.ollama.selectedModel || '';
+  let resolvedClaudeKey = claude.apiKey || '';
+  let resolvedClaudeModel = claude.selectedModel || 'claude-sonnet-4-20250514';
+  let resolvedOpenaiKey = openai.apiKey || '';
+  let resolvedOpenaiModel = openai.selectedModel || 'gpt-4o';
+
+  // Try user-level provider first
+  if (userProvider === 'claude' && userClaudeKey) {
+    resolvedProvider = 'claude';
+    enabled = true;
+    model = userClaudeModel;
+    resolvedClaudeKey = userClaudeKey;
+    resolvedClaudeModel = userClaudeModel;
+  } else if (userProvider === 'openai' && userOpenaiKey) {
+    resolvedProvider = 'openai';
+    enabled = true;
+    model = userOpenaiModel;
+    resolvedOpenaiKey = userOpenaiKey;
+    resolvedOpenaiModel = userOpenaiModel;
+  } else {
+    // Fall back to admin config
+    const isClaude = provider === 'claude' && claude.enabled && claude.apiKey;
+    const isOpenAI = provider === 'openai' && openai.enabled && openai.apiKey;
+    if (isClaude) {
+      resolvedProvider = 'claude';
+      enabled = claude.enabled;
+      model = claude.selectedModel || 'claude-sonnet-4-20250514';
+    } else if (isOpenAI) {
+      resolvedProvider = 'openai';
+      enabled = openai.enabled;
+      model = openai.selectedModel || 'gpt-4o';
+    }
+  }
+
+  return {
+    provider: resolvedProvider,
+    ollamaBaseUrl: settings.ollama.baseUrl || 'http://localhost:11434',
+    ollamaModel: settings.ollama.selectedModel || '',
+    claudeApiKey: resolvedClaudeKey,
+    claudeModel: resolvedClaudeModel,
+    openaiApiKey: resolvedOpenaiKey,
+    openaiModel: resolvedOpenaiModel,
+    enabled,
+    reportPrompt: settings.ollama.reportPrompt,
+    model,
+    isCommercial: resolvedProvider === 'claude' || resolvedProvider === 'openai',
+  };
+}
+
+// Legacy helper for admin endpoints that only need Ollama
 async function getOllamaConfig() {
   let settings = await PluginSettings.findOne();
   if (!settings) settings = await PluginSettings.create({});
   return settings.ollama;
 }
 
+/** Stream text generation from Claude API via SSE */
+async function streamClaude(
+  apiKey: string,
+  model: string,
+  prompt: string,
+  sendEvent: (data: any) => void,
+  signal: AbortSignal,
+  maxTokens: number = 4096,
+  temperature: number = 0.3,
+): Promise<string> {
+  const client = new Anthropic({ apiKey });
+
+  const stream = await client.messages.stream({
+    model,
+    max_tokens: maxTokens,
+    temperature,
+    messages: [{ role: 'user', content: prompt }],
+  }, { signal });
+
+  let fullContent = '';
+  let tokenCount = 0;
+
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      fullContent += event.delta.text;
+      tokenCount++;
+      sendEvent({ type: 'token', token: event.delta.text, tokenCount });
+    }
+  }
+
+  const finalMessage = await stream.finalMessage();
+  const inputTokens = finalMessage.usage?.input_tokens || 0;
+  const outputTokens = finalMessage.usage?.output_tokens || 0;
+  sendEvent({
+    type: 'log',
+    message: `Generation terminee - ${outputTokens} tokens generes (${inputTokens} tokens en entree)`,
+  });
+
+  return fullContent;
+}
+
+/** Stream text generation from Ollama API via SSE */
+async function streamOllama(
+  baseUrl: string,
+  model: string,
+  prompt: string,
+  sendEvent: (data: any) => void,
+  signal: AbortSignal,
+  maxTokens: number = 4096,
+  temperature: number = 0.3,
+): Promise<string> {
+  const response = await fetch(`${baseUrl}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      prompt,
+      stream: true,
+      options: { temperature, num_predict: maxTokens },
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Ollama status ${response.status}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('No response body from Ollama');
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullContent = '';
+  let tokenCount = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const parsed = JSON.parse(line) as {
+          response?: string;
+          done?: boolean;
+          total_duration?: number;
+          eval_count?: number;
+          eval_duration?: number;
+        };
+
+        if (parsed.response) {
+          fullContent += parsed.response;
+          tokenCount++;
+          sendEvent({ type: 'token', token: parsed.response, tokenCount });
+        }
+
+        if (parsed.done) {
+          const durationSec = parsed.total_duration
+            ? (parsed.total_duration / 1e9).toFixed(1)
+            : '?';
+          const tokensPerSec = parsed.eval_count && parsed.eval_duration
+            ? (parsed.eval_count / (parsed.eval_duration / 1e9)).toFixed(1)
+            : '?';
+          sendEvent({
+            type: 'log',
+            message: `Generation terminee - ${tokenCount} tokens en ${durationSec}s (${tokensPerSec} tokens/s)`,
+          });
+        }
+      } catch {
+        // skip malformed lines
+      }
+    }
+  }
+
+  return fullContent;
+}
+
+/** Stream text generation from OpenAI API via SSE */
+async function streamOpenAI(
+  apiKey: string,
+  model: string,
+  prompt: string,
+  sendEvent: (data: any) => void,
+  signal: AbortSignal,
+  maxTokens: number = 4096,
+  temperature: number = 0.3,
+): Promise<string> {
+  const client = new OpenAI({ apiKey });
+
+  const stream = await client.chat.completions.create({
+    model,
+    max_tokens: maxTokens,
+    temperature,
+    stream: true,
+    messages: [{ role: 'user', content: prompt }],
+  }, { signal });
+
+  let fullContent = '';
+  let tokenCount = 0;
+
+  for await (const chunk of stream) {
+    const text = chunk.choices?.[0]?.delta?.content;
+    if (text) {
+      fullContent += text;
+      tokenCount++;
+      sendEvent({ type: 'token', token: text, tokenCount });
+    }
+  }
+
+  sendEvent({
+    type: 'log',
+    message: `Generation terminee - ${tokenCount} tokens generes (${model})`,
+  });
+
+  return fullContent;
+}
+
 // GET /api/ai/status - Check if AI is configured and available
 export async function getAiStatus(_req: AuthRequest, res: Response) {
-  const config = await getOllamaConfig();
+  const config = await getAiConfig(_req.user?.userId);
   res.json({
     enabled: config.enabled,
-    hasModel: !!config.selectedModel,
-    model: config.selectedModel,
+    hasModel: !!config.model,
+    model: config.model,
+    provider: config.provider,
+  });
+}
+
+// GET /api/ai/config - Get resolved AI config for current user (no secrets)
+export async function getAiClientConfig(req: AuthRequest, res: Response) {
+  const userId = req.user!.userId;
+  let settings = await PluginSettings.findOne();
+  if (!settings) settings = await PluginSettings.create({});
+
+  const config = await getAiConfig(userId);
+  res.json({
+    provider: config.provider,
+    model: config.model,
+    enabled: config.enabled,
+    isCommercial: config.isCommercial,
+    aiIndividualMode: settings.aiIndividualMode || false,
+    disclaimerMessage: settings.aiDisclaimerMessage || '',
   });
 }
 
@@ -177,22 +452,120 @@ export async function deleteOllamaModel(req: AuthRequest, res: Response) {
   }
 }
 
-// PUT /api/admin/ai/settings - Update Ollama settings
+// PUT /api/admin/ai/settings - Update AI settings (Ollama + Claude + provider)
 export async function updateOllamaSettings(req: AuthRequest, res: Response) {
   let settings = await PluginSettings.findOne();
   if (!settings) settings = await PluginSettings.create({});
 
-  const { baseUrl, selectedModel, enabled, reportPrompt } = req.body;
+  const { baseUrl, selectedModel, enabled, reportPrompt, aiProvider, claude, openai } = req.body;
+  // Ollama settings
   if (baseUrl !== undefined) settings.ollama.baseUrl = baseUrl;
   if (selectedModel !== undefined) settings.ollama.selectedModel = selectedModel;
   if (typeof enabled === 'boolean') settings.ollama.enabled = enabled;
   if (reportPrompt !== undefined) settings.ollama.reportPrompt = reportPrompt;
+  // Provider selection
+  if (aiProvider !== undefined) settings.aiProvider = aiProvider;
+  // Ensure sub-documents exist (for documents created before these fields were added)
+  if (!settings.claude) (settings as any).claude = {};
+  if (!settings.openai) (settings as any).openai = {};
+  if (settings.aiIndividualMode === undefined) (settings as any).aiIndividualMode = false;
+  if (!settings.aiDisclaimerMessage) (settings as any).aiDisclaimerMessage = '';
+  // Claude settings
+  if (claude) {
+    if (claude.apiKey !== undefined) settings.claude.apiKey = claude.apiKey;
+    if (claude.selectedModel !== undefined) settings.claude.selectedModel = claude.selectedModel;
+    if (typeof claude.enabled === 'boolean') settings.claude.enabled = claude.enabled;
+  }
+  // OpenAI settings
+  if (openai) {
+    if (openai.apiKey !== undefined) settings.openai.apiKey = openai.apiKey;
+    if (openai.selectedModel !== undefined) settings.openai.selectedModel = openai.selectedModel;
+    if (typeof openai.enabled === 'boolean') settings.openai.enabled = openai.enabled;
+  }
+  // Individual mode settings
+  if (typeof req.body.aiIndividualMode === 'boolean') settings.aiIndividualMode = req.body.aiIndividualMode;
+  if (req.body.aiDisclaimerMessage !== undefined) {
+    const oldMessage = settings.aiDisclaimerMessage;
+    settings.aiDisclaimerMessage = req.body.aiDisclaimerMessage;
+    // Reset all users' disclaimer dismissed flag if message changed
+    if (oldMessage !== req.body.aiDisclaimerMessage) {
+      await User.updateMany(
+        { 'preferences.aiDisclaimerDismissed': true },
+        { $set: { 'preferences.aiDisclaimerDismissed': false } }
+      );
+    }
+  }
 
   await settings.save();
   const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
   const ua = req.headers['user-agent'] || '';
-  await logActivity(req.user!.userId, 'settings.ai_update', 'system', null, { baseUrl, selectedModel, enabled }, ip, ua);
-  res.json(settings.ollama);
+  await logActivity(req.user!.userId, 'settings.ai_update', 'system', null, { aiProvider, baseUrl, selectedModel, enabled }, ip, ua);
+  res.json({
+    ollama: settings.ollama,
+    claude: { selectedModel: settings.claude.selectedModel, enabled: settings.claude.enabled, hasKey: !!settings.claude.apiKey },
+    openai: { selectedModel: settings.openai.selectedModel, enabled: settings.openai.enabled, hasKey: !!settings.openai.apiKey },
+    aiProvider: settings.aiProvider,
+    aiIndividualMode: settings.aiIndividualMode,
+    aiDisclaimerMessage: settings.aiDisclaimerMessage,
+  });
+}
+
+// POST /api/admin/ai/claude/test - Test Claude API key
+export async function testClaudeConnection(req: AuthRequest, res: Response) {
+  let { apiKey } = req.body;
+  // If no key provided, use stored key
+  if (!apiKey) {
+    const settings = await PluginSettings.findOne();
+    apiKey = settings?.claude?.apiKey;
+  }
+  if (!apiKey) return res.status(400).json({ message: 'Cle API requise' });
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const result = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'Reply with OK' }],
+    });
+    const text = result.content?.[0]?.type === 'text' ? result.content[0].text : '';
+    res.json({ ok: true, message: `Connexion reussie (${text.trim()})` });
+  } catch (err: any) {
+    // Parse Anthropic error for user-friendly message
+    let message = err.message || 'Erreur inconnue';
+    try {
+      const parsed = JSON.parse(message);
+      if (parsed?.error?.message) message = parsed.error.message;
+    } catch { /* not JSON, use raw message */ }
+    const status = err.status || 502;
+    res.status(status).json({ ok: false, message });
+  }
+}
+
+// POST /api/admin/ai/openai/test - Test OpenAI API key
+export async function testOpenAIConnection(req: AuthRequest, res: Response) {
+  let { apiKey } = req.body;
+  if (!apiKey) {
+    const settings = await PluginSettings.findOne();
+    apiKey = settings?.openai?.apiKey;
+  }
+  if (!apiKey) return res.status(400).json({ message: 'Cle API requise' });
+
+  try {
+    const client = new OpenAI({ apiKey });
+    const result = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'Reply with OK' }],
+    });
+    const text = result.choices?.[0]?.message?.content || '';
+    res.json({ ok: true, message: `Connexion reussie (${text.trim()})` });
+  } catch (err: any) {
+    let message = err.message || 'Erreur inconnue';
+    // OpenAI SDK errors have .error.message
+    if (err.error?.message) message = err.error.message;
+    const status = err.status || 502;
+    res.status(status).json({ ok: false, message });
+  }
 }
 
 // Track active operations for cancellation
@@ -206,8 +579,8 @@ export async function generateReport(req: AuthRequest, res: Response) {
 
   if (!dossierId) return res.status(400).json({ message: 'dossierId requis' });
 
-  const config = await getOllamaConfig();
-  if (!config.enabled || !config.selectedModel) {
+  const config = await getAiConfig(userId);
+  if (!config.enabled || !config.model) {
     return res.status(400).json({ message: 'IA non configuree' });
   }
 
@@ -241,8 +614,27 @@ export async function generateReport(req: AuthRequest, res: Response) {
     .join('\n\n');
 
   const entitiesText = dossier.entities?.length
-    ? dossier.entities.map(e => `- ${e.name} (${e.type}): ${e.description}`).join('\n')
+    ? dossier.entities.map(e => {
+        let line = `- ${e.name} (${e.type}): ${e.description}`;
+        if (e.photos?.length) line += ` [${e.photos.length} photo(s) jointe(s)]`;
+        return line;
+      }).join('\n')
     : 'Aucune entite';
+
+  // Linked documents from dossier info
+  const linkedDocsText = dossier.linkedDocuments?.length
+    ? dossier.linkedDocuments.map(d => {
+        const sizeMB = (d.fileSize / (1024 * 1024)).toFixed(1);
+        const date = d.uploadedAt ? new Date(d.uploadedAt).toLocaleDateString('fr-FR') : '';
+        return `- ${d.fileName} (${sizeMB} Mo${date ? ', ajoute le ' + date : ''})`;
+      }).join('\n')
+    : 'Aucune piece jointe';
+
+  // Media nodes (photos, documents uploaded as nodes)
+  const mediaNodes = nodes.filter(n => n.type === 'media' || n.type === 'document');
+  const mediaText = mediaNodes.length
+    ? mediaNodes.map(n => `- ${n.title} (${n.type})`).join('\n')
+    : '';
 
   const investigatorText = dossier.investigator?.name
     ? `${dossier.investigator.name} - ${dossier.investigator.service} - ${dossier.investigator.unit}`
@@ -277,119 +669,54 @@ export async function generateReport(req: AuthRequest, res: Response) {
     .replace(/\{\{investigator\}\}/g, investigatorText)
     .replace(/\{\{signature\}\}/g, signatureText)
     .replace(/\{\{notes\}\}/g, noteContents || 'Aucune note')
+    .replace(/\{\{linkedDocuments\}\}/g, linkedDocsText)
+    .replace(/\{\{media\}\}/g, mediaText || 'Aucun media')
     .replace(/\{\{date\}\}/g, new Date().toLocaleDateString('fr-FR'));
 
-  sendEvent({ type: 'log', message: 'Connexion au modele IA...' });
-  sendEvent({ type: 'log', message: `Modele: ${config.selectedModel}` });
+  const providerLabel = config.provider === 'claude' ? 'Claude API' : config.provider === 'openai' ? 'OpenAI API' : 'Ollama (local)';
+  sendEvent({ type: 'log', message: `Provider: ${providerLabel}` });
+  sendEvent({ type: 'log', message: `Modele: ${config.model}` });
   sendEvent({ type: 'log', message: `Dossier: ${dossier.title} (${nodes.length} elements)` });
-  sendEvent({ type: 'log', message: 'Chargement du modele en memoire (peut prendre un moment)...' });
 
-  // Heartbeat to keep connection alive and show progress during model loading
-  let elapsedSec = 0;
-  const heartbeat = setInterval(() => {
-    elapsedSec += 5;
-    sendEvent({ type: 'log', message: `Attente du modele... ${elapsedSec}s` });
-  }, 5000);
+  // Heartbeat for Ollama model loading
+  let heartbeat: ReturnType<typeof setInterval> | null = null;
+  if (config.provider === 'ollama') {
+    sendEvent({ type: 'log', message: 'Chargement du modele en memoire (peut prendre un moment)...' });
+    let elapsedSec = 0;
+    heartbeat = setInterval(() => {
+      elapsedSec += 5;
+      sendEvent({ type: 'log', message: `Attente du modele... ${elapsedSec}s` });
+    }, 5000);
+  }
 
   try {
-    const response = await fetch(`${config.baseUrl}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: config.selectedModel,
-        prompt,
-        stream: true,
-        options: {
-          temperature: 0.3,
-          num_predict: 4096,
-        },
-      }),
-      signal: abortController.signal,
-    });
+    let fullContent: string;
 
-    clearInterval(heartbeat);
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || `Ollama status ${response.status}`);
+    if (config.provider === 'claude') {
+      sendEvent({ type: 'log', message: 'Generation en cours...' });
+      fullContent = await streamClaude(config.claudeApiKey, config.claudeModel, prompt, sendEvent, abortController.signal, 4096, 0.3);
+    } else if (config.provider === 'openai') {
+      sendEvent({ type: 'log', message: 'Generation en cours...' });
+      fullContent = await streamOpenAI(config.openaiApiKey, config.openaiModel, prompt, sendEvent, abortController.signal, 4096, 0.3);
+    } else {
+      fullContent = await streamOllama(config.ollamaBaseUrl, config.ollamaModel, prompt, sendEvent, abortController.signal, 4096, 0.3);
     }
 
-    sendEvent({ type: 'log', message: 'Generation en cours...' });
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      sendEvent({ type: 'error', message: 'No response body' });
-      res.end();
-      activeGenerations.delete(genId);
-      return;
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullContent = '';
-    let tokenCount = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const parsed = JSON.parse(line) as {
-            response?: string;
-            done?: boolean;
-            total_duration?: number;
-            eval_count?: number;
-            eval_duration?: number;
-          };
-
-          if (parsed.response) {
-            fullContent += parsed.response;
-            tokenCount++;
-            sendEvent({
-              type: 'token',
-              token: parsed.response,
-              tokenCount,
-            });
-          }
-
-          if (parsed.done) {
-            const durationSec = parsed.total_duration
-              ? (parsed.total_duration / 1e9).toFixed(1)
-              : '?';
-            const tokensPerSec = parsed.eval_count && parsed.eval_duration
-              ? (parsed.eval_count / (parsed.eval_duration / 1e9)).toFixed(1)
-              : '?';
-
-            sendEvent({
-              type: 'log',
-              message: `Generation terminee - ${tokenCount} tokens en ${durationSec}s (${tokensPerSec} tokens/s)`,
-            });
-          }
-        } catch {
-          // skip malformed lines
-        }
-      }
-    }
+    if (heartbeat) clearInterval(heartbeat);
 
     if (!dossier.isEmbargo) {
       const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
       const ua = req.headers['user-agent'] || '';
-      await logActivity(userId, 'ai.generate_report', 'dossier', dossierId, { model: config.selectedModel, title: dossier.title }, ip, ua);
+      await logActivity(userId, 'ai.generate_report', 'dossier', dossierId, { model: config.model, provider: config.provider, title: dossier.title }, ip, ua);
     }
 
     sendEvent({
       type: 'done',
       content: fullContent,
-      model: config.selectedModel,
+      model: config.model,
     });
   } catch (err: any) {
-    clearInterval(heartbeat);
+    if (heartbeat) clearInterval(heartbeat);
     if (err.name === 'AbortError') {
       sendEvent({ type: 'cancelled', message: 'Generation annulee' });
     } else {
@@ -401,7 +728,7 @@ export async function generateReport(req: AuthRequest, res: Response) {
   }
 }
 
-// POST /api/ai/enrich-entity - Enrich entity info using Ollama with SSE streaming
+// POST /api/ai/enrich-entity - Enrich entity info with SSE streaming
 export async function enrichEntity(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
   const { dossierId, entityIndex } = req.body;
@@ -410,8 +737,8 @@ export async function enrichEntity(req: AuthRequest, res: Response) {
     return res.status(400).json({ message: 'dossierId et entityIndex requis' });
   }
 
-  const config = await getOllamaConfig();
-  if (!config.enabled || !config.selectedModel) {
+  const config = await getAiConfig(userId);
+  if (!config.enabled || !config.model) {
     return res.status(400).json({ message: 'IA non configuree' });
   }
 
@@ -451,93 +778,33 @@ ${dossier.description ? `Description du dossier: ${dossier.description}` : ''}
 
 Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des informations factuelles potentielles, des pistes de recherche OSINT, et des elements a verifier. Reponds uniquement avec la description enrichie, sans introduction ni conclusion.`;
 
+  const providerLabel = config.provider === 'claude' ? 'Claude API' : config.provider === 'openai' ? 'OpenAI API' : 'Ollama (local)';
   sendEvent({ type: 'log', message: `Enrichissement de "${entity.name}" (${entity.type})...` });
-  sendEvent({ type: 'log', message: `Modele: ${config.selectedModel}` });
+  sendEvent({ type: 'log', message: `Provider: ${providerLabel} | Modele: ${config.model}` });
 
-  // Heartbeat during model loading
-  let enrichElapsed = 0;
-  const enrichHeartbeat = setInterval(() => {
-    enrichElapsed += 5;
-    sendEvent({ type: 'log', message: `Attente du modele... ${enrichElapsed}s` });
-  }, 5000);
+  let heartbeat: ReturnType<typeof setInterval> | null = null;
+  if (config.provider === 'ollama') {
+    let elapsed = 0;
+    heartbeat = setInterval(() => {
+      elapsed += 5;
+      sendEvent({ type: 'log', message: `Attente du modele... ${elapsed}s` });
+    }, 5000);
+  }
 
   try {
-    const response = await fetch(`${config.baseUrl}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: config.selectedModel,
-        prompt,
-        stream: true,
-        options: { temperature: 0.3, num_predict: 1024 },
-      }),
-      signal: abortController.signal,
-    });
+    let fullContent: string;
 
-    clearInterval(enrichHeartbeat);
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || `Ollama status ${response.status}`);
+    if (config.provider === 'claude') {
+      sendEvent({ type: 'log', message: 'Generation en cours...' });
+      fullContent = await streamClaude(config.claudeApiKey, config.claudeModel, prompt, sendEvent, abortController.signal, 1024, 0.3);
+    } else if (config.provider === 'openai') {
+      sendEvent({ type: 'log', message: 'Generation en cours...' });
+      fullContent = await streamOpenAI(config.openaiApiKey, config.openaiModel, prompt, sendEvent, abortController.signal, 1024, 0.3);
+    } else {
+      fullContent = await streamOllama(config.ollamaBaseUrl, config.ollamaModel, prompt, sendEvent, abortController.signal, 1024, 0.3);
     }
 
-    sendEvent({ type: 'log', message: 'Generation en cours...' });
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      sendEvent({ type: 'error', message: 'No response body' });
-      res.end();
-      activeEnrichments.delete(enrichId);
-      return;
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullContent = '';
-    let tokenCount = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const parsed = JSON.parse(line) as {
-            response?: string;
-            done?: boolean;
-            total_duration?: number;
-            eval_count?: number;
-            eval_duration?: number;
-          };
-
-          if (parsed.response) {
-            fullContent += parsed.response;
-            tokenCount++;
-            sendEvent({ type: 'token', token: parsed.response, tokenCount });
-          }
-
-          if (parsed.done) {
-            const durationSec = parsed.total_duration
-              ? (parsed.total_duration / 1e9).toFixed(1)
-              : '?';
-            const tokensPerSec = parsed.eval_count && parsed.eval_duration
-              ? (parsed.eval_count / (parsed.eval_duration / 1e9)).toFixed(1)
-              : '?';
-            sendEvent({
-              type: 'log',
-              message: `Enrichissement termine - ${tokenCount} tokens en ${durationSec}s (${tokensPerSec} tokens/s)`,
-            });
-          }
-        } catch {
-          // skip malformed lines
-        }
-      }
-    }
+    if (heartbeat) clearInterval(heartbeat);
 
     // Save enriched description
     const enrichedDescription = fullContent.trim() || entity.description;
@@ -550,9 +817,9 @@ Fournis une description enrichie de cette entite (2-4 paragraphes). Inclus des i
       await logActivity(userId, 'entity.enrich', 'dossier', dossierId, { entityName: entity.name, entityType: entity.type }, ip, ua);
     }
 
-    sendEvent({ type: 'done', description: enrichedDescription, model: config.selectedModel });
+    sendEvent({ type: 'done', description: enrichedDescription, model: config.model });
   } catch (err: any) {
-    clearInterval(enrichHeartbeat);
+    if (heartbeat) clearInterval(heartbeat);
     if (err.name === 'AbortError') {
       sendEvent({ type: 'cancelled', message: 'Enrichissement annule' });
     } else {
@@ -669,5 +936,58 @@ export async function cancelGenerateReport(req: AuthRequest, res: Response) {
     res.json({ message: 'Generation annulee' });
   } else {
     res.status(404).json({ message: 'Aucune generation active' });
+  }
+}
+
+// POST /api/ai/test/claude - Test user's Claude API key
+export async function testUserClaudeConnection(req: AuthRequest, res: Response) {
+  let { apiKey } = req.body;
+  if (!apiKey) {
+    const user = await User.findById(req.user!.userId).select('preferences');
+    apiKey = user?.preferences?.claudeApiKey;
+  }
+  if (!apiKey) return res.status(400).json({ message: 'Cle API requise' });
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const result = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'Reply with OK' }],
+    });
+    const text = result.content?.[0]?.type === 'text' ? result.content[0].text : '';
+    res.json({ ok: true, message: `Connexion reussie (${text.trim()})` });
+  } catch (err: any) {
+    let message = err.message || 'Erreur inconnue';
+    try {
+      const parsed = JSON.parse(message);
+      if (parsed?.error?.message) message = parsed.error.message;
+    } catch { /* not JSON */ }
+    res.status(err.status || 502).json({ ok: false, message });
+  }
+}
+
+// POST /api/ai/test/openai - Test user's OpenAI API key
+export async function testUserOpenAIConnection(req: AuthRequest, res: Response) {
+  let { apiKey } = req.body;
+  if (!apiKey) {
+    const user = await User.findById(req.user!.userId).select('preferences');
+    apiKey = user?.preferences?.openaiApiKey;
+  }
+  if (!apiKey) return res.status(400).json({ message: 'Cle API requise' });
+
+  try {
+    const client = new OpenAI({ apiKey });
+    const result = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'Reply with OK' }],
+    });
+    const text = result.choices?.[0]?.message?.content || '';
+    res.json({ ok: true, message: `Connexion reussie (${text.trim()})` });
+  } catch (err: any) {
+    let message = err.message || 'Erreur inconnue';
+    if (err.error?.message) message = err.error.message;
+    res.status(err.status || 502).json({ ok: false, message });
   }
 }

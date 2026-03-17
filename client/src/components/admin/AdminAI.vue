@@ -8,8 +8,72 @@
       <p class="admin-section-subtitle">{{ $t('admin.aiSubtitle') }}</p>
     </div>
 
-    <!-- Connection settings -->
+    <!-- AI Provider selector -->
     <div class="ai-card glass-card fade-in fade-in-delay-1">
+      <div class="ai-card-header">
+        <div class="ai-icon">
+          <v-icon size="24">mdi-swap-horizontal</v-icon>
+        </div>
+        <div>
+          <h3 class="ai-card-title mono">{{ $t('admin.aiProviderTitle') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.aiProviderDesc') }}</p>
+        </div>
+      </div>
+
+      <div class="ai-provider-selector">
+        <button
+          :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'ollama' }]"
+          @click="form.aiProvider = 'ollama'"
+        >
+          <v-icon size="20" class="mr-2">mdi-server-network</v-icon>
+          <div class="ai-provider-btn-content">
+            <span class="ai-provider-btn-title">Ollama</span>
+            <span class="ai-provider-btn-desc">{{ $t('admin.ollamaProviderDesc') }}</span>
+          </div>
+        </button>
+        <button
+          :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'claude' }]"
+          @click="form.aiProvider = 'claude'"
+        >
+          <v-icon size="20" class="mr-2">mdi-cloud-outline</v-icon>
+          <div class="ai-provider-btn-content">
+            <span class="ai-provider-btn-title">Claude API</span>
+            <span class="ai-provider-btn-desc">{{ $t('admin.claudeProviderDesc') }}</span>
+          </div>
+        </button>
+        <button
+          :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'openai' }]"
+          @click="form.aiProvider = 'openai'"
+        >
+          <v-icon size="20" class="mr-2">mdi-creation</v-icon>
+          <div class="ai-provider-btn-content">
+            <span class="ai-provider-btn-title">OpenAI / ChatGPT</span>
+            <span class="ai-provider-btn-desc">{{ $t('admin.openaiProviderDesc') }}</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Claude API Privacy Warning -->
+    <div v-if="form.aiProvider === 'claude'" class="ai-card ai-privacy-card fade-in">
+      <div class="ai-privacy-header">
+        <v-icon size="22" color="#f59e0b">mdi-shield-alert-outline</v-icon>
+        <h3 class="ai-card-title mono">{{ $t('admin.claudePrivacyTitle') }}</h3>
+      </div>
+      <div class="ai-privacy-content">
+        <p>{{ $t('admin.claudePrivacyText1') }}</p>
+        <ul class="ai-privacy-list">
+          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.claudePrivacyItem1') }}</li>
+          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.claudePrivacyItem2') }}</li>
+          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.claudePrivacyItem3') }}</li>
+          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.claudePrivacyItem4') }}</li>
+        </ul>
+        <p class="ai-privacy-footer">{{ $t('admin.claudePrivacyFooter') }}</p>
+      </div>
+    </div>
+
+    <!-- Connection settings: Ollama -->
+    <div v-if="form.aiProvider === 'ollama'" class="ai-card glass-card fade-in fade-in-delay-1">
       <div class="ai-card-header">
         <div class="ai-icon">
           <v-icon size="24">mdi-cog-outline</v-icon>
@@ -67,6 +131,223 @@
           <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
           {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
+      </div>
+    </div>
+
+    <!-- Connection settings: Claude API -->
+    <div v-if="form.aiProvider === 'claude'" class="ai-card glass-card fade-in fade-in-delay-1">
+      <div class="ai-card-header">
+        <div class="ai-icon">
+          <v-icon size="24">mdi-cloud-cog-outline</v-icon>
+        </div>
+        <div>
+          <h3 class="ai-card-title mono">{{ $t('admin.claudeConfig') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.claudeConfigDesc') }}</p>
+        </div>
+        <span :class="['plugin-status', claudeConnectionOk ? 'plugin-status--active' : 'plugin-status--inactive']">
+          {{ claudeConnectionOk ? $t('admin.connected') : $t('admin.notConnected') }}
+        </span>
+      </div>
+
+      <div class="ai-fields">
+        <div class="ai-field">
+          <label class="ai-label mono">{{ $t('admin.claudeApiKey') }}</label>
+          <div class="ai-field-row">
+            <v-text-field
+              v-model="form.claudeApiKey"
+              density="compact"
+              hide-details
+              :type="showClaudeKey ? 'text' : 'password'"
+              placeholder="sk-ant-api03-..."
+            />
+            <button class="ai-test-btn" @click="showClaudeKey = !showClaudeKey">
+              <v-icon size="14">{{ showClaudeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+            </button>
+            <button class="ai-test-btn" @click="testClaudeConnection" :disabled="testingClaude">
+              <v-icon size="14" class="mr-1">mdi-connection</v-icon>
+              {{ testingClaude ? $t('admin.testing') : $t('admin.test') }}
+            </button>
+          </div>
+          <p v-if="claudeHasKey" class="ai-field-hint ai-field-hint--ok">
+            <v-icon size="12" class="mr-1" color="#34d399">mdi-key</v-icon>
+            {{ $t('admin.claudeKeyConfigured') }}
+          </p>
+          <p class="ai-field-hint">
+            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" class="ai-link">
+              <v-icon size="12" class="mr-1">mdi-open-in-new</v-icon>
+              {{ $t('admin.claudeGetKey') }}
+            </a>
+          </p>
+          <div v-if="claudeTestStatus" :class="['ai-status-msg', claudeTestStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
+            <v-icon size="14" class="mr-1">{{ claudeTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+            {{ claudeTestStatus.message }}
+          </div>
+        </div>
+
+        <div class="ai-field">
+          <label class="ai-label mono">{{ $t('admin.claudeModel') }}</label>
+          <v-select
+            v-model="form.claudeModel"
+            :items="claudeModels"
+            item-title="label"
+            item-value="value"
+            density="compact"
+            hide-details
+          />
+        </div>
+
+        <div class="ai-field">
+          <label class="ai-label mono">{{ $t('admin.enableAI') }}</label>
+          <div class="ai-toggle-row">
+            <v-switch v-model="form.claudeEnabled" hide-details color="var(--me-accent)" density="compact" />
+            <span class="ai-toggle-label">{{ form.claudeEnabled ? $t('admin.aiEnabled') : $t('admin.aiDisabled') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-actions">
+        <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
+          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
+        </button>
+        <div v-if="saveStatus" :class="['ai-status-msg', saveStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
+          <v-icon size="14" class="mr-1">{{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+          {{ saveStatus.message }}
+        </div>
+      </div>
+    </div>
+
+    <!-- OpenAI Privacy Warning -->
+    <div v-if="form.aiProvider === 'openai'" class="ai-card ai-privacy-card fade-in">
+      <div class="ai-privacy-header">
+        <v-icon size="22" color="#f59e0b">mdi-shield-alert-outline</v-icon>
+        <h3 class="ai-card-title mono">{{ $t('admin.openaiPrivacyTitle') }}</h3>
+      </div>
+      <div class="ai-privacy-content">
+        <p>{{ $t('admin.openaiPrivacyText1') }}</p>
+        <ul class="ai-privacy-list">
+          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.openaiPrivacyItem1') }}</li>
+          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.openaiPrivacyItem2') }}</li>
+          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.openaiPrivacyItem3') }}</li>
+        </ul>
+        <p class="ai-privacy-footer">{{ $t('admin.openaiPrivacyFooter') }}</p>
+      </div>
+    </div>
+
+    <!-- Individual Mode + Disclaimer -->
+    <div class="ai-card ai-privacy-card fade-in fade-in-delay-1">
+      <div class="ai-privacy-header">
+        <v-icon size="22" color="#f59e0b">mdi-account-key-outline</v-icon>
+        <h3 class="ai-card-title mono">{{ $t('admin.aiIndividualModeTitle') }}</h3>
+      </div>
+      <div class="ai-privacy-content">
+        <p>{{ $t('admin.aiIndividualModeDesc') }}</p>
+        <ul class="ai-privacy-list">
+          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.aiIndividualModeItem1') }}</li>
+          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.aiIndividualModeItem2') }}</li>
+          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.aiIndividualModeItem3') }}</li>
+        </ul>
+
+        <div class="ai-individual-toggle">
+          <v-switch v-model="form.aiIndividualMode" hide-details color="var(--me-accent)" density="compact" />
+          <span class="ai-toggle-label">{{ form.aiIndividualMode ? $t('admin.aiIndividualModeOn') : $t('admin.aiIndividualModeOff') }}</span>
+        </div>
+
+        <div v-if="form.aiIndividualMode" class="ai-disclaimer-editor">
+          <label class="ai-label mono">{{ $t('admin.aiDisclaimerLabel') }}</label>
+          <v-textarea
+            v-model="form.aiDisclaimerMessage"
+            density="compact"
+            hide-details
+            rows="4"
+            auto-grow
+            :placeholder="$t('admin.aiDisclaimerPlaceholder')"
+          />
+          <p class="ai-privacy-footer">{{ $t('admin.aiDisclaimerHint') }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connection settings: OpenAI -->
+    <div v-if="form.aiProvider === 'openai'" class="ai-card glass-card fade-in fade-in-delay-1">
+      <div class="ai-card-header">
+        <div class="ai-icon">
+          <v-icon size="24">mdi-cloud-cog-outline</v-icon>
+        </div>
+        <div>
+          <h3 class="ai-card-title mono">{{ $t('admin.openaiConfig') }}</h3>
+          <p class="ai-card-desc">{{ $t('admin.openaiConfigDesc') }}</p>
+        </div>
+        <span :class="['plugin-status', openaiConnectionOk ? 'plugin-status--active' : 'plugin-status--inactive']">
+          {{ openaiConnectionOk ? $t('admin.connected') : $t('admin.notConnected') }}
+        </span>
+      </div>
+
+      <div class="ai-fields">
+        <div class="ai-field">
+          <label class="ai-label mono">{{ $t('admin.openaiApiKey') }}</label>
+          <div class="ai-field-row">
+            <v-text-field
+              v-model="form.openaiApiKey"
+              density="compact"
+              hide-details
+              :type="showOpenaiKey ? 'text' : 'password'"
+              placeholder="sk-proj-..."
+            />
+            <button class="ai-test-btn" @click="showOpenaiKey = !showOpenaiKey">
+              <v-icon size="14">{{ showOpenaiKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+            </button>
+            <button class="ai-test-btn" @click="testOpenAIConnection" :disabled="testingOpenai">
+              <v-icon size="14" class="mr-1">mdi-connection</v-icon>
+              {{ testingOpenai ? $t('admin.testing') : $t('admin.test') }}
+            </button>
+          </div>
+          <p v-if="openaiHasKey" class="ai-field-hint ai-field-hint--ok">
+            <v-icon size="12" class="mr-1" color="#34d399">mdi-key</v-icon>
+            {{ $t('admin.openaiKeyConfigured') }}
+          </p>
+          <p class="ai-field-hint">
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="ai-link">
+              <v-icon size="12" class="mr-1">mdi-open-in-new</v-icon>
+              {{ $t('admin.openaiGetKey') }}
+            </a>
+          </p>
+          <div v-if="openaiTestStatus" :class="['ai-status-msg', openaiTestStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
+            <v-icon size="14" class="mr-1">{{ openaiTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+            {{ openaiTestStatus.message }}
+          </div>
+        </div>
+
+        <div class="ai-field">
+          <label class="ai-label mono">{{ $t('admin.openaiModel') }}</label>
+          <v-select
+            v-model="form.openaiModel"
+            :items="openaiModels"
+            item-title="label"
+            item-value="value"
+            density="compact"
+            hide-details
+          />
+        </div>
+
+        <div class="ai-field">
+          <label class="ai-label mono">{{ $t('admin.enableAI') }}</label>
+          <div class="ai-toggle-row">
+            <v-switch v-model="form.openaiEnabled" hide-details color="var(--me-accent)" density="compact" />
+            <span class="ai-toggle-label">{{ form.openaiEnabled ? $t('admin.aiEnabled') : $t('admin.aiDisabled') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-actions">
+        <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
+          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
+        </button>
+        <div v-if="saveStatus" :class="['ai-status-msg', saveStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
+          <v-icon size="14" class="mr-1">{{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+          {{ saveStatus.message }}
+        </div>
       </div>
     </div>
 
@@ -224,8 +505,8 @@
       </div>
     </div>
 
-    <!-- Models management -->
-    <div class="ai-card glass-card fade-in fade-in-delay-2">
+    <!-- Models management (Ollama only) -->
+    <div v-if="form.aiProvider === 'ollama'" class="ai-card glass-card fade-in fade-in-delay-2">
       <div class="ai-card-header">
         <div class="ai-icon">
           <v-icon size="24">mdi-brain</v-icon>
@@ -365,9 +646,20 @@ const { t } = useI18n();
 
 const saving = ref(false);
 const testing = ref(false);
+const testingClaude = ref(false);
 const pulling = ref(false);
 const loadingModels = ref(false);
 const connectionOk = ref(false);
+const claudeConnectionOk = ref(false);
+const claudeHasKey = ref(false);
+const showClaudeKey = ref(false);
+const openaiConnectionOk = ref(false);
+const openaiHasKey = ref(false);
+const showOpenaiKey = ref(false);
+const testingOpenai = ref(false);
+const saveStatus = ref<{ ok: boolean; message: string } | null>(null);
+const claudeTestStatus = ref<{ ok: boolean; message: string } | null>(null);
+const openaiTestStatus = ref<{ ok: boolean; message: string } | null>(null);
 const pullModelName = ref('');
 const pullStatus = ref('');
 const pullError = ref(false);
@@ -394,49 +686,89 @@ const tplForm = reactive({
   isShared: false,
 });
 
-const defaultReportPrompt = `Tu es un analyste OSINT professionnel. Redige un rapport d'investigation structure en suivant EXACTEMENT le format ci-dessous. Utilise les donnees fournies pour remplir chaque section. Redige en francais, de maniere professionnelle et factuelle.
+const defaultReportPrompt = `Tu es un analyste OSINT professionnel redisant un rapport d'investigation. Tu dois EXCLUSIVEMENT utiliser les donnees fournies ci-dessous. Ne fabrique AUCUNE information. Si une donnee est absente ou insuffisante, indique-le explicitement. Redige en francais, de maniere professionnelle, factuelle et concise.
 
-Donnees du dossier:
-- Titre: {{title}}
-- Description: {{description}}
-- Statut: {{status}}
-- Objectifs: {{objectives}}
-- Faits judiciaires: {{judicialFacts}}
-- Entites: {{entities}}
-- Enqueteur: {{investigator}}
-- Notes d'investigation: {{notes}}
+REGLES STRICTES:
+- Utilise UNIQUEMENT les donnees fournies (entites, notes, faits judiciaires, objectifs)
+- N'invente AUCUN resultat de recherche, AUCUNE URL, AUCUN fait
+- Cite les notes d'investigation comme sources primaires en les attribuant correctement
+- Si des informations manquent pour une section, ecris "Aucune donnee disponible pour cette section"
+- Utilise un ton neutre et objectif, adapte a un rapport officiel
 
-FORMAT DU RAPPORT A SUIVRE STRICTEMENT:
+DONNEES DU DOSSIER:
+Titre: {{title}}
+Description: {{description}}
+Statut: {{status}}
+Objectifs: {{objectives}}
+Faits judiciaires: {{judicialFacts}}
 
-# Rapport OSINT
+ENTITES CONCERNEES:
+{{entities}}
+
+ENQUETEUR:
+{{investigator}}
+
+PIECES JOINTES AU DOSSIER:
+{{linkedDocuments}}
+
+MEDIAS ET DOCUMENTS (noeuds du dossier):
+{{media}}
+
+NOTES D'INVESTIGATION (sources primaires a exploiter):
+{{notes}}
+
+REDIGE LE RAPPORT EN SUIVANT EXACTEMENT CETTE STRUCTURE:
+
+# Rapport d'investigation OSINT
 ## Dossier "{{title}}"
 
-## Entites concernees
-Les recherches demandees par l'enqueteur portent sur les entites suivantes:
-[Liste detaillee des entites avec leurs types et descriptions]
+**Date du rapport:** {{date}}
+**Enqueteur:** {{investigator}}
+**Statut:** {{status}}
 
-## Objectifs de la recherche OSINT
-Les objectifs sont definis comme suit:
-[Objectifs detailles du dossier]
+---
 
-## Synthese des faits
-[Resume des faits judiciaires et du contexte de l'enquete]
+## 1. Contexte et objet de l'investigation
+Presente le contexte du dossier en reformulant la description et les faits judiciaires. Explique clairement pourquoi cette investigation a ete ouverte et quel est son perimetre.
 
-## Resume des recherches et des resultats
-Les recherches en sources ouvertes ont ete menees sur Internet. Il convient de souligner que, compte tenu de l'immensite de ce reseau et de la multiplicite des ressources disponibles, certaines informations pertinentes pourraient ne pas avoir ete identifiees.
-Note: toutes les recherches reprises dans ce rapport ont ete realisees en sources ouvertes uniquement.
-[Resume global des resultats]
+## 2. Objectifs de la recherche
+Liste et detaille chaque objectif de l'investigation. Pour chaque objectif, precise les axes de recherche envisages.
 
-## Recherches en source ouverte
-[Detail des recherches effectuees pour chaque entite]
+## 3. Entites ciblees
+Pour chaque entite fournie, presente:
+- Son identite (nom, type)
+- Sa description et son role dans l'investigation
+- Les elements connus a son sujet
 
-## Exploration des ressources web et reseaux sociaux
-[Resultats detailles des recherches web et reseaux sociaux par entite]
+## 4. Pieces jointes et elements materiels
+Liste les pieces jointes au dossier (photos, documents) et les medias. Pour chaque element, precise sa nature et son interet potentiel pour l'investigation. Si des photos d'entites sont disponibles, mentionne-les dans le contexte de l'entite concernee.
 
-## Conclusion
-[Synthese des resultats, recommandations pour la suite de l'enquete, et preconisations]
+## 5. Synthese des recherches effectuees
+A partir des notes d'investigation fournies, synthetise les recherches menees. Organise par entite ou par thematique selon ce qui est le plus pertinent. Pour chaque element:
+- Ce qui a ete recherche
+- Ce qui a ete trouve (en citant les notes)
+- Ce qui reste a approfondir
 
-Ce rapport est clos le {{date}}.
+IMPORTANT: Cette section doit etre substantielle et s'appuyer directement sur le contenu des notes d'investigation.
+
+## 6. Resultats cles
+Liste les decouvertes les plus significatives de l'investigation, classees par ordre d'importance. Chaque resultat doit etre factuel et directement tire des notes.
+
+## 7. Zones d'ombre et pistes complementaires
+Identifie:
+- Les informations manquantes ou incompletes
+- Les contradictions eventuelles dans les donnees
+- Les pistes de recherche complementaires a envisager
+
+## 8. Conclusion et preconisations
+Synthese globale des resultats et recommandations concretes pour la suite de l'investigation.
+
+---
+
+*Toutes les recherches reprises dans ce rapport ont ete realisees en sources ouvertes (OSINT) uniquement. Compte tenu de l'immensite des ressources disponibles sur Internet, certaines informations pertinentes pourraient ne pas avoir ete identifiees.*
+
+*Ce rapport est clos le {{date}}.*
+
 {{signature}}`;
 
 const promptVariables = computed(() => [
@@ -448,6 +780,8 @@ const promptVariables = computed(() => [
   { key: '{{entities}}', desc: t('admin.varEntities') || 'Liste des entites' },
   { key: '{{investigator}}', desc: t('admin.varInvestigator') || 'Informations enqueteur du dossier' },
   { key: '{{notes}}', desc: t('admin.varNotes') || 'Contenu des notes' },
+  { key: '{{linkedDocuments}}', desc: t('admin.varLinkedDocs') || 'Pieces jointes du dossier' },
+  { key: '{{media}}', desc: t('admin.varMedia') || 'Medias et documents (noeuds)' },
   { key: '{{date}}', desc: t('admin.varDate') || 'Date du jour (format FR)' },
   { key: '{{signature}}', desc: t('admin.varSignature') || 'Signature de l\'utilisateur (depuis le profil)' },
 ]);
@@ -457,7 +791,29 @@ const form = reactive({
   selectedModel: '',
   enabled: false,
   reportPrompt: defaultReportPrompt,
+  aiProvider: 'ollama' as 'ollama' | 'claude' | 'openai',
+  claudeApiKey: '',
+  claudeModel: 'claude-sonnet-4-20250514',
+  claudeEnabled: false,
+  openaiApiKey: '',
+  openaiModel: 'gpt-4o',
+  openaiEnabled: false,
+  aiIndividualMode: false,
+  aiDisclaimerMessage: '',
 });
+
+const claudeModels = computed(() => [
+  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (' + t('admin.recommended') + ')' },
+  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (' + t('admin.claudeFastest') + ')' },
+]);
+
+const openaiModels = computed(() => [
+  { value: 'gpt-4o', label: 'GPT-4o (' + t('admin.recommended') + ')' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini (' + t('admin.claudeFastest') + ')' },
+  { value: 'gpt-4.1', label: 'GPT-4.1' },
+  { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+  { value: 'o3-mini', label: 'o3-mini (' + t('admin.openaiReasoning') + ')' },
+]);
 
 const installedModels = ref<Array<{ name: string; size: number; modified_at: string }>>([]);
 
@@ -506,6 +862,21 @@ async function loadSettings() {
       form.enabled = data.ollama.enabled || false;
       form.reportPrompt = data.ollama.reportPrompt || defaultReportPrompt;
     }
+    if (data.claude) {
+      claudeHasKey.value = data.claude.hasKey || false;
+      form.claudeModel = data.claude.selectedModel || 'claude-sonnet-4-20250514';
+      form.claudeEnabled = data.claude.enabled || false;
+    }
+    if (data.openai) {
+      openaiHasKey.value = data.openai.hasKey || false;
+      form.openaiModel = data.openai.selectedModel || 'gpt-4o';
+      form.openaiEnabled = data.openai.enabled || false;
+    }
+    if (data.aiProvider) {
+      form.aiProvider = data.aiProvider;
+    }
+    form.aiIndividualMode = data.aiIndividualMode || false;
+    form.aiDisclaimerMessage = data.aiDisclaimerMessage || '';
   } catch (err) {
     console.error('Failed to load AI settings:', err);
   }
@@ -540,12 +911,96 @@ async function testConnection() {
 
 async function saveSettings() {
   saving.value = true;
+  saveStatus.value = null;
   try {
-    await api.put('/admin/ai/settings', form);
-  } catch (err) {
+    const payload: any = {
+      baseUrl: form.baseUrl,
+      selectedModel: form.selectedModel,
+      enabled: form.enabled,
+      reportPrompt: form.reportPrompt,
+      aiProvider: form.aiProvider,
+      aiIndividualMode: form.aiIndividualMode,
+      aiDisclaimerMessage: form.aiDisclaimerMessage,
+      claude: {
+        selectedModel: form.claudeModel,
+        enabled: form.claudeEnabled,
+      },
+      openai: {
+        selectedModel: form.openaiModel,
+        enabled: form.openaiEnabled,
+      },
+    };
+    // Only send API key if user typed a new one (not masked)
+    if (form.claudeApiKey && !form.claudeApiKey.startsWith('•')) {
+      payload.claude.apiKey = form.claudeApiKey;
+    }
+    if (form.openaiApiKey && !form.openaiApiKey.startsWith('•')) {
+      payload.openai.apiKey = form.openaiApiKey;
+    }
+    const { data } = await api.put('/admin/ai/settings', payload);
+    // Update local state from response
+    if (data.claude) {
+      claudeHasKey.value = !!data.claude.hasKey;
+    }
+    if (data.openai) {
+      openaiHasKey.value = !!data.openai.hasKey;
+    }
+    // Clear the typed keys since they're now saved
+    form.claudeApiKey = '';
+    form.openaiApiKey = '';
+    saveStatus.value = { ok: true, message: t('admin.settingsSaved') };
+    setTimeout(() => { saveStatus.value = null; }, 3000);
+  } catch (err: any) {
     console.error('Failed to save AI settings:', err);
+    saveStatus.value = { ok: false, message: err.response?.data?.message || t('common.error') };
+    setTimeout(() => { saveStatus.value = null; }, 5000);
   } finally {
     saving.value = false;
+  }
+}
+
+async function testClaudeConnection() {
+  testingClaude.value = true;
+  claudeTestStatus.value = null;
+  try {
+    const payload: any = {};
+    // Send key only if user typed a fresh one
+    if (form.claudeApiKey && !form.claudeApiKey.startsWith('•')) {
+      payload.apiKey = form.claudeApiKey;
+    }
+    const { data } = await api.post('/admin/ai/claude/test', payload);
+    claudeConnectionOk.value = true;
+    claudeTestStatus.value = { ok: true, message: data.message || t('admin.connected') };
+    setTimeout(() => { claudeTestStatus.value = null; }, 5000);
+  } catch (err: any) {
+    claudeConnectionOk.value = false;
+    const msg = err.response?.data?.message || t('admin.claudeTestFailed');
+    claudeTestStatus.value = { ok: false, message: msg };
+    setTimeout(() => { claudeTestStatus.value = null; }, 5000);
+  } finally {
+    testingClaude.value = false;
+  }
+}
+
+async function testOpenAIConnection() {
+  testingOpenai.value = true;
+  openaiTestStatus.value = null;
+  try {
+    const payload: any = {};
+    if (form.openaiApiKey && !form.openaiApiKey.startsWith('•')) {
+      payload.apiKey = form.openaiApiKey;
+    }
+    const { data } = await api.post('/admin/ai/openai/test', payload);
+    openaiConnectionOk.value = true;
+    openaiTestStatus.value = { ok: true, message: data.message || t('admin.connected') };
+    setTimeout(() => { openaiTestStatus.value = null; }, 5000);
+  } catch (err: any) {
+    openaiConnectionOk.value = false;
+    const msg = err.response?.data?.message || t('admin.openaiTestFailed');
+    openaiTestStatus.value = { ok: false, message: msg };
+    setTimeout(() => { openaiTestStatus.value = null; }, 5000);
+  } finally {
+    testingOpenai.value = false;
   }
 }
 
@@ -1250,5 +1705,139 @@ onUnmounted(() => {
 .me-btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+/* Provider selector */
+.ai-provider-selector {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ai-provider-btn {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--me-radius-xs);
+  background: var(--me-bg-elevated);
+  border: 2px solid var(--me-border);
+  color: var(--me-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.ai-provider-btn:hover {
+  border-color: var(--me-accent);
+}
+.ai-provider-btn--active {
+  border-color: var(--me-accent);
+  background: var(--me-accent-glow);
+  color: var(--me-text-primary);
+}
+.ai-provider-btn-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ai-provider-btn-title {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--me-font-mono);
+}
+.ai-provider-btn-desc {
+  font-size: 11px;
+  color: var(--me-text-muted);
+}
+/* Privacy warning */
+.ai-privacy-card {
+  padding: 20px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.05);
+  border-radius: var(--me-radius-xs);
+}
+.ai-privacy-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ai-privacy-content p {
+  font-size: 13px;
+  color: var(--me-text-secondary);
+  line-height: 1.6;
+}
+.ai-privacy-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-privacy-list li {
+  font-size: 12px;
+  color: var(--me-text-secondary);
+  display: flex;
+  align-items: center;
+}
+.ai-privacy-footer {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  margin-top: 8px;
+  font-style: italic;
+}
+.ai-individual-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 0;
+}
+.ai-disclaimer-editor {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Field hints */
+.ai-field-hint {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+.ai-field-hint--ok {
+  color: #34d399;
+}
+.ai-link {
+  color: var(--me-accent);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+.ai-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+/* Status messages */
+.ai-status-msg {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: var(--me-radius-xs);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.ai-status-msg--ok {
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
+}
+.ai-status-msg--error {
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
 }
 </style>

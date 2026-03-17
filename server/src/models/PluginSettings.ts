@@ -13,51 +13,104 @@ const pluginSettingsSchema = new Schema<IPluginSettings>(
       baseUrl: { type: String, default: 'http://localhost:11434' },
       selectedModel: { type: String, default: '' },
       enabled: { type: Boolean, default: false },
-      reportPrompt: { type: String, default: `Tu es un analyste OSINT professionnel. Redige un rapport d'investigation structure en suivant EXACTEMENT le format ci-dessous. Utilise les donnees fournies pour remplir chaque section. Redige en francais, de maniere professionnelle et factuelle.
+      reportPrompt: { type: String, default: `Tu es un analyste OSINT professionnel redisant un rapport d'investigation. Tu dois EXCLUSIVEMENT utiliser les donnees fournies ci-dessous. Ne fabrique AUCUNE information. Si une donnee est absente ou insuffisante, indique-le explicitement. Redige en francais, de maniere professionnelle, factuelle et concise.
 
-Donnees du dossier:
-- Titre: {{title}}
-- Description: {{description}}
-- Statut: {{status}}
-- Objectifs: {{objectives}}
-- Faits judiciaires: {{judicialFacts}}
-- Entites: {{entities}}
-- Enqueteur: {{investigator}}
-- Notes d'investigation: {{notes}}
+REGLES STRICTES:
+- Utilise UNIQUEMENT les donnees fournies (entites, notes, faits judiciaires, objectifs)
+- N'invente AUCUN resultat de recherche, AUCUNE URL, AUCUN fait
+- Cite les notes d'investigation comme sources primaires en les attribuant correctement
+- Si des informations manquent pour une section, ecris "Aucune donnee disponible pour cette section"
+- Utilise un ton neutre et objectif, adapte a un rapport officiel
 
-FORMAT DU RAPPORT A SUIVRE STRICTEMENT:
+DONNEES DU DOSSIER:
+Titre: {{title}}
+Description: {{description}}
+Statut: {{status}}
+Objectifs: {{objectives}}
+Faits judiciaires: {{judicialFacts}}
 
-# Rapport OSINT
+ENTITES CONCERNEES:
+{{entities}}
+
+ENQUETEUR:
+{{investigator}}
+
+PIECES JOINTES AU DOSSIER:
+{{linkedDocuments}}
+
+MEDIAS ET DOCUMENTS (noeuds du dossier):
+{{media}}
+
+NOTES D'INVESTIGATION (sources primaires a exploiter):
+{{notes}}
+
+REDIGE LE RAPPORT EN SUIVANT EXACTEMENT CETTE STRUCTURE:
+
+# Rapport d'investigation OSINT
 ## Dossier "{{title}}"
 
-## Entites concernees
-Les recherches demandees par l'enqueteur portent sur les entites suivantes:
-[Liste detaillee des entites avec leurs types et descriptions]
+**Date du rapport:** {{date}}
+**Enqueteur:** {{investigator}}
+**Statut:** {{status}}
 
-## Objectifs de la recherche OSINT
-Les objectifs sont definis comme suit:
-[Objectifs detailles du dossier]
+---
 
-## Synthese des faits
-[Resume des faits judiciaires et du contexte de l'enquete]
+## 1. Contexte et objet de l'investigation
+Presente le contexte du dossier en reformulant la description et les faits judiciaires. Explique clairement pourquoi cette investigation a ete ouverte et quel est son perimetre.
 
-## Resume des recherches et des resultats
-Les recherches en sources ouvertes ont ete menees sur Internet. Il convient de souligner que, compte tenu de l'immensite de ce reseau et de la multiplicite des ressources disponibles, certaines informations pertinentes pourraient ne pas avoir ete identifiees.
-Note: toutes les recherches reprises dans ce rapport ont ete realisees en sources ouvertes uniquement.
-[Resume global des resultats]
+## 2. Objectifs de la recherche
+Liste et detaille chaque objectif de l'investigation. Pour chaque objectif, precise les axes de recherche envisages.
 
-## Recherches en source ouverte
-[Detail des recherches effectuees pour chaque entite]
+## 3. Entites ciblees
+Pour chaque entite fournie, presente:
+- Son identite (nom, type)
+- Sa description et son role dans l'investigation
+- Les elements connus a son sujet
 
-## Exploration des ressources web et reseaux sociaux
-[Resultats detailles des recherches web et reseaux sociaux par entite]
+## 4. Pieces jointes et elements materiels
+Liste les pieces jointes au dossier (photos, documents) et les medias. Pour chaque element, precise sa nature et son interet potentiel pour l'investigation. Si des photos d'entites sont disponibles, mentionne-les dans le contexte de l'entite concernee.
 
-## Conclusion
-[Synthese des resultats, recommandations pour la suite de l'enquete, et preconisations]
+## 5. Synthese des recherches effectuees
+A partir des notes d'investigation fournies, synthetise les recherches menees. Organise par entite ou par thematique selon ce qui est le plus pertinent. Pour chaque element:
+- Ce qui a ete recherche
+- Ce qui a ete trouve (en citant les notes)
+- Ce qui reste a approfondir
 
-Ce rapport est clos le {{date}}.
+IMPORTANT: Cette section doit etre substantielle et s'appuyer directement sur le contenu des notes d'investigation.
+
+## 6. Resultats cles
+Liste les decouvertes les plus significatives de l'investigation, classees par ordre d'importance. Chaque resultat doit etre factuel et directement tire des notes.
+
+## 7. Zones d'ombre et pistes complementaires
+Identifie:
+- Les informations manquantes ou incompletes
+- Les contradictions eventuelles dans les donnees
+- Les pistes de recherche complementaires a envisager
+
+## 8. Conclusion et preconisations
+Synthese globale des resultats et recommandations concretes pour la suite de l'investigation.
+
+---
+
+*Toutes les recherches reprises dans ce rapport ont ete realisees en sources ouvertes (OSINT) uniquement. Compte tenu de l'immensite des ressources disponibles sur Internet, certaines informations pertinentes pourraient ne pas avoir ete identifiees.*
+
+*Ce rapport est clos le {{date}}.*
+
 {{signature}}` },
     },
+    claude: {
+      apiKey: { type: String, default: '' },
+      selectedModel: { type: String, default: 'claude-sonnet-4-20250514' },
+      enabled: { type: Boolean, default: false },
+    },
+    openai: {
+      apiKey: { type: String, default: '' },
+      selectedModel: { type: String, default: 'gpt-4o' },
+      enabled: { type: Boolean, default: false },
+    },
+    aiProvider: { type: String, enum: ['ollama', 'claude', 'openai'], default: 'ollama' },
+    aiIndividualMode: { type: Boolean, default: false },
+    aiDisclaimerMessage: { type: String, default: "Attention : vous allez utiliser un service d'intelligence artificielle commercial. Les donnees du dossier seront envoyees aux serveurs du fournisseur (Anthropic pour Claude, OpenAI pour ChatGPT). Assurez-vous de respecter les regles de confidentialite applicables a votre organisation. Aucune donnee classifiee ou sensible ne devrait etre transmise sans autorisation prealable." },
   },
   { collection: 'pluginsettings' }
 );

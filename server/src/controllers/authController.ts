@@ -135,7 +135,23 @@ export async function getPreferences(req: AuthRequest, res: Response): Promise<v
       res.status(404).json({ message: 'User not found' });
       return;
     }
-    res.json(user.preferences || {});
+    const prefs = { ...(user.preferences || {}) };
+    // Mask API keys
+    if (prefs.claudeApiKey) {
+      const key = prefs.claudeApiKey;
+      prefs.claudeApiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+      prefs.claudeHasKey = true;
+    } else {
+      prefs.claudeHasKey = false;
+    }
+    if (prefs.openaiApiKey) {
+      const key = prefs.openaiApiKey;
+      prefs.openaiApiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+      prefs.openaiHasKey = true;
+    } else {
+      prefs.openaiHasKey = false;
+    }
+    res.json(prefs);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -148,9 +164,32 @@ export async function updatePreferences(req: AuthRequest, res: Response): Promis
       res.status(404).json({ message: 'User not found' });
       return;
     }
-    user.preferences = { ...(user.preferences || {}), ...req.body };
+    const body = { ...req.body };
+    // Don't overwrite API keys with masked values
+    if (body.claudeApiKey && body.claudeApiKey.startsWith('•')) delete body.claudeApiKey;
+    if (body.openaiApiKey && body.openaiApiKey.startsWith('•')) delete body.openaiApiKey;
+    // Clean up helper fields
+    delete body.claudeHasKey;
+    delete body.openaiHasKey;
+    user.preferences = { ...(user.preferences || {}), ...body };
     await user.save();
-    res.json(user.preferences);
+    // Return masked version
+    const prefs = { ...(user.preferences || {}) };
+    if (prefs.claudeApiKey) {
+      const key = prefs.claudeApiKey;
+      prefs.claudeApiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+      prefs.claudeHasKey = true;
+    } else {
+      prefs.claudeHasKey = false;
+    }
+    if (prefs.openaiApiKey) {
+      const key = prefs.openaiApiKey;
+      prefs.openaiApiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+      prefs.openaiHasKey = true;
+    } else {
+      prefs.openaiHasKey = false;
+    }
+    res.json(prefs);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

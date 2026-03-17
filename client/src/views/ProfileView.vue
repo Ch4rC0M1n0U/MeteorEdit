@@ -32,6 +32,7 @@
       <ProfileShortcuts v-else-if="activeSection === 'shortcuts'" />
       <ProfileActivity v-else-if="activeSection === 'activity'" />
       <ProfileEncryption v-else-if="activeSection === 'encryption'" />
+      <ProfileAI v-else-if="activeSection === 'ai'" />
     </main>
   </div>
 </template>
@@ -50,10 +51,13 @@ import ProfileData from '../components/profile/ProfileData.vue';
 import ProfileShortcuts from '../components/profile/ProfileShortcuts.vue';
 import ProfileActivity from '../components/profile/ProfileActivity.vue';
 import ProfileEncryption from '../components/profile/ProfileEncryption.vue';
+import ProfileAI from '../components/profile/ProfileAI.vue';
+import api from '../services/api';
 
 const route = useRoute();
 const { t } = useI18n();
 const activeSection = ref('info');
+const aiIndividualMode = ref(false);
 
 interface NavItem {
   type?: 'group';
@@ -76,16 +80,21 @@ const navItems = computed<NavItem[]>(() => [
   { id: 'preferences', label: t('profile.preferences'), icon: 'mdi-cog-outline' },
   { id: 'notifications', label: t('profile.notifications'), icon: 'mdi-bell-cog-outline' },
   { id: 'shortcuts', label: t('profile.keyboardShortcuts'), icon: 'mdi-keyboard-outline' },
+  ...(aiIndividualMode.value ? [{ id: 'ai', label: t('profile.ai.navLabel'), icon: 'mdi-robot-outline' }] : []),
 
   { type: 'group', label: t('profile.data') },
   { id: 'activity', label: t('profile.activityLog'), icon: 'mdi-history' },
   { id: 'data', label: t('profile.myData'), icon: 'mdi-database-outline' },
 ]);
 
-onMounted(() => {
+onMounted(async () => {
   if (route.query.section && typeof route.query.section === 'string') {
     activeSection.value = route.query.section;
   }
+  try {
+    const { data } = await api.get('/ai/config');
+    aiIndividualMode.value = data.aiIndividualMode || false;
+  } catch { /* ignore */ }
 });
 </script>
 

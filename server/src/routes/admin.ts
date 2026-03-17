@@ -6,7 +6,7 @@ import { exportBackup, importBackup, getStorageInfo, scanOrphans, cleanOrphans }
 import { getStats } from '../controllers/statsController';
 import { getPluginSettings, updatePluginSettings } from '../controllers/pluginSettingsController';
 import { scanEncryptionStatus, migrateBranding, listUnencryptedFiles, listUnencryptedContent, replaceWithEncrypted, listUnencryptedDossierFiles, replaceDossierFile } from '../controllers/encryptionController';
-import { listOllamaModels, pullOllamaModel, cancelPullOllamaModel, deleteOllamaModel, updateOllamaSettings } from '../controllers/aiController';
+import { listOllamaModels, pullOllamaModel, cancelPullOllamaModel, deleteOllamaModel, updateOllamaSettings, testClaudeConnection, testOpenAIConnection } from '../controllers/aiController';
 import { upload, brandingUpload } from '../config/upload';
 
 const router = Router();
@@ -691,6 +691,33 @@ router.delete('/ai/models/:name', deleteOllamaModel);
  *                   type: string
  */
 router.put('/ai/settings', updateOllamaSettings);
+
+/**
+ * @swagger
+ * /api/admin/ai/claude/test:
+ *   post:
+ *     tags: [Admin]
+ *     summary: Tester la connexion Claude API
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [apiKey]
+ *             properties:
+ *               apiKey:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Test reussi
+ *       502:
+ *         description: Echec connexion
+ */
+router.post('/ai/claude/test', testClaudeConnection);
+router.post('/ai/openai/test', testOpenAIConnection);
 
 // Encryption scan & migration
 /**

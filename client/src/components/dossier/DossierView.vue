@@ -502,6 +502,7 @@
     </div>
   </v-dialog>
 
+    <AiDisclaimerModal ref="disclaimerModal" />
 </template>
 
 <script setup lang="ts">
@@ -539,6 +540,7 @@ const MediaEditor = defineAsyncComponent(() =>
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';
 import ElephantasticImportDialog from './ElephantasticImportDialog.vue';
+import AiDisclaimerModal from '../AiDisclaimerModal.vue';
 import type { MediaData } from '../../types';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
@@ -546,6 +548,10 @@ import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 const { t } = useI18n();
 const { getDecryptedUrl } = useDecryptedFile();
 const { uploadEncryptedFile } = useEncryptedUpload();
+
+const disclaimerModal = ref<InstanceType<typeof AiDisclaimerModal> | null>(null);
+const aiConfig = ref<{ isCommercial: boolean; disclaimerMessage: string } | null>(null);
+const disclaimerDismissed = ref(false);
 
 const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);
@@ -744,7 +750,20 @@ function onGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onGlobalKeydown));
+async function loadAiConfig() {
+  try {
+    const { data } = await api.get('/ai/config');
+    aiConfig.value = data;
+    // Load user preferences for dismissed state
+    const prefsRes = await api.get('/auth/preferences');
+    disclaimerDismissed.value = !!prefsRes.data.aiDisclaimerDismissed;
+  } catch { /* ignore */ }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', onGlobalKeydown);
+  loadAiConfig();
+});
 onUnmounted(() => document.removeEventListener('keydown', onGlobalKeydown));
 
 // AI Report
@@ -799,6 +818,17 @@ async function openAiReportTemplateSelect() {
 async function generateAiReport(templateId?: string | null) {
   aiTemplateSelectDialog.value = false;
   if (!dossierStore.currentDossier) return;
+
+  // Check disclaimer for commercial AI
+  if (aiConfig.value?.isCommercial && disclaimerModal.value) {
+    const proceed = await disclaimerModal.value.checkAndShow(
+      aiConfig.value.disclaimerMessage,
+      disclaimerDismissed.value
+    );
+    if (!proceed) return;
+    disclaimerDismissed.value = true;
+  }
+
   aiReportDialog.value = true;
   aiGenerating.value = true;
   aiReportContent.value = '';

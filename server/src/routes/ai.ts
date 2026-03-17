@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { getAiStatus, generateReport, cancelGenerateReport, enrichEntity, cancelEnrichEntity, summarizeContent } from '../controllers/aiController';
+import { getAiStatus, getAiClientConfig, generateReport, cancelGenerateReport, enrichEntity, cancelEnrichEntity, summarizeContent, testUserClaudeConnection, testUserOpenAIConnection } from '../controllers/aiController';
 
 const router = Router();
 router.use(authenticate);
@@ -30,6 +30,9 @@ router.use(authenticate);
  *                   type: string
  */
 router.get('/status', getAiStatus);
+router.get('/config', getAiClientConfig);
+router.post('/test/claude', testUserClaudeConnection);
+router.post('/test/openai', testUserOpenAIConnection);
 
 /**
  * @swagger

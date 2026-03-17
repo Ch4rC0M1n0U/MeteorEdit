@@ -11,7 +11,26 @@ async function getOrCreate() {
 
 export async function getPluginSettings(req: AuthRequest, res: Response) {
   const settings = await getOrCreate();
-  res.json(settings);
+  const obj: any = settings.toObject();
+  // Mask Claude API key (show only last 8 chars)
+  if (obj.claude?.apiKey) {
+    const key = obj.claude.apiKey;
+    obj.claude.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+    obj.claude.hasKey = true;
+  } else {
+    if (!obj.claude) obj.claude = {};
+    obj.claude.hasKey = false;
+  }
+  // Mask OpenAI API key
+  if (obj.openai?.apiKey) {
+    const key = obj.openai.apiKey;
+    obj.openai.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+    obj.openai.hasKey = true;
+  } else {
+    if (!obj.openai) obj.openai = {};
+    obj.openai.hasKey = false;
+  }
+  res.json(obj);
 }
 
 export async function updatePluginSettings(req: AuthRequest, res: Response) {

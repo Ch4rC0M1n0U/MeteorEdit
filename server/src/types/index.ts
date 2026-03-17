@@ -189,6 +189,19 @@ export interface IPluginSettings extends Document {
     enabled: boolean;
     reportPrompt: string;
   };
+  claude: {
+    apiKey: string;
+    selectedModel: string;
+    enabled: boolean;
+  };
+  openai: {
+    apiKey: string;
+    selectedModel: string;
+    enabled: boolean;
+  };
+  aiProvider: 'ollama' | 'claude' | 'openai';
+  aiIndividualMode: boolean;
+  aiDisclaimerMessage: string;
 }
 
 export interface INotification extends Document {
