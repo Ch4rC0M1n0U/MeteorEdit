@@ -33,6 +33,7 @@ import encryptionRoutes from './routes/encryption';
 import languagetoolRoutes from './routes/languagetool';
 import setupRoutes from './routes/setup';
 import SiteSettings from './models/SiteSettings';
+import User from './models/User';
 import { startYjsServer } from './yjs-server';
 import { checkMaintenance, loadMaintenanceState } from './middleware/maintenance';
 import { startTrashPurgeJob } from './jobs/trashPurge';
@@ -142,6 +143,24 @@ async function detectOsintTools() {
   }
 }
 
+async function seedDefaultAdmin() {
+  const adminCount = await User.countDocuments({ role: 'admin', isActive: true });
+  if (adminCount > 0) return;
+
+  const existingUser = await User.findOne({ email: 'admin@meteoredit.local' });
+  if (existingUser) return;
+
+  await User.create({
+    email: 'admin@meteoredit.local',
+    password: 'Admin123!',
+    firstName: 'Admin',
+    lastName: 'MeteorEdit',
+    role: 'admin',
+    isActive: true,
+  });
+  console.log('[SEED] Default admin created: admin@meteoredit.local / Admin123!');
+}
+
 async function start() {
   await connectDB();
   const existingSettings = await SiteSettings.findOne();
@@ -149,6 +168,7 @@ async function start() {
     await SiteSettings.create({});
     console.log('SiteSettings initialized');
   }
+  await seedDefaultAdmin();
   await loadMaintenanceState();
   await detectOsintTools();
   httpServer.listen(PORT, () => {
