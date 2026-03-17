@@ -378,7 +378,7 @@ export async function transferDocumentToNode(req: AuthRequest, res: Response): P
           type: 'upload',
           fileUrl: filePath,
           fileName: displayTitle,
-          mimeType: doc.originalContentType || `audio/${ext}`,
+          mimeType: doc.originalContentType || (ext === 'mp3' ? 'audio/mpeg' : ext === 'm4a' ? 'audio/mp4' : `audio/${ext}`),
           mediaType: 'audio',
         },
         metadata: { title: displayTitle },

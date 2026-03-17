@@ -153,8 +153,8 @@
                 <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
                 <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
               </div>
-              <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
-                <v-icon size="14">mdi-eye-outline</v-icon>
+              <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="togglePreview(doc)" :title="$t('dossier.preview')">
+                <v-icon size="14">{{ getPreviewIcon(doc) }}</v-icon>
               </button>
               <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
                 <v-icon size="14">mdi-download</v-icon>
@@ -168,20 +168,12 @@
               </button>
             </div>
             <!-- Inline audio preview -->
-            <div v-if="isAudioFile(doc)" class="di-inline-preview">
-              <audio v-if="inlinePreviewUrls[doc._id]" controls :src="inlinePreviewUrls[doc._id]" class="di-inline-audio" />
-              <button v-else class="di-preview-load-btn" @click="loadInlinePreview(doc)">
-                <v-icon size="14">mdi-play-circle-outline</v-icon>
-                {{ $t('dossier.loadPreview') }}
-              </button>
+            <div v-if="inlinePreviewUrls[doc._id] && isAudioFile(doc)" class="di-inline-preview">
+              <audio controls :src="inlinePreviewUrls[doc._id]" class="di-inline-audio" />
             </div>
             <!-- Inline video preview -->
-            <div v-if="isVideoFile(doc)" class="di-inline-preview">
-              <video v-if="inlinePreviewUrls[doc._id]" controls :src="inlinePreviewUrls[doc._id]" class="di-inline-video" />
-              <button v-else class="di-preview-load-btn" @click="loadInlinePreview(doc)">
-                <v-icon size="14">mdi-play-circle-outline</v-icon>
-                {{ $t('dossier.loadPreview') }}
-              </button>
+            <div v-if="inlinePreviewUrls[doc._id] && isVideoFile(doc)" class="di-inline-preview">
+              <video controls :src="inlinePreviewUrls[doc._id]" class="di-inline-video" />
             </div>
           </div>
         </div>
@@ -890,7 +882,7 @@ const docViewerType = ref<'image' | 'pdf' | 'video' | 'audio'>('image');
 const PREVIEW_IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'];
 const PREVIEW_PDF_EXTS = ['pdf'];
 const PREVIEW_VIDEO_EXTS = ['mp4', 'webm', 'ogg'];
-const PREVIEW_AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'aac'];
+const PREVIEW_AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'aac', 'm4a'];
 
 function getFileExt(fileName: string): string {
   // Strip .enc suffix to get the real file extension
@@ -919,8 +911,29 @@ function getContentType(fileName: string, doc?: { originalContentType?: string }
   if (ext === 'mp3') return 'audio/mpeg';
   if (ext === 'wav') return 'audio/wav';
   if (ext === 'aac') return 'audio/aac';
+  if (ext === 'm4a') return 'audio/mp4';
   if (ext === 'ogg') return 'audio/ogg';
   return 'application/octet-stream';
+}
+
+// --- Preview icon and toggle (unified for all file types) ---
+function getPreviewIcon(doc: { fileName: string; originalContentType?: string }): string {
+  if (isAudioFile(doc)) return 'mdi-volume-high';
+  return 'mdi-eye-outline';
+}
+
+function togglePreview(doc: { _id: string; fileName: string; filePath: string; originalContentType?: string }) {
+  if (isAudioFile(doc) || isVideoFile(doc)) {
+    // Audio/video: toggle inline player
+    if (inlinePreviewUrls.value[doc._id]) {
+      delete inlinePreviewUrls.value[doc._id];
+    } else {
+      loadInlinePreview(doc);
+    }
+  } else {
+    // Images, PDF: open viewer dialog
+    openDocViewer(doc);
+  }
 }
 
 // --- Transfer document to node ---
@@ -2222,24 +2235,6 @@ async function removeCollaborator(userId: string) {
   border-radius: 4px;
   background: #000;
 }
-.di-preview-load-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--me-text-muted);
-  background: none;
-  border: 1px dashed var(--me-border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-}
-.di-preview-load-btn:hover {
-  color: var(--me-accent);
-  border-color: var(--me-accent);
-}
-
 /* Edit mode switch */
 .di-switch-field {
   flex: 1;
