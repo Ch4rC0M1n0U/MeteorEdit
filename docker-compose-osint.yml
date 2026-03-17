@@ -14,6 +14,7 @@ services:
       - internal
 
   server:
+    image: meteoredit-server:latest
     build:
       context: .
       dockerfile: Dockerfile.server
@@ -47,6 +48,7 @@ services:
       - internal
 
   client:
+    image: meteoredit-client:latest
     build:
       context: .
       dockerfile: Dockerfile.client
