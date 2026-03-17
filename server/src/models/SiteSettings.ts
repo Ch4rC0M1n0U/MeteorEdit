@@ -42,6 +42,11 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     announcementEnabled: { type: Boolean, default: false },
     announcementMessage: { type: String, default: '' },
     announcementVariant: { type: String, default: 'info', enum: ['info', 'warning', 'error'] },
+    // LanguageTool
+    languageTool: {
+      enabled: { type: Boolean, default: true },
+      defaultLanguage: { type: String, default: 'auto' },
+    },
     // OSINT
     osint: {
       maxVideoSize: { type: Number, default: 200 * 1024 * 1024 },

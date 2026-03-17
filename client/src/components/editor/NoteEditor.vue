@@ -151,6 +151,15 @@
           <v-icon size="18">mdi-content-save-check-outline</v-icon>
         </button>
       </div>
+
+      <template v-if="ltAvailable">
+        <div class="ne-separator" />
+        <div class="ne-toolbar-group">
+          <button class="ne-btn" :class="{ active: spellCheckEnabled }" @click="toggleSpellCheck" :title="$t('editor.spellCheck')">
+            <v-icon size="18">mdi-spellcheck</v-icon>
+          </button>
+        </div>
+      </template>
     </div>
 
     <!-- Presence indicators -->
@@ -208,6 +217,7 @@ import { useDossierStore } from '../../stores/dossier';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import CommentSidebar from './CommentSidebar.vue';
 import { createMentionExtension } from './mentionExtension';
+import { createLanguageToolExtension, languageToolPluginKey } from './languageToolExtension';
 
 const { t } = useI18n();
 
@@ -222,7 +232,54 @@ const { prompt: promptDialog } = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
 const showComments = ref(false);
 const commentCount = ref(0);
+const spellCheckEnabled = ref(false);
+const ltAvailable = ref(false);
+const ltLanguage = ref('auto');
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Load spell check prefs from user preferences
+function loadSpellCheckPrefs() {
+  try {
+    const saved = localStorage.getItem('userPreferences');
+    if (saved) {
+      const p = JSON.parse(saved);
+      if (p.spellCheckEnabled !== undefined) spellCheckEnabled.value = !!p.spellCheckEnabled;
+      if (p.spellCheckLanguage) ltLanguage.value = p.spellCheckLanguage;
+    }
+  } catch {}
+}
+loadSpellCheckPrefs();
+
+// Check LanguageTool availability
+api.get('/languagetool/status').then(({ data }) => {
+  ltAvailable.value = !!data.available;
+  if (spellCheckEnabled.value && !data.available) {
+    spellCheckEnabled.value = false;
+  }
+}).catch(() => {});
+
+function getLtLanguage(): string {
+  if (ltLanguage.value && ltLanguage.value !== 'auto') return ltLanguage.value;
+  const { locale } = useI18n();
+  const map: Record<string, string> = { fr: 'fr', en: 'en-US', nl: 'nl' };
+  return map[locale.value] || 'auto';
+}
+
+function toggleSpellCheck() {
+  spellCheckEnabled.value = !spellCheckEnabled.value;
+  // Persist to user preferences in localStorage
+  try {
+    const saved = localStorage.getItem('userPreferences');
+    const p = saved ? JSON.parse(saved) : {};
+    p.spellCheckEnabled = spellCheckEnabled.value;
+    localStorage.setItem('userPreferences', JSON.stringify(p));
+  } catch {}
+  // Also persist to server
+  api.put('/auth/preferences', { spellCheckEnabled: spellCheckEnabled.value }).catch(() => {});
+  editor.value?.view.dispatch(
+    editor.value.view.state.tr.setMeta(languageToolPluginKey, { enabled: spellCheckEnabled.value })
+  );
+}
 
 function handleMention(userId: string, label: string) {
   api.post(`/nodes/${props.nodeId}/mention`, { mentionedUserId: userId }).catch(() => {});
@@ -367,6 +424,7 @@ const editor = useEditor({
     TaskList,
     TaskItem.configure({ nested: true }),
     createMentionExtension(handleMention),
+    createLanguageToolExtension({ language: getLtLanguage(), enabled: spellCheckEnabled.value }),
   ],
   onUpdate: ({ editor: ed }) => {
     const json = ed.getJSON();
@@ -799,6 +857,95 @@ onBeforeUnmount(() => {
 }
 .note-editor .editor-content .mention:hover {
   background: rgba(59, 130, 246, 0.2);
+}
+
+/* LanguageTool decorations */
+.note-editor .editor-content .lt-spelling {
+  text-decoration: wavy underline #ef4444;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.note-editor .editor-content .lt-grammar {
+  text-decoration: wavy underline #2563eb;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.note-editor .editor-content .lt-style {
+  text-decoration: wavy underline #16a34a;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* LanguageTool tooltip */
+.lt-tooltip {
+  background: var(--me-bg-surface, #1e1e2e);
+  border: 1px solid var(--me-border, #333);
+  border-radius: 8px;
+  padding: 12px;
+  max-width: 340px;
+  min-width: 200px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-family: var(--me-font-body, sans-serif);
+}
+.lt-tooltip-category {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  font-family: var(--me-font-mono, monospace);
+}
+.lt-cat-spelling { color: #ef4444; }
+.lt-cat-grammar { color: #2563eb; }
+.lt-cat-style { color: #16a34a; }
+.lt-tooltip-message {
+  margin-bottom: 10px;
+  color: var(--me-text-primary, #e0e0e0);
+  line-height: 1.4;
+}
+.lt-tooltip-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.lt-tooltip-suggestion {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--me-accent, #38bdf8);
+  border: 1px solid var(--me-accent, #38bdf8);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.lt-tooltip-suggestion:hover {
+  background: var(--me-accent, #38bdf8);
+  color: #fff;
+}
+.lt-tooltip-no-suggestion {
+  font-size: 12px;
+  color: var(--me-text-muted, #888);
+  font-style: italic;
+  margin-bottom: 8px;
+}
+.lt-tooltip-ignore {
+  font-size: 11px;
+  color: var(--me-text-muted, #888);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-family: inherit;
+}
+.lt-tooltip-ignore:hover {
+  color: var(--me-text-primary, #e0e0e0);
 }
 
 /* Collaborative cursors (y-tiptap) */

@@ -63,6 +63,24 @@
       </div>
     </div>
 
+    <!-- Correcteur orthographique -->
+    <div class="branding-card glass-card fade-in fade-in-delay-3 mt-4">
+      <h3 class="section-title mono">
+        <v-icon size="16" class="mr-1">mdi-spellcheck</v-icon>
+        {{ $t('preferences.spellChecker') }}
+      </h3>
+
+      <div class="settings-group mt-3 switch-row">
+        <label class="settings-label mono mb-0">{{ $t('preferences.spellCheckEnabled') }}</label>
+        <v-switch v-model="prefs.spellCheckEnabled" color="primary" density="compact" hide-details />
+      </div>
+
+      <div class="settings-group mt-4">
+        <label class="settings-label mono">{{ $t('preferences.spellCheckLanguage') }}</label>
+        <v-select v-model="prefs.spellCheckLanguage" :items="spellCheckLangOptions" density="compact" hide-details />
+      </div>
+    </div>
+
     <!-- Regional -->
     <div class="branding-card glass-card fade-in fade-in-delay-3 mt-4">
       <h3 class="section-title mono">
@@ -155,6 +173,18 @@ const autoSaveOptions = computed(() => [
   { title: t('preferences.disabled'), value: 0 },
 ]);
 
+const spellCheckLangOptions = computed(() => [
+  { title: t('preferences.spellCheckAuto'), value: 'auto' },
+  { title: 'Français', value: 'fr' },
+  { title: 'English (US)', value: 'en-US' },
+  { title: 'English (GB)', value: 'en-GB' },
+  { title: 'Nederlands', value: 'nl' },
+  { title: 'Deutsch', value: 'de' },
+  { title: 'Español', value: 'es' },
+  { title: 'Italiano', value: 'it' },
+  { title: 'Português', value: 'pt' },
+]);
+
 const LANG_FLAGS: Record<string, string> = {
   fr: '<svg viewBox="0 0 30 20" width="20" height="14" style="border-radius:2px;vertical-align:middle"><rect fill="#002654" width="10" height="20"/><rect fill="#fff" x="10" width="10" height="20"/><rect fill="#CE1126" x="20" width="10" height="20"/></svg>',
   en: '<svg viewBox="0 0 30 20" width="20" height="14" style="border-radius:2px;vertical-align:middle"><rect fill="#012169" width="30" height="20"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#fff" stroke-width="3"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#C8102E" stroke-width="1.5"/><path d="M15,0 V20 M0,10 H30" stroke="#fff" stroke-width="5"/><path d="M15,0 V20 M0,10 H30" stroke="#C8102E" stroke-width="3"/></svg>',
@@ -181,6 +211,8 @@ const prefs = reactive({
   confirmBeforeDelete: true,
   displayDensity: 'comfortable',
   language: 'fr',
+  spellCheckEnabled: false,
+  spellCheckLanguage: 'auto',
 });
 
 // Load from localStorage immediately

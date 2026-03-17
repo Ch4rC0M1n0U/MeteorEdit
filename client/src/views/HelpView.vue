@@ -1202,6 +1202,106 @@ const categories: Category[] = [
       },
     ],
   },
+  {
+    id: 'installation',
+    label: 'Installation & Deploiement',
+    icon: 'mdi-server-outline',
+    articles: [
+      {
+        id: 'inst-setup',
+        title: 'Assistant d\'installation',
+        keywords: ['setup', 'installation', 'wizard', 'configuration', 'premier', 'demarrage', 'admin'],
+        content: `<h2>Assistant d'installation</h2>
+<p>Lors du premier demarrage, MeteorEdit redirige automatiquement vers l'assistant d'installation (<code>/setup</code>). Cet assistant guide l'administrateur a travers 4 etapes :</p>
+<h3>Etape 1 : Diagnostics</h3>
+<ul>
+<li>Verification de la connexion MongoDB</li>
+<li>Detection de LanguageTool (correcteur orthographique)</li>
+<li>Detection d'Ollama (IA locale)</li>
+<li>Verification du repertoire d'uploads (permissions d'ecriture)</li>
+<li>Validation des variables d'environnement (secrets JWT, cles de chiffrement)</li>
+</ul>
+<h3>Etape 2 : Compte administrateur</h3>
+<p>Creation du premier compte administrateur avec acces complet. Ce compte sera actif immediatement (pas d'activation manuelle).</p>
+<h3>Etape 3 : Parametres de l'application</h3>
+<ul>
+<li>Nom de l'application</li>
+<li>Couleur d'accent</li>
+<li>Message de bienvenue</li>
+<li>Langue par defaut</li>
+<li>Activation des inscriptions</li>
+</ul>
+<h3>Etape 4 : Confirmation et lancement</h3>
+<p>Resume de toutes les informations avant validation.</p>
+<h3>Mode developpement</h3>
+<p>Accessible via <code>/setup?dev=true</code> a tout moment. Ce mode permet de :</p>
+<ul>
+<li>Executer les diagnostics sans modifier la base de donnees</li>
+<li>Simuler la creation du compte admin</li>
+<li>Verifier l'etat des services</li>
+</ul>
+<p><em>Aucune donnee n'est ecrite en mode dev.</em></p>`,
+      },
+      {
+        id: 'inst-docker',
+        title: 'Deploiement Docker',
+        keywords: ['docker', 'compose', 'coolify', 'deploiement', 'production', 'container'],
+        content: `<h2>Deploiement Docker</h2>
+<p>MeteorEdit inclut un <code>docker-compose.yml</code> pret pour la production.</p>
+<h3>Services principaux</h3>
+<ul>
+<li><strong>mongodb</strong> — Base de donnees MongoDB 7 avec healthcheck</li>
+<li><strong>server</strong> — API Express (ports 3001 + 3002 pour Yjs)</li>
+<li><strong>client</strong> — Frontend Vue 3 via Nginx avec proxy inverse</li>
+</ul>
+<h3>Services optionnels (profiles)</h3>
+<ul>
+<li><strong>ollama</strong> (profil <code>ai</code>) — IA locale pour enrichissement et resume</li>
+<li><strong>languagetool</strong> (profil <code>tools</code>) — Correcteur orthographique</li>
+</ul>
+<h3>Demarrage rapide</h3>
+<pre><code># Services de base
+docker compose up -d
+
+# Avec IA
+docker compose --profile ai up -d
+
+# Avec correcteur orthographique
+docker compose --profile tools up -d
+
+# Tout
+docker compose --profile ai --profile tools up -d</code></pre>
+<h3>Variables d'environnement</h3>
+<p>Copiez <code>server/.env.example</code> vers <code>server/.env</code> et modifiez les secrets. Les variables critiques sont :</p>
+<ul>
+<li><code>JWT_SECRET</code> et <code>JWT_REFRESH_SECRET</code> — Generez avec <code>openssl rand -hex 64</code></li>
+<li><code>COOKIE_ENCRYPTION_KEY</code> — Cle de chiffrement des cookies</li>
+<li><code>MONGODB_URI</code> — URI de connexion MongoDB</li>
+</ul>`,
+      },
+      {
+        id: 'inst-env',
+        title: 'Configuration .env',
+        keywords: ['env', 'environnement', 'variable', 'secret', 'jwt', 'mongodb', 'configuration'],
+        content: `<h2>Configuration des variables d'environnement</h2>
+<p>Le fichier <code>server/.env.example</code> contient toutes les variables disponibles :</p>
+<table>
+<tr><td><code>PORT</code></td><td>Port du serveur API (defaut: 3001)</td></tr>
+<tr><td><code>MONGODB_URI</code></td><td>URI MongoDB</td></tr>
+<tr><td><code>JWT_SECRET</code></td><td>Secret pour les tokens d'acces</td></tr>
+<tr><td><code>JWT_REFRESH_SECRET</code></td><td>Secret pour les refresh tokens</td></tr>
+<tr><td><code>JWT_EXPIRATION</code></td><td>Duree des tokens (defaut: 15m)</td></tr>
+<tr><td><code>JWT_REFRESH_EXPIRATION</code></td><td>Duree des refresh tokens (defaut: 7d)</td></tr>
+<tr><td><code>UPLOAD_DIR</code></td><td>Repertoire des uploads (defaut: ./uploads)</td></tr>
+<tr><td><code>YJS_PORT</code></td><td>Port WebSocket Yjs (defaut: 3002)</td></tr>
+<tr><td><code>COOKIE_ENCRYPTION_KEY</code></td><td>Cle de chiffrement des cookies</td></tr>
+<tr><td><code>LANGUAGETOOL_URL</code></td><td>URL du service LanguageTool (optionnel)</td></tr>
+<tr><td><code>OLLAMA_URL</code></td><td>URL du service Ollama (optionnel)</td></tr>
+</table>
+<p><strong>Important :</strong> Ne jamais utiliser les valeurs par defaut en production. Generez des secrets uniques.</p>`,
+      },
+    ],
+  },
 ];
 
 // Search

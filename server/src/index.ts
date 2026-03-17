@@ -30,6 +30,8 @@ import clipperRoutes from './routes/clipper';
 import mediaRoutes from './routes/media';
 import socialRoutes from './routes/social';
 import encryptionRoutes from './routes/encryption';
+import languagetoolRoutes from './routes/languagetool';
+import setupRoutes from './routes/setup';
 import SiteSettings from './models/SiteSettings';
 import { startYjsServer } from './yjs-server';
 import { checkMaintenance, loadMaintenanceState } from './middleware/maintenance';
@@ -77,6 +79,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.use('/api/setup', setupRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api', checkMaintenance);
 app.use('/api/auth', authRoutes);
@@ -95,6 +98,7 @@ app.use('/api/clip', clipperRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/encryption', encryptionRoutes);
+app.use('/api/languagetool', languagetoolRoutes);
 
 setupSocket(httpServer);
 

@@ -29,11 +29,13 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
 import { Placeholder } from '@tiptap/extension-placeholder';
+import { createLanguageToolExtension } from './languageToolExtension';
 
 const props = defineProps<{
   modelValue: string;
   label?: string;
   placeholder?: string;
+  spellCheck?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -52,6 +54,7 @@ const editor = useEditor({
     }),
     Underline,
     Placeholder.configure({ placeholder: props.placeholder || '' }),
+    ...(props.spellCheck ? [createLanguageToolExtension({ language: 'auto', enabled: true })] : []),
   ],
   onUpdate({ editor: e }) {
     emit('update:modelValue', e.getHTML());

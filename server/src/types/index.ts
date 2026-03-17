@@ -158,6 +158,11 @@ export interface ISiteSettings extends Document {
   announcementEnabled: boolean;
   announcementMessage: string;
   announcementVariant: 'info' | 'warning' | 'error';
+  // LanguageTool
+  languageTool?: {
+    enabled: boolean;
+    defaultLanguage: string;
+  };
   // OSINT
   osint?: {
     maxVideoSize: number;
