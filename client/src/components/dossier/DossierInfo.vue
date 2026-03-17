@@ -146,21 +146,43 @@
           <input ref="docInput" type="file" hidden multiple @change="handleDocUpload" />
         </div>
         <div v-if="form.linkedDocuments.length" class="di-doc-list">
-          <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
-            <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
-            <div class="di-doc-info">
-              <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
-              <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
+          <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-item">
+            <div class="di-doc-row">
+              <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
+              <div class="di-doc-info">
+                <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
+                <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
+              </div>
+              <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
+                <v-icon size="14">mdi-eye-outline</v-icon>
+              </button>
+              <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
+                <v-icon size="14">mdi-download</v-icon>
+              </button>
+              <button class="di-el-btn" @click="transferDoc(doc)" :title="getTransferTooltip(doc)" :disabled="transferringDocId === doc._id">
+                <v-icon v-if="transferringDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
+                <v-icon v-else size="14">mdi-file-move-outline</v-icon>
+              </button>
+              <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
+                <v-icon size="14">mdi-trash-can-outline</v-icon>
+              </button>
             </div>
-            <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
-              <v-icon size="14">mdi-eye-outline</v-icon>
-            </button>
-            <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
-              <v-icon size="14">mdi-download</v-icon>
-            </button>
-            <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
-              <v-icon size="14">mdi-trash-can-outline</v-icon>
-            </button>
+            <!-- Inline audio preview -->
+            <div v-if="isAudioFile(doc)" class="di-inline-preview">
+              <audio v-if="inlinePreviewUrls[doc._id]" controls :src="inlinePreviewUrls[doc._id]" class="di-inline-audio" />
+              <button v-else class="di-preview-load-btn" @click="loadInlinePreview(doc)">
+                <v-icon size="14">mdi-play-circle-outline</v-icon>
+                {{ $t('dossier.loadPreview') }}
+              </button>
+            </div>
+            <!-- Inline video preview -->
+            <div v-if="isVideoFile(doc)" class="di-inline-preview">
+              <video v-if="inlinePreviewUrls[doc._id]" controls :src="inlinePreviewUrls[doc._id]" class="di-inline-video" />
+              <button v-else class="di-preview-load-btn" @click="loadInlinePreview(doc)">
+                <v-icon size="14">mdi-play-circle-outline</v-icon>
+                {{ $t('dossier.loadPreview') }}
+              </button>
+            </div>
           </div>
         </div>
         <div v-else class="di-empty mono">{{ $t('dossier.noLinkedDocuments') }}</div>
@@ -567,6 +589,7 @@
         </div>
       </div>
     </v-dialog>
+    <AiDisclaimerModal ref="disclaimerModal" />
   </div>
 </template>
 
@@ -578,6 +601,7 @@ import { useAuthStore } from '../../stores/auth';
 import { useEncryptionStore } from '../../stores/encryption';
 import api, { SERVER_URL } from '../../services/api';
 import { getSocket } from '../../services/socket';
+import AiDisclaimerModal from '../AiDisclaimerModal.vue';
 import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
@@ -591,6 +615,10 @@ const authStore = useAuthStore();
 const encryptionStore = useEncryptionStore();
 const { uploadEncryptedFile } = useEncryptedUpload();
 const { getDecryptedUrl } = useDecryptedFile();
+
+const disclaimerModal = ref<InstanceType<typeof AiDisclaimerModal> | null>(null);
+const aiConfig = ref<{ isCommercial: boolean; disclaimerMessage: string } | null>(null);
+const disclaimerDismissed = ref(false);
 
 const editing = ref(false);
 const entityDialog = ref(false);
@@ -670,7 +698,7 @@ const form = reactive({
   magistrate: '',
   isFirstRequest: true,
   dossierLanguage: 'fr' as 'fr' | 'nl',
-  linkedDocuments: [] as { _id: string; fileName: string; filePath: string; fileSize: number; uploadedAt: string }[],
+  linkedDocuments: [] as { _id: string; fileName: string; filePath: string; fileSize: number; originalContentType?: string; uploadedAt: string }[],
 });
 
 const newEntity = reactive({ name: '', type: '', description: '', photos: [] as string[] });
@@ -895,6 +923,65 @@ function getContentType(fileName: string, doc?: { originalContentType?: string }
   return 'application/octet-stream';
 }
 
+// --- Transfer document to node ---
+const transferringDocId = ref<string | null>(null);
+
+function getTransferTarget(doc: { fileName: string; originalContentType?: string }): string {
+  const ext = getFileExt(doc.fileName);
+  const ct = doc.originalContentType || '';
+  if (ct.startsWith('image/') || PREVIEW_IMAGE_EXTS.includes(ext)) return 'note';
+  if (ct.startsWith('audio/') || PREVIEW_AUDIO_EXTS.includes(ext)) return 'media';
+  if (ct.startsWith('video/') || PREVIEW_VIDEO_EXTS.includes(ext)) return 'media';
+  return 'document';
+}
+
+function getTransferTooltip(doc: { fileName: string; originalContentType?: string }): string {
+  const target = getTransferTarget(doc);
+  const key = 'dossier.transferTo' + target.charAt(0).toUpperCase() + target.slice(1);
+  return t(key);
+}
+
+async function transferDoc(doc: { _id: string; fileName: string }) {
+  if (!dossierStore.currentDossier || transferringDocId.value) return;
+  transferringDocId.value = doc._id;
+  try {
+    const dossierId = dossierStore.currentDossier._id;
+    const { data } = await api.post(`/dossiers/${dossierId}/documents/${doc._id}/transfer`);
+    await dossierStore.createNode(data.nodeData);
+    await dossierStore.openDossier(dossierId);
+  } catch (err) {
+    console.error('Failed to transfer document:', err);
+  } finally {
+    transferringDocId.value = null;
+  }
+}
+
+// --- Inline audio/video previews ---
+const inlinePreviewUrls = ref<Record<string, string>>({});
+
+function isAudioFile(doc: { fileName: string; originalContentType?: string }): boolean {
+  const ct = doc.originalContentType || '';
+  if (ct.startsWith('audio/')) return true;
+  return PREVIEW_AUDIO_EXTS.includes(getFileExt(doc.fileName));
+}
+
+function isVideoFile(doc: { fileName: string; originalContentType?: string }): boolean {
+  const ct = doc.originalContentType || '';
+  if (ct.startsWith('video/')) return true;
+  return PREVIEW_VIDEO_EXTS.includes(getFileExt(doc.fileName));
+}
+
+async function loadInlinePreview(doc: { _id: string; fileName: string; filePath: string; originalContentType?: string }) {
+  if (!dossierStore.currentDossier) return;
+  try {
+    const ct = getContentType(doc.fileName, doc);
+    const url = await getDecryptedUrl(dossierStore.currentDossier._id, doc.filePath, ct);
+    inlinePreviewUrls.value[doc._id] = url;
+  } catch (err) {
+    console.error('Failed to load inline preview:', err);
+  }
+}
+
 const viewerZoom = ref(1);
 const viewerBodyRef = ref<HTMLElement | null>(null);
 const viewerImgNatW = ref(0);
@@ -1014,6 +1101,16 @@ watch(() => dossierStore.currentDossier?.tags, (tags) => {
   localTags.value = tags || [];
 }, { immediate: true });
 
+async function loadAiConfig() {
+  try {
+    const { data } = await api.get('/ai/config');
+    aiConfig.value = data;
+    // Load user preferences for dismissed state
+    const prefsRes = await api.get('/auth/preferences');
+    disclaimerDismissed.value = !!prefsRes.data.aiDisclaimerDismissed;
+  } catch { /* ignore */ }
+}
+
 onMounted(async () => {
   try {
     const { data } = await api.get('/dossiers/tags');
@@ -1021,6 +1118,7 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load tags:', e);
   }
+  loadAiConfig();
 });
 
 async function saveTags(tags: string[]) {
@@ -1237,6 +1335,17 @@ async function enrichEntityAI(index: number) {
   if (!dossierStore.currentDossier || enrichStreaming.value) return;
   const entity = form.entities[index];
   if (!entity) return;
+
+  // Check disclaimer for commercial AI
+  if (aiConfig.value?.isCommercial && disclaimerModal.value) {
+    const proceed = await disclaimerModal.value.checkAndShow(
+      aiConfig.value.disclaimerMessage,
+      disclaimerDismissed.value
+    );
+    if (!proceed) return;
+    disclaimerDismissed.value = true;
+  }
+
 
   enrichingIndex.value = index;
   enrichDialog.value = true;
@@ -2093,6 +2202,42 @@ async function removeCollaborator(userId: string) {
   font-size: 12px;
   color: var(--me-text-muted);
   padding: 8px 0;
+}
+.di-doc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.di-inline-preview {
+  padding-left: 28px;
+}
+.di-inline-audio {
+  width: 100%;
+  height: 32px;
+  border-radius: 4px;
+}
+.di-inline-video {
+  width: 100%;
+  max-height: 200px;
+  border-radius: 4px;
+  background: #000;
+}
+.di-preview-load-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--me-text-muted);
+  background: none;
+  border: 1px dashed var(--me-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.di-preview-load-btn:hover {
+  color: var(--me-accent);
+  border-color: var(--me-accent);
 }
 
 /* Edit mode switch */

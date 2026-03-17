@@ -189,7 +189,7 @@ const categories: Category[] = [
       {
         id: 'dos-info',
         title: 'Informations du dossier',
-        keywords: ['information', 'metadata', 'objectifs', 'entités', 'tags', 'enquêteur', 'judiciaire'],
+        keywords: ['information', 'metadata', 'objectifs', 'entités', 'tags', 'enquêteur', 'judiciaire', 'pièce jointe', 'transfert', 'aperçu', 'preview', 'audio', 'vidéo'],
         content: `<h2>Informations du dossier</h2>
 <p>Le panneau d'informations (cliquez sur le titre du dossier ou l'icône info) contient :</p>
 <h3>Metadata</h3>
@@ -202,7 +202,15 @@ const categories: Category[] = [
 <h3>Enquêteur</h3>
 <p>Renseignez les informations de l'enquêteur principal : nom, service, unité, téléphone, email.</p>
 <h3>Entités</h3>
-<p>Ajoutez des entités liées à l'enquête (personnes, téléphones, emails, réseaux sociaux, adresses IP, véhicules, IBAN, etc.). Chaque entité peut être enrichie par l'IA.</p>`,
+<p>Ajoutez des entités liées à l'enquête (personnes, téléphones, emails, réseaux sociaux, adresses IP, véhicules, IBAN, etc.). Chaque entité peut être enrichie par l'IA.</p>
+<h3>Pièces jointes</h3>
+<p>La section <strong>Documents liés</strong> permet d'attacher des fichiers au dossier. Trois fonctionnalités sont disponibles :</p>
+<ul>
+<li><strong>Aperçu inline</strong> — Les fichiers audio et vidéo disposent d'un bouton pour charger un mini-lecteur directement dans la liste, sans ouvrir de fenêtre séparée</li>
+<li><strong>Transfert vers un noeud</strong> — Le bouton <strong>Transférer</strong> (icône déplacer) crée automatiquement un noeud du type approprié dans l'arborescence : image → note, audio/vidéo → média, document → document. Le fichier est référencé (pas copié) et la pièce jointe reste en place</li>
+<li><strong>Prévisualisation</strong> — Images, PDF, vidéos et audios peuvent être prévisualisés dans une fenêtre dédiée avec zoom pour les images</li>
+</ul>
+<p>Tous les fichiers sont automatiquement chiffrés (E2E) et déchiffrés à la volée lors de la prévisualisation.</p>`,
       },
       {
         id: 'dos-collab',
@@ -364,7 +372,7 @@ const categories: Category[] = [
       {
         id: 'nd-media',
         title: 'Analyse média (vidéo / audio)',
-        keywords: ['média', 'media', 'vidéo', 'video', 'audio', 'youtube', 'vimeo', 'soundcloud', 'oembed', 'annotation', 'capture', 'timestamp', 'horodatage', 'analyse'],
+        keywords: ['média', 'media', 'vidéo', 'video', 'audio', 'youtube', 'vimeo', 'soundcloud', 'oembed', 'annotation', 'capture', 'timestamp', 'horodatage', 'analyse', 'waveform', 'onde'],
         content: `<h2>Analyse média — Vidéo et audio</h2>
 <p>Le noeud de type <strong>média</strong> permet d'analyser des contenus vidéo et audio directement dans votre enquête.</p>
 
@@ -379,8 +387,17 @@ const categories: Category[] = [
 <p>Lorsque vous entrez une URL, le système détecte automatiquement la plateforme via le protocole <strong>oEmbed</strong> et récupère les métadonnées associées (titre, auteur, miniature, durée, etc.).</p>
 <p>Plateformes prises en charge : <strong>YouTube</strong>, <strong>Vimeo</strong>, <strong>SoundCloud</strong>, <strong>Dailymotion</strong> et d'autres services compatibles oEmbed.</p>
 
+<h3>Waveform audio interactif</h3>
+<p>Lorsqu'un noeud média contient un fichier audio, le lecteur natif est remplacé par une <strong>forme d'onde interactive</strong> (wavesurfer.js) :</p>
+<ul>
+<li><strong>Visualisation</strong> — La forme d'onde affiche le signal audio avec les couleurs du thème</li>
+<li><strong>Navigation</strong> — Cliquez n'importe où sur la waveform pour naviguer dans le fichier</li>
+<li><strong>Contrôles</strong> — Play/pause, volume, affichage du temps courant et de la durée totale</li>
+<li><strong>Annotations</strong> — Le même système d'annotations horodatées que pour la vidéo est disponible sur la waveform audio</li>
+</ul>
+
 <h3>Capture d'image (screenshot)</h3>
-<p>Pendant la lecture d'une vidéo, cliquez sur le bouton <strong>Capture</strong> pour prendre une capture d'écran de l'image courante. La capture est automatiquement horodatée avec le timecode de la vidéo.</p>
+<p>Pendant la lecture d'une vidéo, cliquez sur le bouton <strong>Capture</strong> pour prendre une capture d'écran de l'image courante. La capture est automatiquement horodatée avec le timecode de la vidéo. Ce bouton n'est pas disponible pour les fichiers audio.</p>
 
 <h3>Annotations horodatées</h3>
 <p>Cliquez sur le bouton <strong>Note</strong> pour créer une annotation textuelle associée au timecode actuel de la vidéo. Les annotations sont affichées sous le lecteur :</p>

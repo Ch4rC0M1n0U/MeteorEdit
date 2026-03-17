@@ -330,6 +330,99 @@ export async function deleteEntityPhoto(req: AuthRequest, res: Response): Promis
   }
 }
 
+export async function transferDocumentToNode(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    const userId = req.user!.userId;
+    if (dossier.owner.toString() !== userId && !dossier.collaborators.some(c => c.toString() === userId)) {
+      res.status(403).json({ message: 'Access denied' }); return;
+    }
+
+    const docId = req.params.docId;
+    const doc: any = dossier.linkedDocuments.find((d: any) => d._id.toString() === docId);
+    if (!doc) { res.status(404).json({ message: 'Document not found' }); return; }
+
+    // Determine file extension and MIME type
+    const fileName = doc.fileName;
+    const displayTitle = fileName.replace(/\.enc$/, '');
+    const ext = displayTitle.split('.').pop()?.toLowerCase() || '';
+    const filePath = doc.filePath;
+
+    const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'];
+    const audioExts = ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'opus'];
+    const videoExts = ['mp4', 'webm', 'mov', 'avi', 'mkv'];
+
+    // Prepare node data — returned to frontend for creation via store (handles encryption)
+    let nodeData: any = {
+      title: displayTitle,
+      parentId: req.body.parentId || null,
+    };
+
+    if (imageExts.includes(ext)) {
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.headers['host'];
+      const imageUrl = `${protocol}://${host}/${filePath}`;
+      nodeData.type = 'note';
+      nodeData.content = {
+        type: 'doc',
+        content: [{
+          type: 'image',
+          attrs: { src: imageUrl, alt: displayTitle, title: displayTitle },
+        }],
+      };
+    } else if (audioExts.includes(ext)) {
+      nodeData.type = 'media';
+      nodeData.mediaData = {
+        source: {
+          type: 'upload',
+          fileUrl: filePath,
+          fileName: displayTitle,
+          mimeType: doc.originalContentType || `audio/${ext}`,
+          mediaType: 'audio',
+        },
+        metadata: { title: displayTitle },
+        annotations: [],
+      };
+    } else if (videoExts.includes(ext)) {
+      nodeData.type = 'media';
+      nodeData.mediaData = {
+        source: {
+          type: 'upload',
+          fileUrl: filePath,
+          fileName: displayTitle,
+          mimeType: doc.originalContentType || `video/${ext}`,
+          mediaType: 'video',
+        },
+        metadata: { title: displayTitle },
+        annotations: [],
+      };
+    } else {
+      nodeData.type = 'document';
+      nodeData.fileUrl = filePath;
+      nodeData.fileName = displayTitle;
+      nodeData.fileSize = doc.fileSize;
+      nodeData.originalContentType = doc.originalContentType || undefined;
+    }
+
+    // Log the transfer activity
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(userId, 'document.transfer', 'dossier', dossier._id.toString(), {
+        title: dossier.title,
+        fileName: displayTitle,
+        targetNodeType: nodeData.type,
+      }, ip, req.headers['user-agent'] || '');
+    }
+
+    // Return prepared node data — frontend creates the node via dossierStore.createNode() (handles encryption)
+    res.json({ nodeData });
+  } catch (error) {
+    console.error('Transfer document to node error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function deleteLinkedDocument(req: AuthRequest, res: Response): Promise<void> {
   try {
     const dossier = await Dossier.findById(req.params.id);

@@ -14,15 +14,14 @@
         @loadedmetadata="onLoadedMetadata"
       />
 
-      <!-- Native audio -->
-      <audio
+      <!-- Waveform audio (replaces native audio for uploaded files) -->
+      <AudioWaveform
         v-else-if="isNativeAudio"
-        ref="playerRef"
-        class="me-player-audio"
-        controls
+        ref="waveformPlayerRef"
         :src="mediaSrc"
-        @timeupdate="onTimeUpdate"
-        @loadedmetadata="onLoadedMetadata"
+        @timeupdate="onWaveformTimeUpdate"
+        @ready="onWaveformReady"
+        @seek="onWaveformSeek"
       />
 
       <!-- YouTube embed -->
@@ -54,6 +53,7 @@
         </span>
         <div class="me-actions">
           <button
+            v-if="!isNativeAudio"
             class="me-btn me-btn--capture"
             :disabled="capturing"
             @click="captureFrame"
@@ -240,6 +240,7 @@ import MediaMetadataDialog from './MediaMetadataDialog.vue';
 import MediaDownloader from './MediaDownloader.vue';
 import SocialSessionManager from './SocialSessionManager.vue';
 import ImageAnnotator from '../editor/ImageAnnotator.vue';
+import AudioWaveform from './AudioWaveform.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();
@@ -260,6 +261,7 @@ const emit = defineEmits<{
 const playerRef = ref<HTMLVideoElement | HTMLAudioElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const editInputRef = ref<HTMLInputElement | null>(null);
+const waveformPlayerRef = ref<InstanceType<typeof AudioWaveform> | null>(null);
 
 const currentTime = ref(0);
 const duration = ref(0);
@@ -479,6 +481,19 @@ function onLoadedMetadata() {
   }
 }
 
+// --- Waveform player events ---
+function onWaveformTimeUpdate(time: number) {
+  currentTime.value = time;
+}
+
+function onWaveformReady(dur: number) {
+  duration.value = dur;
+}
+
+function onWaveformSeek(time: number) {
+  currentTime.value = time;
+}
+
 // --- Annotations computed ---
 const annotations = computed(() => {
   return props.node.mediaData?.annotations || [];
@@ -672,6 +687,10 @@ function cancelEdit() {
 
 // --- Seek ---
 function seekTo(timestamp: number) {
+  if (waveformPlayerRef.value) {
+    waveformPlayerRef.value.seekTo(timestamp);
+    return;
+  }
   if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
     ytPlayer.seekTo(timestamp, true);
   } else if (playerRef.value) {
