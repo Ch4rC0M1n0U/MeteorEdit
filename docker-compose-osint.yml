@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: meteoredit-db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: meteoredit-server
+    restart: unless-stopped
+    ports:
+      - "100.64.0.2:3101:3001"
+      - "100.64.0.2:3002:3102"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - MONGODB_URI=mongodb://mongodb:27017/meteoredit
+      - JWT_SECRET=${JWT_SECRET:-CHANGE_ME_GENERATE_A_SECURE_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-CHANGE_ME_GENERATE_A_SECURE_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-15m}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-7d}
+      - PORT=3001
+      - YJS_PORT=3002
+      - UPLOAD_DIR=./uploads
+      - COOKIE_ENCRYPTION_KEY=${COOKIE_ENCRYPTION_KEY:-CHANGE_ME_GENERATE_A_SECURE_SECRET}
+      - LANGUAGETOOL_URL=http://languagetool:8010
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+      - yjs-data:/app/yjs-docs
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: meteoredit-client
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      server:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: meteoredit-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    profiles:
+      - ai
+
+  languagetool:
+    image: erikvl87/languagetool:latest
+    container_name: meteoredit-languagetool
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      - Java_Xms=256m
+      - Java_Xmx=1g
+    profiles:
+      - tools
+
+volumes:
+  mongo-data:
+  uploads:
+  yjs-data:
+  ollama-data:
