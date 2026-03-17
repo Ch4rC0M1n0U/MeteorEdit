@@ -47,6 +47,12 @@ router.beforeEach(async (to, _from, next) => {
     return;
   }
 
+  // Block /setup (normal mode) if setup already done — dev mode always allowed
+  if (to.name === 'setup' && setupChecked && !setupRequired && to.query.dev !== 'true') {
+    next('/login');
+    return;
+  }
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login');
   } else if (to.meta.requiresAdmin && !authStore.isAdmin) {

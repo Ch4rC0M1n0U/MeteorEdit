@@ -237,12 +237,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import api from '../services/api';
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 
 const devMode = computed(() => route.query.dev === 'true');
 const version = ref('3.0.0-beta.1');
@@ -316,6 +317,12 @@ async function fetchStatus() {
     const { data } = await api.get(`/setup/status${params}`);
     status.value = data;
     version.value = data.version || version.value;
+
+    // If setup already done and NOT in dev mode, redirect to login
+    if (!data.setupRequired && !devMode.value) {
+      router.replace('/login');
+      return;
+    }
   } catch (e: any) {
     status.value = null;
   } finally {
