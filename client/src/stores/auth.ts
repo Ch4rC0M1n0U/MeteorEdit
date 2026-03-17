@@ -135,10 +135,13 @@ export const useAuthStore = defineStore('auth', () => {
         const restored = await encStore.tryRestoreFromSession();
         if (!restored) {
           // sessionStorage is empty (browser/PC restart) — encryption keys are lost.
-          // Force re-login so the user provides their password to unlock keys.
-          // Without keys, all encrypted content (files, notes) would be unreadable.
-          console.warn('Encryption keys not available — forcing re-login');
-          logout();
+          // Only force re-login if the user actually has encryption keys on the server.
+          // New accounts without keys should not be locked out.
+          const serverHasKeys = await encStore.checkKeys();
+          if (serverHasKeys) {
+            console.warn('Encryption keys not available — forcing re-login');
+            logout();
+          }
         }
       }
     }
