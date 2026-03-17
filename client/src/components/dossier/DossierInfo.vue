@@ -146,35 +146,25 @@
           <input ref="docInput" type="file" hidden multiple @change="handleDocUpload" />
         </div>
         <div v-if="form.linkedDocuments.length" class="di-doc-list">
-          <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-item">
-            <div class="di-doc-row">
-              <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
-              <div class="di-doc-info">
-                <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
-                <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
-              </div>
-              <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="togglePreview(doc)" :title="$t('dossier.preview')">
-                <v-icon size="14">{{ getPreviewIcon(doc) }}</v-icon>
-              </button>
-              <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
-                <v-icon size="14">mdi-download</v-icon>
-              </button>
-              <button class="di-el-btn" @click="transferDoc(doc)" :title="getTransferTooltip(doc)" :disabled="transferringDocId === doc._id">
-                <v-icon v-if="transferringDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
-                <v-icon v-else size="14">mdi-file-move-outline</v-icon>
-              </button>
-              <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
-                <v-icon size="14">mdi-trash-can-outline</v-icon>
-              </button>
+          <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
+            <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
+            <div class="di-doc-info">
+              <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
+              <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
             </div>
-            <!-- Inline audio preview -->
-            <div v-if="inlinePreviewUrls[doc._id] && isAudioFile(doc)" class="di-inline-preview">
-              <audio controls :src="inlinePreviewUrls[doc._id]" class="di-inline-audio" />
-            </div>
-            <!-- Inline video preview -->
-            <div v-if="inlinePreviewUrls[doc._id] && isVideoFile(doc)" class="di-inline-preview">
-              <video controls :src="inlinePreviewUrls[doc._id]" class="di-inline-video" />
-            </div>
+            <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
+              <v-icon size="14">{{ isAudioFile(doc) ? 'mdi-volume-high' : 'mdi-eye-outline' }}</v-icon>
+            </button>
+            <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
+              <v-icon size="14">mdi-download</v-icon>
+            </button>
+            <button class="di-el-btn" @click="transferDoc(doc)" :title="getTransferTooltip(doc)" :disabled="transferringDocId === doc._id">
+              <v-icon v-if="transferringDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
+              <v-icon v-else size="14">mdi-file-move-outline</v-icon>
+            </button>
+            <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
+              <v-icon size="14">mdi-trash-can-outline</v-icon>
+            </button>
           </div>
         </div>
         <div v-else class="di-empty mono">{{ $t('dossier.noLinkedDocuments') }}</div>
@@ -916,26 +906,6 @@ function getContentType(fileName: string, doc?: { originalContentType?: string }
   return 'application/octet-stream';
 }
 
-// --- Preview icon and toggle (unified for all file types) ---
-function getPreviewIcon(doc: { fileName: string; originalContentType?: string }): string {
-  if (isAudioFile(doc)) return 'mdi-volume-high';
-  return 'mdi-eye-outline';
-}
-
-function togglePreview(doc: { _id: string; fileName: string; filePath: string; originalContentType?: string }) {
-  if (isAudioFile(doc) || isVideoFile(doc)) {
-    // Audio/video: toggle inline player
-    if (inlinePreviewUrls.value[doc._id]) {
-      delete inlinePreviewUrls.value[doc._id];
-    } else {
-      loadInlinePreview(doc);
-    }
-  } else {
-    // Images, PDF: open viewer dialog
-    openDocViewer(doc);
-  }
-}
-
 // --- Transfer document to node ---
 const transferringDocId = ref<string | null>(null);
 
@@ -969,30 +939,10 @@ async function transferDoc(doc: { _id: string; fileName: string }) {
   }
 }
 
-// --- Inline audio/video previews ---
-const inlinePreviewUrls = ref<Record<string, string>>({});
-
 function isAudioFile(doc: { fileName: string; originalContentType?: string }): boolean {
   const ct = doc.originalContentType || '';
   if (ct.startsWith('audio/')) return true;
   return PREVIEW_AUDIO_EXTS.includes(getFileExt(doc.fileName));
-}
-
-function isVideoFile(doc: { fileName: string; originalContentType?: string }): boolean {
-  const ct = doc.originalContentType || '';
-  if (ct.startsWith('video/')) return true;
-  return PREVIEW_VIDEO_EXTS.includes(getFileExt(doc.fileName));
-}
-
-async function loadInlinePreview(doc: { _id: string; fileName: string; filePath: string; originalContentType?: string }) {
-  if (!dossierStore.currentDossier) return;
-  try {
-    const ct = getContentType(doc.fileName, doc);
-    const url = await getDecryptedUrl(dossierStore.currentDossier._id, doc.filePath, ct);
-    inlinePreviewUrls.value[doc._id] = url;
-  } catch (err) {
-    console.error('Failed to load inline preview:', err);
-  }
 }
 
 const viewerZoom = ref(1);
@@ -2215,25 +2165,6 @@ async function removeCollaborator(userId: string) {
   font-size: 12px;
   color: var(--me-text-muted);
   padding: 8px 0;
-}
-.di-doc-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.di-inline-preview {
-  padding-left: 28px;
-}
-.di-inline-audio {
-  width: 100%;
-  height: 32px;
-  border-radius: 4px;
-}
-.di-inline-video {
-  width: 100%;
-  max-height: 200px;
-  border-radius: 4px;
-  background: #000;
 }
 /* Edit mode switch */
 .di-switch-field {
