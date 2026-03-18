@@ -8,6 +8,7 @@ RUN npm run build
 FROM node:20-alpine
 RUN apk add --no-cache wget curl ffmpeg python3 \
     chromium nss freetype harfbuzz ca-certificates ttf-freefont \
+    font-noto-cjk font-noto-emoji mesa-gl libstdc++ udev \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
