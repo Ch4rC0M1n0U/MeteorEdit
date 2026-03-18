@@ -6,13 +6,15 @@ COPY server/ .
 RUN npm run build
 
 FROM node:20-slim
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates wget curl ffmpeg python3 \
-    chromium fonts-liberation fonts-noto-color-emoji \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates wget curl gnupg ffmpeg python3 \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update && apt-get install -y --no-install-recommends google-chrome-stable \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci --omit=dev
