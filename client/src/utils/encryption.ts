@@ -276,6 +276,15 @@ export async function decryptFile(key: CryptoKey, data: ArrayBuffer): Promise<Ar
  * Compute SHA-256 hash of an ArrayBuffer, return hex string.
  */
 export async function hashFile(data: ArrayBuffer): Promise<string> {
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    // Fallback: simple hash for non-secure contexts (HTTP)
+    const bytes = new Uint8Array(data);
+    let hash = 0;
+    for (let i = 0; i < bytes.length; i++) {
+      hash = ((hash << 5) - hash + bytes[i]!) | 0;
+    }
+    return Math.abs(hash).toString(16).padStart(8, '0');
+  }
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
