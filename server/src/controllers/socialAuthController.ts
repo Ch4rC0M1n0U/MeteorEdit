@@ -438,8 +438,9 @@ export async function exportCookiesFile(userId: string, platform: string): Promi
 export async function generateBridgeToken(req: AuthRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
+    const role = req.user!.role;
     const token = jwt.sign(
-      { userId, purpose: 'cookie-bridge' },
+      { userId, role, purpose: 'cookie-bridge' },
       process.env.JWT_SECRET!,
       { expiresIn: '24h' }
     );
