@@ -85,8 +85,8 @@ const bookmarkletCode = computed(() => {
   const successMsg = t('clipper.captureSuccess');
   const errorMsg = t('clipper.captureError');
   const connErrorMsg = t('clipper.connectionError');
-  // Bookmarklet captures page title, url, selected text or body text
-  return `javascript:void((function(){var d=document,s=d.getSelection().toString()||d.body.innerText.substring(0,10000),t=d.title,u=d.location.href;fetch('${baseUrl}/api/clip',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer ${token}'},body:JSON.stringify({dossierId:'${dossierId}',title:t,url:u,content:'<p>'+s+'</p>',textContent:s})}).then(function(r){if(r.ok)alert('${successMsg}');else alert('${errorMsg}');}).catch(function(){alert('${connErrorMsg}');})})())`;
+  // Bookmarklet captures page title, url, selected HTML or body content
+  return `javascript:void((function(){var d=document,sel=d.getSelection(),h='',txt='';if(sel&&sel.rangeCount>0){var c=d.createElement('div');for(var i=0;i<sel.rangeCount;i++)c.appendChild(sel.getRangeAt(i).cloneContents());h=c.innerHTML;txt=sel.toString()}if(!h){var main=d.querySelector('article')||d.querySelector('[role=main]')||d.querySelector('main')||d.body;h=main.innerHTML.substring(0,50000);txt=main.innerText.substring(0,10000)}var t=d.title,u=d.location.href;fetch('${baseUrl}/api/clip',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer ${token}'},body:JSON.stringify({dossierId:'${dossierId}',title:t,url:u,content:h,textContent:txt})}).then(function(r){if(r.ok)alert('${successMsg}');else alert('${errorMsg}');}).catch(function(){alert('${connErrorMsg}');})})())`;
 });
 
 watch(model, (open) => {
