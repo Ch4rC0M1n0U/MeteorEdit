@@ -48,6 +48,11 @@ api.interceptors.response.use(
   }
 );
 
-export const SERVER_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '');
+export const SERVER_URL = (() => {
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  const base = url.replace(/\/api$/, '');
+  // Relative URL → use current origin
+  return base.startsWith('/') || base === '' ? window.location.origin : base;
+})();
 
 export default api;

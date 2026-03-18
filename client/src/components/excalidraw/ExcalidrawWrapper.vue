@@ -73,7 +73,7 @@ function setupYjs() {
   cleanupYjs();
 
   ydoc = new Y.Doc();
-  const yjsUrl = import.meta.env.VITE_YJS_URL || 'ws://localhost:3002';
+  const yjsUrl = import.meta.env.VITE_YJS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/yjs`;
   const token = localStorage.getItem('accessToken') || '';
   provider = new WebsocketProvider(yjsUrl, `node:${props.nodeId}`, ydoc, {
     params: { token },

@@ -6,7 +6,11 @@ export function connectSocket(): Socket {
   if (socket?.connected) return socket;
 
   const token = localStorage.getItem('accessToken');
-  socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001', {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+  const base = apiUrl.replace(/\/api$/, '');
+  // Relative URL → use current origin for Socket.io
+  const socketUrl = base.startsWith('/') || base === '' ? window.location.origin : base;
+  socket = io(socketUrl, {
     auth: { token },
   });
 
