@@ -265,13 +265,7 @@ router.post('/cookies-file', authenticate, upload.single('cookiesFile'), uploadC
  *               type: string
  *               format: binary
  */
-router.get('/extension-download', (req, _res, next) => {
-  // Allow token via query param for direct browser downloads
-  if (!req.headers.authorization && req.query.token) {
-    req.headers.authorization = `Bearer ${req.query.token}`;
-  }
-  next();
-}, authenticate, async (_req, res) => {
+router.get('/extension-download', async (_req, res) => {
   try {
     const archiver = await import('archiver');
     const extensionDir = path.resolve(__dirname, '..', '..', '..', 'extension');

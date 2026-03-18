@@ -19,6 +19,7 @@ WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
+COPY extension/ ./extension/
 RUN mkdir -p uploads yjs-docs
 EXPOSE 3001 3002
 CMD ["node", "dist/index.js"]
