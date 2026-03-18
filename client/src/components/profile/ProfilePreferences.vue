@@ -343,7 +343,8 @@ async function generateBridgeToken() {
   bridgeLoading.value = true;
   try {
     const { data } = await api.post('/social/bridge-token');
-    bridgeConfigUrl.value = `${data.serverUrl}/extension-config?url=${encodeURIComponent(data.serverUrl)}&token=${encodeURIComponent(data.token)}`;
+    const serverUrl = window.location.origin;
+    bridgeConfigUrl.value = `${serverUrl}/extension-config?url=${encodeURIComponent(serverUrl)}&token=${encodeURIComponent(data.token)}`;
 
     // Generate QR code using canvas
     const QRCode = await import('qrcode');
