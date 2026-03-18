@@ -302,7 +302,7 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
     // ── Helper: download via yt-dlp ──
     async function downloadWithYtdlp(): Promise<string> {
       const dlArgs: string[] = [
-        '--js-runtimes', 'nodejs',
+        '--js-runtimes', 'node',
         '-f', `bestvideo[filesize<${maxSizeMB}M]+bestaudio/best[filesize<${maxSizeMB}M]/best`,
         '--merge-output-format', 'mp4',
         '--no-playlist',
@@ -513,7 +513,7 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
           console.log('[Snapchat] Trying yt-dlp with --force-generic-extractor...');
           sendSSE(res, 'status', { status: 'downloading', fallback: true });
           const fallbackArgs: string[] = [
-            '--js-runtimes', 'nodejs',
+            '--js-runtimes', 'node',
             '--force-generic-extractor',
             '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
             '-f', 'best',

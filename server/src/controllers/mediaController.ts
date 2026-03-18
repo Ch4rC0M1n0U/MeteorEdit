@@ -315,6 +315,7 @@ export async function captureFrame(req: AuthRequest, res: Response): Promise<voi
  * POST /api/media/capture-embed
  */
 export async function captureEmbed(req: AuthRequest, res: Response): Promise<void> {
+  let cookiesFile: string | null = null;
   try {
     const userId = req.user!.userId;
     const { nodeId, dossierId, url, timestamp } = req.body;
@@ -333,15 +334,32 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
     const filePath = path.join(captureDir, filename);
     const ts = Math.max(0, Math.floor(timestamp || 0));
 
+    // Get cookies if available for authenticated access
+    try {
+      // Detect platform from URL
+      let platform = '';
+      if (url.includes('youtube.com') || url.includes('youtu.be')) platform = 'youtube';
+      else if (url.includes('instagram.com')) platform = 'instagram';
+      else if (url.includes('tiktok.com')) platform = 'tiktok';
+      else if (url.includes('facebook.com')) platform = 'facebook';
+      if (platform) {
+        const { exportCookiesFile } = await import('./socialAuthController');
+        cookiesFile = await exportCookiesFile(userId, platform);
+      }
+    } catch {}
+
     // Step 1: Get direct video stream URL via yt-dlp
-    const { stdout: streamUrl } = await execFileAsync('yt-dlp', [
-      '--js-runtimes', 'nodejs',
+    const ytdlpArgs = [
+      '--js-runtimes', 'node',
       '-f', 'best[ext=mp4]/best',
       '-g',
       '--no-warnings',
       '--no-playlist',
-      url,
-    ], { timeout: 20000 });
+    ];
+    if (cookiesFile) ytdlpArgs.push('--cookies', cookiesFile);
+    ytdlpArgs.push(url);
+
+    const { stdout: streamUrl } = await execFileAsync('yt-dlp', ytdlpArgs, { timeout: 30000 });
 
     const videoUrl = streamUrl.trim().split('\n')[0];
     if (!videoUrl) {
@@ -367,11 +385,15 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       timestamp,
     }, ip, ua);
 
+    // Clean up temp cookies file
+    if (cookiesFile) try { fs.unlinkSync(cookiesFile); } catch {}
+
     res.json({
       screenshotUrl: `uploads/media/captures/${filename}`,
     });
   } catch (error: any) {
     console.error('captureEmbed error:', error?.message || error);
+    if (cookiesFile) try { fs.unlinkSync(cookiesFile); } catch {}
     res.status(500).json({ error: 'Échec de la capture. Vérifiez que yt-dlp et ffmpeg sont installés.' });
   }
 }
