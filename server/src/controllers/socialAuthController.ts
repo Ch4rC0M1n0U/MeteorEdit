@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import jwt from 'jsonwebtoken';
 import { Response } from 'express';
 import SocialCookie from '../models/SocialCookie';
 import SiteSettings from '../models/SiteSettings';
@@ -427,5 +428,103 @@ export async function exportCookiesFile(userId: string, platform: string): Promi
   } catch (err) {
     console.error(`[SocialAuth] Error exporting cookies for ${platform}:`, err);
     return null;
+  }
+}
+
+/**
+ * Generate a short-lived token for the browser extension to authenticate.
+ * POST /api/social/bridge-token
+ */
+export async function generateBridgeToken(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const token = jwt.sign(
+      { userId, purpose: 'cookie-bridge' },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    const host = req.headers.host;
+    const serverUrl = `${protocol}://${host}`;
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'social.bridge_token_generated', 'system', null, {}, ip, ua);
+
+    res.json({ token, serverUrl, expiresIn: '24h' });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Failed to generate bridge token' });
+  }
+}
+
+/**
+ * Parse Netscape cookies.txt format and import cookies.
+ * POST /api/social/cookies-file
+ */
+export async function uploadCookiesFile(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    if (!req.file) {
+      res.status(400).json({ message: 'No file uploaded' });
+      return;
+    }
+
+    const content = req.file.buffer.toString('utf-8');
+    const cookies = content.split('\n')
+      .filter(line => line.trim() && !line.startsWith('#'))
+      .map(line => {
+        const parts = line.split('\t');
+        if (parts.length < 7) return null;
+        return {
+          domain: parts[0]!.replace(/^#HttpOnly_/, ''),
+          path: parts[2]!,
+          secure: parts[3] === 'TRUE',
+          expires: parseInt(parts[4]!) || 0,
+          name: parts[5]!,
+          value: parts[6]!.trim(),
+          httpOnly: line.startsWith('#HttpOnly_'),
+        };
+      })
+      .filter(c => c && c.name && c.value) as any[];
+
+    if (!cookies.length) {
+      res.status(400).json({ message: 'No valid cookies found in file' });
+      return;
+    }
+
+    // Auto-detect platform from domains
+    const domains = cookies.map((c: any) => c.domain.replace(/^\./, '')).join(' ');
+    let platform = req.body?.platform;
+    if (!platform) {
+      if (domains.includes('youtube.com') || domains.includes('google.com')) platform = 'youtube';
+      else if (domains.includes('instagram.com')) platform = 'instagram';
+      else if (domains.includes('tiktok.com')) platform = 'tiktok';
+      else if (domains.includes('snapchat.com')) platform = 'snapchat';
+      else if (domains.includes('facebook.com')) platform = 'facebook';
+      else if (domains.includes('twitter.com') || domains.includes('x.com')) platform = 'x';
+      else if (domains.includes('linkedin.com')) platform = 'linkedin';
+      else if (domains.includes('strava.com')) platform = 'strava';
+    }
+
+    if (!platform) {
+      res.status(400).json({ message: 'Could not detect platform from cookies. Please specify platform.' });
+      return;
+    }
+
+    const encrypted = encryptCookies(cookies);
+    await SocialCookie.findOneAndUpdate(
+      { userId, platform },
+      { cookies: encrypted },
+      { upsert: true, new: true }
+    );
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'social.cookies_file_imported', 'system', null, { platform, cookieCount: cookies.length }, ip, ua);
+
+    res.json({ message: 'Cookies imported', platform, cookieCount: cookies.length });
+  } catch (err: any) {
+    console.error('[SocialAuth] cookies-file upload error:', err);
+    res.status(500).json({ message: 'Failed to import cookies file' });
   }
 }

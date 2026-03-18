@@ -1,9 +1,12 @@
 import { Router } from 'express';
+import path from 'path';
+import multer from 'multer';
 import { authenticate } from '../middleware/auth';
-import { socialLogin, listCookies, deleteCookies, importCookies } from '../controllers/socialAuthController';
+import { socialLogin, listCookies, deleteCookies, importCookies, generateBridgeToken, uploadCookiesFile } from '../controllers/socialAuthController';
 import { scrapeProfile } from '../controllers/scrapeController';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
 
 /**
  * @swagger
@@ -161,6 +164,127 @@ router.delete('/cookies/:platform', authenticate, deleteCookies);
  *         description: Non authentifie
  */
 router.post('/cookies/:platform/import', authenticate, importCookies);
+
+/**
+ * @swagger
+ * /api/social/bridge-token:
+ *   post:
+ *     tags: [Social]
+ *     summary: Generate a bridge token for browser extension authentication
+ *     description: Generates a short-lived JWT (24h) that a browser extension can use to authenticate API calls for cookie synchronization. The token includes the server URL for extension configuration.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Bridge token generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token for extension authentication
+ *                 serverUrl:
+ *                   type: string
+ *                   description: Base URL of the server
+ *                 expiresIn:
+ *                   type: string
+ *                   description: Token expiration duration
+ *                   example: '24h'
+ *       401:
+ *         description: Non authentifie
+ *       500:
+ *         description: Erreur serveur
+ */
+router.post('/bridge-token', authenticate, generateBridgeToken);
+
+/**
+ * @swagger
+ * /api/social/cookies-file:
+ *   post:
+ *     tags: [Social]
+ *     summary: Upload a Netscape cookies.txt file
+ *     description: Parses a Netscape-format cookies.txt file and imports the cookies. Auto-detects the platform from cookie domains if not specified. Useful for importing cookies exported from browser extensions or tools like yt-dlp.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [cookiesFile]
+ *             properties:
+ *               cookiesFile:
+ *                 type: string
+ *                 format: binary
+ *                 description: Netscape cookies.txt file
+ *               platform:
+ *                 type: string
+ *                 description: Target platform (auto-detected from domains if omitted)
+ *                 enum: [youtube, instagram, tiktok, snapchat, facebook, x, linkedin, strava]
+ *     responses:
+ *       200:
+ *         description: Cookies imported successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 platform:
+ *                   type: string
+ *                 cookieCount:
+ *                   type: integer
+ *       400:
+ *         description: No file uploaded, no valid cookies, or platform could not be detected
+ *       401:
+ *         description: Non authentifie
+ *       500:
+ *         description: Erreur serveur
+ */
+router.post('/cookies-file', authenticate, upload.single('cookiesFile'), uploadCookiesFile);
+
+/**
+ * @swagger
+ * /api/social/extension-download:
+ *   get:
+ *     tags: [Social]
+ *     summary: Telecharger l'extension Cookie Bridge
+ *     description: Telecharge l'extension Chrome MeteorEdit Cookie Bridge en fichier ZIP.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Fichier ZIP de l'extension
+ *         content:
+ *           application/zip:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+router.get('/extension-download', authenticate, async (_req, res) => {
+  try {
+    const archiver = await import('archiver');
+    const extensionDir = path.resolve(__dirname, '..', '..', '..', 'extension');
+    const fs = await import('fs');
+    if (!fs.existsSync(extensionDir)) {
+      res.status(404).json({ message: 'Extension not found on server' });
+      return;
+    }
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="meteoredit-cookie-bridge.zip"');
+    const archive = archiver.default('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+    archive.directory(extensionDir, 'meteoredit-cookie-bridge');
+    archive.finalize();
+  } catch (err: any) {
+    console.error('Extension download error:', err);
+    res.status(500).json({ message: 'Failed to create extension zip' });
+  }
+});
 
 /**
  * @swagger
