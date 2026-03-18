@@ -12,6 +12,8 @@ export function connectSocket(): Socket {
   const socketUrl = base.startsWith('/') || base === '' ? window.location.origin : base;
   socket = io(socketUrl, {
     auth: { token },
+    rejectUnauthorized: false,
+    transports: ['polling', 'websocket'],
   });
 
   return socket;
