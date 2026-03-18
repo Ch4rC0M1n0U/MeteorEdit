@@ -1,6 +1,4 @@
 FROM node:20-alpine AS build
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_SKIP_DOWNLOAD=true
 WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci
@@ -12,12 +10,10 @@ RUN apk add --no-cache wget curl ffmpeg python3 \
     chromium nss freetype harfbuzz ca-certificates ttf-freefont \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 WORKDIR /app
 COPY server/package*.json ./
-RUN npm ci --omit=dev || (cat /root/.npm/_logs/*.log 2>/dev/null | tail -30 && exit 1)
+RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 RUN mkdir -p uploads yjs-docs
 EXPOSE 3001 3002

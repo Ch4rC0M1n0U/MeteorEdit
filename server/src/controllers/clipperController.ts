@@ -316,9 +316,10 @@ async function dismissCookieBanners(page: any): Promise<void> {
 async function captureScreenshot(url: string, filename: string): Promise<string | null> {
   let browser: any = null;
   try {
-    const puppeteer = await import('puppeteer');
+    const puppeteer = await import('puppeteer-core');
     browser = await puppeteer.default.launch({
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
     const page = await browser.newPage();

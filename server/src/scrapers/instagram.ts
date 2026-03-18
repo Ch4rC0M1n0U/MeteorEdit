@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-import { Page } from 'puppeteer';
+import { Page } from 'puppeteer-core';
 import { ProfileData } from './types';
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
