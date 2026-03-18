@@ -335,6 +335,7 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
 
     // Step 1: Get direct video stream URL via yt-dlp
     const { stdout: streamUrl } = await execFileAsync('yt-dlp', [
+      '--js-runtimes', 'nodejs',
       '-f', 'best[ext=mp4]/best',
       '-g',
       '--no-warnings',
