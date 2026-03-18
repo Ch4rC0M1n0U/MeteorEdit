@@ -323,8 +323,13 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 900 });
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.setViewport({ width: 1920, height: 1080 });
+    // Set a realistic user agent so sites serve proper CSS
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+    await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
+
+    // Wait for CSS/fonts/images to fully render
+    await new Promise(r => setTimeout(r, 3000));
 
     // Dismiss cookie/GDPR banners automatically
     await dismissCookieBanners(page);
@@ -336,7 +341,7 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
     await dismissCookieBanners(page);
 
     // Brief settle time after second pass
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 1000));
 
     const screenshotDir = path.join(UPLOAD_DIR, 'screenshots');
     if (!fs.existsSync(screenshotDir)) {
@@ -414,15 +419,12 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
       { type: 'horizontalRule' },
     ];
 
-    // Add screenshot if captured
+    // Add screenshot if captured (relative URL — works on any host/port)
     if (screenshotPath) {
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-      const host = req.headers['x-forwarded-host'] || req.get('host');
-      const serverBase = `${protocol}://${host}`;
       tiptapNodes.push({
         type: 'image',
         attrs: {
-          src: `${serverBase}/${screenshotPath}`,
+          src: `/${screenshotPath}`,
           alt: `Capture de ${title}`,
           title: `Screenshot - ${url}`,
         },
