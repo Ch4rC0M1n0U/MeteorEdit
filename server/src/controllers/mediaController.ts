@@ -349,13 +349,16 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
     } catch {}
 
     // Step 1: Get direct video stream URL via yt-dlp
+    const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
     const ytdlpArgs = [
       '--js-runtimes', 'node',
-      '-f', 'best[ext=mp4]/best',
+      '-f', 'b',
       '-g',
       '--no-warnings',
       '--no-playlist',
     ];
+    // Use mweb client for YouTube to bypass bot detection without cookies
+    if (isYoutube) ytdlpArgs.push('--extractor-args', 'youtube:player_client=mweb');
     if (cookiesFile) ytdlpArgs.push('--cookies', cookiesFile);
     ytdlpArgs.push(url);
 

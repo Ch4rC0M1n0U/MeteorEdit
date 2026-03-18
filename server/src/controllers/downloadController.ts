@@ -301,6 +301,7 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
 
     // ── Helper: download via yt-dlp ──
     async function downloadWithYtdlp(): Promise<string> {
+      const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
       const dlArgs: string[] = [
         '--js-runtimes', 'node',
         '-f', `bestvideo[filesize<${maxSizeMB}M]+bestaudio/best[filesize<${maxSizeMB}M]/best`,
@@ -311,6 +312,8 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
         '--write-info-json',
         '-o', outputTemplate,
       ];
+      // Use mweb client for YouTube to bypass bot detection
+      if (isYoutube) dlArgs.push('--extractor-args', 'youtube:player_client=mweb');
       if (cookiesFile) {
         dlArgs.push('--cookies', cookiesFile);
       }
