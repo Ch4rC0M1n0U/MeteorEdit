@@ -335,7 +335,8 @@ watch(prefs, () => {
 });
 
 function downloadExtension() {
-  window.open('/api/social/extension-download', '_blank');
+  const token = localStorage.getItem('accessToken') || '';
+  window.open(`/api/social/extension-download?token=${encodeURIComponent(token)}`, '_blank');
 }
 
 async function generateBridgeToken() {
