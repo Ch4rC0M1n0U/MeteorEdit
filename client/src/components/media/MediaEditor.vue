@@ -234,6 +234,7 @@ import api, { SERVER_URL } from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
+import { generateUUID } from '../../utils/cryptoPolyfill';
 import { useEncryptionStore } from '../../stores/encryption';
 import { encryptFile } from '../../utils/encryption';
 import MediaMetadataDialog from './MediaMetadataDialog.vue';
@@ -558,7 +559,7 @@ async function captureFrame() {
       }
 
       const annotation: MediaAnnotation = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         timestamp: ts,
         type: 'capture',
         comment: '',
@@ -604,7 +605,7 @@ async function captureFrame() {
       }
 
       const annotation: MediaAnnotation = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         timestamp: ts,
         type: 'capture',
         comment: '',
@@ -633,7 +634,7 @@ function addNote() {
     : playerRef.value ? playerRef.value.currentTime : currentTime.value;
 
   const annotation: MediaAnnotation = {
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     timestamp: ts,
     type: 'note',
     comment: '',

@@ -69,6 +69,7 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
+import { generateUUID } from '../../utils/cryptoPolyfill';
 
 import type { Node, Edge, Connection, NodeChange, EdgeChange } from '@vue-flow/core';
 
@@ -115,7 +116,7 @@ function getRandomColor(): string {
 }
 
 function generateId(): string {
-  return crypto.randomUUID();
+  return generateUUID();
 }
 
 function initFromData(data: any) {

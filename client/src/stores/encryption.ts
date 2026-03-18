@@ -117,6 +117,10 @@ export const useEncryptionStore = defineStore('encryption', () => {
    * Called on first login or when user enables encryption.
    */
   async function initializeKeys(password: string): Promise<void> {
+    if (typeof crypto === 'undefined' || !crypto.subtle) {
+      console.warn('Web Crypto API not available (non-secure context) — encryption disabled');
+      return;
+    }
     const keyPair = await generateKeyPair();
     const pubKeyStr = await exportPublicKey(keyPair.publicKey);
     const { encryptedPrivateKey: encPrivKey, salt } = await encryptPrivateKey(
@@ -141,6 +145,10 @@ export const useEncryptionStore = defineStore('encryption', () => {
    * Called after login.
    */
   async function unlockKeys(password: string): Promise<boolean> {
+    if (typeof crypto === 'undefined' || !crypto.subtle) {
+      console.warn('Web Crypto API not available — cannot unlock keys');
+      return false;
+    }
     try {
       const { data } = await api.get('/encryption/keys');
       if (!data.encryptedPrivateKey || !data.salt) {
