@@ -163,7 +163,13 @@ router.delete('/cookies/:platform', authenticate, deleteCookies);
  *       401:
  *         description: Non authentifie
  */
-router.post('/cookies/:platform/import', authenticate, importCookies);
+router.post('/cookies/:platform/import', (req, _res, next) => {
+  // Accept token via query param for browser extension (CORS strips Authorization header)
+  if (!req.headers.authorization && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+}, authenticate, importCookies);
 
 /**
  * @swagger

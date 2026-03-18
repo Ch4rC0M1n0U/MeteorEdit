@@ -146,7 +146,7 @@ async function sendCookies(platformKey) {
     expirationDate: c.expirationDate,
   }));
 
-  const resp = await fetch(`${url}/api/social/cookies/${platformKey}/import`, {
+  const resp = await fetch(`${url}/api/social/cookies/${platformKey}/import?token=${encodeURIComponent(config.bridgeToken)}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
