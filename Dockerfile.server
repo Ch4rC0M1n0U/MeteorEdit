@@ -1,17 +1,18 @@
-FROM node:20-alpine AS build
+FROM node:20-slim AS build
 WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci
 COPY server/ .
 RUN npm run build
 
-FROM node:20-alpine
-RUN apk add --no-cache wget curl ffmpeg python3 \
-    chromium nss freetype harfbuzz ca-certificates ttf-freefont \
-    font-noto-cjk font-noto-emoji mesa-gl libstdc++ udev \
+FROM node:20-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget curl ffmpeg python3 \
+    chromium fonts-liberation fonts-noto-color-emoji \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    && chmod a+rx /usr/local/bin/yt-dlp \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci --omit=dev
