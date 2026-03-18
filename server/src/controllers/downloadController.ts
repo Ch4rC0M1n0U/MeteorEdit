@@ -565,7 +565,33 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
           }
         }
       } else {
-        throw ytdlpError;
+        // Fallback: try Cobalt API for YouTube and other platforms
+        const cobaltUrl = process.env.COBALT_URL || 'http://cobalt-api:9000';
+        try {
+          console.log(`[Download] yt-dlp failed, trying Cobalt for ${platform}...`);
+          sendSSE(res, 'status', { status: 'downloading', fallback: true });
+          const cobaltResp = await fetch(cobaltUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ url, videoQuality: '720', filenameStyle: 'basic' }),
+          });
+          const cobaltData = await cobaltResp.json() as any;
+          if (cobaltData.url) {
+            // Download the file from Cobalt URL
+            const cobaltFileResp = await fetch(cobaltData.url);
+            if (!cobaltFileResp.ok) throw new Error(`Cobalt download failed: ${cobaltFileResp.status}`);
+            const outputFile = path.join(mediaDir, `${fileId}.mp4`);
+            const buffer = Buffer.from(await cobaltFileResp.arrayBuffer());
+            fs.writeFileSync(outputFile, buffer);
+            downloadedFile = outputFile;
+            console.log(`[Download] Cobalt download success: ${outputFile}`);
+          } else {
+            throw new Error(cobaltData.error?.code || 'Cobalt returned no URL');
+          }
+        } catch (cobaltErr: any) {
+          console.error('[Download] Cobalt fallback failed:', cobaltErr?.message);
+          throw ytdlpError; // throw original yt-dlp error
+        }
       }
     }
 

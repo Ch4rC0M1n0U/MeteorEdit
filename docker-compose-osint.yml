@@ -33,6 +33,7 @@ services:
       - COOKIE_ENCRYPTION_KEY=${COOKIE_ENCRYPTION_KEY:?COOKIE_ENCRYPTION_KEY is required}
       - LANGUAGETOOL_URL=http://languagetool:8010
       - OLLAMA_URL=http://ollama:11434
+      - COBALT_URL=http://cobalt-api:9000
     depends_on:
       mongodb:
         condition: service_healthy
@@ -89,6 +90,23 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    networks:
+      - internal
+
+  cobalt-api:
+    image: ghcr.io/imputnet/cobalt:10
+    container_name: meteoredit-cobalt
+    restart: unless-stopped
+    environment:
+      - API_URL=http://cobalt-api:9000
+      - CORS_WILDCARD=true
+      - PROCESSING_PRIORITY=false
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
     networks:
       - internal
 

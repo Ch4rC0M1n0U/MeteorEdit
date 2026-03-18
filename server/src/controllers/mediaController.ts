@@ -334,39 +334,57 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
     const filePath = path.join(captureDir, filename);
     const ts = Math.max(0, Math.floor(timestamp || 0));
 
-    // Get cookies if available for authenticated access
+    // Step 1: Get direct video stream URL
+    let videoUrl = '';
+
+    // Try yt-dlp first
     try {
-      // Detect platform from URL
-      let platform = '';
-      if (url.includes('youtube.com') || url.includes('youtu.be')) platform = 'youtube';
-      else if (url.includes('instagram.com')) platform = 'instagram';
-      else if (url.includes('tiktok.com')) platform = 'tiktok';
-      else if (url.includes('facebook.com')) platform = 'facebook';
-      if (platform) {
-        const { exportCookiesFile } = await import('./socialAuthController');
-        cookiesFile = await exportCookiesFile(userId, platform);
-      }
-    } catch {}
+      const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
+      const ytdlpArgs = ['--js-runtimes', 'node', '-f', 'b', '-g', '--no-warnings', '--no-playlist'];
+      if (isYoutube) ytdlpArgs.push('--extractor-args', 'youtube:player_client=mweb');
+      // Try with stored cookies
+      try {
+        let platform = '';
+        if (isYoutube) platform = 'youtube';
+        else if (url.includes('instagram.com')) platform = 'instagram';
+        else if (url.includes('tiktok.com')) platform = 'tiktok';
+        if (platform) {
+          const { exportCookiesFile } = await import('./socialAuthController');
+          cookiesFile = await exportCookiesFile(userId, platform);
+          if (cookiesFile) ytdlpArgs.push('--cookies', cookiesFile);
+        }
+      } catch {}
+      ytdlpArgs.push(url);
+      const { stdout } = await execFileAsync('yt-dlp', ytdlpArgs, { timeout: 30000 });
+      videoUrl = stdout.trim().split('\n')[0] || '';
+    } catch (ytErr: any) {
+      console.log('yt-dlp failed, trying Cobalt fallback:', ytErr?.message?.substring(0, 100));
+    }
 
-    // Step 1: Get direct video stream URL via yt-dlp
-    const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
-    const ytdlpArgs = [
-      '--js-runtimes', 'node',
-      '-f', 'b',
-      '-g',
-      '--no-warnings',
-      '--no-playlist',
-    ];
-    // Use mweb client for YouTube to bypass bot detection without cookies
-    if (isYoutube) ytdlpArgs.push('--extractor-args', 'youtube:player_client=mweb');
-    if (cookiesFile) ytdlpArgs.push('--cookies', cookiesFile);
-    ytdlpArgs.push(url);
-
-    const { stdout: streamUrl } = await execFileAsync('yt-dlp', ytdlpArgs, { timeout: 30000 });
-
-    const videoUrl = streamUrl.trim().split('\n')[0];
+    // Fallback: Cobalt API
     if (!videoUrl) {
-      res.status(400).json({ error: 'Impossible de récupérer le flux vidéo' });
+      const cobaltUrl = process.env.COBALT_URL || 'http://cobalt-api:9000';
+      try {
+        const cobaltResp = await fetch(cobaltUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ url, videoQuality: '720', filenameStyle: 'basic' }),
+        });
+        const cobaltData = await cobaltResp.json() as any;
+        if (cobaltData.url) {
+          videoUrl = cobaltData.url;
+          console.log('Cobalt provided video URL');
+        } else if (cobaltData.status === 'tunnel' || cobaltData.status === 'redirect') {
+          videoUrl = cobaltData.url || '';
+        }
+      } catch (cobaltErr: any) {
+        console.error('Cobalt fallback failed:', cobaltErr?.message);
+      }
+    }
+
+    if (!videoUrl) {
+      if (cookiesFile) try { fs.unlinkSync(cookiesFile); } catch {}
+      res.status(400).json({ error: 'Impossible de récupérer le flux vidéo (yt-dlp + Cobalt ont échoué)' });
       return;
     }
 
@@ -378,7 +396,7 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       '-q:v', '2',
       '-y',
       filePath,
-    ], { timeout: 15000 });
+    ], { timeout: 30000 });
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
