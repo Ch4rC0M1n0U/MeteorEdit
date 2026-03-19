@@ -1458,28 +1458,6 @@
     "catTechnical": "Technical",
     "catChecker": "Checker"
   },
-  "epieos": {
-    "title": "Epieos Import",
-    "description": "Import a JSON file exported from Epieos to automatically create a folder with analysis results.",
-    "dropOrClick": "Drop a JSON file or click to browse",
-    "services": "services",
-    "selectAll": "Select all",
-    "deselectAll": "Deselect all",
-    "import": "Import",
-    "importing": "Importing...",
-    "parseError": "Parse error",
-    "invalidFormat": "Invalid format: file does not contain Epieos data (metadata.query and data required)",
-    "noServices": "No services found in file",
-    "duplicate": "Duplicate",
-    "operator": "Operator",
-    "country": "Country",
-    "user": "User",
-    "business": "Business",
-    "registered": "Registered",
-    "name": "Name",
-    "number": "Number",
-    "device": "Device"
-  },
   "ai": {
     "disclaimer": {
       "title": "Commercial AI Usage",

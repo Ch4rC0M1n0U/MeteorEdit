@@ -1457,28 +1457,6 @@
     "catTechnical": "Technisch",
     "catChecker": "Verificatie"
   },
-  "epieos": {
-    "title": "Epieos Import",
-    "description": "Importeer een JSON-bestand geëxporteerd vanuit Epieos om automatisch een map aan te maken met analyseresultaten.",
-    "dropOrClick": "Sleep een JSON-bestand of klik om te bladeren",
-    "services": "diensten",
-    "selectAll": "Alles selecteren",
-    "deselectAll": "Alles deselecteren",
-    "import": "Importeren",
-    "importing": "Importeren...",
-    "parseError": "Parsefout",
-    "invalidFormat": "Ongeldig formaat: het bestand bevat geen Epieos-gegevens (metadata.query en data vereist)",
-    "noServices": "Geen diensten gevonden in het bestand",
-    "duplicate": "Duplicaat",
-    "operator": "Operator",
-    "country": "Land",
-    "user": "Gebruiker",
-    "business": "Zakelijk",
-    "registered": "Geregistreerd",
-    "name": "Naam",
-    "number": "Nummer",
-    "device": "Apparaat"
-  },
   "ai": {
     "disclaimer": {
       "title": "Gebruik van commerciële AI",

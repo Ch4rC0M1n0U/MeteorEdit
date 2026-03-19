@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { exportJSON, importJSON, importElephantastic, importEpieos } from '../controllers/exportController';
+import { exportJSON, importJSON, importElephantastic } from '../controllers/exportController';
 
 const router = Router();
 
@@ -119,42 +119,5 @@ router.post('/dossiers/import/json', authenticate, importJSON);
  */
 router.post('/dossiers/:id/import-elephantastic', authenticate, importElephantastic);
 
-/**
- * @swagger
- * /api/dossiers/{id}/import-epieos:
- *   post:
- *     tags: [Export]
- *     summary: Importer des donnees Epieos
- *     description: Cree un dossier avec des notes a partir d'un export Epieos JSON. Detecte les doublons.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: ID du dossier cible
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [query, services]
- *             properties:
- *               query:
- *                 type: string
- *               services:
- *                 type: array
- *               parentId:
- *                 type: string
- *     responses:
- *       201:
- *         description: Import reussi
- *       400:
- *         description: Donnees invalides
- */
-router.post('/dossiers/:id/import-epieos', authenticate, importEpieos);
 
 export default router;

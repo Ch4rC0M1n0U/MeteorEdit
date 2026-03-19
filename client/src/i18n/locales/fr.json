@@ -1458,28 +1458,6 @@
     "catTechnical": "Technique",
     "catChecker": "Vérification"
   },
-  "epieos": {
-    "title": "Import Epieos",
-    "description": "Importez un fichier JSON exporté depuis Epieos pour créer automatiquement un dossier avec les résultats d'analyse.",
-    "dropOrClick": "Glissez un fichier JSON ou cliquez pour parcourir",
-    "services": "services",
-    "selectAll": "Tout sélectionner",
-    "deselectAll": "Tout désélectionner",
-    "import": "Importer",
-    "importing": "Import en cours...",
-    "parseError": "Erreur de parsing",
-    "invalidFormat": "Format invalide : le fichier ne contient pas de données Epieos (metadata.query et data requis)",
-    "noServices": "Aucun service trouvé dans le fichier",
-    "duplicate": "Doublon",
-    "operator": "Opérateur",
-    "country": "Pays",
-    "user": "Utilisateur",
-    "business": "Business",
-    "registered": "Inscrit",
-    "name": "Nom",
-    "number": "Numéro",
-    "device": "Appareil"
-  },
   "ai": {
     "disclaimer": {
       "title": "Utilisation d'une IA commerciale",

@@ -106,10 +106,6 @@
                 <span>Import Tangles</span>
                 <span class="dv-soon-badge mono">{{ $t('common.soon') }}</span>
               </button>
-              <button class="dv-export-option" @click="epieosOpen = true">
-                <v-icon size="16">mdi-magnify-scan</v-icon>
-                <span>{{ $t('epieos.title') }}</span>
-              </button>
             </div>
           </v-menu>
           <!-- Historique -->
@@ -356,14 +352,6 @@
       v-if="elephantasticOpen && dossierStore.currentDossier"
       :dossier-id="dossierStore.currentDossier._id"
       @imported="handleElephantasticImport"
-    />
-
-    <!-- Epieos Import -->
-    <EpieosImportDialog
-      v-model="epieosOpen"
-      v-if="epieosOpen && dossierStore.currentDossier"
-      :dossier-id="dossierStore.currentDossier._id"
-      @imported="handleEpieosImport"
     />
 
     <!-- Export Selection -->
@@ -620,7 +608,6 @@ const MediaEditor = defineAsyncComponent(() =>
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';
 import ElephantasticImportDialog from './ElephantasticImportDialog.vue';
-import EpieosImportDialog from './EpieosImportDialog.vue';
 import AiDisclaimerModal from '../AiDisclaimerModal.vue';
 import type { MediaData } from '../../types';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
@@ -637,7 +624,6 @@ const disclaimerDismissed = ref(false);
 const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);
 const elephantasticOpen = ref(false);
-const epieosOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
 const mediaCreateParentId = ref<string | null>(null);
@@ -1181,13 +1167,6 @@ function handleProfileNodeCreated(node: any) {
 
 function handleElephantasticImport(nodes: any[]) {
   elephantasticOpen.value = false;
-  if (nodes.length > 0) {
-    dossierStore.selectNode(nodes[0]);
-  }
-}
-
-function handleEpieosImport(nodes: any[]) {
-  epieosOpen.value = false;
   if (nodes.length > 0) {
     dossierStore.selectNode(nodes[0]);
   }
