@@ -544,7 +544,7 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
     // Try yt-dlp first
     try {
       const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
-      const ytdlpArgs = ['--js-runtimes', 'node', '-f', 'b', '-g', '--no-warnings', '--no-playlist'];
+      const ytdlpArgs = ['--js-runtimes', 'node', '--impersonate', 'chrome', '-f', 'b', '-g', '--no-warnings', '--no-playlist'];
       if (isYoutube) ytdlpArgs.push('--extractor-args', 'youtube:player_client=mweb');
       // Try with stored cookies
       try {

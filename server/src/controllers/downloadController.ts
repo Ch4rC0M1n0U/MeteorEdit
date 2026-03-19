@@ -304,6 +304,7 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
       const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
       const dlArgs: string[] = [
         '--js-runtimes', 'node',
+        '--impersonate', 'chrome',
         '-f', `bestvideo[filesize<${maxSizeMB}M]+bestaudio/best[filesize<${maxSizeMB}M]/best`,
         '--merge-output-format', 'mp4',
         '--no-playlist',
