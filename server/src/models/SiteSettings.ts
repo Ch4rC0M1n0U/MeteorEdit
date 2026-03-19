@@ -47,6 +47,15 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
       enabled: { type: Boolean, default: true },
       defaultLanguage: { type: String, default: 'auto' },
     },
+    // Dossier duration alerts (days)
+    dossierAlerts: {
+      routine: { type: Number, default: 30 },
+      priority: { type: Number, default: 14 },
+      urgent: { type: Number, default: 7 },
+      routineMessage: { type: String, default: '' },
+      priorityMessage: { type: String, default: '' },
+      urgentMessage: { type: String, default: '' },
+    },
     // OSINT
     osint: {
       maxVideoSize: { type: Number, default: 200 * 1024 * 1024 },

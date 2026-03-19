@@ -214,8 +214,19 @@
     "classification": "Classificatie",
     "classificationPriority": "Prioriteit",
     "classificationRoutine": "Routine",
+    "datesReference": "Datums & Referentie",
+    "referenceNumber": "Referentienummer",
+    "arrivalDate": "Aankomstdatum",
+    "attributionDate": "Toewijzingsdatum",
+    "closureDate": "Afsluitdatum",
+    "durationWarning": "Dit dossier is al {days} dagen open (drempel: {threshold} dagen voor {classification} dossiers)",
+    "durationWarningUrgent": "DRINGEND — Dit dossier is al {days} dagen open (drempel: {threshold} dagen)",
+    "noDate": "Niet ingesteld",
+    "autoClosureDate": "Automatisch ingevuld bij afsluiting",
     "isUrgent": "Dringend",
     "isEmbargo": "Onder embargo",
+    "isContinuous": "Doorlopend dossier",
+    "continuousStatus": "DOORLOPEND",
     "embargoWarningTitle": "Embargo activeren",
     "embargoWarningMessage": "Door embargo op dit dossier te activeren:\n\n• Alleen de eigenaar en uitgenodigde medewerkers hebben toegang\n• Zelfs beheerders hebben geen zichtbaarheid\n• End-to-end encryptie wordt automatisch ingeschakeld\n• Er worden geen activiteitenlogboeken bijgehouden\n\nDit garandeert maximale vertrouwelijkheid. Weet u zeker dat u wilt doorgaan?",
     "embargoConfirm": "Embargo activeren",
@@ -951,7 +962,16 @@
       "telegramSession": "Sessie-string",
       "telegramSessionPlaceholder": "GramJS sessie-string (gegenereerd na authenticatie)",
       "telegramHelp": "Haal uw credentials op bij my.telegram.org > API development tools. De sessie-string wordt gegenereerd bij de eerste authenticatie met uw telefoonnummer."
-    }
+    },
+    "dossierAlerts": "Dossierduurwaarschuwingen",
+    "dossierAlertsDesc": "Stel waarschuwingsdrempels in dagen in voor elk dossiertype",
+    "alertRoutine": "Routinedrempel (dagen)",
+    "alertPriority": "Prioriteitsdrempel (dagen)",
+    "alertUrgent": "Dringendheidsdrempel (dagen)",
+    "alertRoutineMsg": "Aangepast bericht (routine)",
+    "alertPriorityMsg": "Aangepast bericht (prioriteit)",
+    "alertUrgentMsg": "Aangepast bericht (dringend)",
+    "alertMsgPlaceholder": "Laat leeg voor standaardbericht"
   },
   "search": {
     "placeholder": "Zoek een opdracht, dossier of pagina...",
@@ -1223,7 +1243,14 @@
     "notEnoughData": "Niet genoeg gegevens",
     "contribution6months": "Bijdrage (6 maanden)",
     "less": "Minder",
-    "more": "Meer"
+    "more": "Meer",
+    "processingStats": "Verwerkingstijd",
+    "avgProcessing": "Gemiddeld",
+    "maxProcessing": "Langste",
+    "minProcessing": "Kortste",
+    "closedDossiers": "Afgesloten dossiers",
+    "days": "dagen",
+    "openSince": "open sinds"
   },
   "tasks": {
     "titlePlaceholder": "Taaktitel",

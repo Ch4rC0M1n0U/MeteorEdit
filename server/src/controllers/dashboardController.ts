@@ -173,6 +173,31 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
     // --- Heatmap (180 days) ---
     const heatmap = dailyActivity.map(d => ({ date: d._id, count: d.count }));
 
+    // --- Processing time stats ---
+    const closedDossiers = dossiers.filter(d => d.status === 'closed' && d.closureDate && d.arrivalDate);
+    const processingTimes = closedDossiers.map(d => {
+      const arrival = new Date(d.arrivalDate!).getTime();
+      const closure = new Date(d.closureDate!).getTime();
+      return Math.max(0, Math.round((closure - arrival) / (1000 * 60 * 60 * 24))); // days
+    });
+    const openDossiers = dossiers.filter(d => d.status !== 'closed' && d.arrivalDate);
+    const openDurations = openDossiers.map(d => {
+      const arrival = new Date(d.arrivalDate!).getTime();
+      return { id: d._id, title: d.title, days: Math.round((now.getTime() - arrival) / (1000 * 60 * 60 * 24)), classification: d.classification, isUrgent: d.isUrgent };
+    });
+
+    const processingStats = {
+      totalClosed: closedDossiers.length,
+      avgDays: processingTimes.length ? Math.round(processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length) : 0,
+      maxDays: processingTimes.length ? Math.max(...processingTimes) : 0,
+      minDays: processingTimes.length ? Math.min(...processingTimes) : 0,
+      longestDossier: closedDossiers.length ? closedDossiers.reduce((longest: { id: string; title: string; days: number }, d) => {
+        const days = Math.round((new Date(d.closureDate!).getTime() - new Date(d.arrivalDate!).getTime()) / (1000 * 60 * 60 * 24));
+        return days > (longest.days || 0) ? { id: String(d._id), title: d.title, days } : longest;
+      }, { id: '', title: '', days: 0 }) : null,
+      openDurations: openDurations.sort((a, b) => b.days - a.days).slice(0, 10),
+    };
+
     res.json({
       totalDossiers, ownedDossiers, collabDossiers,
       statusCounts, totalNodes, nodeCountsByType,
@@ -182,6 +207,7 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
       weeklyTrend: { current: currentWeekCount, previous: previousWeekCount },
       topDossiersThisWeek,
       heatmap,
+      processingStats,
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

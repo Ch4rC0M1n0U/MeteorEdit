@@ -87,10 +87,50 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: Classification + Investigator -->
+      <!-- RIGHT COLUMN: Dates & Reference + Classification + Investigator -->
       <div class="di-section di-sidebar-section">
-        <!-- Classification & Magistrat -->
+        <!-- Dates & Référence -->
         <h3 class="di-section-title mono">
+          <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
+          {{ $t('dossier.datesReference') }}
+        </h3>
+        <div class="di-field">
+          <span class="di-label mono">
+            <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
+            {{ $t('dossier.referenceNumber') }}
+          </span>
+          <span class="di-value">{{ form.referenceNumber || '—' }}</span>
+        </div>
+        <div class="di-row">
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.arrivalDate') }}</span>
+            <span class="di-value">{{ form.arrivalDate ? new Date(form.arrivalDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.attributionDate') }}</span>
+            <span class="di-value">{{ form.attributionDate ? new Date(form.attributionDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+          </div>
+        </div>
+        <div class="di-field">
+          <span class="di-label mono">{{ $t('dossier.closureDate') }}</span>
+          <span class="di-value">{{ form.closureDate ? new Date(form.closureDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+          <span v-if="!form.closureDate" class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
+        </div>
+
+        <!-- Duration warning alert -->
+        <v-alert
+          v-if="durationWarning"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mt-3 mb-2"
+          style="font-size: 13px;"
+        >
+          {{ durationWarning }}
+        </v-alert>
+
+        <!-- Classification & Magistrat -->
+        <h3 class="di-section-title mono" style="margin-top: 16px;">
           <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
           {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
         </h3>
@@ -112,6 +152,10 @@
           <span v-if="form.isEmbargo" class="di-flag-badge di-flag-embargo">
             <v-icon size="14" class="mr-1">mdi-lock-clock</v-icon>
             {{ $t('dossier.isEmbargo') }}
+          </span>
+          <span v-if="form.isContinuous" class="di-flag-badge di-flag-continuous">
+            <v-icon size="14" class="mr-1">mdi-infinity</v-icon>
+            {{ $t('dossier.isContinuous') }}
           </span>
         </div>
         <div class="di-row">
@@ -340,6 +384,10 @@
               <v-icon size="14">mdi-lock-clock</v-icon>
               {{ $t('dossier.isEmbargo') }}
             </button>
+            <button type="button" class="di-flag-toggle" :class="{ 'di-flag-toggle-active di-flag-continuous-active': form.isContinuous }" @click="form.isContinuous = !form.isContinuous">
+              <v-icon size="14">mdi-infinity</v-icon>
+              {{ $t('dossier.isContinuous') }}
+            </button>
           </div>
         </div>
         <v-textarea v-model="form.judicialFacts" :label="$t('dossier.judicialFacts')" rows="2" density="compact" class="mt-3" hide-details />
@@ -349,6 +397,35 @@
       <div class="di-edit-row">
         <MiniEditor v-model="form.objectives" :label="$t('dossier.objectives')" :placeholder="$t('dossier.objectives')" />
         <MiniEditor v-model="form.description" :label="$t('dossier.synthesis')" :placeholder="$t('dossier.synthesis')" />
+      </div>
+
+      <!-- Dates & Référence (edit mode) -->
+      <div class="di-section">
+        <h3 class="di-section-title mono">
+          <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
+          {{ $t('dossier.datesReference') }}
+        </h3>
+        <v-text-field
+          v-model="form.referenceNumber"
+          :label="$t('dossier.referenceNumber')"
+          density="compact"
+          prepend-inner-icon="mdi-identifier"
+        />
+        <div class="di-row">
+          <div class="di-date-field">
+            <label class="di-date-label mono">{{ $t('dossier.arrivalDate') }}</label>
+            <input type="date" v-model="form.arrivalDate" class="di-date-input" />
+          </div>
+          <div class="di-date-field">
+            <label class="di-date-label mono">{{ $t('dossier.attributionDate') }}</label>
+            <input type="date" v-model="form.attributionDate" class="di-date-input" />
+          </div>
+        </div>
+        <div class="di-date-field">
+          <label class="di-date-label mono">{{ $t('dossier.closureDate') }}</label>
+          <input type="date" v-model="form.closureDate" class="di-date-input" />
+          <span class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
+        </div>
       </div>
 
       <!-- Classification + Enquêteur côte à côte -->
@@ -615,7 +692,7 @@ import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import MiniEditor from '../editor/MiniEditor.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { confirm: customConfirm } = useConfirm();
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
@@ -703,9 +780,14 @@ const form = reactive({
   classification: 'routine' as 'priority' | 'routine',
   isUrgent: false,
   isEmbargo: false,
+  isContinuous: false,
   magistrate: '',
   isFirstRequest: true,
   dossierLanguage: 'fr' as 'fr' | 'nl',
+  referenceNumber: '',
+  arrivalDate: '',
+  attributionDate: '',
+  closureDate: '',
   linkedDocuments: [] as { _id: string; fileName: string; filePath: string; fileSize: number; originalContentType?: string; uploadedAt: string }[],
 });
 
@@ -787,6 +869,36 @@ const dossierLanguageOptions = computed(() => [
   { title: t('dossier.langNl'), value: 'nl' },
 ]);
 
+// Dossier duration alerts
+const dossierAlerts = ref<{ routine: number; priority: number; urgent: number; routineMessage: string; priorityMessage: string; urgentMessage: string }>({
+  routine: 30, priority: 14, urgent: 7, routineMessage: '', priorityMessage: '', urgentMessage: '',
+});
+
+const durationWarning = computed(() => {
+  if (form.status === 'closed' || !form.arrivalDate || form.isContinuous) return '';
+  const arrival = new Date(form.arrivalDate);
+  const now = new Date();
+  const days = Math.floor((now.getTime() - arrival.getTime()) / (1000 * 60 * 60 * 24));
+  if (days < 0) return '';
+
+  let threshold = dossierAlerts.value.routine;
+  let classLabel = t('dossier.classificationRoutine');
+  if (form.isUrgent) {
+    threshold = dossierAlerts.value.urgent;
+    classLabel = t('dossier.isUrgent');
+  } else if (form.classification === 'priority') {
+    threshold = dossierAlerts.value.priority;
+    classLabel = t('dossier.classificationPriority');
+  }
+
+  if (days <= threshold) return '';
+
+  if (form.isUrgent) {
+    return dossierAlerts.value.urgentMessage || t('dossier.durationWarningUrgent', { days, threshold });
+  }
+  return t('dossier.durationWarning', { days, threshold, classification: classLabel });
+});
+
 function loadFromDossier() {
   const d = dossierStore.currentDossier;
   if (d) {
@@ -801,9 +913,14 @@ function loadFromDossier() {
     form.classification = d.classification || 'routine';
     form.isUrgent = !!d.isUrgent;
     form.isEmbargo = !!d.isEmbargo;
+    form.isContinuous = !!d.isContinuous;
     form.magistrate = d.magistrate || '';
     form.isFirstRequest = d.isFirstRequest !== undefined ? d.isFirstRequest : true;
     form.dossierLanguage = d.dossierLanguage || 'fr';
+    form.referenceNumber = d.referenceNumber || '';
+    form.arrivalDate = d.arrivalDate ? d.arrivalDate.substring(0, 10) : '';
+    form.attributionDate = d.attributionDate ? d.attributionDate.substring(0, 10) : '';
+    form.closureDate = d.closureDate ? d.closureDate.substring(0, 10) : '';
     form.linkedDocuments = (d.linkedDocuments || []).map((doc: any) => ({ ...doc }));
   }
 }
@@ -1088,6 +1205,13 @@ function formatFileSize(bytes: number): string {
 
 watch(() => dossierStore.currentDossier, loadFromDossier, { immediate: true });
 
+// Auto-fill closureDate when status changes to closed
+watch(() => form.status, (newStatus) => {
+  if (newStatus === 'closed' && !form.closureDate) {
+    form.closureDate = new Date().toISOString().substring(0, 10);
+  }
+});
+
 watch(() => dossierStore.currentDossier?.tags, (tags) => {
   localTags.value = tags || [];
 }, { immediate: true });
@@ -1110,6 +1234,13 @@ onMounted(async () => {
     console.error('Failed to load tags:', e);
   }
   loadAiConfig();
+  // Load dossier alert thresholds from settings
+  try {
+    const { data: settings } = await api.get('/admin/settings');
+    if (settings?.dossierAlerts) {
+      dossierAlerts.value = { ...dossierAlerts.value, ...settings.dossierAlerts };
+    }
+  } catch { /* ignore - use defaults */ }
 });
 
 async function saveTags(tags: string[]) {
@@ -2000,6 +2131,38 @@ async function removeCollaborator(userId: string) {
   gap: 8px;
   flex-shrink: 0;
 }
+.di-hint {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  margin-top: 2px;
+}
+.di-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.di-date-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--me-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.di-date-input {
+  padding: 8px 12px;
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-xs);
+  background: var(--me-bg-surface);
+  color: var(--me-text-primary);
+  font-size: 14px;
+  font-family: var(--me-font-mono);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.di-date-input:focus {
+  border-color: var(--me-accent);
+}
 .di-edit-bottom-row {
   display: flex;
   align-items: center;
@@ -2120,6 +2283,14 @@ async function removeCollaborator(userId: string) {
   border-color: var(--me-warning);
   color: var(--me-warning);
 }
+
+.di-flag-continuous { background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: #818cf8; }
+.di-flag-continuous-active {
+  border-color: #818cf8;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+.di-flag-continuous-active:hover { border-color: #818cf8; color: #818cf8; }
 
 /* Language selector */
 .di-lang-options {

@@ -42,6 +42,7 @@
       <AdminEncryptionStatus v-else-if="activeSection === 'encryption'" />
       <AdminOsint v-else-if="activeSection === 'osint'" />
       <AdminLanguageTool v-else-if="activeSection === 'languagetool'" />
+      <AdminDossierAlerts v-else-if="activeSection === 'dossierAlerts'" />
     </main>
   </div>
 </template>
@@ -65,6 +66,7 @@ import AdminAI from '../components/admin/AdminAI.vue';
 import AdminEncryptionStatus from '../components/admin/AdminEncryptionStatus.vue';
 import AdminOsint from '../components/admin/AdminOsint.vue';
 import AdminLanguageTool from '../components/admin/AdminLanguageTool.vue';
+import AdminDossierAlerts from '../components/admin/AdminDossierAlerts.vue';
 
 const { t } = useI18n();
 
@@ -75,6 +77,7 @@ const navItems = computed(() => [
   { type: 'item' as const, id: 'dashboard', label: t('admin.dashboard'), icon: 'mdi-view-dashboard-outline' },
   { type: 'item' as const, id: 'users', label: t('admin.users'), icon: 'mdi-account-group-outline' },
   { type: 'item' as const, id: 'audit', label: t('admin.auditLog'), icon: 'mdi-shield-check' },
+  { type: 'item' as const, id: 'dossierAlerts', label: t('admin.dossierAlerts'), icon: 'mdi-timer-alert-outline' },
   { type: 'group' as const, label: t('admin.configuration') },
   { type: 'item' as const, id: 'branding', label: t('admin.appearance'), icon: 'mdi-palette-outline' },
   { type: 'item' as const, id: 'security', label: t('admin.security'), icon: 'mdi-shield-lock-outline' },

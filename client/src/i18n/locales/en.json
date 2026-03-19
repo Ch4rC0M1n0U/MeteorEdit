@@ -215,8 +215,19 @@
     "classification": "Classification",
     "classificationPriority": "Priority",
     "classificationRoutine": "Routine",
+    "datesReference": "Dates & Reference",
+    "referenceNumber": "Reference number",
+    "arrivalDate": "Arrival date",
+    "attributionDate": "Attribution date",
+    "closureDate": "Closure date",
+    "durationWarning": "This dossier has been open for {days} days (threshold: {threshold} days for {classification} dossiers)",
+    "durationWarningUrgent": "URGENT — This dossier has been open for {days} days (threshold: {threshold} days)",
+    "noDate": "Not set",
+    "autoClosureDate": "Auto-filled on closure",
     "isUrgent": "Urgent",
     "isEmbargo": "Under embargo",
+    "isContinuous": "Ongoing dossier",
+    "continuousStatus": "ONGOING",
     "embargoWarningTitle": "Enable embargo",
     "embargoWarningMessage": "By enabling embargo on this case:\n\n• Only the owner and invited collaborators will have access\n• Even administrators will have no visibility\n• End-to-end encryption will be automatically enabled\n• No activity logs will be recorded\n\nThis ensures maximum confidentiality. Are you sure you want to continue?",
     "embargoConfirm": "Enable embargo",
@@ -952,7 +963,16 @@
       "telegramSession": "Session String",
       "telegramSessionPlaceholder": "GramJS session string (generated after authentication)",
       "telegramHelp": "Get your credentials from my.telegram.org > API development tools. The session string is generated during first authentication with your phone number."
-    }
+    },
+    "dossierAlerts": "Dossier duration alerts",
+    "dossierAlertsDesc": "Set alert thresholds in days for each dossier type",
+    "alertRoutine": "Routine threshold (days)",
+    "alertPriority": "Priority threshold (days)",
+    "alertUrgent": "Urgent threshold (days)",
+    "alertRoutineMsg": "Custom message (routine)",
+    "alertPriorityMsg": "Custom message (priority)",
+    "alertUrgentMsg": "Custom message (urgent)",
+    "alertMsgPlaceholder": "Leave empty for default message"
   },
   "search": {
     "placeholder": "Search a command, case, or page...",
@@ -1224,7 +1244,14 @@
     "notEnoughData": "Not enough data",
     "contribution6months": "Contribution (6 months)",
     "less": "Less",
-    "more": "More"
+    "more": "More",
+    "processingStats": "Processing time",
+    "avgProcessing": "Average",
+    "maxProcessing": "Longest",
+    "minProcessing": "Shortest",
+    "closedDossiers": "Closed dossiers",
+    "days": "days",
+    "openSince": "open since"
   },
   "tasks": {
     "titlePlaceholder": "Task title",

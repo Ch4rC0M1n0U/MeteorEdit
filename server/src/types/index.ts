@@ -80,9 +80,14 @@ export interface IDossier extends Document {
   classification: 'priority' | 'routine';
   isUrgent: boolean;
   isEmbargo: boolean;
+  isContinuous: boolean;
   magistrate: string;
   isFirstRequest: boolean;
   dossierLanguage: 'fr' | 'nl';
+  referenceNumber: string;
+  arrivalDate: Date | null;
+  attributionDate: Date | null;
+  closureDate: Date | null;
   linkedDocuments: ILinkedDocument[];
   owner: Types.ObjectId;
   collaborators: Types.ObjectId[];
@@ -162,6 +167,15 @@ export interface ISiteSettings extends Document {
   languageTool?: {
     enabled: boolean;
     defaultLanguage: string;
+  };
+  // Dossier duration alerts
+  dossierAlerts?: {
+    routine: number;
+    priority: number;
+    urgent: number;
+    routineMessage: string;
+    priorityMessage: string;
+    urgentMessage: string;
   };
   // OSINT
   osint?: {

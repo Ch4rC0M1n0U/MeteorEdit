@@ -215,8 +215,19 @@
     "classification": "Classification",
     "classificationPriority": "Prioritaire",
     "classificationRoutine": "Routine",
+    "datesReference": "Dates & Référence",
+    "referenceNumber": "Numéro de référence",
+    "arrivalDate": "Date d'arrivée",
+    "attributionDate": "Date d'attribution",
+    "closureDate": "Date de clôture",
+    "durationWarning": "Ce dossier est ouvert depuis {days} jours (seuil : {threshold} jours pour les dossiers {classification})",
+    "durationWarningUrgent": "URGENT — Ce dossier est ouvert depuis {days} jours (seuil : {threshold} jours)",
+    "noDate": "Non définie",
+    "autoClosureDate": "Remplie automatiquement à la clôture",
     "isUrgent": "Urgent",
     "isEmbargo": "Sous embargo",
+    "isContinuous": "Dossier en continu",
+    "continuousStatus": "EN CONTINU",
     "embargoWarningTitle": "Activer l'embargo",
     "embargoWarningMessage": "En activant l'embargo sur ce dossier :\n\n• Seuls le propriétaire et les collaborateurs invités pourront y accéder\n• Même les administrateurs n'auront aucune visibilité\n• Le chiffrement de bout en bout sera automatiquement activé\n• Aucune trace d'activité ne sera enregistrée\n\nCette mesure garantit une confidentialité maximale. Êtes-vous sûr de vouloir continuer ?",
     "embargoConfirm": "Activer l'embargo",
@@ -952,7 +963,16 @@
       "telegramSession": "Session String",
       "telegramSessionPlaceholder": "String de session GramJS (généré après authentification)",
       "telegramHelp": "Obtenez vos credentials sur my.telegram.org > API development tools. La session string est générée lors de la première authentification avec votre numéro de téléphone."
-    }
+    },
+    "dossierAlerts": "Alertes de durée des dossiers",
+    "dossierAlertsDesc": "Définissez les seuils d'alerte en jours pour chaque type de dossier",
+    "alertRoutine": "Seuil routine (jours)",
+    "alertPriority": "Seuil prioritaire (jours)",
+    "alertUrgent": "Seuil urgent (jours)",
+    "alertRoutineMsg": "Message personnalisé (routine)",
+    "alertPriorityMsg": "Message personnalisé (prioritaire)",
+    "alertUrgentMsg": "Message personnalisé (urgent)",
+    "alertMsgPlaceholder": "Laisser vide pour le message par défaut"
   },
   "search": {
     "placeholder": "Rechercher une commande, un dossier, une page...",
@@ -1224,7 +1244,14 @@
     "notEnoughData": "Pas assez de données",
     "contribution6months": "Contribution (6 mois)",
     "less": "Moins",
-    "more": "Plus"
+    "more": "Plus",
+    "processingStats": "Temps de traitement",
+    "avgProcessing": "Moyenne",
+    "maxProcessing": "Plus long",
+    "minProcessing": "Plus court",
+    "closedDossiers": "Dossiers clôturés",
+    "days": "jours",
+    "openSince": "ouvert depuis"
   },
   "tasks": {
     "titlePlaceholder": "Titre de la tâche",

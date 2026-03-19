@@ -87,6 +87,12 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
       return;
     }
     Object.assign(dossier, req.body);
+    // Auto-set closureDate when status changes to closed
+    if (req.body.status === 'closed' && !dossier.closureDate) {
+      dossier.closureDate = new Date();
+    } else if (req.body.status && req.body.status !== 'closed') {
+      dossier.closureDate = null;
+    }
     await dossier.save();
     if (!dossier.isEmbargo) {
       const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');

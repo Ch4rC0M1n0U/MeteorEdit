@@ -67,6 +67,17 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
       }
     }
 
+    // Dossier duration alerts
+    if (body.dossierAlerts) {
+      const da = body.dossierAlerts;
+      if (typeof da.routine === 'number') update['dossierAlerts.routine'] = da.routine;
+      if (typeof da.priority === 'number') update['dossierAlerts.priority'] = da.priority;
+      if (typeof da.urgent === 'number') update['dossierAlerts.urgent'] = da.urgent;
+      if (typeof da.routineMessage === 'string') update['dossierAlerts.routineMessage'] = da.routineMessage;
+      if (typeof da.priorityMessage === 'string') update['dossierAlerts.priorityMessage'] = da.priorityMessage;
+      if (typeof da.urgentMessage === 'string') update['dossierAlerts.urgentMessage'] = da.urgentMessage;
+    }
+
     // OSINT settings
     if (body.osint && typeof body.osint === 'object') {
       const o = body.osint;
@@ -112,6 +123,9 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
     }
     if (changedKeys.some(k => k.startsWith('osint.'))) {
       await logActivity(req.user!.userId, 'settings.osint_update', 'system', null, { fields: changedKeys.filter(k => k.startsWith('osint.')) }, ip);
+    }
+    if (changedKeys.some(k => k.startsWith('dossierAlerts.'))) {
+      await logActivity(req.user!.userId, 'settings.dossier_alerts_update', 'system', null, { fields: changedKeys.filter(k => k.startsWith('dossierAlerts.')) }, ip);
     }
 
     res.json(settings);

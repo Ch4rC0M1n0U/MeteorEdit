@@ -44,9 +44,14 @@ export interface Dossier {
   classification: 'priority' | 'routine';
   isUrgent: boolean;
   isEmbargo: boolean;
+  isContinuous: boolean;
   magistrate: string;
   isFirstRequest: boolean;
   dossierLanguage: 'fr' | 'nl';
+  referenceNumber: string;
+  arrivalDate: string | null;
+  attributionDate: string | null;
+  closureDate: string | null;
   linkedDocuments: LinkedDocument[];
   owner: string;
   collaborators: (string | CollaboratorUser)[];
