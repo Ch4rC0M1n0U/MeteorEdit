@@ -75,21 +75,21 @@ const navItems = computed(() => [
   { type: 'item' as const, id: 'dashboard', label: t('admin.dashboard'), icon: 'mdi-view-dashboard-outline' },
   { type: 'item' as const, id: 'users', label: t('admin.users'), icon: 'mdi-account-group-outline' },
   { type: 'item' as const, id: 'audit', label: t('admin.auditLog'), icon: 'mdi-shield-check' },
+  { type: 'item' as const, id: 'dossierConfig', label: t('admin.dossierConfig'), icon: 'mdi-folder-cog-outline' },
   { type: 'group' as const, label: t('admin.configuration') },
   { type: 'item' as const, id: 'branding', label: t('admin.appearance'), icon: 'mdi-palette-outline' },
   { type: 'item' as const, id: 'security', label: t('admin.security'), icon: 'mdi-shield-lock-outline' },
   { type: 'item' as const, id: 'encryption', label: t('admin.encryption.title'), icon: 'mdi-shield-key-outline' },
   { type: 'item' as const, id: 'storage', label: t('admin.storage'), icon: 'mdi-harddisk' },
-  { type: 'item' as const, id: 'dossierConfig', label: t('admin.dossierConfig'), icon: 'mdi-folder-cog-outline' },
   { type: 'item' as const, id: 'network', label: t('admin.networkAnnouncements'), icon: 'mdi-lan' },
   { type: 'group' as const, label: t('admin.services') },
-  { type: 'item' as const, id: 'email', label: t('admin.emailSmtp'), icon: 'mdi-email-outline' },
-  { type: 'item' as const, id: 'clipper', label: t('admin.webClipper'), icon: 'mdi-scissors-cutting' },
   { type: 'item' as const, id: 'ai', label: t('admin.ai'), icon: 'mdi-robot-outline' },
   { type: 'item' as const, id: 'osint', label: 'OSINT', icon: 'mdi-earth-arrow-right' },
   { type: 'item' as const, id: 'languagetool', label: t('admin.languageTool'), icon: 'mdi-spellcheck' },
-  { type: 'item' as const, id: 'plugins', label: t('admin.plugins'), icon: 'mdi-puzzle-outline' },
+  { type: 'item' as const, id: 'email', label: t('admin.emailSmtp'), icon: 'mdi-email-outline' },
   { type: 'group' as const, label: t('admin.maintenance') },
+  { type: 'item' as const, id: 'clipper', label: t('admin.webClipper'), icon: 'mdi-scissors-cutting' },
+  { type: 'item' as const, id: 'plugins', label: t('admin.plugins'), icon: 'mdi-puzzle-outline' },
   { type: 'item' as const, id: 'backup', label: t('admin.backup'), icon: 'mdi-backup-restore' },
 ]);
 </script>
@@ -123,6 +123,8 @@ const navItems = computed(() => [
   display: flex;
   flex-direction: column;
   gap: 2px;
+  overflow-y: auto;
+  flex: 1;
 }
 .admin-nav-group {
   font-size: 11px;
