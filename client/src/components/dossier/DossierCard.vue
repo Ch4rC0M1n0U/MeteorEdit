@@ -23,7 +23,8 @@
       <v-icon v-else-if="dossier.icon" size="22" class="dc-icon">{{ dossier.icon }}</v-icon>
       <v-icon v-else size="22" class="dc-icon dc-icon-default">mdi-folder-outline</v-icon>
       <h3 class="dc-title">{{ dossier.title }}</h3>
-      <v-icon size="16" class="dc-lock" :title="$t('home.e2eActive')">mdi-lock-outline</v-icon>
+      <v-icon v-if="dossier.isEmbargo" size="16" class="dc-embargo" :title="$t('dossier.isEmbargo')">mdi-shield-lock</v-icon>
+      <v-icon v-else size="16" class="dc-lock" :title="$t('home.e2eActive')">mdi-lock-outline</v-icon>
     </div>
     <div v-if="dossier.tags?.length" class="dc-tags">
       <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>
@@ -186,6 +187,11 @@ const statusLabel = computed(() => {
   margin-left: auto;
   flex-shrink: 0;
   opacity: 0.7;
+}
+.dc-embargo {
+  color: #f59e0b;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 .dc-title {
   font-size: 17px;
