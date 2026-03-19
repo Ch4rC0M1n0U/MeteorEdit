@@ -313,8 +313,6 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
         '--write-info-json',
         '-o', outputTemplate,
       ];
-      // Use mweb client for YouTube to bypass bot detection
-      if (isYoutube) dlArgs.push('--extractor-args', 'youtube:player_client=mweb');
       if (cookiesFile) {
         dlArgs.push('--cookies', cookiesFile);
       }
