@@ -73,14 +73,28 @@ export async function storeDossierKey(req: AuthRequest, res: Response): Promise<
       return;
     }
 
-    // Only owner can manage encryption
-    if (dossier.owner.toString() !== req.user!.userId) {
-      res.status(403).json({ message: 'Seul le proprietaire peut gerer le chiffrement' });
+    const userId = req.user!.userId;
+    const isOwner = dossier.owner.toString() === userId;
+    const isCollaborator = dossier.collaborators.some(c => c.toString() === userId);
+
+    if (!isOwner && !isCollaborator) {
+      res.status(403).json({ message: 'Acces refuse' });
       return;
     }
 
     if (encryptedKeys !== undefined) {
-      dossier.encryptionKeys = encryptedKeys;
+      if (isOwner) {
+        // Owner can replace all keys
+        dossier.encryptionKeys = encryptedKeys;
+      } else {
+        // Collaborator can only add/update their own key
+        const existing = dossier.encryptionKeys.filter(
+          (k: any) => k.userId.toString() !== userId
+        );
+        const myKey = encryptedKeys.find((k: any) => k.userId?.toString() === userId);
+        if (myKey) existing.push(myKey);
+        dossier.encryptionKeys = existing;
+      }
     }
     await dossier.save();
 
