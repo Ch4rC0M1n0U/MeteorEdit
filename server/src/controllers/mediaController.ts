@@ -586,37 +586,21 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       }
     }
 
-    // Step 2: Extract frame
-    let captured = false;
-
-    // If we got a stream URL, try ffmpeg first
-    if (videoUrl) {
-      try {
-        await execFileAsync('ffmpeg', [
-          '-ss', String(ts),
-          '-i', videoUrl,
-          '-frames:v', '1',
-          '-q:v', '2',
-          '-y',
-          filePath,
-        ], { timeout: 30000 });
-        captured = true;
-      } catch (ffmpegErr: any) {
-        console.log('ffmpeg failed on stream URL:', ffmpegErr?.message?.substring(0, 100));
-      }
-    }
-
-    // Fallback: capture frame directly via Chrome screenshot of video element
-    if (!captured && (url.includes('youtube.com') || url.includes('youtu.be'))) {
-      console.log('Trying Chrome video screenshot...');
-      captured = await captureYoutubeFrame(url, ts, filePath);
-    }
-
-    if (!captured) {
+    if (!videoUrl) {
       if (cookiesFile) try { fs.unlinkSync(cookiesFile); } catch {}
-      res.status(400).json({ error: 'Impossible de capturer la vidéo' });
+      res.status(400).json({ error: 'Impossible de récupérer le flux vidéo' });
       return;
     }
+
+    // Step 2: Extract frame at timestamp via ffmpeg
+    await execFileAsync('ffmpeg', [
+      '-ss', String(ts),
+      '-i', videoUrl,
+      '-frames:v', '1',
+      '-q:v', '2',
+      '-y',
+      filePath,
+    ], { timeout: 30000 });
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
