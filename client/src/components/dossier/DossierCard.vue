@@ -1,7 +1,11 @@
 <template>
   <div class="dossier-card glass-card" @click="$emit('open', dossier._id)">
     <div class="dc-header">
-      <div class="dc-status">
+      <div class="dc-status" v-if="dossier.isContinuous">
+        <v-icon size="14" style="color: #818cf8;">mdi-infinity</v-icon>
+        <span class="dc-status-label dc-status-label--continuous mono">{{ t('dossier.statusContinuous') }}</span>
+      </div>
+      <div class="dc-status" v-else>
         <span :class="['status-dot', `status-dot--${statusDot}`]" />
         <span class="dc-status-label mono">{{ statusLabel }}</span>
       </div>
@@ -107,6 +111,9 @@ const statusLabel = computed(() => {
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--me-text-muted);
+}
+.dc-status-label--continuous {
+  color: #818cf8;
 }
 .dc-actions {
   display: flex;

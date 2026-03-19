@@ -104,7 +104,15 @@
     "deleteDossierConfirm": "Dit dossier en alle inhoud verwijderen? Deze actie is onomkeerbaar.",
     "addToFavorites": "Aan favorieten toevoegen",
     "removeFromFavorites": "Uit favorieten verwijderen",
-    "e2eActive": "E2E-versleuteling actief"
+    "e2eActive": "E2E-versleuteling actief",
+    "tabs": {
+      "favorites": "Favorieten",
+      "active": "Actief",
+      "closed": "Afgesloten",
+      "noFavorites": "Geen favorieten",
+      "noFavoritesHint": "Voeg dossiers toe aan favorieten voor snelle toegang.",
+      "noClosed": "Geen afgesloten dossiers"
+    }
   },
   "dossier": {
     "newDossier": "Nieuw dossier",
@@ -114,6 +122,7 @@
     "statusOpen": "Open",
     "statusInProgress": "In behandeling",
     "statusClosed": "Gesloten",
+    "statusContinuous": "Doorlopend",
     "objectives": "Onderzoeksdoelstellingen",
     "judicialFacts": "Gerechtelijke feiten",
     "synthesis": "Beschrijving / Samenvatting",

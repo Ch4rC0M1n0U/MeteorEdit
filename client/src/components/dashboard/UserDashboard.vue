@@ -118,6 +118,35 @@
               </div>
             </div>
           </div>
+
+          <!-- Processing Stats -->
+          <div v-if="processingStats" class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
+            <h3 class="dash-card-title mono" style="display: flex; align-items: center; gap: 6px;">
+              <v-icon size="16">mdi-timer-outline</v-icon>
+              {{ $t('dashboard.processingStats') }}
+            </h3>
+            <div class="processing-chips">
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-chart-timeline-variant</v-icon>
+                {{ $t('dashboard.avgProcessing') }}: {{ processingStats.avgDays }} {{ $t('dashboard.days') }}
+              </span>
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-arrow-up</v-icon>
+                {{ $t('dashboard.maxProcessing') }}: {{ processingStats.maxDays }} {{ $t('dashboard.days') }}
+              </span>
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-arrow-down</v-icon>
+                {{ $t('dashboard.minProcessing') }}: {{ processingStats.minDays }} {{ $t('dashboard.days') }}
+              </span>
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-archive-check-outline</v-icon>
+                {{ $t('dashboard.closedDossiers') }}: {{ processingStats.totalClosed }}
+              </span>
+            </div>
+            <div v-if="openDurationsChartData" style="margin-top: 16px;">
+              <Bar :data="openDurationsChartData" :options="openDurationsOptions" />
+            </div>
+          </div>
         </v-tabs-window-item>
 
         <!-- Tab: Activity -->
@@ -149,17 +178,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Line } from 'vue-chartjs';
+import { Line, Bar } from 'vue-chartjs';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
-  LineElement, Title, Tooltip, Filler,
+  LineElement, BarElement, Title, Tooltip, Filler,
 } from 'chart.js';
 import api from '../../services/api';
 import DashboardQuickAccess from './DashboardQuickAccess.vue';
 import DashboardHeatmap from './DashboardHeatmap.vue';
 import DashboardStats from './DashboardStats.vue';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Filler);
 
 const { t } = useI18n();
 
@@ -245,6 +274,43 @@ const activityChartData = computed(() => {
     }],
   };
 });
+
+const processingStats = computed(() => stats.value.processingStats || null);
+
+const openDurationsChartData = computed(() => {
+  const durations = processingStats.value?.openDurations;
+  if (!durations?.length) return null;
+  return {
+    labels: durations.map((d: any) => d.title.length > 25 ? d.title.slice(0, 25) + '...' : d.title),
+    datasets: [{
+      data: durations.map((d: any) => d.days),
+      backgroundColor: durations.map((d: any) => {
+        if (d.isUrgent) return '#ef4444';
+        if (d.classification === 'priority') return '#f59e0b';
+        return '#3b82f6';
+      }),
+      borderRadius: 4,
+    }],
+  };
+});
+
+const openDurationsOptions = {
+  indexAxis: 'y' as const,
+  responsive: true,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: {
+      ticks: { color: mutedColor, font: { size: 10 } },
+      grid: { color: 'rgba(255,255,255,0.05)' },
+      beginAtZero: true,
+      title: { display: true, text: t('dashboard.days'), color: mutedColor, font: { size: 10 } },
+    },
+    y: {
+      ticks: { color: mutedColor, font: { size: 11 } },
+      grid: { display: false },
+    },
+  },
+};
 
 const actionLabelKeys: Record<string, string> = {
   'login': 'dashboard.actions.login',
@@ -455,6 +521,24 @@ function formatDate(dateStr: string): string {
   color: var(--me-text-muted);
   text-align: center;
   padding: 16px 0;
+}
+
+/* Processing stats chips */
+.processing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.processing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--me-bg-elevated);
+  color: var(--me-text-secondary);
+  border: 1px solid var(--me-border);
 }
 
 /* Recent dossiers */

@@ -104,7 +104,15 @@
     "deleteDossierConfirm": "Delete this case and all its content? This action is irreversible.",
     "addToFavorites": "Add to favorites",
     "removeFromFavorites": "Remove from favorites",
-    "e2eActive": "E2E encryption active"
+    "e2eActive": "E2E encryption active",
+    "tabs": {
+      "favorites": "Favorites",
+      "active": "Active",
+      "closed": "Closed",
+      "noFavorites": "No favorites",
+      "noFavoritesHint": "Add cases to favorites for quick access.",
+      "noClosed": "No closed cases"
+    }
   },
   "dossier": {
     "newDossier": "New case",
@@ -114,6 +122,7 @@
     "statusOpen": "Open",
     "statusInProgress": "In progress",
     "statusClosed": "Closed",
+    "statusContinuous": "Continuous",
     "objectives": "Research objectives",
     "judicialFacts": "Judicial facts",
     "synthesis": "Description / Summary",

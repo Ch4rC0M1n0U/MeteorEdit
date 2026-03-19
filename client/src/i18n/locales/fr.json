@@ -104,7 +104,15 @@
     "deleteDossierConfirm": "Supprimer ce dossier et tout son contenu ? Cette action est irréversible.",
     "addToFavorites": "Ajouter aux favoris",
     "removeFromFavorites": "Retirer des favoris",
-    "e2eActive": "Chiffrement E2E actif"
+    "e2eActive": "Chiffrement E2E actif",
+    "tabs": {
+      "favorites": "Favoris",
+      "active": "En cours",
+      "closed": "Clôturés",
+      "noFavorites": "Aucun favori",
+      "noFavoritesHint": "Ajoutez des dossiers en favoris pour y accéder rapidement.",
+      "noClosed": "Aucun dossier clôturé"
+    }
   },
   "dossier": {
     "newDossier": "Nouveau dossier",
@@ -114,6 +122,7 @@
     "statusOpen": "Ouvert",
     "statusInProgress": "En cours",
     "statusClosed": "Clos",
+    "statusContinuous": "En continu",
     "objectives": "Objectifs de la recherche",
     "judicialFacts": "Faits judiciaires",
     "synthesis": "Description / Synthèse",

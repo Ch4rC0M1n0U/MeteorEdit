@@ -17,42 +17,89 @@
 
     <v-progress-linear v-if="dossierStore.loading" indeterminate color="primary" class="mb-4" style="border-radius: 4px;" />
 
-    <div v-if="favoriteDossiers.length" class="favorites-section fade-in">
-      <h2 class="section-title mono"><v-icon size="18" class="mr-1">mdi-star</v-icon> {{ $t('home.favorites') }}</h2>
-      <div class="dossier-grid">
-        <DossierCard
-          v-for="dossier in favoriteDossiers"
-          :key="'fav-' + dossier._id"
-          :dossier="dossier"
-          :is-fav="true"
-          @open="handleOpen"
-          @delete="handleDelete"
-          @toggle-favorite="handleToggleFavorite"
-        />
-      </div>
-    </div>
+    <!-- Tabbed dossier list -->
+    <v-tabs v-model="activeTab" color="primary" density="compact" class="home-tabs mb-4">
+      <v-tab value="favorites">
+        <v-icon size="16" start>mdi-star</v-icon>
+        {{ $t('home.tabs.favorites') }}
+      </v-tab>
+      <v-tab value="active">
+        <v-icon size="16" start>mdi-folder-open-outline</v-icon>
+        {{ $t('home.tabs.active') }}
+      </v-tab>
+      <v-tab value="closed">
+        <v-icon size="16" start>mdi-archive-outline</v-icon>
+        {{ $t('home.tabs.closed') }}
+      </v-tab>
+    </v-tabs>
 
-    <div v-if="dossierStore.dossiers.length" class="dossier-grid">
-      <DossierCard
-        v-for="(dossier, i) in dossierStore.dossiers"
-        :key="dossier._id"
-        :dossier="dossier"
-        :is-fav="dossierStore.isFavorite(dossier._id)"
-        :class="['fade-in', `fade-in-delay-${Math.min(i + 1, 4)}`]"
-        @open="handleOpen"
-        @delete="handleDelete"
-        @toggle-favorite="handleToggleFavorite"
-      />
-    </div>
+    <v-window v-model="activeTab">
+      <!-- Tab: Favorites -->
+      <v-window-item value="favorites">
+        <div v-if="favoriteDossiers.length" class="dossier-grid">
+          <DossierCard
+            v-for="dossier in favoriteDossiers"
+            :key="'fav-' + dossier._id"
+            :dossier="dossier"
+            :is-fav="true"
+            @open="handleOpen"
+            @delete="handleDelete"
+            @toggle-favorite="handleToggleFavorite"
+          />
+        </div>
+        <div v-else class="home-empty fade-in">
+          <v-icon size="48" color="primary" class="mb-4">mdi-star-outline</v-icon>
+          <h3 class="mono">{{ $t('home.tabs.noFavorites') }}</h3>
+          <p class="text-muted">{{ $t('home.tabs.noFavoritesHint') }}</p>
+        </div>
+      </v-window-item>
+
+      <!-- Tab: Active (En cours) -->
+      <v-window-item value="active">
+        <div v-if="activeDossiers.length" class="dossier-grid">
+          <DossierCard
+            v-for="(dossier, i) in activeDossiers"
+            :key="dossier._id"
+            :dossier="dossier"
+            :is-fav="dossierStore.isFavorite(dossier._id)"
+            :class="['fade-in', `fade-in-delay-${Math.min(i + 1, 4)}`]"
+            @open="handleOpen"
+            @delete="handleDelete"
+            @toggle-favorite="handleToggleFavorite"
+          />
+        </div>
+        <div v-else class="home-empty fade-in">
+          <v-icon size="48" color="primary" class="mb-4">mdi-folder-open-outline</v-icon>
+          <h3 class="mono">{{ $t('home.noDossiers') }}</h3>
+          <p class="text-muted">{{ $t('home.noDossiersHint') }}</p>
+        </div>
+      </v-window-item>
+
+      <!-- Tab: Closed -->
+      <v-window-item value="closed">
+        <div v-if="closedDossiers.length" class="dossier-grid dossier-grid--compact">
+          <div
+            v-for="dossier in closedDossiers"
+            :key="'closed-' + dossier._id"
+            class="closed-card glass-card"
+            @click="handleOpen(dossier._id)"
+          >
+            <div class="closed-card-header">
+              <span class="closed-card-ref mono" v-if="dossier.referenceNumber">{{ dossier.referenceNumber }}</span>
+              <span class="closed-card-date mono">{{ formatClosureDate(dossier.closureDate) }}</span>
+            </div>
+            <h4 class="closed-card-title">{{ dossier.title }}</h4>
+          </div>
+        </div>
+        <div v-else class="home-empty fade-in">
+          <v-icon size="48" color="primary" class="mb-4">mdi-archive-outline</v-icon>
+          <h3 class="mono">{{ $t('home.tabs.noClosed') }}</h3>
+        </div>
+      </v-window-item>
+    </v-window>
 
     <div ref="sentinelRef" style="height: 1px;" />
     <v-progress-linear v-if="dossierStore.loading && dossierStore.dossiers.length > 0" indeterminate color="primary" class="mt-2" style="border-radius: 4px;" />
-
-    <div v-if="!dossierStore.dossiers.length && !dossierStore.loading" class="home-empty fade-in">
-      <v-icon size="48" color="primary" class="mb-4">mdi-folder-open-outline</v-icon>
-      <h3 class="mono">{{ $t('home.noDossiers') }}</h3>
-      <p class="text-muted">{{ $t('home.noDossiersHint') }}</p>
-    </div>
 
     <UserDashboard @open-dossier="handleOpen" />
   </div>
@@ -71,16 +118,30 @@ import CreateDossierDialog from '../components/dossier/CreateDossierDialog.vue';
 import DossierView from '../components/dossier/DossierView.vue';
 import UserDashboard from '../components/dashboard/UserDashboard.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const importInputRef = ref<HTMLInputElement | null>(null);
 const sentinelRef = ref<HTMLElement | null>(null);
+const activeTab = ref('active');
 let observer: IntersectionObserver | null = null;
 
 const favoriteDossiers = computed(() =>
   dossierStore.dossiers.filter(d => dossierStore.isFavorite(d._id))
 );
+
+const activeDossiers = computed(() =>
+  dossierStore.dossiers.filter(d => d.status === 'open' || d.status === 'in_progress')
+);
+
+const closedDossiers = computed(() =>
+  dossierStore.dossiers.filter(d => d.status === 'closed')
+);
+
+function formatClosureDate(date: string | null): string {
+  if (!date) return '-';
+  return new Date(date).toLocaleDateString(locale.value);
+}
 
 onMounted(() => {
   dossierStore.fetchDossiers(true);
@@ -169,21 +230,17 @@ async function handleDelete(id: string) {
   margin-top: 4px;
   font-family: var(--me-font-mono);
 }
-.favorites-section {
-  margin-bottom: 32px;
-}
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--me-text-primary);
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
+.home-tabs {
+  border-bottom: 1px solid var(--me-border);
 }
 .dossier-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
+}
+.dossier-grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
 }
 .home-empty {
   text-align: center;
@@ -219,5 +276,44 @@ async function handleDelete(id: string) {
 .text-muted {
   color: var(--me-text-muted);
   font-size: 14px;
+}
+.mb-4 { margin-bottom: 16px; }
+.mt-2 { margin-top: 8px; }
+
+/* Compact closed cards */
+.closed-card {
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+.closed-card:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.closed-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.closed-card-ref {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.closed-card-date {
+  font-size: 11px;
+  color: var(--me-text-muted);
+}
+.closed-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--me-text-secondary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
