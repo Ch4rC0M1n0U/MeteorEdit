@@ -1346,6 +1346,7 @@
       "title": "Sociale media-sessies",
       "subtitle": "Beheer platformverbindingen voor het downloaden en analyseren van profielen",
       "connect": "Verbinden",
+      "openSite": "Site openen",
       "disconnect": "Loskoppelen",
       "connectTo": "Verbinden met {platform}",
       "loginInProgress": "Inloggen...",

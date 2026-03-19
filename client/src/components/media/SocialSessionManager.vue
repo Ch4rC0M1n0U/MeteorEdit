@@ -48,12 +48,13 @@
           <button
             v-if="!isConnected(p.key)"
             class="ssm-btn ssm-btn--connect"
-            @click="openLoginDialog(p)"
+            @click="openPlatformSite(p)"
+            :title="$t('social.session.openSite')"
           >
-            {{ $t('social.session.connect') }}
+            <v-icon size="14" class="mr-1">mdi-open-in-new</v-icon>
+            {{ $t('social.session.openSite') }}
           </button>
           <button
-            v-if="!isConnected(p.key)"
             class="ssm-btn ssm-btn--import"
             @click="openImportDialog(p)"
             :title="$t('social.session.importCookies')"
@@ -275,6 +276,19 @@ interface CookieRecord {
 
 const { t, locale } = useI18n();
 
+const PLATFORM_URLS: Record<string, string> = {
+  youtube: 'https://accounts.google.com/signin',
+  instagram: 'https://www.instagram.com/accounts/login/',
+  tiktok: 'https://www.tiktok.com/login',
+  snapchat: 'https://accounts.snapchat.com/accounts/v2/login',
+  facebook: 'https://www.facebook.com/login',
+  x: 'https://x.com/i/flow/login',
+  whatsapp: 'https://web.whatsapp.com',
+  threads: 'https://www.threads.net/login',
+  linkedin: 'https://www.linkedin.com/login',
+  strava: 'https://www.strava.com/login',
+};
+
 const platformList: Platform[] = [
   { key: 'youtube', name: 'YouTube', icon: 'mdi-youtube', color: '#FF0000' },
   { key: 'instagram', name: 'Instagram', icon: 'mdi-instagram', color: '#E1306C' },
@@ -365,7 +379,12 @@ async function fetchStatus() {
   }
 }
 
-// --- Login flow ---
+function openPlatformSite(platform: Platform) {
+  const url = PLATFORM_URLS[platform.key];
+  if (url) window.open(url, '_blank');
+}
+
+// --- Login flow (legacy, kept for reference) ---
 function openLoginDialog(platform: Platform) {
   loginPlatform.value = platform;
   loginResult.value = null;

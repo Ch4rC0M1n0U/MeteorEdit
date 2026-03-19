@@ -1347,6 +1347,7 @@
       "title": "Sessions de réseaux sociaux",
       "subtitle": "Gérez les connexions aux plateformes pour le téléchargement et l'analyse de profils",
       "connect": "Connecter",
+      "openSite": "Ouvrir le site",
       "disconnect": "Déconnecter",
       "connectTo": "Connexion à {platform}",
       "loginInProgress": "Connexion en cours...",

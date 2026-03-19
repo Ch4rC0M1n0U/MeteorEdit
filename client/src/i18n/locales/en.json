@@ -1347,6 +1347,7 @@
       "title": "Social Media Sessions",
       "subtitle": "Manage platform connections for downloading and profile analysis",
       "connect": "Connect",
+      "openSite": "Open site",
       "disconnect": "Disconnect",
       "connectTo": "Connect to {platform}",
       "loginInProgress": "Logging in...",
