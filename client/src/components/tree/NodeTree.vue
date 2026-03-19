@@ -36,7 +36,6 @@
           :all-nodes="dossierStore.nodes"
           :depth="item.depth"
           :expanded="item.expanded"
-          :is-linked="item.isLinked"
           @toggle-expand="toggleExpanded"
           @create="(type, parentId) => $emit('create', type, parentId)"
           @duplicate="(nodeId) => $emit('duplicate', nodeId)"
@@ -55,7 +54,6 @@
           :all-nodes="dossierStore.nodes"
           :depth="item.depth"
           :expanded="item.expanded"
-          :is-linked="item.isLinked"
           @toggle-expand="toggleExpanded"
           @create="(type, parentId) => $emit('create', type, parentId)"
           @duplicate="(nodeId) => $emit('duplicate', nodeId)"
@@ -212,7 +210,6 @@ interface FlatNode {
   node: DossierNode;
   depth: number;
   expanded: boolean;
-  isLinked?: boolean;
 }
 
 const flattenedNodes = computed<FlatNode[]>(() => {
@@ -233,10 +230,7 @@ const flattenedNodes = computed<FlatNode[]>(() => {
     const children = nodesByParent.get(parentId) || [];
     for (const child of children) {
       const expanded = expandedIds.value.has(child._id);
-      // Check if this node is a linked child (its ID is in the parent's linkedNodeIds)
-      const parentNode = parentId ? dossierStore.nodes.find(n => n._id === parentId) : null;
-      const isLinked = parentNode?.linkedNodeIds?.includes(child._id) || false;
-      result.push({ id: child._id, node: child, depth, expanded, isLinked });
+      result.push({ id: child._id, node: child, depth, expanded });
       // Recurse into any expanded node that has children
       const hasChildren = nodesByParent.has(child._id);
       if (hasChildren && expanded) {

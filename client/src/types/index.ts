@@ -148,7 +148,6 @@ export interface DossierNode {
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
-  linkedNodeIds: string[];
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

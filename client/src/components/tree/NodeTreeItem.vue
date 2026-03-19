@@ -27,7 +27,6 @@
       </button>
       <span v-else class="nti-chevron-spacer" />
 
-      <v-icon v-if="isLinked" size="12" class="nti-link-badge">mdi-link-variant</v-icon>
       <v-icon size="16" class="nti-icon">{{ icon }}</v-icon>
       <input
         v-if="renaming"
@@ -86,12 +85,6 @@
           <button class="nti-ctx-item" @click="showMenu = false; $emit('duplicate', node._id)">
             <v-icon size="14">mdi-content-copy</v-icon> {{ $t('tree.duplicate') }}
           </button>
-          <button v-if="!isLinked" class="nti-ctx-item" @click="showMenu = false; startLinkNode()">
-            <v-icon size="14">mdi-link-variant</v-icon> {{ $t('tree.linkNode') }}
-          </button>
-          <button v-if="isLinked" class="nti-ctx-item" @click="showMenu = false; handleUnlink()">
-            <v-icon size="14">mdi-link-variant-off</v-icon> {{ $t('tree.unlinkNode') }}
-          </button>
           <div class="nti-ctx-sep" />
           <!-- Zone dangereuse -->
           <button class="nti-ctx-item nti-ctx-danger" @click="handleDelete">
@@ -101,40 +94,6 @@
       </v-menu>
     </div>
 
-    <!-- Link node dialog -->
-    <v-dialog v-model="linkDialog" max-width="400">
-      <div class="glass-card" style="padding: 20px;">
-        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-          <v-icon size="18" color="var(--me-accent)">mdi-link-variant</v-icon>
-          {{ $t('tree.linkNodeTitle') }}
-        </h3>
-        <v-autocomplete
-          v-model="linkTargetId"
-          :items="linkableNodes"
-          item-title="title"
-          item-value="_id"
-          :label="$t('tree.selectNodeToLink')"
-          density="compact"
-          hide-details
-          auto-select-first
-        >
-          <template #item="{ item, props: itemProps }">
-            <v-list-item v-bind="itemProps">
-              <template #prepend>
-                <v-icon size="16">{{ nodeTypeIcon(item.raw.type) }}</v-icon>
-              </template>
-            </v-list-item>
-          </template>
-        </v-autocomplete>
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
-          <button class="me-btn-ghost" @click="linkDialog = false" style="padding: 6px 14px; border-radius: 6px; border: 1px solid var(--me-border); background: none; color: var(--me-text-secondary); cursor: pointer; font-size: 13px;">{{ $t('common.cancel') }}</button>
-          <button class="me-btn-primary" :disabled="!linkTargetId" @click="confirmLink" style="padding: 6px 14px; border-radius: 6px; border: none; background: var(--me-accent); color: var(--me-bg-deep); cursor: pointer; font-size: 13px; font-weight: 600;">
-            <v-icon size="14" style="margin-right: 4px;">mdi-link-variant</v-icon>
-            {{ $t('tree.link') }}
-          </button>
-        </div>
-      </div>
-    </v-dialog>
   </div>
 </template>
 
@@ -145,7 +104,7 @@ import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
 import type { DossierNode } from '../../types';
-const props = defineProps<{ node: DossierNode; allNodes: DossierNode[]; depth: number; expanded: boolean; isLinked?: boolean }>();
+const props = defineProps<{ node: DossierNode; allNodes: DossierNode[]; depth: number; expanded: boolean }>();
 const emit = defineEmits<{ create: [type: string, parentId: string]; duplicate: [nodeId: string]; 'toggle-expand': [nodeId: string] }>();
 
 const { t } = useI18n();
@@ -203,84 +162,8 @@ function cancelRename() {
 }
 
 const hasChildren = computed(() => {
-  const childCount = props.allNodes.filter(n => n.parentId === props.node._id && !n.deletedAt).length;
-  return childCount > 0;
+  return props.allNodes.some(n => n.parentId === props.node._id && !n.deletedAt);
 });
-
-// --- Link node ---
-const linkDialog = ref(false);
-const linkTargetId = ref<string | null>(null);
-
-const linkableNodes = computed(() =>
-  props.allNodes.filter(n =>
-    n._id !== props.node._id &&
-    n.type !== 'folder' &&
-    !n.deletedAt &&
-    !(props.node.linkedNodeIds || []).includes(n._id)
-  )
-);
-
-function nodeTypeIcon(type: string): string {
-  switch (type) {
-    case 'note': return 'mdi-note-text-outline';
-    case 'mindmap': return 'mdi-vector-polyline';
-    case 'map': return 'mdi-map-outline';
-    case 'document': return 'mdi-file-document-outline';
-    case 'dataset': return 'mdi-table';
-    case 'media': return 'mdi-play-circle-outline';
-    default: return 'mdi-file-outline';
-  }
-}
-
-function startLinkNode() {
-  linkTargetId.value = null;
-  linkDialog.value = true;
-}
-
-async function confirmLink() {
-  if (!linkTargetId.value) return;
-  const currentLinks = props.node.linkedNodeIds || [];
-  // 1. Add to parent's linkedNodeIds
-  await dossierStore.updateNode(props.node._id, {
-    linkedNodeIds: [...currentLinks, linkTargetId.value],
-  } as any);
-  // 2. Move the target node under this node
-  await api.patch(`/nodes/${linkTargetId.value}/move`, {
-    parentId: props.node._id,
-    order: currentLinks.length,
-  });
-  // Refresh local state
-  const target = dossierStore.nodes.find(n => n._id === linkTargetId.value);
-  if (target) target.parentId = props.node._id;
-  linkDialog.value = false;
-  // Auto-expand to show the link
-  if (!props.expanded) {
-    emit('toggle-expand', props.node._id);
-  }
-}
-
-async function handleUnlink() {
-  if (!props.node.parentId) return;
-  const parentNode = props.allNodes.find(n => n._id === props.node.parentId);
-  if (!parentNode) return;
-  await unlinkNode(parentNode, props.node._id);
-}
-
-async function unlinkNode(parentNode: DossierNode, linkedId: string) {
-  const currentLinks = parentNode.linkedNodeIds || [];
-  // 1. Remove from parent's linkedNodeIds
-  await dossierStore.updateNode(parentNode._id, {
-    linkedNodeIds: currentLinks.filter(id => id !== linkedId),
-  } as any);
-  // 2. Move the node back to root
-  await api.patch(`/nodes/${linkedId}/move`, {
-    parentId: null,
-    order: 0,
-  });
-  // Refresh local state
-  const target = dossierStore.nodes.find(n => n._id === linkedId);
-  if (target) target.parentId = null;
-}
 
 const icon = computed(() => {
   if (props.node.type === 'folder') {
@@ -448,12 +331,6 @@ async function onDrop(e: DragEvent) {
 .nti-icon {
   color: var(--me-text-muted);
   flex-shrink: 0;
-}
-.nti-link-badge {
-  color: var(--me-accent);
-  flex-shrink: 0;
-  margin-right: -2px;
-  opacity: 0.7;
 }
 .nti-title {
   flex: 1;
