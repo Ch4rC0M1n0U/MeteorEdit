@@ -246,7 +246,7 @@ const route = useRoute();
 const router = useRouter();
 
 const devMode = computed(() => route.query.dev === 'true');
-const version = ref('3.2.1-beta.1');
+const version = ref('3.3.0-beta.1');
 const loading = ref(true);
 const currentStep = ref(0);
 const showPw = ref(false);

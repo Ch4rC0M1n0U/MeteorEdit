@@ -216,6 +216,20 @@ async function seedChangelog() {
         { type: 'improvement', message: 'Couleurs de statut cohérentes (vert/bleu/rouge)' },
       ],
     },
+    {
+      version: '3.3.0-beta.1',
+      entries: [
+        { type: 'feature', message: 'Statistiques temps de traitement avec graphique à barres dans le dashboard' },
+        { type: 'feature', message: 'Onglets Favoris / En cours / Clôturés sur la page d\'accueil' },
+        { type: 'feature', message: 'Badge "En continu" (violet) pour les dossiers longue durée' },
+        { type: 'feature', message: 'Cartes compactes pour les dossiers clôturés' },
+        { type: 'fix', message: 'N° de référence déplacé dans la section Classification' },
+        { type: 'fix', message: 'Sidebar admin scrollable et menu réorganisé' },
+        { type: 'fix', message: 'Sauvegarde des alertes de durée dans l\'admin' },
+        { type: 'improvement', message: 'Info dossier : toutes les sections en pleine largeur (grilles 3/4/5 colonnes)' },
+        { type: 'improvement', message: 'Enquêteur et classification en grille 4-5 colonnes' },
+      ],
+    },
   ];
   for (const v of versions) {
     const exists = await Changelog.findOne({ version: v.version });
