@@ -222,27 +222,26 @@ async function buildElephantasticNote(item: any, serverUrl: string): Promise<any
   const imageUrls: Array<{ url: string; label: string }> = [];
   const orig = item.original || {};
 
+  // Helper: add a URL (string or array of strings) to imageUrls
+  function addImageUrl(urlOrArray: any, label: string) {
+    if (!urlOrArray) return;
+    const urls = Array.isArray(urlOrArray) ? urlOrArray : [urlOrArray];
+    for (const url of urls) {
+      if (typeof url === 'string' && url.startsWith('http') && !imageUrls.some(i => i.url === url)) {
+        imageUrls.push({ url, label });
+      }
+    }
+  }
+
   // Direct photo fields
-  if (item.photoUrl) imageUrls.push({ url: item.photoUrl, label: `Photo ${collection}` });
+  addImageUrl(item.photoUrl, `Photo ${collection}`);
   // Scan common image fields in original
-  if (orig.picture && !imageUrls.some(i => i.url === orig.picture)) {
-    imageUrls.push({ url: orig.picture, label: `Photo ${collection}` });
-  }
-  if (orig.photo_url && !imageUrls.some(i => i.url === orig.photo_url)) {
-    imageUrls.push({ url: orig.photo_url, label: `Photo ${collection}` });
-  }
-  if (orig.profile_picture && !imageUrls.some(i => i.url === orig.profile_picture)) {
-    imageUrls.push({ url: orig.profile_picture, label: `Photo de profil` });
-  }
-  if (orig.avatar_url && !imageUrls.some(i => i.url === orig.avatar_url)) {
-    imageUrls.push({ url: orig.avatar_url, label: `Avatar` });
-  }
-  if (orig.image && typeof orig.image === 'string' && orig.image.startsWith('http')) {
-    imageUrls.push({ url: orig.image, label: `Image` });
-  }
-  if (orig.profile_image_url && !imageUrls.some(i => i.url === orig.profile_image_url)) {
-    imageUrls.push({ url: orig.profile_image_url, label: `Photo de profil` });
-  }
+  addImageUrl(orig.picture, `Photo ${collection}`);
+  addImageUrl(orig.photo_url, `Photo ${collection}`);
+  addImageUrl(orig.profile_picture, `Photo de profil`);
+  addImageUrl(orig.avatar_url, `Avatar`);
+  addImageUrl(orig.image, `Image`);
+  addImageUrl(orig.profile_image_url, `Photo de profil`);
 
   // Deep scan: look for any string value in original that looks like an image URL
   function scanForImages(obj: any, prefix: string = '') {
@@ -253,7 +252,15 @@ async function buildElephantasticNote(item: any, serverUrl: string): Promise<any
           const label = prefix ? `${prefix}.${key}` : key;
           imageUrls.push({ url: val, label });
         }
-      } else if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+      } else if (Array.isArray(val)) {
+        for (const item of val) {
+          if (typeof item === 'string' && item.startsWith('http') && /\.(jpg|jpeg|png|gif|webp)/i.test(item)) {
+            if (!imageUrls.some(i => i.url === item)) {
+              imageUrls.push({ url: item, label: prefix ? `${prefix}.${key}` : key });
+            }
+          }
+        }
+      } else if (typeof val === 'object' && val !== null) {
         scanForImages(val, prefix ? `${prefix}.${key}` : key);
       }
     }
