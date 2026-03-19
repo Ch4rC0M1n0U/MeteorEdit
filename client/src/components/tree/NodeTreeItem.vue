@@ -17,9 +17,9 @@
       @click="dossierStore.selectNode(node)"
       @contextmenu.prevent="openContextMenu"
     >
-      <!-- Chevron pour les dossiers et nœuds avec liens -->
+      <!-- Chevron pour tout nœud avec enfants ou liens -->
       <button
-        v-if="node.type === 'folder' || hasLinkedNodes"
+        v-if="hasChildren"
         class="nti-chevron"
         @click.stop="$emit('toggle-expand', node._id)"
       >
@@ -48,8 +48,8 @@
           </button>
         </template>
         <div class="glass-card nti-context-menu">
-          <!-- Nouveau → sous-menu en cascade (dossiers uniquement) -->
-          <v-menu v-if="node.type === 'folder'" location="end" open-on-hover :close-on-content-click="false">
+          <!-- Nouveau → sous-menu en cascade -->
+          <v-menu location="end" open-on-hover :close-on-content-click="false">
             <template #activator="{ props: subProps }">
               <button v-bind="subProps" class="nti-ctx-item nti-ctx-sub">
                 <v-icon size="14">mdi-plus-circle-outline</v-icon>
@@ -78,7 +78,7 @@
               </button>
             </div>
           </v-menu>
-          <div v-if="node.type === 'folder'" class="nti-ctx-sep" />
+          <div class="nti-ctx-sep" />
           <!-- Actions -->
           <button class="nti-ctx-item" @click="showMenu = false; startRename()">
             <v-icon size="14">mdi-pencil-outline</v-icon> {{ $t('tree.rename') }}
@@ -86,7 +86,7 @@
           <button class="nti-ctx-item" @click="showMenu = false; $emit('duplicate', node._id)">
             <v-icon size="14">mdi-content-copy</v-icon> {{ $t('tree.duplicate') }}
           </button>
-          <button v-if="node.type !== 'folder' && !isLinked" class="nti-ctx-item" @click="showMenu = false; startLinkNode()">
+          <button v-if="!isLinked" class="nti-ctx-item" @click="showMenu = false; startLinkNode()">
             <v-icon size="14">mdi-link-variant</v-icon> {{ $t('tree.linkNode') }}
           </button>
           <button v-if="isLinked" class="nti-ctx-item" @click="showMenu = false; handleUnlink()">
@@ -202,7 +202,10 @@ function cancelRename() {
   renaming.value = false;
 }
 
-const hasLinkedNodes = computed(() => (props.node.linkedNodeIds?.length ?? 0) > 0);
+const hasChildren = computed(() => {
+  const childCount = props.allNodes.filter(n => n.parentId === props.node._id && !n.deletedAt).length;
+  return childCount > 0;
+});
 
 // --- Link node ---
 const linkDialog = ref(false);
@@ -318,7 +321,7 @@ function onDragOver(e: DragEvent) {
   const y = e.clientY - rect.top;
   const ratio = y / rect.height;
 
-  if (props.node.type === 'folder' && ratio > 0.25 && ratio < 0.75) {
+  if (ratio > 0.25 && ratio < 0.75) {
     dropPosition.value = 'inside';
   } else if (ratio <= 0.5) {
     dropPosition.value = 'before';
@@ -366,7 +369,7 @@ async function onDrop(e: DragEvent) {
   if (pos === 'inside' && isDescendant(draggedId, props.node._id)) return;
 
   try {
-    if (pos === 'inside' && props.node.type === 'folder') {
+    if (pos === 'inside') {
       await api.patch(`/nodes/${draggedId}/move`, {
         parentId: props.node._id,
         order: children.value.length,

@@ -237,9 +237,9 @@ const flattenedNodes = computed<FlatNode[]>(() => {
       const parentNode = parentId ? dossierStore.nodes.find(n => n._id === parentId) : null;
       const isLinked = parentNode?.linkedNodeIds?.includes(child._id) || false;
       result.push({ id: child._id, node: child, depth, expanded, isLinked });
-      // Expand folders and nodes that have linked children
-      const hasLinkedChildren = (child.linkedNodeIds?.length ?? 0) > 0;
-      if ((child.type === 'folder' || hasLinkedChildren) && expanded) {
+      // Recurse into any expanded node that has children
+      const hasChildren = nodesByParent.has(child._id);
+      if (hasChildren && expanded) {
         walk(child._id, depth + 1);
       }
     }
