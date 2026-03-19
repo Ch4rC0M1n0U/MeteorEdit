@@ -139,6 +139,7 @@
     "entityName": "Entity name",
     "entityDescOptional": "Description (optional)",
     "copyEntity": "Copy",
+    "entityToNote": "Send to note",
     "enrichAI": "Enrich with AI",
     "enrichAITitle": "AI Enrichment",
     "enrichPreparing": "Preparing enrichment...",

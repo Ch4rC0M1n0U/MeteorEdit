@@ -221,8 +221,8 @@
               <button class="di-el-btn" @click="copyEntity(entity.name, i)" :title="$t('dossier.copyEntity') + ' ' + entity.name">
                 <v-icon size="15">{{ copiedIndex === i ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
               </button>
-              <button class="di-el-btn" @click="enrichEntityAI(i)" :title="$t('dossier.enrichAI')" :disabled="enrichingIndex === i">
-                <v-icon size="15" :class="{ 'spin': enrichingIndex === i }">{{ enrichingIndex === i ? 'mdi-loading' : 'mdi-robot-outline' }}</v-icon>
+              <button class="di-el-btn" @click="sendEntityToNote(i)" :title="$t('dossier.entityToNote')">
+                <v-icon size="15">mdi-note-plus-outline</v-icon>
               </button>
               <button class="di-el-btn" @click="openEditEntity(i)" :title="$t('common.edit')">
                 <v-icon size="15">mdi-pencil-outline</v-icon>
@@ -1377,6 +1377,65 @@ function copyEntity(name: string, index: number) {
   navigator.clipboard.writeText(name);
   copiedIndex.value = index;
   setTimeout(() => { copiedIndex.value = null; }, 1500);
+}
+
+async function sendEntityToNote(index: number) {
+  if (!dossierStore.currentDossier) return;
+  const entity = form.entities[index];
+  if (!entity) return;
+
+  const icon = entityIcon(entity.type);
+  const typeLabel = entityTypeLabel(entity.type);
+
+  // Build TipTap content
+  const content: any[] = [
+    {
+      type: 'heading',
+      attrs: { level: 2 },
+      content: [{ type: 'text', text: `${entity.name}` }],
+    },
+    {
+      type: 'paragraph',
+      content: [
+        { type: 'text', marks: [{ type: 'bold' }], text: `${t('common.type')} : ` },
+        { type: 'text', text: typeLabel },
+      ],
+    },
+  ];
+
+  if (entity.description) {
+    content.push({
+      type: 'paragraph',
+      content: [
+        { type: 'text', marks: [{ type: 'bold' }], text: `${t('common.description')} : ` },
+        { type: 'text', text: entity.description },
+      ],
+    });
+  }
+
+  // Add photos if any
+  if (entity.photos?.length) {
+    content.push({ type: 'horizontalRule' });
+    for (const photo of entity.photos) {
+      const photoUrl = getEntityPhotoUrl(photo);
+      content.push({
+        type: 'paragraph',
+        content: [{
+          type: 'image',
+          attrs: { src: photoUrl, alt: entity.name },
+        }],
+      });
+    }
+  }
+
+  const node = await dossierStore.createNode({
+    type: 'note',
+    title: entity.name,
+    content: { type: 'doc', content },
+    parentId: null,
+  });
+
+  dossierStore.selectNode(node);
 }
 
 async function removeEntity(index: number) {

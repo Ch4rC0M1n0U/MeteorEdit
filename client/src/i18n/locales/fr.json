@@ -139,6 +139,7 @@
     "entityName": "Nom de l'entité",
     "entityDescOptional": "Description (optionnel)",
     "copyEntity": "Copier",
+    "entityToNote": "Envoyer vers une note",
     "enrichAI": "Enrichir avec IA",
     "enrichAITitle": "Enrichissement IA",
     "enrichPreparing": "Préparation de l'enrichissement...",
