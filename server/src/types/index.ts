@@ -112,6 +112,7 @@ export interface IDossierNode extends Document {
   fileSize: number | null;
   originalContentType: string | null;
   originalFileSize: number | null;
+  linkedNodeIds: Types.ObjectId[];
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

@@ -18,6 +18,7 @@ const dossierNodeSchema = new Schema<IDossierNode>(
     fileSize: { type: Number, default: null },
     originalContentType: { type: String, default: null },
     originalFileSize: { type: Number, default: null },
+    linkedNodeIds: [{ type: Schema.Types.ObjectId, ref: 'DossierNode' }],
     deletedAt: { type: Date, default: null },
   },
   { timestamps: true }

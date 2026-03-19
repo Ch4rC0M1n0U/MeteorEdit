@@ -36,6 +36,7 @@
           :all-nodes="dossierStore.nodes"
           :depth="item.depth"
           :expanded="item.expanded"
+          :is-linked="item.isLinked"
           @toggle-expand="toggleExpanded"
           @create="(type, parentId) => $emit('create', type, parentId)"
           @duplicate="(nodeId) => $emit('duplicate', nodeId)"
@@ -54,6 +55,7 @@
           :all-nodes="dossierStore.nodes"
           :depth="item.depth"
           :expanded="item.expanded"
+          :is-linked="item.isLinked"
           @toggle-expand="toggleExpanded"
           @create="(type, parentId) => $emit('create', type, parentId)"
           @duplicate="(nodeId) => $emit('duplicate', nodeId)"
@@ -210,6 +212,7 @@ interface FlatNode {
   node: DossierNode;
   depth: number;
   expanded: boolean;
+  isLinked?: boolean;
 }
 
 const flattenedNodes = computed<FlatNode[]>(() => {
@@ -226,6 +229,12 @@ const flattenedNodes = computed<FlatNode[]>(() => {
     children.sort((a, b) => a.order - b.order);
   }
 
+  // Build a map for quick node lookup by ID
+  const nodesById = new Map<string, DossierNode>();
+  for (const n of dossierStore.nodes) {
+    nodesById.set(n._id, n);
+  }
+
   function walk(parentId: string | null, depth: number) {
     const children = nodesByParent.get(parentId) || [];
     for (const child of children) {
@@ -233,6 +242,15 @@ const flattenedNodes = computed<FlatNode[]>(() => {
       result.push({ id: child._id, node: child, depth, expanded });
       if (child.type === 'folder' && expanded) {
         walk(child._id, depth + 1);
+      }
+      // Show linked nodes under this node
+      if (child.linkedNodeIds?.length && expanded) {
+        for (const linkedId of child.linkedNodeIds) {
+          const linkedNode = nodesById.get(linkedId);
+          if (linkedNode && !linkedNode.deletedAt) {
+            result.push({ id: `link-${child._id}-${linkedId}`, node: linkedNode, depth: depth + 1, expanded: false, isLinked: true });
+          }
+        }
       }
     }
   }
