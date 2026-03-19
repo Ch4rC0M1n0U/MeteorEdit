@@ -86,7 +86,8 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
       res.status(403).json({ message: 'Only owner can update dossier' });
       return;
     }
-    Object.assign(dossier, req.body);
+    const { collaborators, owner, _id, ...updateData } = req.body;
+    Object.assign(dossier, updateData);
     // Auto-set closureDate when status changes to closed
     if (req.body.status === 'closed' && !dossier.closureDate) {
       dossier.closureDate = new Date();

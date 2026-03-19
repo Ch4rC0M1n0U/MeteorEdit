@@ -28,7 +28,7 @@
     <div v-if="dossier.tags?.length" class="dc-tags">
       <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>
     </div>
-    <p v-if="dossier.description" class="dc-desc">{{ dossier.description }}</p>
+    <p v-if="dossier.description" class="dc-desc">{{ stripHtml(dossier.description) }}</p>
     <div class="dc-footer mono">
       <span>{{ new Date(dossier.updatedAt).toLocaleDateString(locale) }}</span>
     </div>
@@ -46,6 +46,10 @@ const { t, locale } = useI18n();
 const { getDecryptedUrl } = useDecryptedFile();
 
 const props = defineProps<{ dossier: Dossier; isFav?: boolean }>();
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
 defineEmits<{ open: [id: string]; delete: [id: string]; 'toggle-favorite': [id: string] }>();
 
 const decryptedLogo = ref<string | null>(null);
