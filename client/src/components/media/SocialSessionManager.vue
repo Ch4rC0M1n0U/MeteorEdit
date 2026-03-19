@@ -73,7 +73,7 @@
     </div>
 
     <!-- Login Dialog -->
-    <v-dialog v-model="loginDialog" max-width="420" persistent>
+    <v-dialog v-model="loginDialog" max-width="420" persistent :z-index="2100">
       <div class="ssm-dialog glass-card">
         <div class="ssm-dialog-header">
           <div class="ssm-dialog-icon" :style="iconStyle(loginPlatform!, true)">
@@ -163,7 +163,7 @@
     </v-dialog>
 
     <!-- Import Cookies Dialog -->
-    <v-dialog v-model="importDialog" max-width="520" persistent>
+    <v-dialog v-model="importDialog" max-width="520" persistent :z-index="2100">
       <div class="ssm-dialog glass-card">
         <div class="ssm-dialog-header">
           <div class="ssm-dialog-icon" :style="iconStyle(importPlatform!, true)">
@@ -221,7 +221,7 @@
     </v-dialog>
 
     <!-- Disconnect Confirm Dialog -->
-    <v-dialog v-model="disconnectDialog" max-width="380">
+    <v-dialog v-model="disconnectDialog" max-width="380" :z-index="2100">
       <div class="ssm-dialog glass-card">
         <div class="ssm-dialog-header">
           <div class="ssm-result-icon ssm-result-icon--error" style="width:32px;height:32px;">
