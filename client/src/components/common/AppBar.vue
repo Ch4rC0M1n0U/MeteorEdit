@@ -18,6 +18,15 @@
         <v-icon size="20">{{ themeStore.isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
       </button>
 
+      <button class="me-icon-btn" @click="whatsNewOpen = true" :title="t('nav.whatsNew')">
+        <v-badge v-if="whatsNewCount > 0" :content="whatsNewCount" color="error" floating>
+          <v-icon size="20">mdi-gift-outline</v-icon>
+        </v-badge>
+        <v-icon v-else size="20">mdi-gift-outline</v-icon>
+      </button>
+
+      <WhatsNew v-model="whatsNewOpen" @read="whatsNewCount = 0" />
+
       <NotificationBell />
 
       <v-menu>
@@ -73,16 +82,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
 import { useBrandingStore } from '../../stores/branding';
-import { SERVER_URL } from '../../services/api';
+import api, { SERVER_URL } from '../../services/api';
 import SearchBar from './SearchBar.vue';
 import NotificationBell from './NotificationBell.vue';
+import WhatsNew from './WhatsNew.vue';
 import SocialSessionManager from '../media/SocialSessionManager.vue';
 
 
@@ -93,6 +103,17 @@ const brandingStore = useBrandingStore();
 const router = useRouter();
 const { t } = useI18n();
 const sessionManagerOpen = ref(false);
+const whatsNewOpen = ref(false);
+const whatsNewCount = ref(0);
+
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/changelog');
+    whatsNewCount.value = data.unreadCount;
+  } catch {
+    // silent
+  }
+});
 
 const initials = computed(() => {
   const f = authStore.user?.firstName?.[0] || '';

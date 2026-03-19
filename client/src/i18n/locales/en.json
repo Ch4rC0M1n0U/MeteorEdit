@@ -87,7 +87,8 @@
     "help": "Help",
     "admin": "Administration",
     "sessions": "Social sessions",
-    "myAccount": "My account"
+    "myAccount": "My account",
+    "whatsNew": "What's new"
   },
   "home": {
     "myDossiers": "My cases",
@@ -1515,5 +1516,14 @@
     "goToLogin": "Go to login",
     "resetSimulation": "Reset",
     "error": "An error occurred during installation."
+  },
+  "changelog": {
+    "title": "What's New",
+    "markAsRead": "Mark all as read",
+    "feature": "New feature",
+    "fix": "Bug fix",
+    "improvement": "Improvement",
+    "noChanges": "No changes yet",
+    "version": "Version"
   }
 }

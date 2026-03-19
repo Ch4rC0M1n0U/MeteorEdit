@@ -87,7 +87,8 @@
     "help": "Aide",
     "admin": "Administration",
     "sessions": "Sessions sociales",
-    "myAccount": "Mon compte"
+    "myAccount": "Mon compte",
+    "whatsNew": "Nouveautés"
   },
   "home": {
     "myDossiers": "Mes dossiers",
@@ -1515,5 +1516,14 @@
     "goToLogin": "Aller au login",
     "resetSimulation": "Reinitialiser",
     "error": "Une erreur est survenue lors de l'installation."
+  },
+  "changelog": {
+    "title": "Nouveautés",
+    "markAsRead": "Tout marquer comme lu",
+    "feature": "Nouvelle fonctionnalité",
+    "fix": "Correction",
+    "improvement": "Amélioration",
+    "noChanges": "Aucune nouveauté pour le moment",
+    "version": "Version"
   }
 }

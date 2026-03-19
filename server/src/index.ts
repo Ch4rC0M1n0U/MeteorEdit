@@ -31,6 +31,7 @@ import mediaRoutes from './routes/media';
 import socialRoutes from './routes/social';
 import encryptionRoutes from './routes/encryption';
 import languagetoolRoutes from './routes/languagetool';
+import changelogRoutes from './routes/changelog';
 import setupRoutes from './routes/setup';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
@@ -121,6 +122,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/encryption', encryptionRoutes);
 app.use('/api/languagetool', languagetoolRoutes);
+app.use('/api/changelog', changelogRoutes);
 
 setupSocket(httpServer);
 
@@ -182,6 +184,31 @@ async function seedDefaultAdmin() {
   console.log('[SEED] Default admin created: admin@meteoredit.local / Admin123!');
 }
 
+async function seedChangelog() {
+  const Changelog = (await import('./models/Changelog')).default;
+  const currentVersion = '3.2.0-beta.1';
+  const exists = await Changelog.findOne({ version: currentVersion });
+  if (!exists) {
+    await Changelog.create({
+      version: currentVersion,
+      entries: [
+        { type: 'feature', message: 'Dates & référence dossier (arrivée, attribution, clôture, n° de référence)' },
+        { type: 'feature', message: 'Alertes de durée par classification (routine, prioritaire, urgent)' },
+        { type: 'feature', message: 'Mode "Dossier en continu" (désactive les alertes de durée)' },
+        { type: 'feature', message: 'Onglets Favoris / En cours / Clôturés sur la page d\'accueil' },
+        { type: 'feature', message: 'Statistiques temps de traitement avec graphiques' },
+        { type: 'feature', message: 'Cookie Bridge extension pour export de cookies' },
+        { type: 'feature', message: 'HTTPS self-signed pour Web Crypto API' },
+        { type: 'fix', message: 'Téléchargement YouTube via yt-dlp avec impersonation TLS' },
+        { type: 'fix', message: 'Capture d\'écran web clipper avec qualité améliorée' },
+        { type: 'improvement', message: 'Cartes compactes pour les dossiers clôturés' },
+        { type: 'improvement', message: 'Configuration admin des seuils d\'alerte' },
+      ],
+    });
+    console.log(`[SEED] Changelog created for ${currentVersion}`);
+  }
+}
+
 async function start() {
   await connectDB();
   const existingSettings = await SiteSettings.findOne();
@@ -190,6 +217,7 @@ async function start() {
     console.log('SiteSettings initialized');
   }
   await seedDefaultAdmin();
+  await seedChangelog();
   await loadMaintenanceState();
   await detectOsintTools();
   httpServer.listen(PORT, () => {

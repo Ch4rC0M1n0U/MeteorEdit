@@ -87,7 +87,8 @@
     "help": "Help",
     "admin": "Beheer",
     "sessions": "Sociale sessies",
-    "myAccount": "Mijn account"
+    "myAccount": "Mijn account",
+    "whatsNew": "Nieuw"
   },
   "home": {
     "myDossiers": "Mijn dossiers",
@@ -1514,5 +1515,14 @@
     "goToLogin": "Naar login",
     "resetSimulation": "Resetten",
     "error": "Er is een fout opgetreden tijdens de installatie."
+  },
+  "changelog": {
+    "title": "Nieuw",
+    "markAsRead": "Alles als gelezen markeren",
+    "feature": "Nieuwe functie",
+    "fix": "Bugfix",
+    "improvement": "Verbetering",
+    "noChanges": "Nog geen wijzigingen",
+    "version": "Versie"
   }
 }
