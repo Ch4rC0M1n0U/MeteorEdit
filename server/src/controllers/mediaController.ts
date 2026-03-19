@@ -561,28 +561,7 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       const { stdout } = await execFileAsync('yt-dlp', ytdlpArgs, { timeout: 30000 });
       videoUrl = stdout.trim().split('\n')[0] || '';
     } catch (ytErr: any) {
-      console.log('yt-dlp failed, trying Cobalt fallback:', ytErr?.message?.substring(0, 100));
-    }
-
-    // Fallback: Cobalt API
-    if (!videoUrl) {
-      const cobaltUrl = process.env.COBALT_URL || 'http://cobalt-api:9000';
-      try {
-        const cobaltResp = await fetch(cobaltUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ url, videoQuality: '720', filenameStyle: 'basic' }),
-        });
-        const cobaltData = await cobaltResp.json() as any;
-        if (cobaltData.url) {
-          videoUrl = cobaltData.url;
-          console.log('Cobalt provided video URL');
-        } else if (cobaltData.status === 'tunnel' || cobaltData.status === 'redirect') {
-          videoUrl = cobaltData.url || '';
-        }
-      } catch (cobaltErr: any) {
-        console.error('Cobalt fallback failed:', cobaltErr?.message);
-      }
+      console.error('yt-dlp failed:', ytErr?.message?.substring(0, 200));
     }
 
     if (!videoUrl) {
