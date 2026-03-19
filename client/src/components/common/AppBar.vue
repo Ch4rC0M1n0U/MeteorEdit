@@ -75,8 +75,8 @@
     </div>
 
     <!-- Social Session Manager Dialog -->
-    <v-dialog v-model="sessionManagerOpen" max-width="560">
-      <SocialSessionManager v-if="sessionManagerOpen" />
+    <v-dialog v-model="sessionManagerOpen" max-width="560" persistent>
+      <SocialSessionManager v-if="sessionManagerOpen" @close="sessionManagerOpen = false" />
     </v-dialog>
   </header>
 </template>

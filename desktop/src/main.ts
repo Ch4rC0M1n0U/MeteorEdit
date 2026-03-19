@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, session } from 'electron';
 import path from 'path';
 import store from './store';
 import { createTray, setTrayUserInfo, setTrayServerUrl, setTrayBranding } from './tray';
@@ -7,6 +7,9 @@ import { registerShortcuts, unregisterShortcuts } from './shortcuts';
 import { handleDeepLink } from './deeplinks';
 import { setupAutoUpdater } from './updater';
 import { autoUpdater } from 'electron-updater';
+
+// Accept self-signed certificates (required for HTTPS via Tailscale/self-hosted)
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -323,6 +326,11 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+    // Accept self-signed certificates in BrowserWindow (Tailscale/self-hosted HTTPS)
+    session.defaultSession.setCertificateVerifyProc((_request, callback) => {
+      callback(0); // 0 = accept
+    });
+
     registerIpcHandlers();
     createWindow();
   });
