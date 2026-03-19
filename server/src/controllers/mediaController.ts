@@ -74,6 +74,78 @@ export async function extractVideoUrlWithChrome(videoUrl: string): Promise<strin
   }
 }
 
+/**
+ * Download a video file using Chrome via CDP request interception.
+ * The browser downloads the stream itself (same session = no 403).
+ */
+export async function downloadVideoWithChrome(videoUrl: string, outputPath: string): Promise<boolean> {
+  let browser: any = null;
+  try {
+    const puppeteer = await import('puppeteer-core');
+    browser = await puppeteer.default.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+      args: [
+        '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
+        '--autoplay-policy=no-user-gesture-required',
+        '--disable-blink-features=AutomationControlled',
+      ],
+      ignoreDefaultArgs: ['--enable-automation'],
+    });
+    const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+      (window as any).chrome = { runtime: {} };
+    });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+
+    let streamUrl: string | null = null;
+    const cdp = await page.createCDPSession();
+    await cdp.send('Network.enable');
+    cdp.on('Network.requestWillBeSent', (params: any) => {
+      if (params.request.url.includes('googlevideo.com/videoplayback') && !streamUrl) {
+        streamUrl = params.request.url;
+      }
+    });
+
+    await page.goto(videoUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    try {
+      const btn = await page.waitForSelector('button[aria-label*="Accept"], button[aria-label*="Accepter"], form[action*="consent"] button', { timeout: 3000 });
+      if (btn) await btn.click();
+      await new Promise(r => setTimeout(r, 2000));
+    } catch {}
+    for (let i = 0; i < 15; i++) {
+      if (streamUrl) break;
+      await new Promise(r => setTimeout(r, 1000));
+      try { await page.click('.ytp-play-button'); } catch {}
+      try { await page.click('.ytp-large-play-button'); } catch {}
+    }
+
+    if (!streamUrl) {
+      await browser.close();
+      return false;
+    }
+
+    // Download the video using the browser's own fetch (same session, same cookies)
+    const buffer = await page.evaluate(async (url: string) => {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const ab = await resp.arrayBuffer();
+      return Array.from(new Uint8Array(ab));
+    }, streamUrl);
+
+    fs.writeFileSync(outputPath, Buffer.from(buffer));
+    console.log(`[Chrome] Downloaded ${(buffer.length / 1024 / 1024).toFixed(1)}MB to ${outputPath}`);
+    await browser.close();
+    return true;
+  } catch (err: any) {
+    console.error('[Chrome] Download failed:', err?.message);
+    if (browser) try { await browser.close(); } catch {}
+    return false;
+  }
+}
+
 /** Parse ISO 8601 duration (PT1H2M30S) to seconds */
 function parseISO8601Duration(iso: string): number {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);

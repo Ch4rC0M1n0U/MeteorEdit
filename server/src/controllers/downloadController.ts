@@ -595,21 +595,14 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
             try {
               console.log('[Download] Trying Chrome extraction...');
               sendSSE(res, 'status', { status: 'downloading', fallback: true, method: 'chrome' });
-              const { extractVideoUrlWithChrome } = await import('./mediaController');
-              const chromeUrl = await extractVideoUrlWithChrome(url);
-              if (chromeUrl) {
-                const chromeResp = await fetch(chromeUrl);
-                if (chromeResp.ok) {
-                  const outputFile = path.join(mediaDir, `${fileId}.mp4`);
-                  const buffer = Buffer.from(await chromeResp.arrayBuffer());
-                  fs.writeFileSync(outputFile, buffer);
-                  downloadedFile = outputFile;
-                  console.log('[Download] Chrome download success');
-                } else {
-                  throw new Error(`Chrome download HTTP ${chromeResp.status}`);
-                }
+              const { downloadVideoWithChrome } = await import('./mediaController');
+              const outputFile = path.join(mediaDir, `${fileId}.mp4`);
+              const success = await downloadVideoWithChrome(url, outputFile);
+              if (success) {
+                downloadedFile = outputFile;
+                console.log('[Download] Chrome download success');
               } else {
-                throw new Error('Chrome extraction returned no URL');
+                throw new Error('Chrome download failed');
               }
             } catch (chromeErr: any) {
               console.error('[Download] Chrome fallback failed:', chromeErr?.message);
