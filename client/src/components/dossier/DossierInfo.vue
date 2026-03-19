@@ -100,8 +100,8 @@
         </v-alert>
       </div>
 
-      <!-- LEFT COLUMN: Facts, Objectives, Description -->
-      <div class="di-section" v-if="form.judicialFacts || form.objectives || form.description">
+      <!-- FULL WIDTH: Facts, Objectives, Description -->
+      <div class="di-section di-full-width-section" v-if="form.judicialFacts || form.objectives || form.description">
         <div class="di-field" v-if="form.judicialFacts">
           <span class="di-label mono">{{ $t('dossier.judicialFacts') }}</span>
           <span class="di-value di-value-block">{{ form.judicialFacts }}</span>
