@@ -86,8 +86,11 @@
           <button class="nti-ctx-item" @click="showMenu = false; $emit('duplicate', node._id)">
             <v-icon size="14">mdi-content-copy</v-icon> {{ $t('tree.duplicate') }}
           </button>
-          <button v-if="node.type !== 'folder'" class="nti-ctx-item" @click="showMenu = false; startLinkNode()">
+          <button v-if="node.type !== 'folder' && !isLinked" class="nti-ctx-item" @click="showMenu = false; startLinkNode()">
             <v-icon size="14">mdi-link-variant</v-icon> {{ $t('tree.linkNode') }}
+          </button>
+          <button v-if="isLinked" class="nti-ctx-item" @click="showMenu = false; handleUnlink()">
+            <v-icon size="14">mdi-link-variant-off</v-icon> {{ $t('tree.unlinkNode') }}
           </button>
           <div class="nti-ctx-sep" />
           <!-- Zone dangereuse -->
@@ -143,7 +146,7 @@ import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
 import type { DossierNode } from '../../types';
 const props = defineProps<{ node: DossierNode; allNodes: DossierNode[]; depth: number; expanded: boolean; isLinked?: boolean }>();
-defineEmits<{ create: [type: string, parentId: string]; duplicate: [nodeId: string]; 'toggle-expand': [nodeId: string] }>();
+const emit = defineEmits<{ create: [type: string, parentId: string]; duplicate: [nodeId: string]; 'toggle-expand': [nodeId: string] }>();
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();
@@ -234,14 +237,46 @@ function startLinkNode() {
 async function confirmLink() {
   if (!linkTargetId.value) return;
   const currentLinks = props.node.linkedNodeIds || [];
+  // 1. Add to parent's linkedNodeIds
   await dossierStore.updateNode(props.node._id, {
     linkedNodeIds: [...currentLinks, linkTargetId.value],
   } as any);
+  // 2. Move the target node under this node
+  await api.patch(`/nodes/${linkTargetId.value}/move`, {
+    parentId: props.node._id,
+    order: currentLinks.length,
+  });
+  // Refresh local state
+  const target = dossierStore.nodes.find(n => n._id === linkTargetId.value);
+  if (target) target.parentId = props.node._id;
   linkDialog.value = false;
   // Auto-expand to show the link
   if (!props.expanded) {
-    document.dispatchEvent(new CustomEvent('nti:toggle-expand', { detail: props.node._id }));
+    emit('toggle-expand', props.node._id);
   }
+}
+
+async function handleUnlink() {
+  if (!props.node.parentId) return;
+  const parentNode = props.allNodes.find(n => n._id === props.node.parentId);
+  if (!parentNode) return;
+  await unlinkNode(parentNode, props.node._id);
+}
+
+async function unlinkNode(parentNode: DossierNode, linkedId: string) {
+  const currentLinks = parentNode.linkedNodeIds || [];
+  // 1. Remove from parent's linkedNodeIds
+  await dossierStore.updateNode(parentNode._id, {
+    linkedNodeIds: currentLinks.filter(id => id !== linkedId),
+  } as any);
+  // 2. Move the node back to root
+  await api.patch(`/nodes/${linkedId}/move`, {
+    parentId: null,
+    order: 0,
+  });
+  // Refresh local state
+  const target = dossierStore.nodes.find(n => n._id === linkedId);
+  if (target) target.parentId = null;
 }
 
 const icon = computed(() => {

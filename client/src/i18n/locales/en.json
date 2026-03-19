@@ -311,6 +311,7 @@
     "rename": "Rename",
     "duplicate": "Duplicate",
     "linkNode": "Link a node",
+    "unlinkNode": "Unlink",
     "linkNodeTitle": "Link a node",
     "selectNodeToLink": "Select a node to link",
     "link": "Link",

@@ -311,6 +311,7 @@
     "rename": "Renommer",
     "duplicate": "Dupliquer",
     "linkNode": "Lier un nœud",
+    "unlinkNode": "Délier",
     "linkNodeTitle": "Lier un nœud",
     "selectNodeToLink": "Sélectionner un nœud à lier",
     "link": "Lier",

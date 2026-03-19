@@ -310,6 +310,7 @@
     "rename": "Hernoemen",
     "duplicate": "Dupliceren",
     "linkNode": "Koppel een knooppunt",
+    "unlinkNode": "Ontkoppelen",
     "linkNodeTitle": "Koppel een knooppunt",
     "selectNodeToLink": "Selecteer een knooppunt om te koppelen",
     "link": "Koppelen",

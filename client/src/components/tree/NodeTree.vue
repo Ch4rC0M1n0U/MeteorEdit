@@ -229,28 +229,18 @@ const flattenedNodes = computed<FlatNode[]>(() => {
     children.sort((a, b) => a.order - b.order);
   }
 
-  // Build a map for quick node lookup by ID
-  const nodesById = new Map<string, DossierNode>();
-  for (const n of dossierStore.nodes) {
-    nodesById.set(n._id, n);
-  }
-
   function walk(parentId: string | null, depth: number) {
     const children = nodesByParent.get(parentId) || [];
     for (const child of children) {
       const expanded = expandedIds.value.has(child._id);
-      result.push({ id: child._id, node: child, depth, expanded });
-      if (child.type === 'folder' && expanded) {
+      // Check if this node is a linked child (its ID is in the parent's linkedNodeIds)
+      const parentNode = parentId ? dossierStore.nodes.find(n => n._id === parentId) : null;
+      const isLinked = parentNode?.linkedNodeIds?.includes(child._id) || false;
+      result.push({ id: child._id, node: child, depth, expanded, isLinked });
+      // Expand folders and nodes that have linked children
+      const hasLinkedChildren = (child.linkedNodeIds?.length ?? 0) > 0;
+      if ((child.type === 'folder' || hasLinkedChildren) && expanded) {
         walk(child._id, depth + 1);
-      }
-      // Show linked nodes under this node
-      if (child.linkedNodeIds?.length && expanded) {
-        for (const linkedId of child.linkedNodeIds) {
-          const linkedNode = nodesById.get(linkedId);
-          if (linkedNode && !linkedNode.deletedAt) {
-            result.push({ id: `link-${child._id}-${linkedId}`, node: linkedNode, depth: depth + 1, expanded: false, isLinked: true });
-          }
-        }
       }
     }
   }
