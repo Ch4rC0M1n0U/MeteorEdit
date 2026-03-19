@@ -5,17 +5,7 @@
   "version": "1.0.0",
   "permissions": ["cookies", "storage"],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://*.google.com/*",
-    "*://*.instagram.com/*",
-    "*://*.tiktok.com/*",
-    "*://*.snapchat.com/*",
-    "*://*.facebook.com/*",
-    "*://*.x.com/*",
-    "*://*.twitter.com/*",
-    "*://*.threads.net/*",
-    "*://*.linkedin.com/*",
-    "*://*.strava.com/*"
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",
