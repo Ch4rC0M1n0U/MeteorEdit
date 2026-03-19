@@ -56,20 +56,13 @@
         </div>
       </div>
 
-      <!-- FULL WIDTH: Dates, Reference & Tags -->
+      <!-- FULL WIDTH: Dates & Tags -->
       <div class="di-section di-full-width-section">
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
           {{ $t('dossier.datesReferenceTags') }}
         </h3>
-        <div class="di-grid-4">
-          <div class="di-field">
-            <span class="di-label mono">
-              <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
-              {{ $t('dossier.referenceNumber') }}
-            </span>
-            <span class="di-value">{{ form.referenceNumber || '—' }}</span>
-          </div>
+        <div class="di-grid-3">
           <div class="di-field">
             <span class="di-label mono">{{ $t('dossier.arrivalDate') }}</span>
             <span class="di-value">{{ form.arrivalDate ? new Date(form.arrivalDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
@@ -130,7 +123,14 @@
           <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
           {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
         </h3>
-        <div class="di-grid-4">
+        <div class="di-grid-5">
+          <div class="di-field">
+            <span class="di-label mono">
+              <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
+              {{ $t('dossier.referenceNumber') }}
+            </span>
+            <span class="di-value">{{ form.referenceNumber || '—' }}</span>
+          </div>
           <div class="di-field">
             <span class="di-label mono">{{ $t('dossier.classification') }}</span>
             <span class="di-classification-badge" :class="`di-class-${form.classification}`">{{ classificationLabel }}</span>
@@ -397,16 +397,7 @@
           <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
           {{ $t('dossier.datesReferenceTags') }}
         </h3>
-        <div class="di-grid-4">
-          <div class="di-date-field">
-            <v-text-field
-              v-model="form.referenceNumber"
-              :label="$t('dossier.referenceNumber')"
-              density="compact"
-              prepend-inner-icon="mdi-identifier"
-              hide-details
-            />
-          </div>
+        <div class="di-grid-3">
           <div class="di-date-field">
             <label class="di-date-label mono">{{ $t('dossier.arrivalDate') }}</label>
             <input type="date" v-model="form.arrivalDate" class="di-date-input" />
@@ -443,9 +434,10 @@
             <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
             {{ $t('dossier.classification') }}
           </h3>
-          <div class="di-row">
-            <v-select v-model="form.classification" :items="classificationOptions" :label="$t('dossier.classification')" density="compact" />
-            <v-text-field v-model="form.magistrate" :label="$t('dossier.magistrate')" density="compact" />
+          <div class="di-row" style="gap: 12px;">
+            <v-text-field v-model="form.referenceNumber" :label="$t('dossier.referenceNumber')" density="compact" prepend-inner-icon="mdi-identifier" hide-details />
+            <v-select v-model="form.classification" :items="classificationOptions" :label="$t('dossier.classification')" density="compact" hide-details />
+            <v-text-field v-model="form.magistrate" :label="$t('dossier.magistrate')" density="compact" hide-details />
           </div>
           <div class="di-edit-bottom-row">
             <div class="di-lang-options">
@@ -1826,13 +1818,23 @@ async function removeCollaborator(userId: string) {
 .di-full-width-section {
   grid-column: 1 / -1;
 }
+.di-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
 .di-grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
+.di-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
 @media (max-width: 768px) {
-  .di-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .di-grid-3, .di-grid-4, .di-grid-5 { grid-template-columns: repeat(2, 1fr); }
 }
 .di-sidebar-section {
   display: flex;
