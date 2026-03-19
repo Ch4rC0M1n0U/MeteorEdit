@@ -123,14 +123,14 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: Classification + Investigator -->
-      <div class="di-section di-sidebar-section">
+      <!-- FULL WIDTH: Classification + Investigator -->
+      <div class="di-section di-full-width-section">
         <!-- Classification & Magistrat -->
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
           {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
         </h3>
-        <div class="di-row">
+        <div class="di-grid-4">
           <div class="di-field">
             <span class="di-label mono">{{ $t('dossier.classification') }}</span>
             <span class="di-classification-badge" :class="`di-class-${form.classification}`">{{ classificationLabel }}</span>
@@ -139,8 +139,16 @@
             <span class="di-label mono">{{ $t('dossier.magistrate') }}</span>
             <span class="di-value">{{ form.magistrate || '—' }}</span>
           </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.isFirstRequest') }}</span>
+            <span class="di-value">{{ form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest') }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.dossierLanguage') }}</span>
+            <span class="di-value">{{ form.dossierLanguage === 'nl' ? $t('dossier.langNl') : $t('dossier.langFr') }}</span>
+          </div>
         </div>
-        <div class="di-row di-flags-row">
+        <div class="di-row di-flags-row" style="margin-top: 12px;">
           <span v-if="form.isUrgent" class="di-flag-badge di-flag-urgent">
             <v-icon size="14" class="mr-1">mdi-alert-circle-outline</v-icon>
             {{ $t('dossier.isUrgent') }}
@@ -154,31 +162,19 @@
             {{ $t('dossier.isContinuous') }}
           </span>
         </div>
-        <div class="di-row">
-          <div class="di-field">
-            <span class="di-label mono">{{ $t('dossier.isFirstRequest') }}</span>
-            <span class="di-value">{{ form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest') }}</span>
-          </div>
-          <div class="di-field">
-            <span class="di-label mono">{{ $t('dossier.dossierLanguage') }}</span>
-            <span class="di-value">{{ form.dossierLanguage === 'nl' ? $t('dossier.langNl') : $t('dossier.langFr') }}</span>
-          </div>
-        </div>
 
-        <!-- Enquêteur (dans le même panneau) -->
+        <!-- Enquêteur -->
         <h3 class="di-section-title mono" style="margin-top: 16px;">
           <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
           {{ $t('dossier.investigator') }}
         </h3>
-        <div class="di-row">
+        <div class="di-grid-4" style="align-items: start;">
           <div class="di-field"><span class="di-label mono">{{ $t('common.name') }}</span><span class="di-value">{{ form.investigator.name || '—' }}</span></div>
           <div class="di-field"><span class="di-label mono">{{ $t('dossier.service') }}</span><span class="di-value">{{ form.investigator.service || '—' }}</span></div>
-        </div>
-        <div class="di-row">
           <div class="di-field"><span class="di-label mono">{{ $t('dossier.unit') }}</span><span class="di-value">{{ form.investigator.unit || '—' }}</span></div>
           <div class="di-field"><span class="di-label mono">{{ $t('dossier.phone') }}</span><span class="di-value"><a v-if="form.investigator.phone" :href="`tel:${form.investigator.phone}`" class="di-link">{{ form.investigator.phone }}</a><template v-else>—</template></span></div>
         </div>
-        <div class="di-field">
+        <div class="di-field" style="margin-top: 8px;">
           <span class="di-label mono">{{ $t('common.email') }}</span><span class="di-value"><a v-if="form.investigator.email" :href="`sip:${form.investigator.email}`" class="di-link">{{ form.investigator.email }}</a><template v-else>—</template></span>
         </div>
       </div>
