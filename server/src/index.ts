@@ -186,11 +186,9 @@ async function seedDefaultAdmin() {
 
 async function seedChangelog() {
   const Changelog = (await import('./models/Changelog')).default;
-  const currentVersion = '3.2.0-beta.1';
-  const exists = await Changelog.findOne({ version: currentVersion });
-  if (!exists) {
-    await Changelog.create({
-      version: currentVersion,
+  const versions = [
+    {
+      version: '3.2.0-beta.1',
       entries: [
         { type: 'feature', message: 'Dates & référence dossier (arrivée, attribution, clôture, n° de référence)' },
         { type: 'feature', message: 'Alertes de durée par classification (routine, prioritaire, urgent)' },
@@ -204,8 +202,27 @@ async function seedChangelog() {
         { type: 'improvement', message: 'Cartes compactes pour les dossiers clôturés' },
         { type: 'improvement', message: 'Configuration admin des seuils d\'alerte' },
       ],
-    });
-    console.log(`[SEED] Changelog created for ${currentVersion}`);
+    },
+    {
+      version: '3.2.1-beta.1',
+      entries: [
+        { type: 'feature', message: 'What\'s New : journal des nouveautés avec badge compteur' },
+        { type: 'feature', message: 'Détection auto MP4 audio-only → bascule vers waveform' },
+        { type: 'fix', message: 'Temps de traitement calculé depuis la date d\'attribution' },
+        { type: 'fix', message: 'Partage de dossier chiffré E2E avec collaborateurs' },
+        { type: 'fix', message: 'Layout Dates/Référence/Tags en pleine largeur (grille 4 colonnes)' },
+        { type: 'improvement', message: 'Tags affichés en chips au lieu d\'un champ de texte' },
+        { type: 'improvement', message: 'Menu admin simplifié (alertes durée intégrées dans Dossiers)' },
+        { type: 'improvement', message: 'Couleurs de statut cohérentes (vert/bleu/rouge)' },
+      ],
+    },
+  ];
+  for (const v of versions) {
+    const exists = await Changelog.findOne({ version: v.version });
+    if (!exists) {
+      await Changelog.create(v);
+      console.log(`[SEED] Changelog created for ${v.version}`);
+    }
   }
 }
 

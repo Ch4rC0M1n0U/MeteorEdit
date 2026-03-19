@@ -344,10 +344,14 @@ const vimeoId = computed(() => {
 
 const isEmbed = computed(() => !!youtubeId.value || !!vimeoId.value);
 
+// Track if a "video" file is actually audio-only (e.g. MP4 with no video track)
+const detectedAudioOnly = ref(false);
+
 const isNativeVideo = computed(() => {
   if (isEmbed.value) return false;
   const md = props.node.mediaData;
   if (!md?.source) return false;
+  if (detectedAudioOnly.value) return false;
   return md.source.mediaType === 'video';
 });
 
@@ -355,8 +359,10 @@ const isNativeAudio = computed(() => {
   if (isEmbed.value) return false;
   const md = props.node.mediaData;
   if (!md?.source) return false;
+  if (detectedAudioOnly.value) return true;
   return md.source.mediaType === 'audio';
 });
+
 
 const mediaSrc = computed(() => {
   // For uploaded files, always wait for the decrypted blob URL — never use the raw server URL
@@ -473,10 +479,20 @@ function onTimeUpdate() {
 function onLoadedMetadata() {
   if (playerRef.value) {
     duration.value = playerRef.value.duration;
+
+    // Detect audio-only MP4: video loaded but no visual track (width/height = 0)
+    if (playerRef.value.videoWidth === 0 && playerRef.value.videoHeight === 0) {
+      detectedAudioOnly.value = true;
+      if (props.node.mediaData?.source) {
+        props.node.mediaData.source.mediaType = 'audio';
+        api.put(`/nodes/${props.node._id}`, { mediaData: props.node.mediaData }).catch(() => {});
+      }
+      return; // Re-renders as audio with waveform
+    }
+
     // Auto-fill metadata duration if missing or zero
     if (duration.value > 0 && props.node.mediaData?.metadata && !props.node.mediaData.metadata.duration) {
       props.node.mediaData.metadata.duration = Math.round(duration.value);
-      // Persist to server
       api.put(`/nodes/${props.node._id}`, { mediaData: props.node.mediaData }).catch(() => {});
     }
   }
