@@ -34,7 +34,7 @@
       <AdminStorage v-else-if="activeSection === 'storage'" />
       <AdminEmail v-else-if="activeSection === 'email'" />
       <AdminClipper v-else-if="activeSection === 'clipper'" />
-      <AdminDefaults v-else-if="activeSection === 'defaults'" />
+      <AdminDefaults v-else-if="activeSection === 'dossierConfig'" />
       <AdminNetwork v-else-if="activeSection === 'network'" />
       <AdminBackup v-else-if="activeSection === 'backup'" />
       <AdminAI v-else-if="activeSection === 'ai'" />
@@ -42,7 +42,6 @@
       <AdminEncryptionStatus v-else-if="activeSection === 'encryption'" />
       <AdminOsint v-else-if="activeSection === 'osint'" />
       <AdminLanguageTool v-else-if="activeSection === 'languagetool'" />
-      <AdminDossierAlerts v-else-if="activeSection === 'dossierAlerts'" />
     </main>
   </div>
 </template>
@@ -66,7 +65,6 @@ import AdminAI from '../components/admin/AdminAI.vue';
 import AdminEncryptionStatus from '../components/admin/AdminEncryptionStatus.vue';
 import AdminOsint from '../components/admin/AdminOsint.vue';
 import AdminLanguageTool from '../components/admin/AdminLanguageTool.vue';
-import AdminDossierAlerts from '../components/admin/AdminDossierAlerts.vue';
 
 const { t } = useI18n();
 
@@ -77,13 +75,12 @@ const navItems = computed(() => [
   { type: 'item' as const, id: 'dashboard', label: t('admin.dashboard'), icon: 'mdi-view-dashboard-outline' },
   { type: 'item' as const, id: 'users', label: t('admin.users'), icon: 'mdi-account-group-outline' },
   { type: 'item' as const, id: 'audit', label: t('admin.auditLog'), icon: 'mdi-shield-check' },
-  { type: 'item' as const, id: 'dossierAlerts', label: t('admin.dossierAlerts'), icon: 'mdi-timer-alert-outline' },
   { type: 'group' as const, label: t('admin.configuration') },
   { type: 'item' as const, id: 'branding', label: t('admin.appearance'), icon: 'mdi-palette-outline' },
   { type: 'item' as const, id: 'security', label: t('admin.security'), icon: 'mdi-shield-lock-outline' },
   { type: 'item' as const, id: 'encryption', label: t('admin.encryption.title'), icon: 'mdi-shield-key-outline' },
   { type: 'item' as const, id: 'storage', label: t('admin.storage'), icon: 'mdi-harddisk' },
-  { type: 'item' as const, id: 'defaults', label: t('admin.defaults'), icon: 'mdi-cog-outline' },
+  { type: 'item' as const, id: 'dossierConfig', label: t('admin.dossierConfig'), icon: 'mdi-folder-cog-outline' },
   { type: 'item' as const, id: 'network', label: t('admin.networkAnnouncements'), icon: 'mdi-lan' },
   { type: 'group' as const, label: t('admin.services') },
   { type: 'item' as const, id: 'email', label: t('admin.emailSmtp'), icon: 'mdi-email-outline' },

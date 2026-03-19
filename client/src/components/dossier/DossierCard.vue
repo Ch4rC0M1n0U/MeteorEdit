@@ -67,10 +67,10 @@ const logoUrl = computed(() => decryptedLogo.value);
 
 const statusDot = computed(() => {
   switch (props.dossier.status) {
-    case 'open': return 'active';
-    case 'in_progress': return 'warning';
-    case 'closed': return 'error';
-    default: return 'active';
+    case 'open': return 'open';
+    case 'in_progress': return 'in-progress';
+    case 'closed': return 'closed';
+    default: return 'open';
   }
 });
 
@@ -216,4 +216,8 @@ const statusLabel = computed(() => {
   color: var(--me-text-muted);
   margin-top: auto;
 }
+/* Status dot colors */
+.status-dot--open { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+.status-dot--in-progress { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+.status-dot--closed { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
 </style>

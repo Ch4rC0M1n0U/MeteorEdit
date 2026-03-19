@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <!-- LEFT COLUMN: Facts, Objectives, Description, Tags -->
+      <!-- LEFT COLUMN: Facts, Objectives, Description -->
       <div class="di-section">
         <div class="di-field" v-if="form.judicialFacts">
           <span class="di-label mono">{{ $t('dossier.judicialFacts') }}</span>
@@ -70,51 +70,57 @@
           <span class="di-label mono">{{ $t('dossier.synthesis') }}</span>
           <div class="di-value di-value-rich" v-html="form.description" />
         </div>
-        <div class="di-field di-tags-field">
-          <span class="di-label mono">{{ $t('dossier.tags') }}</span>
-          <v-combobox
-            v-model="localTags"
-            :items="availableTags"
-            :label="$t('dossier.tags')"
-            multiple
-            chips
-            closable-chips
-            density="compact"
-            hide-details
-            variant="outlined"
-            @update:model-value="saveTags"
-          />
-        </div>
       </div>
 
-      <!-- RIGHT COLUMN: Dates & Reference + Classification + Investigator -->
+      <!-- RIGHT COLUMN: Dates, Reference & Tags + Classification + Investigator -->
       <div class="di-section di-sidebar-section">
-        <!-- Dates & Référence -->
+        <!-- Dates, Référence & Tags -->
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
-          {{ $t('dossier.datesReference') }}
+          {{ $t('dossier.datesReferenceTags') }}
         </h3>
-        <div class="di-field">
-          <span class="di-label mono">
-            <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
-            {{ $t('dossier.referenceNumber') }}
-          </span>
-          <span class="di-value">{{ form.referenceNumber || '—' }}</span>
-        </div>
-        <div class="di-row">
-          <div class="di-field">
-            <span class="di-label mono">{{ $t('dossier.arrivalDate') }}</span>
-            <span class="di-value">{{ form.arrivalDate ? new Date(form.arrivalDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+        <div class="di-dates-tags-grid">
+          <div class="di-dates-col">
+            <div class="di-field">
+              <span class="di-label mono">
+                <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
+                {{ $t('dossier.referenceNumber') }}
+              </span>
+              <span class="di-value">{{ form.referenceNumber || '—' }}</span>
+            </div>
+            <div class="di-row">
+              <div class="di-field">
+                <span class="di-label mono">{{ $t('dossier.arrivalDate') }}</span>
+                <span class="di-value">{{ form.arrivalDate ? new Date(form.arrivalDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+              </div>
+              <div class="di-field">
+                <span class="di-label mono">{{ $t('dossier.attributionDate') }}</span>
+                <span class="di-value">{{ form.attributionDate ? new Date(form.attributionDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+              </div>
+            </div>
+            <div class="di-field">
+              <span class="di-label mono">{{ $t('dossier.closureDate') }}</span>
+              <span class="di-value">{{ form.closureDate ? new Date(form.closureDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+              <span v-if="!form.closureDate" class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
+            </div>
           </div>
-          <div class="di-field">
-            <span class="di-label mono">{{ $t('dossier.attributionDate') }}</span>
-            <span class="di-value">{{ form.attributionDate ? new Date(form.attributionDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+          <div class="di-tags-col">
+            <div class="di-field">
+              <span class="di-label mono">{{ $t('dossier.tags') }}</span>
+              <v-combobox
+                v-model="localTags"
+                :items="availableTags"
+                :label="$t('dossier.tags')"
+                multiple
+                chips
+                closable-chips
+                density="compact"
+                hide-details
+                variant="outlined"
+                @update:model-value="saveTags"
+              />
+            </div>
           </div>
-        </div>
-        <div class="di-field">
-          <span class="di-label mono">{{ $t('dossier.closureDate') }}</span>
-          <span class="di-value">{{ form.closureDate ? new Date(form.closureDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
-          <span v-if="!form.closureDate" class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
         </div>
 
         <!-- Duration warning alert -->
@@ -399,32 +405,50 @@
         <MiniEditor v-model="form.description" :label="$t('dossier.synthesis')" :placeholder="$t('dossier.synthesis')" />
       </div>
 
-      <!-- Dates & Référence (edit mode) -->
-      <div class="di-section">
+      <!-- Dates, Référence & Tags (edit mode) -->
+      <div class="di-section di-full-width">
         <h3 class="di-section-title mono">
           <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
-          {{ $t('dossier.datesReference') }}
+          {{ $t('dossier.datesReferenceTags') }}
         </h3>
-        <v-text-field
-          v-model="form.referenceNumber"
-          :label="$t('dossier.referenceNumber')"
-          density="compact"
-          prepend-inner-icon="mdi-identifier"
-        />
-        <div class="di-row">
-          <div class="di-date-field">
-            <label class="di-date-label mono">{{ $t('dossier.arrivalDate') }}</label>
-            <input type="date" v-model="form.arrivalDate" class="di-date-input" />
+        <div class="di-dates-tags-grid">
+          <div class="di-dates-col">
+            <v-text-field
+              v-model="form.referenceNumber"
+              :label="$t('dossier.referenceNumber')"
+              density="compact"
+              prepend-inner-icon="mdi-identifier"
+            />
+            <div class="di-row">
+              <div class="di-date-field">
+                <label class="di-date-label mono">{{ $t('dossier.arrivalDate') }}</label>
+                <input type="date" v-model="form.arrivalDate" class="di-date-input" />
+              </div>
+              <div class="di-date-field">
+                <label class="di-date-label mono">{{ $t('dossier.attributionDate') }}</label>
+                <input type="date" v-model="form.attributionDate" class="di-date-input" />
+              </div>
+            </div>
+            <div class="di-date-field">
+              <label class="di-date-label mono">{{ $t('dossier.closureDate') }}</label>
+              <input type="date" v-model="form.closureDate" class="di-date-input" />
+              <span class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
+            </div>
           </div>
-          <div class="di-date-field">
-            <label class="di-date-label mono">{{ $t('dossier.attributionDate') }}</label>
-            <input type="date" v-model="form.attributionDate" class="di-date-input" />
+          <div class="di-tags-col">
+            <v-combobox
+              v-model="localTags"
+              :items="availableTags"
+              :label="$t('dossier.tags')"
+              multiple
+              chips
+              closable-chips
+              density="compact"
+              hide-details
+              variant="outlined"
+              @update:model-value="saveTags"
+            />
           </div>
-        </div>
-        <div class="di-date-field">
-          <label class="di-date-label mono">{{ $t('dossier.closureDate') }}</label>
-          <input type="date" v-model="form.closureDate" class="di-date-input" />
-          <span class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
         </div>
       </div>
 
@@ -1914,16 +1938,16 @@ async function removeCollaborator(userId: string) {
   width: fit-content;
 }
 .di-status-open {
-  background: var(--me-accent-glow);
-  color: var(--me-accent);
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
 }
 .di-status-in_progress {
-  background: rgba(251, 191, 36, 0.15);
-  color: var(--me-warning);
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
 }
 .di-status-closed {
-  background: rgba(52, 211, 153, 0.15);
-  color: var(--me-success);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 }
 
 /* Entites - Liste */
@@ -2105,8 +2129,25 @@ async function removeCollaborator(userId: string) {
 .di-entity-photo-item:hover .di-entity-photo-delete {
   opacity: 1;
 }
-.di-tags-field {
-  margin-top: 8px;
+.di-dates-tags-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.di-dates-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.di-tags-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+@media (max-width: 700px) {
+  .di-dates-tags-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .di-empty {
   font-size: 12px;
@@ -2235,13 +2276,13 @@ async function removeCollaborator(userId: string) {
   flex-shrink: 0;
 }
 .di-dot-open {
-  background: var(--me-accent);
+  background: #22c55e;
 }
 .di-dot-in_progress {
-  background: var(--me-warning, #fbbf24);
+  background: #3b82f6;
 }
 .di-dot-closed {
-  background: var(--me-success, #34d38b);
+  background: #ef4444;
 }
 
 /* Flag toggles (Urgent / Embargo) */

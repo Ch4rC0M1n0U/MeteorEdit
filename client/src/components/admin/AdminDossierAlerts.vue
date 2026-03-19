@@ -139,9 +139,9 @@ async function save() {
   try {
     await api.put('/admin/settings', {
       dossierAlerts: {
-        routine: form.routine,
-        priority: form.priority,
-        urgent: form.urgent,
+        routine: Number(form.routine) || 30,
+        priority: Number(form.priority) || 14,
+        urgent: Number(form.urgent) || 7,
         routineMessage: form.routineMessage,
         priorityMessage: form.priorityMessage,
         urgentMessage: form.urgentMessage,

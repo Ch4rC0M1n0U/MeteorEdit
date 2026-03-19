@@ -83,14 +83,34 @@
 
         <!-- Tab: Statistics -->
         <v-tabs-window-item value="stats">
-          <DashboardStats
-            :node-counts-by-type="stats.nodeCountsByType || []"
-            :top-dossiers-this-week="stats.topDossiersThisWeek || []"
-            :streaks="stats.streaks || { current: 0, best: 0 }"
-            :weekly-trend="stats.weeklyTrend || { current: 0, previous: 0 }"
-          />
-
-          <DashboardHeatmap :heatmap="stats.heatmap || []" />
+          <!-- Processing Stats + Dossier Statuses FIRST -->
+          <div v-if="processingStats" class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
+            <h3 class="dash-card-title mono" style="display: flex; align-items: center; gap: 6px;">
+              <v-icon size="16">mdi-timer-outline</v-icon>
+              {{ $t('dashboard.processingStats') }}
+            </h3>
+            <div class="processing-chips">
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-chart-timeline-variant</v-icon>
+                {{ $t('dashboard.avgProcessing') }}: {{ processingStats.avgDays }} {{ $t('dashboard.days') }}
+              </span>
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-arrow-up</v-icon>
+                {{ $t('dashboard.maxProcessing') }}: {{ processingStats.maxDays }} {{ $t('dashboard.days') }}
+              </span>
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-arrow-down</v-icon>
+                {{ $t('dashboard.minProcessing') }}: {{ processingStats.minDays }} {{ $t('dashboard.days') }}
+              </span>
+              <span class="processing-chip mono">
+                <v-icon size="12">mdi-archive-check-outline</v-icon>
+                {{ $t('dashboard.closedDossiers') }}: {{ processingStats.totalClosed }}
+              </span>
+            </div>
+            <div v-if="openDurationsChartData" style="margin-top: 16px;">
+              <Bar :data="openDurationsChartData" :options="openDurationsOptions" />
+            </div>
+          </div>
 
           <div class="dash-content-row fade-in">
             <div class="dash-card glass-card dash-card--chart">
@@ -119,34 +139,14 @@
             </div>
           </div>
 
-          <!-- Processing Stats -->
-          <div v-if="processingStats" class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
-            <h3 class="dash-card-title mono" style="display: flex; align-items: center; gap: 6px;">
-              <v-icon size="16">mdi-timer-outline</v-icon>
-              {{ $t('dashboard.processingStats') }}
-            </h3>
-            <div class="processing-chips">
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-chart-timeline-variant</v-icon>
-                {{ $t('dashboard.avgProcessing') }}: {{ processingStats.avgDays }} {{ $t('dashboard.days') }}
-              </span>
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-arrow-up</v-icon>
-                {{ $t('dashboard.maxProcessing') }}: {{ processingStats.maxDays }} {{ $t('dashboard.days') }}
-              </span>
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-arrow-down</v-icon>
-                {{ $t('dashboard.minProcessing') }}: {{ processingStats.minDays }} {{ $t('dashboard.days') }}
-              </span>
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-archive-check-outline</v-icon>
-                {{ $t('dashboard.closedDossiers') }}: {{ processingStats.totalClosed }}
-              </span>
-            </div>
-            <div v-if="openDurationsChartData" style="margin-top: 16px;">
-              <Bar :data="openDurationsChartData" :options="openDurationsOptions" />
-            </div>
-          </div>
+          <DashboardStats
+            :node-counts-by-type="stats.nodeCountsByType || []"
+            :top-dossiers-this-week="stats.topDossiersThisWeek || []"
+            :streaks="stats.streaks || { current: 0, best: 0 }"
+            :weekly-trend="stats.weeklyTrend || { current: 0, previous: 0 }"
+          />
+
+          <DashboardHeatmap :heatmap="stats.heatmap || []" />
         </v-tabs-window-item>
 
         <!-- Tab: Activity -->
@@ -222,9 +222,9 @@ const statusItems = computed(() => {
   const c = stats.value.statusCounts || {};
   const total = (c.open || 0) + (c.in_progress || 0) + (c.closed || 0);
   return [
-    { key: 'open', label: t('dossier.statusOpen'), dot: 'active', color: '#38bdf8', count: c.open || 0, pct: total ? ((c.open || 0) / total * 100) : 0 },
-    { key: 'in_progress', label: t('dossier.statusInProgress'), dot: 'warning', color: '#fbbf24', count: c.in_progress || 0, pct: total ? ((c.in_progress || 0) / total * 100) : 0 },
-    { key: 'closed', label: t('dossier.statusClosed'), dot: 'error', color: '#34d399', count: c.closed || 0, pct: total ? ((c.closed || 0) / total * 100) : 0 },
+    { key: 'open', label: t('dossier.statusOpen'), dot: 'active', color: '#22c55e', count: c.open || 0, pct: total ? ((c.open || 0) / total * 100) : 0 },
+    { key: 'in_progress', label: t('dossier.statusInProgress'), dot: 'warning', color: '#3b82f6', count: c.in_progress || 0, pct: total ? ((c.in_progress || 0) / total * 100) : 0 },
+    { key: 'closed', label: t('dossier.statusClosed'), dot: 'error', color: '#ef4444', count: c.closed || 0, pct: total ? ((c.closed || 0) / total * 100) : 0 },
   ];
 });
 
