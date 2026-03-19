@@ -590,7 +590,34 @@ export async function downloadVideo(req: AuthRequest, res: Response): Promise<vo
           }
         } catch (cobaltErr: any) {
           console.error('[Download] Cobalt fallback failed:', cobaltErr?.message);
-          throw ytdlpError; // throw original yt-dlp error
+          // Fallback 3: Real Chrome extraction for YouTube
+          if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            try {
+              console.log('[Download] Trying Chrome extraction...');
+              sendSSE(res, 'status', { status: 'downloading', fallback: true, method: 'chrome' });
+              const { extractVideoUrlWithChrome } = await import('./mediaController');
+              const chromeUrl = await extractVideoUrlWithChrome(url);
+              if (chromeUrl) {
+                const chromeResp = await fetch(chromeUrl);
+                if (chromeResp.ok) {
+                  const outputFile = path.join(mediaDir, `${fileId}.mp4`);
+                  const buffer = Buffer.from(await chromeResp.arrayBuffer());
+                  fs.writeFileSync(outputFile, buffer);
+                  downloadedFile = outputFile;
+                  console.log('[Download] Chrome download success');
+                } else {
+                  throw new Error(`Chrome download HTTP ${chromeResp.status}`);
+                }
+              } else {
+                throw new Error('Chrome extraction returned no URL');
+              }
+            } catch (chromeErr: any) {
+              console.error('[Download] Chrome fallback failed:', chromeErr?.message);
+              throw ytdlpError;
+            }
+          } else {
+            throw ytdlpError;
+          }
         }
       }
     }

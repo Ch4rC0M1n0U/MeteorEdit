@@ -11,6 +11,69 @@ const execFileAsync = promisify(execFile);
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 
+/**
+ * Extract video stream URL using real Chrome (Puppeteer) with anti-detection.
+ * Works when yt-dlp/Cobalt are blocked by bot detection.
+ */
+export async function extractVideoUrlWithChrome(videoUrl: string): Promise<string | null> {
+  let browser: any = null;
+  try {
+    const puppeteer = await import('puppeteer-core');
+    browser = await puppeteer.default.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+      args: [
+        '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
+        '--autoplay-policy=no-user-gesture-required',
+        '--disable-blink-features=AutomationControlled',
+      ],
+      ignoreDefaultArgs: ['--enable-automation'],
+    });
+    const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+      Object.defineProperty(navigator, 'languages', { get: () => ['fr-FR', 'fr', 'en'] });
+      (window as any).chrome = { runtime: {} };
+    });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+    await page.setViewport({ width: 1920, height: 1080 });
+
+    let streamUrl: string | null = null;
+    const cdp = await page.createCDPSession();
+    await cdp.send('Network.enable');
+    cdp.on('Network.requestWillBeSent', (params: any) => {
+      if (params.request.url.includes('googlevideo.com/videoplayback') && !streamUrl) {
+        streamUrl = params.request.url;
+      }
+    });
+
+    await page.goto(videoUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    // Accept consent dialog
+    try {
+      const btn = await page.waitForSelector('button[aria-label*="Accept"], button[aria-label*="Accepter"], form[action*="consent"] button', { timeout: 3000 });
+      if (btn) await btn.click();
+      await new Promise(r => setTimeout(r, 2000));
+    } catch {}
+    // Click play
+    for (let i = 0; i < 15; i++) {
+      if (streamUrl) break;
+      await new Promise(r => setTimeout(r, 1000));
+      try { await page.click('.ytp-play-button'); } catch {}
+      try { await page.click('.ytp-large-play-button'); } catch {}
+    }
+
+    await browser.close();
+    browser = null;
+    if (streamUrl) console.log('[Chrome] Video URL extracted successfully');
+    return streamUrl;
+  } catch (err: any) {
+    console.error('[Chrome] Video extraction failed:', err?.message);
+    if (browser) try { await browser.close(); } catch {}
+    return null;
+  }
+}
+
 /** Parse ISO 8601 duration (PT1H2M30S) to seconds */
 function parseISO8601Duration(iso: string): number {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -382,9 +445,15 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       }
     }
 
+    // Fallback 3: Real Chrome via Puppeteer (bypasses bot detection)
+    if (!videoUrl && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+      console.log('Cobalt failed, trying Chrome extraction...');
+      videoUrl = await extractVideoUrlWithChrome(url) || '';
+    }
+
     if (!videoUrl) {
       if (cookiesFile) try { fs.unlinkSync(cookiesFile); } catch {}
-      res.status(400).json({ error: 'Impossible de récupérer le flux vidéo (yt-dlp + Cobalt ont échoué)' });
+      res.status(400).json({ error: 'Impossible de récupérer le flux vidéo' });
       return;
     }
 
