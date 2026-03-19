@@ -146,6 +146,75 @@ export async function downloadVideoWithChrome(videoUrl: string, outputPath: stri
   }
 }
 
+/**
+ * Capture a frame from a YouTube video by screenshotting the player at a given timestamp.
+ * Works when yt-dlp/ffmpeg fail due to bot detection.
+ */
+export async function captureYoutubeFrame(videoUrl: string, timestamp: number, outputPath: string): Promise<boolean> {
+  let browser: any = null;
+  try {
+    const puppeteer = await import('puppeteer-core');
+    browser = await puppeteer.default.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+      args: [
+        '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
+        '--autoplay-policy=no-user-gesture-required',
+        '--disable-blink-features=AutomationControlled',
+      ],
+      ignoreDefaultArgs: ['--enable-automation'],
+    });
+    const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+      (window as any).chrome = { runtime: {} };
+    });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+    await page.setViewport({ width: 1920, height: 1080 });
+
+    // Navigate to embed with autoplay and start time
+    const ts = Math.floor(timestamp);
+    const embedUrl = videoUrl.replace('watch?v=', 'embed/').split('&')[0] + `?autoplay=1&start=${ts}&controls=0&modestbranding=1`;
+    await page.goto(embedUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+
+    // Wait for video to load and seek
+    await new Promise(r => setTimeout(r, 5000));
+
+    // Try to click play if needed
+    try { await page.click('.ytp-large-play-button'); } catch {}
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Seek to exact timestamp via JS
+    await page.evaluate((t: number) => {
+      const video = document.querySelector('video');
+      if (video) {
+        video.currentTime = t;
+        video.pause();
+      }
+    }, timestamp);
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Screenshot the video element
+    const videoElement = await page.$('video');
+    if (videoElement) {
+      await videoElement.screenshot({ path: outputPath, type: 'jpeg', quality: 90 });
+      console.log(`[Chrome] YouTube frame captured at ${ts}s`);
+    } else {
+      // Fallback: screenshot the whole page
+      await page.screenshot({ path: outputPath, type: 'jpeg', quality: 90, clip: { x: 0, y: 0, width: 1920, height: 1080 } });
+      console.log('[Chrome] Full page screenshot (no video element found)');
+    }
+
+    await browser.close();
+    return true;
+  } catch (err: any) {
+    console.error('[Chrome] YouTube frame capture failed:', err?.message);
+    if (browser) try { await browser.close(); } catch {}
+    return false;
+  }
+}
+
 /** Parse ISO 8601 duration (PT1H2M30S) to seconds */
 function parseISO8601Duration(iso: string): number {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -517,27 +586,37 @@ export async function captureEmbed(req: AuthRequest, res: Response): Promise<voi
       }
     }
 
-    // Fallback 3: Real Chrome via Puppeteer (bypasses bot detection)
-    if (!videoUrl && (url.includes('youtube.com') || url.includes('youtu.be'))) {
-      console.log('Cobalt failed, trying Chrome extraction...');
-      videoUrl = await extractVideoUrlWithChrome(url) || '';
+    // Step 2: Extract frame
+    let captured = false;
+
+    // If we got a stream URL, try ffmpeg first
+    if (videoUrl) {
+      try {
+        await execFileAsync('ffmpeg', [
+          '-ss', String(ts),
+          '-i', videoUrl,
+          '-frames:v', '1',
+          '-q:v', '2',
+          '-y',
+          filePath,
+        ], { timeout: 30000 });
+        captured = true;
+      } catch (ffmpegErr: any) {
+        console.log('ffmpeg failed on stream URL:', ffmpegErr?.message?.substring(0, 100));
+      }
     }
 
-    if (!videoUrl) {
+    // Fallback: capture frame directly via Chrome screenshot of video element
+    if (!captured && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+      console.log('Trying Chrome video screenshot...');
+      captured = await captureYoutubeFrame(url, ts, filePath);
+    }
+
+    if (!captured) {
       if (cookiesFile) try { fs.unlinkSync(cookiesFile); } catch {}
-      res.status(400).json({ error: 'Impossible de récupérer le flux vidéo' });
+      res.status(400).json({ error: 'Impossible de capturer la vidéo' });
       return;
     }
-
-    // Step 2: Extract frame at timestamp via ffmpeg
-    await execFileAsync('ffmpeg', [
-      '-ss', String(ts),
-      '-i', videoUrl,
-      '-frames:v', '1',
-      '-q:v', '2',
-      '-y',
-      filePath,
-    ], { timeout: 30000 });
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
