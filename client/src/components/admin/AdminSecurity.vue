@@ -3,7 +3,7 @@
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
         <v-icon size="20" class="mr-2">mdi-shield-lock-outline</v-icon>
-        Securite
+        {{ $t('admin.security') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.securitySubtitle') }}</p>
     </div>
@@ -80,7 +80,7 @@
             <p class="sec-desc">{{ $t('admin.allowedEmailDomainsDesc') }}</p>
           </div>
         </div>
-        <div class="d-flex ga-2 align-center mb-2">
+        <div class="sec-domain-row">
           <v-text-field
             v-model="newDomain"
             :placeholder="$t('admin.domainPlaceholder')"
@@ -90,23 +90,22 @@
             style="max-width: 260px;"
             @keyup.enter="addDomain"
           />
-          <v-btn size="small" variant="tonal" color="primary" @click="addDomain" :disabled="!newDomain.trim()">
-            <v-icon size="16" start>mdi-plus</v-icon>
+          <button class="sec-add-btn" @click="addDomain" :disabled="!newDomain.trim()">
+            <v-icon size="14">mdi-plus</v-icon>
             {{ $t('common.add') }}
-          </v-btn>
+          </button>
         </div>
-        <div v-if="form.allowedEmailDomains.length" class="d-flex flex-wrap ga-2">
-          <v-chip
+        <div v-if="form.allowedEmailDomains.length" class="sec-domain-chips">
+          <span
             v-for="(domain, i) in form.allowedEmailDomains"
             :key="i"
-            closable
-            size="small"
-            variant="tonal"
-            color="primary"
-            @click:close="removeDomain(i)"
+            class="sec-domain-chip"
           >
             @{{ domain }}
-          </v-chip>
+            <button class="sec-domain-remove" @click="removeDomain(i)" :title="$t('common.delete')">
+              <v-icon size="12">mdi-close</v-icon>
+            </button>
+          </span>
         </div>
         <p v-else class="sec-desc" style="font-style: italic;">{{ $t('admin.noDomainsRestriction') }}</p>
       </div>
@@ -202,7 +201,7 @@
     </div>
 
     <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      Parametres enregistres
+      {{ $t('admin.settingsSaved') }}
     </v-snackbar>
   </div>
 </template>
@@ -281,6 +280,9 @@ function save() {
 </script>
 
 <style scoped>
+.admin-security {
+  max-width: 800px;
+}
 .admin-section-header { margin-bottom: 20px; }
 .admin-section-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
 .admin-section-subtitle { font-size: 13px; color: var(--me-text-muted); margin-top: 4px; font-family: var(--me-font-mono); }
@@ -293,4 +295,69 @@ function save() {
 .sec-label { font-size: 13px; font-weight: 600; color: var(--me-text-primary); }
 .sec-desc { font-size: 12px; color: var(--me-text-muted); margin-top: 2px; }
 .sec-divider { height: 1px; background: var(--me-border); margin: 10px 0; opacity: 0.5; }
+
+.sec-domain-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sec-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: var(--me-radius-xs, 6px);
+  border: 1px solid var(--me-border);
+  background: var(--me-bg-deep);
+  color: var(--me-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sec-add-btn:hover:not(:disabled) {
+  border-color: var(--me-accent);
+  color: var(--me-accent);
+}
+.sec-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.sec-domain-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sec-domain-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(var(--me-accent-rgb, 59, 130, 246), 0.12);
+  color: var(--me-accent);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--me-font-mono);
+}
+.sec-domain-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--me-accent);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s;
+}
+.sec-domain-remove:hover {
+  background: rgba(var(--me-accent-rgb, 59, 130, 246), 0.2);
+  color: var(--me-text-primary);
+}
 </style>

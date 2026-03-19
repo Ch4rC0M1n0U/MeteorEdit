@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { AuthRequest } from '../middleware/auth';
@@ -761,5 +762,350 @@ export async function deleteCapture(req: AuthRequest, res: Response) {
   } catch (error: any) {
     console.error('deleteCapture error:', error?.message || error);
     res.status(500).json({ error: 'Failed to delete capture' });
+  }
+}
+
+// ─── Technical file analysis ───────────────────────────────────────────────────
+
+interface MetaCategory {
+  icon: string;
+  title: string;
+  fields: { key: string; value: string }[];
+}
+
+/**
+ * Analyze a media file using exiftool + ffprobe and create a TipTap analysis note.
+ * POST /api/media/analyze
+ */
+export async function analyzeFile(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const { nodeId, dossierId } = req.body;
+
+    if (!nodeId || !dossierId) {
+      res.status(400).json({ error: 'nodeId et dossierId requis' });
+      return;
+    }
+
+    // Load the DossierNode
+    const originalNode = await DossierNode.findById(nodeId);
+    if (!originalNode) {
+      res.status(404).json({ error: 'Noeud introuvable' });
+      return;
+    }
+
+    const fileUrl = originalNode.mediaData?.source?.fileUrl;
+    const fileName = originalNode.mediaData?.source?.fileName || path.basename(fileUrl || '');
+
+    if (!fileUrl) {
+      res.status(400).json({ error: 'Ce noeud ne contient pas de fichier uploadé' });
+      return;
+    }
+
+    // Handle encrypted files
+    if (fileUrl.endsWith('.enc')) {
+      res.status(400).json({ error: 'Impossible d\'analyser un fichier chiffré. Désactivez le chiffrement E2E pour ce dossier ou analysez le fichier avant le chiffrement.' });
+      return;
+    }
+
+    // Resolve file path: strip 'uploads/' prefix if needed
+    const relativePath = fileUrl.replace(/^uploads\//, '');
+    const filepath = path.resolve(UPLOAD_DIR, relativePath);
+
+    if (!fs.existsSync(filepath)) {
+      res.status(404).json({ error: 'Fichier introuvable sur le disque' });
+      return;
+    }
+
+    // 1. Run exiftool
+    let exifData: Record<string, any> = {};
+    try {
+      const { stdout } = await execFileAsync('exiftool', ['-json', '-G', '-n', filepath], { timeout: 15000 });
+      const parsed = JSON.parse(stdout);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        exifData = parsed[0];
+      }
+    } catch (err: any) {
+      console.warn('exiftool failed:', err?.message?.substring(0, 200));
+    }
+
+    // 2. Run ffprobe (may fail for images — that's OK)
+    let ffprobeData: Record<string, any> = {};
+    try {
+      const { stdout } = await execFileAsync('ffprobe', [
+        '-v', 'quiet', '-print_format', 'json', '-show_streams', '-show_format', filepath,
+      ], { timeout: 10000 });
+      ffprobeData = JSON.parse(stdout);
+    } catch {
+      // ffprobe may fail on non-media files — ignore
+    }
+
+    // 3. Compute SHA256 hash
+    const fileBuffer = fs.readFileSync(filepath);
+    const sha256 = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+    // 4. Categorize metadata
+    const categories: MetaCategory[] = [];
+
+    // Helper: find exiftool keys containing a substring (case-insensitive)
+    function findExifFields(patterns: string[], groupFilter?: string): { key: string; value: string }[] {
+      const fields: { key: string; value: string }[] = [];
+      for (const [fullKey, val] of Object.entries(exifData)) {
+        if (val === undefined || val === null || val === '') continue;
+        const [group, key] = fullKey.includes(':') ? fullKey.split(':') : ['', fullKey];
+        if (groupFilter && !group.toLowerCase().includes(groupFilter.toLowerCase())) continue;
+        for (const pattern of patterns) {
+          if (key.toLowerCase().includes(pattern.toLowerCase())) {
+            fields.push({ key, value: String(val) });
+            break;
+          }
+        }
+      }
+      return fields;
+    }
+
+    // Appareil
+    const deviceFields = findExifFields(
+      ['Make', 'Model', 'LensModel', 'LensInfo', 'SerialNumber', 'CameraSerialNumber'],
+      'EXIF'
+    );
+    if (deviceFields.length > 0) {
+      categories.push({ icon: '📷', title: 'Appareil', fields: deviceFields });
+    }
+
+    // Localisation
+    const gpsFields = findExifFields([
+      'GPSLatitude', 'GPSLongitude', 'GPSAltitude', 'GPSPosition', 'GPSTimeStamp', 'GPSDateStamp',
+    ]);
+    let gpsLat: number | null = null;
+    let gpsLng: number | null = null;
+    for (const [fullKey, val] of Object.entries(exifData)) {
+      const key = fullKey.includes(':') ? fullKey.split(':')[1] : fullKey;
+      if (key === 'GPSLatitude' && typeof val === 'number') gpsLat = val;
+      if (key === 'GPSLongitude' && typeof val === 'number') gpsLng = val;
+    }
+    if (gpsLat !== null && gpsLng !== null) {
+      gpsFields.push({ key: 'Google Maps', value: `https://www.google.com/maps?q=${gpsLat},${gpsLng}` });
+    }
+    if (gpsFields.length > 0) {
+      categories.push({ icon: '📍', title: 'Localisation', fields: gpsFields });
+    }
+
+    // Dates
+    const dateFields = findExifFields([
+      'DateTimeOriginal', 'CreateDate', 'ModifyDate', 'FileModifyDate',
+      'MediaCreateDate', 'TrackCreateDate',
+    ]);
+    if (dateFields.length > 0) {
+      categories.push({ icon: '📅', title: 'Dates', fields: dateFields });
+    }
+
+    // Image/Video
+    const imageVideoFields = findExifFields([
+      'ImageWidth', 'ImageHeight', 'XResolution', 'YResolution', 'ColorSpace',
+      'BitDepth', 'Compression', 'VideoCodec', 'VideoBitrate', 'FrameRate', 'Duration',
+    ]);
+    // Add ffprobe video stream info
+    if (ffprobeData.streams) {
+      for (const stream of ffprobeData.streams) {
+        if (stream.codec_type === 'video') {
+          if (stream.codec_name) imageVideoFields.push({ key: 'VideoCodec', value: stream.codec_name });
+          if (stream.width && stream.height) imageVideoFields.push({ key: 'Resolution', value: `${stream.width}x${stream.height}` });
+          if (stream.r_frame_rate) imageVideoFields.push({ key: 'FrameRate', value: stream.r_frame_rate });
+          if (stream.bit_rate) imageVideoFields.push({ key: 'VideoBitrate', value: `${Math.round(Number(stream.bit_rate) / 1000)} kbps` });
+        }
+      }
+    }
+    if (ffprobeData.format?.duration) {
+      const dur = parseFloat(ffprobeData.format.duration);
+      if (dur > 0) imageVideoFields.push({ key: 'Duration', value: `${dur.toFixed(2)}s` });
+    }
+    if (imageVideoFields.length > 0) {
+      categories.push({ icon: '🖼️', title: 'Image / Vidéo', fields: imageVideoFields });
+    }
+
+    // Audio
+    const audioFields: { key: string; value: string }[] = [];
+    if (ffprobeData.streams) {
+      for (const stream of ffprobeData.streams) {
+        if (stream.codec_type === 'audio') {
+          if (stream.codec_name) audioFields.push({ key: 'AudioCodec', value: stream.codec_name });
+          if (stream.sample_rate) audioFields.push({ key: 'SampleRate', value: `${stream.sample_rate} Hz` });
+          if (stream.channels) audioFields.push({ key: 'Channels', value: String(stream.channels) });
+          if (stream.bit_rate) audioFields.push({ key: 'AudioBitrate', value: `${Math.round(Number(stream.bit_rate) / 1000)} kbps` });
+        }
+      }
+    }
+    // Also check exiftool for audio info
+    const exifAudioFields = findExifFields([
+      'AudioSampleRate', 'AudioChannels', 'AudioBitrate', 'AudioCodec', 'SampleRate', 'Channels',
+    ]);
+    for (const f of exifAudioFields) {
+      if (!audioFields.some(a => a.key === f.key)) audioFields.push(f);
+    }
+    if (audioFields.length > 0) {
+      categories.push({ icon: '🎵', title: 'Audio', fields: audioFields });
+    }
+
+    // Fichier
+    const fileFields: { key: string; value: string }[] = [];
+    const fileInfoKeys = ['FileName', 'FileSize', 'FileType', 'MimeType'];
+    for (const [fullKey, val] of Object.entries(exifData)) {
+      const key = fullKey.includes(':') ? fullKey.split(':')[1] : fullKey;
+      if (fileInfoKeys.includes(key) && val !== undefined && val !== null && val !== '') {
+        let displayVal = String(val);
+        if (key === 'FileSize' && typeof val === 'number') {
+          displayVal = val > 1048576 ? `${(val / 1048576).toFixed(2)} MB` : `${(val / 1024).toFixed(2)} KB`;
+        }
+        fileFields.push({ key, value: displayVal });
+      }
+    }
+    fileFields.push({ key: 'SHA256', value: sha256 });
+    categories.push({ icon: '📄', title: 'Fichier', fields: fileFields });
+
+    // Logiciel
+    const softwareFields = findExifFields([
+      'Software', 'CreatorTool', 'HistorySoftwareAgent', 'ProcessingSoftware',
+    ]);
+    // Also search in XMP group
+    for (const [fullKey, val] of Object.entries(exifData)) {
+      if (val === undefined || val === null || val === '') continue;
+      const [group, key] = fullKey.includes(':') ? fullKey.split(':') : ['', fullKey];
+      if (group.toLowerCase() === 'xmp' && key.toLowerCase().includes('creatortool')) {
+        if (!softwareFields.some(f => f.value === String(val))) {
+          softwareFields.push({ key: 'XMP:CreatorTool', value: String(val) });
+        }
+      }
+    }
+    if (softwareFields.length > 0) {
+      categories.push({ icon: '💻', title: 'Logiciel', fields: softwareFields });
+    }
+
+    // 5. Build TipTap JSON content
+    const now = new Date().toLocaleDateString('fr-FR', {
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+
+    const tiptapContent: any[] = [
+      {
+        type: 'heading',
+        attrs: { level: 2 },
+        content: [{ type: 'text', text: '🔬 Analyse technique' }],
+      },
+      {
+        type: 'paragraph',
+        content: [
+          { type: 'text', marks: [{ type: 'italic' }], text: `Fichier : ${fileName} — Analysé le ${now}` },
+        ],
+      },
+      { type: 'horizontalRule' },
+    ];
+
+    let plainTextParts: string[] = [`🔬 Analyse technique\nFichier : ${fileName} — Analysé le ${now}\n`];
+
+    for (const cat of categories) {
+      if (cat.fields.length === 0) continue;
+
+      // Heading
+      tiptapContent.push({
+        type: 'heading',
+        attrs: { level: 3 },
+        content: [{ type: 'text', text: `${cat.icon} ${cat.title}` }],
+      });
+
+      plainTextParts.push(`\n${cat.icon} ${cat.title}`);
+
+      // Table
+      const headerRow = {
+        type: 'tableRow',
+        content: [
+          {
+            type: 'tableHeader',
+            attrs: { colspan: 1, rowspan: 1 },
+            content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Champ' }] }],
+          },
+          {
+            type: 'tableHeader',
+            attrs: { colspan: 1, rowspan: 1 },
+            content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Valeur' }] }],
+          },
+        ],
+      };
+
+      const dataRows = cat.fields.map(f => {
+        plainTextParts.push(`  ${f.key}: ${f.value}`);
+        return {
+          type: 'tableRow',
+          content: [
+            {
+              type: 'tableCell',
+              attrs: { colspan: 1, rowspan: 1 },
+              content: [{ type: 'paragraph', content: [{ type: 'text', text: f.key }] }],
+            },
+            {
+              type: 'tableCell',
+              attrs: { colspan: 1, rowspan: 1 },
+              content: [{ type: 'paragraph', content: [{ type: 'text', text: f.value }] }],
+            },
+          ],
+        };
+      });
+
+      tiptapContent.push({
+        type: 'table',
+        content: [headerRow, ...dataRows],
+      });
+
+      // GPS link paragraph
+      if (cat.title === 'Localisation' && gpsLat !== null && gpsLng !== null) {
+        tiptapContent.push({
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: '📍 ' },
+            {
+              type: 'text',
+              marks: [{ type: 'link', attrs: { href: `https://www.google.com/maps?q=${gpsLat},${gpsLng}`, target: '_blank' } }],
+              text: `Voir sur Google Maps (${gpsLat.toFixed(6)}, ${gpsLng.toFixed(6)})`,
+            },
+          ],
+        });
+        plainTextParts.push(`  📍 Google Maps: https://www.google.com/maps?q=${gpsLat},${gpsLng}`);
+      }
+    }
+
+    const tiptapDoc = { type: 'doc', content: tiptapContent };
+
+    // 6. Get last order for sibling nodes
+    const lastSibling = await DossierNode.findOne({
+      dossierId,
+      parentId: originalNode.parentId,
+      deletedAt: null,
+    }).sort({ order: -1 }).lean();
+    const lastOrder = lastSibling?.order ?? 0;
+
+    // 7. Create node
+    const node = await DossierNode.create({
+      dossierId,
+      parentId: originalNode.parentId,
+      type: 'note',
+      title: `🔬 Analyse technique — ${fileName}`,
+      content: tiptapDoc,
+      contentText: plainTextParts.join('\n'),
+      order: lastOrder + 1,
+    });
+
+    // 8. Log activity
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'media_analyze', 'node', node._id?.toString() || null, {
+      dossierId,
+      sourceNodeId: nodeId,
+      fileName,
+    }, ip, ua);
+
+    res.json({ nodeId: node._id, title: node.title });
+  } catch (error: any) {
+    console.error('analyzeFile error:', error?.message || error);
+    res.status(500).json({ error: 'Échec de l\'analyse technique' });
   }
 }

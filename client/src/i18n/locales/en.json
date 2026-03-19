@@ -1364,6 +1364,9 @@
     "refetch": "Re-detect metadata",
     "expandPlayer": "Expand player",
     "shrinkPlayer": "Shrink player",
+    "analyze": "Technical analysis",
+    "analyzing": "Analyzing...",
+    "analysisFailed": "Analysis failed",
     "download": {
       "title": "Media Download",
       "urlPlaceholder": "Paste the video or media URL...",

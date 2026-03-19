@@ -70,6 +70,17 @@
             <v-icon size="14">mdi-information-outline</v-icon>
             {{ t('media.metadata') }}
           </button>
+          <button
+            v-if="!isEmbed"
+            class="me-btn me-btn--analyze"
+            @click="runAnalysis"
+            :disabled="analyzing"
+            :title="t('media.analyze')"
+          >
+            <v-icon v-if="analyzing" size="14" class="me-spin">mdi-loading</v-icon>
+            <v-icon v-else size="14">mdi-magnify-scan</v-icon>
+            {{ analyzing ? t('media.analyzing') : t('media.analyze') }}
+          </button>
           <button class="me-btn me-btn--download" @click="showDownloader = !showDownloader" :title="t('media.download.title')">
             <v-icon size="14">mdi-download</v-icon>
           </button>
@@ -277,6 +288,7 @@ const viewerSrc = ref('');
 const annotatorOpen = ref(false);
 const expanded = ref(false);
 const showDownloader = ref(false);
+const analyzing = ref(false);
 
 // Has any media loaded (file or embed URL)?
 const hasMedia = computed(() => {
@@ -509,6 +521,33 @@ function onWaveformReady(dur: number) {
 
 function onWaveformSeek(time: number) {
   currentTime.value = time;
+}
+
+// --- Technical analysis ---
+async function runAnalysis() {
+  if (!props.node.mediaData?.source || analyzing.value) return;
+  analyzing.value = true;
+  try {
+    const { data } = await api.post('/media/analyze', {
+      nodeId: props.node._id,
+      dossierId: dossierStore.currentDossier?._id,
+    });
+    // Fetch the created node and select it
+    if (data.nodeId) {
+      try {
+        const { data: newNode } = await api.get(`/nodes/${data.nodeId}`);
+        dossierStore.nodes.push(newNode);
+        dossierStore.selectNode(newNode);
+      } catch {
+        // Fallback: select by minimal data
+        dossierStore.selectNode({ _id: data.nodeId, title: data.title } as any);
+      }
+    }
+  } catch (err: any) {
+    console.error('Analysis failed:', err);
+  } finally {
+    analyzing.value = false;
+  }
 }
 
 // --- Annotations computed ---

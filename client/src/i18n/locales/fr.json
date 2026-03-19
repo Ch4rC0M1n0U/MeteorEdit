@@ -1364,6 +1364,9 @@
     "refetch": "Re-detecter les metadonnees",
     "expandPlayer": "Agrandir le lecteur",
     "shrinkPlayer": "Reduire le lecteur",
+    "analyze": "Analyse technique",
+    "analyzing": "Analyse en cours...",
+    "analysisFailed": "Échec de l'analyse",
     "download": {
       "title": "Téléchargement de média",
       "urlPlaceholder": "Collez l'URL de la vidéo ou du média...",

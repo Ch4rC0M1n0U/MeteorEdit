@@ -59,7 +59,7 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
 
 // Branding files - public (logos, favicons, login backgrounds)
 app.use('/uploads/branding', express.static(path.join(__dirname, '..', process.env.UPLOAD_DIR || './uploads', 'branding')));

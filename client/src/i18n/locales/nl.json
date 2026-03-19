@@ -1363,6 +1363,9 @@
     "refetch": "Metadata opnieuw detecteren",
     "expandPlayer": "Speler vergroten",
     "shrinkPlayer": "Speler verkleinen",
+    "analyze": "Technische analyse",
+    "analyzing": "Bezig met analyseren...",
+    "analysisFailed": "Analyse mislukt",
     "download": {
       "title": "Media downloaden",
       "urlPlaceholder": "Plak de video- of media-URL...",
