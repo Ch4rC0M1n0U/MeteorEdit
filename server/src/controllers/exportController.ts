@@ -15,7 +15,7 @@ const PROFILES_DIR = path.join(UPLOAD_DIR, 'profiles');
  * Download an external image to local storage.
  * Returns the local URL path or the original URL on failure.
  */
-async function downloadExternalImage(imageUrl: string, serverUrl: string, prefix: string = 'elephantastic'): Promise<string> {
+async function downloadExternalImage(imageUrl: string, _serverUrl: string, prefix: string = 'elephantastic'): Promise<string> {
   if (!imageUrl || !imageUrl.startsWith('http')) return imageUrl;
   try {
     if (!fs.existsSync(PROFILES_DIR)) {
@@ -43,7 +43,8 @@ async function downloadExternalImage(imageUrl: string, serverUrl: string, prefix
     const filePath = path.join(PROFILES_DIR, filename);
     fs.writeFileSync(filePath, buffer);
     console.log(`[Elephantastic] Image saved: ${filename} (${buffer.length} bytes)`);
-    return `${serverUrl}/uploads/profiles/${filename}`;
+    // Return relative path — served by express static / serveUploadFile
+    return `uploads/profiles/${filename}`;
   } catch (err: any) {
     console.log(`[Elephantastic] Image download error: ${err.message} for ${imageUrl.substring(0, 80)}`);
     return imageUrl; // Fallback to original URL

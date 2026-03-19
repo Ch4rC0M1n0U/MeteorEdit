@@ -80,7 +80,7 @@ const displaySrc = computed(() => {
   if (decryptedSrc.value) return decryptedSrc.value;
   const src = props.node?.attrs?.src || '';
   // If it's a /uploads/ URL, show placeholder while decrypting (don't hit removed static route)
-  if (src.includes('/uploads/')) return TRANSPARENT_PIXEL;
+  if (src.includes('uploads/')) return TRANSPARENT_PIXEL;
   // External URLs or data URIs can be shown directly
   return src;
 });
@@ -88,7 +88,7 @@ const displaySrc = computed(() => {
 // Watch the image src and decrypt when needed
 watch(() => props.node?.attrs?.src, async (src) => {
   if (!src) return;
-  if (src.includes('/uploads/') && dossierStore.currentDossier) {
+  if (src.includes('uploads/') && dossierStore.currentDossier) {
     loading.value = true;
     try {
       decryptedSrc.value = await getDecryptedUrl(
