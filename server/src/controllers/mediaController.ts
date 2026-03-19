@@ -780,25 +780,38 @@ interface MetaCategory {
 export async function analyzeFile(req: AuthRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { nodeId, dossierId } = req.body;
+    const { nodeId, dossierId, filePath: bodyFilePath, fileName: bodyFileName, parentId } = req.body;
 
-    if (!nodeId || !dossierId) {
-      res.status(400).json({ error: 'nodeId et dossierId requis' });
+    if (!dossierId) {
+      res.status(400).json({ error: 'dossierId requis' });
       return;
     }
 
-    // Load the DossierNode
-    const originalNode = await DossierNode.findById(nodeId);
-    if (!originalNode) {
-      res.status(404).json({ error: 'Noeud introuvable' });
+    let fileUrl: string;
+    let fileName: string;
+    let nodeParentId: string | null = parentId || null;
+
+    if (bodyFilePath) {
+      // Direct file path mode (linked documents, entity photos)
+      fileUrl = bodyFilePath;
+      fileName = bodyFileName || path.basename(bodyFilePath);
+    } else if (nodeId) {
+      // Node mode (media nodes)
+      const originalNode = await DossierNode.findById(nodeId);
+      if (!originalNode) {
+        res.status(404).json({ error: 'Noeud introuvable' });
+        return;
+      }
+      fileUrl = originalNode.mediaData?.source?.fileUrl || '';
+      fileName = originalNode.mediaData?.source?.fileName || path.basename(fileUrl);
+      nodeParentId = nodeParentId || (originalNode.parentId?.toString() || null);
+    } else {
+      res.status(400).json({ error: 'nodeId ou filePath requis' });
       return;
     }
-
-    const fileUrl = originalNode.mediaData?.source?.fileUrl;
-    const fileName = originalNode.mediaData?.source?.fileName || path.basename(fileUrl || '');
 
     if (!fileUrl) {
-      res.status(400).json({ error: 'Ce noeud ne contient pas de fichier uploadé' });
+      res.status(400).json({ error: 'Aucun fichier à analyser' });
       return;
     }
 
@@ -1078,7 +1091,7 @@ export async function analyzeFile(req: AuthRequest, res: Response): Promise<void
     // 6. Get last order for sibling nodes
     const lastSibling = await DossierNode.findOne({
       dossierId,
-      parentId: originalNode.parentId,
+      parentId: nodeParentId,
       deletedAt: null,
     }).sort({ order: -1 }).lean();
     const lastOrder = lastSibling?.order ?? 0;
@@ -1086,7 +1099,7 @@ export async function analyzeFile(req: AuthRequest, res: Response): Promise<void
     // 7. Create node
     const node = await DossierNode.create({
       dossierId,
-      parentId: originalNode.parentId,
+      parentId: nodeParentId,
       type: 'note',
       title: `🔬 Analyse technique — ${fileName}`,
       content: tiptapDoc,

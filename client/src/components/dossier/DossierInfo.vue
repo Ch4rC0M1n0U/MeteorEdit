@@ -317,6 +317,16 @@
             <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
               <v-icon size="14">mdi-download</v-icon>
             </button>
+            <button
+              v-if="!doc.filePath.endsWith('.enc')"
+              class="di-el-btn"
+              @click="analyzeDoc(doc)"
+              :title="$t('media.analyze')"
+              :disabled="analyzingDocId === doc._id"
+            >
+              <v-icon v-if="analyzingDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
+              <v-icon v-else size="14">mdi-magnify-scan</v-icon>
+            </button>
             <button class="di-el-btn" @click="transferDoc(doc)" :title="getTransferTooltip(doc)" :disabled="transferringDocId === doc._id">
               <v-icon v-if="transferringDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
               <v-icon v-else size="14">mdi-file-move-outline</v-icon>
@@ -1079,6 +1089,34 @@ async function transferDoc(doc: { _id: string; fileName: string }) {
     console.error('Failed to transfer document:', err);
   } finally {
     transferringDocId.value = null;
+  }
+}
+
+// --- Analyze document (exiftool/ffprobe) ---
+const analyzingDocId = ref<string | null>(null);
+
+async function analyzeDoc(doc: { _id: string; fileName: string; filePath: string }) {
+  if (!dossierStore.currentDossier || analyzingDocId.value) return;
+  analyzingDocId.value = doc._id;
+  try {
+    const { data } = await api.post('/media/analyze', {
+      dossierId: dossierStore.currentDossier._id,
+      filePath: doc.filePath,
+      fileName: doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName,
+    });
+    if (data.nodeId) {
+      try {
+        const { data: newNode } = await api.get(`/nodes/${data.nodeId}`);
+        dossierStore.nodes.push(newNode);
+        dossierStore.selectNode(newNode);
+      } catch {
+        dossierStore.selectNode({ _id: data.nodeId, title: data.title } as any);
+      }
+    }
+  } catch (err: any) {
+    console.error('Analysis failed:', err);
+  } finally {
+    analyzingDocId.value = null;
   }
 }
 
