@@ -57,7 +57,7 @@
       </div>
 
       <!-- LEFT COLUMN: Facts, Objectives, Description -->
-      <div class="di-section">
+      <div class="di-section" v-if="form.judicialFacts || form.objectives || form.description">
         <div class="di-field" v-if="form.judicialFacts">
           <span class="di-label mono">{{ $t('dossier.judicialFacts') }}</span>
           <span class="di-value di-value-block">{{ form.judicialFacts }}</span>
@@ -79,47 +79,43 @@
           <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
           {{ $t('dossier.datesReferenceTags') }}
         </h3>
-        <div class="di-dates-tags-grid">
-          <div class="di-dates-col">
-            <div class="di-field">
-              <span class="di-label mono">
-                <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
-                {{ $t('dossier.referenceNumber') }}
-              </span>
-              <span class="di-value">{{ form.referenceNumber || '—' }}</span>
-            </div>
-            <div class="di-row">
-              <div class="di-field">
-                <span class="di-label mono">{{ $t('dossier.arrivalDate') }}</span>
-                <span class="di-value">{{ form.arrivalDate ? new Date(form.arrivalDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
-              </div>
-              <div class="di-field">
-                <span class="di-label mono">{{ $t('dossier.attributionDate') }}</span>
-                <span class="di-value">{{ form.attributionDate ? new Date(form.attributionDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
-              </div>
-            </div>
-            <div class="di-field">
-              <span class="di-label mono">{{ $t('dossier.closureDate') }}</span>
-              <span class="di-value">{{ form.closureDate ? new Date(form.closureDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
-              <span v-if="!form.closureDate" class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
-            </div>
+        <div class="di-field">
+          <span class="di-label mono">
+            <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
+            {{ $t('dossier.referenceNumber') }}
+          </span>
+          <span class="di-value">{{ form.referenceNumber || '—' }}</span>
+        </div>
+        <div class="di-row">
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.arrivalDate') }}</span>
+            <span class="di-value">{{ form.arrivalDate ? new Date(form.arrivalDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
           </div>
-          <div class="di-tags-col">
-            <div class="di-field">
-              <span class="di-label mono">{{ $t('dossier.tags') }}</span>
-              <v-combobox
-                v-model="localTags"
-                :items="availableTags"
-                :label="$t('dossier.tags')"
-                multiple
-                chips
-                closable-chips
-                density="compact"
-                hide-details
-                variant="outlined"
-                @update:model-value="saveTags"
-              />
-            </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.attributionDate') }}</span>
+            <span class="di-value">{{ form.attributionDate ? new Date(form.attributionDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+          </div>
+        </div>
+        <div class="di-row">
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.closureDate') }}</span>
+            <span class="di-value">{{ form.closureDate ? new Date(form.closureDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
+            <span v-if="!form.closureDate" class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
+          </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.tags') }}</span>
+            <v-combobox
+              v-model="localTags"
+              :items="availableTags"
+              :label="$t('dossier.tags')"
+              multiple
+              chips
+              closable-chips
+              density="compact"
+              hide-details
+              variant="outlined"
+              @update:model-value="saveTags"
+            />
           </div>
         </div>
 
@@ -899,8 +895,8 @@ const dossierAlerts = ref<{ routine: number; priority: number; urgent: number; r
 });
 
 const durationWarning = computed(() => {
-  if (form.status === 'closed' || !form.arrivalDate || form.isContinuous) return '';
-  const arrival = new Date(form.arrivalDate);
+  if (form.status === 'closed' || !form.attributionDate || form.isContinuous) return '';
+  const arrival = new Date(form.attributionDate);
   const now = new Date();
   const days = Math.floor((now.getTime() - arrival.getTime()) / (1000 * 60 * 60 * 24));
   if (days < 0) return '';

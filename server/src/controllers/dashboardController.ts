@@ -173,17 +173,17 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
     // --- Heatmap (180 days) ---
     const heatmap = dailyActivity.map(d => ({ date: d._id, count: d.count }));
 
-    // --- Processing time stats ---
-    const closedDossiers = dossiers.filter(d => d.status === 'closed' && d.closureDate && d.arrivalDate);
+    // --- Processing time stats (from attributionDate, not arrivalDate) ---
+    const closedDossiers = dossiers.filter(d => d.status === 'closed' && d.closureDate && d.attributionDate);
     const processingTimes = closedDossiers.map(d => {
-      const arrival = new Date(d.arrivalDate!).getTime();
+      const attribution = new Date(d.attributionDate!).getTime();
       const closure = new Date(d.closureDate!).getTime();
-      return Math.max(0, Math.round((closure - arrival) / (1000 * 60 * 60 * 24))); // days
+      return Math.max(0, Math.round((closure - attribution) / (1000 * 60 * 60 * 24))); // days
     });
-    const openDossiers = dossiers.filter(d => d.status !== 'closed' && d.arrivalDate);
+    const openDossiers = dossiers.filter(d => d.status !== 'closed' && d.attributionDate);
     const openDurations = openDossiers.map(d => {
-      const arrival = new Date(d.arrivalDate!).getTime();
-      return { id: d._id, title: d.title, days: Math.round((now.getTime() - arrival) / (1000 * 60 * 60 * 24)), classification: d.classification, isUrgent: d.isUrgent };
+      const attribution = new Date(d.attributionDate!).getTime();
+      return { id: d._id, title: d.title, days: Math.round((now.getTime() - attribution) / (1000 * 60 * 60 * 24)), classification: d.classification, isUrgent: d.isUrgent };
     });
 
     const processingStats = {
@@ -192,7 +192,7 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
       maxDays: processingTimes.length ? Math.max(...processingTimes) : 0,
       minDays: processingTimes.length ? Math.min(...processingTimes) : 0,
       longestDossier: closedDossiers.length ? closedDossiers.reduce((longest: { id: string; title: string; days: number }, d) => {
-        const days = Math.round((new Date(d.closureDate!).getTime() - new Date(d.arrivalDate!).getTime()) / (1000 * 60 * 60 * 24));
+        const days = Math.round((new Date(d.closureDate!).getTime() - new Date(d.attributionDate!).getTime()) / (1000 * 60 * 60 * 24));
         return days > (longest.days || 0) ? { id: String(d._id), title: d.title, days } : longest;
       }, { id: '', title: '', days: 0 }) : null,
       openDurations: openDurations.sort((a, b) => b.days - a.days).slice(0, 10),
