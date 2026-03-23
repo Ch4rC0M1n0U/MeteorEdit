@@ -721,6 +721,119 @@ async function downloadProfileImages(page: any, profile: ProfileData, baseUrl: s
 }
 
 /**
+ * Post-browser recovery: scan rawMetadata for image URLs that weren't downloaded.
+ * Uses Node.js fetch only (browser is closed at this point).
+ * If profile image is missing, tries to recover from originalProfileImageUrl.
+ * Also scans all metadata values for image URLs and downloads them.
+ */
+async function recoverMetadataImages(profile: ProfileData, baseUrl: string): Promise<void> {
+  // Recover main profile image if download failed
+  if (!profile.profileImageUrl && profile.rawMetadata?.originalProfileImageUrl) {
+    console.log(`[ScrapeProfile] Recovering profile image from metadata...`);
+    const localPath = await downloadImageNodeFetch(profile.rawMetadata.originalProfileImageUrl, 'profile');
+    if (localPath) {
+      profile.profileImageUrl = `${baseUrl}${localPath}`;
+      console.log(`[ScrapeProfile] Profile image recovered: ${profile.profileImageUrl}`);
+    }
+  }
+
+  // Recover extra images if any failed
+  if (profile.extraImages.length === 0) {
+    for (let i = 0; i < 5; i++) {
+      const origUrl = profile.rawMetadata?.[`originalExtraImage_${i}`];
+      if (origUrl && typeof origUrl === 'string' && origUrl.startsWith('http')) {
+        const localPath = await downloadImageNodeFetch(origUrl, 'extra');
+        if (localPath) {
+          profile.extraImages.push(`${baseUrl}${localPath}`);
+          console.log(`[ScrapeProfile] Extra image ${i} recovered`);
+        }
+      }
+    }
+  }
+
+  // Deep scan: find image URLs anywhere in rawMetadata that weren't already downloaded
+  const alreadyDownloaded = new Set<string>();
+  if (profile.rawMetadata?.originalProfileImageUrl) alreadyDownloaded.add(profile.rawMetadata.originalProfileImageUrl);
+  for (let i = 0; i < 5; i++) {
+    const u = profile.rawMetadata?.[`originalExtraImage_${i}`];
+    if (u) alreadyDownloaded.add(u);
+  }
+
+  const imageUrlRegex = /https?:\/\/[^\s"']+\.(jpg|jpeg|png|gif|webp)/gi;
+  const metaStr = JSON.stringify(profile.rawMetadata || {});
+  const matches = metaStr.match(imageUrlRegex) || [];
+  const uniqueUrls = [...new Set(matches)].filter(u => !alreadyDownloaded.has(u));
+
+  // Download up to 5 additional images found in metadata
+  let additionalCount = 0;
+  for (const imgUrl of uniqueUrls) {
+    if (additionalCount >= 5) break;
+    // Skip tiny thumbnails and tracking pixels
+    if (imgUrl.includes('1x1') || imgUrl.includes('pixel') || imgUrl.includes('blank')) continue;
+    const localPath = await downloadImageNodeFetch(imgUrl, 'meta');
+    if (localPath) {
+      profile.extraImages.push(`${baseUrl}${localPath}`);
+      additionalCount++;
+      console.log(`[ScrapeProfile] Metadata image recovered: ${imgUrl.substring(0, 80)}`);
+    }
+  }
+}
+
+/**
+ * Download an image using Node.js fetch only (no browser needed).
+ * Used for post-browser recovery of images from metadata.
+ */
+async function downloadImageNodeFetch(imageUrl: string, prefix: string): Promise<string | null> {
+  if (!imageUrl || !imageUrl.startsWith('http')) return null;
+  try {
+    if (!fs.existsSync(PROFILES_DIR)) {
+      fs.mkdirSync(PROFILES_DIR, { recursive: true });
+    }
+
+    const resp = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!resp.ok) {
+      console.log(`[ScrapeProfile] Node fetch failed: HTTP ${resp.status} for ${imageUrl.substring(0, 80)}`);
+      return null;
+    }
+
+    const contentType = resp.headers.get('content-type') || '';
+    if (!contentType.includes('image') && !contentType.includes('octet-stream')) {
+      console.log(`[ScrapeProfile] Not an image (${contentType}): ${imageUrl.substring(0, 80)}`);
+      return null;
+    }
+
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    if (buffer.length < 500) {
+      console.log(`[ScrapeProfile] Image too small (${buffer.length}b): ${imageUrl.substring(0, 80)}`);
+      return null;
+    }
+
+    let ext = '.jpg';
+    if (contentType.includes('png')) ext = '.png';
+    else if (contentType.includes('webp')) ext = '.webp';
+    else if (contentType.includes('gif')) ext = '.gif';
+
+    const filename = `${prefix}-${uuidv4().slice(0, 8)}${ext}`;
+    const filePath = path.join(PROFILES_DIR, filename);
+    fs.writeFileSync(filePath, buffer);
+
+    console.log(`[ScrapeProfile] Node fetch image saved: ${filename} (${buffer.length} bytes)`);
+    return `/uploads/profiles/${filename}`;
+  } catch (err: any) {
+    console.warn(`[ScrapeProfile] Node fetch error: ${err.message?.substring(0, 100)} for ${imageUrl.substring(0, 80)}`);
+    return null;
+  }
+}
+
+/**
  * Scrape a social media profile and create a note node.
  * POST /api/social/scrape-profile
  * Body: { url, dossierId, parentId? }
@@ -853,6 +966,10 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
     // ── Close browser ──
     await browser.close();
     browser = undefined;
+
+    // ── Recover images from metadata (post-browser, Node.js fetch only) ──
+    // If browser-based download failed, try again with Node.js for any image URLs in metadata
+    await recoverMetadataImages(profileData, baseUrl);
 
     // ── Build TipTap content ──
     const tiptapContent = buildTipTapContent(profileData, platform, url);
