@@ -278,7 +278,7 @@ async function buildElephantasticNote(item: any, serverUrl: string): Promise<any
         type: 'paragraph',
         content: [{
           type: 'image',
-          attrs: { src: localUrl, alt: img.label },
+          attrs: { src: localUrl.startsWith('/') ? `${serverUrl}${localUrl}` : localUrl, alt: img.label },
         }],
       });
     }

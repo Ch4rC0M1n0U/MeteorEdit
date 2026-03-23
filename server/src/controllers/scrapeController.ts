@@ -655,7 +655,7 @@ async function downloadImage(page: any, imageUrl: string, prefix: string): Promi
 /**
  * Download profile image and extra images, replacing URLs with local paths.
  */
-async function downloadProfileImages(page: any, profile: ProfileData): Promise<void> {
+async function downloadProfileImages(page: any, profile: ProfileData, baseUrl: string): Promise<void> {
   console.log(`[ScrapeProfile] downloadProfileImages: profileImageUrl="${profile.profileImageUrl?.substring(0, 100)}", extraImages=${profile.extraImages.length}`);
 
   // Download main profile image
@@ -663,7 +663,7 @@ async function downloadProfileImages(page: any, profile: ProfileData): Promise<v
     const localPath = await downloadImage(page, profile.profileImageUrl, 'profile');
     if (localPath) {
       profile.rawMetadata.originalProfileImageUrl = profile.profileImageUrl;
-      profile.profileImageUrl = localPath;
+      profile.profileImageUrl = `${baseUrl}${localPath}`;
       console.log(`[ScrapeProfile] Profile image saved as: ${profile.profileImageUrl}`);
     } else {
       console.warn(`[ScrapeProfile] Failed to download profile image, keeping original URL`);
@@ -680,7 +680,7 @@ async function downloadProfileImages(page: any, profile: ProfileData): Promise<v
       const localPath = await downloadImage(page, imgUrl, 'extra');
       if (localPath) {
         profile.rawMetadata[`originalExtraImage_${i}`] = imgUrl;
-        downloadedExtras.push(localPath);
+        downloadedExtras.push(`${baseUrl}${localPath}`);
       } else {
         downloadedExtras.push(imgUrl); // Keep original URL as fallback
       }
@@ -818,7 +818,8 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
 
     // ── Download profile images locally before closing browser ──
     // This is critical because platforms like Instagram/Facebook use expiring image URLs
-    await downloadProfileImages(page, profileData);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    await downloadProfileImages(page, profileData, baseUrl);
 
     // ── Close browser ──
     await browser.close();
@@ -829,7 +830,7 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
 
     // Replace screenshot placeholder with actual URL
     if (profileData.rawMetadata?.screenshotPath) {
-      const screenshotUrl = profileData.rawMetadata.screenshotPath;
+      const screenshotUrl = `${baseUrl}${profileData.rawMetadata.screenshotPath}`;
       const contentStr = JSON.stringify(tiptapContent);
       const replaced = contentStr.replace('__SCREENSHOT_PLACEHOLDER__', screenshotUrl);
       Object.assign(tiptapContent, JSON.parse(replaced));
