@@ -165,7 +165,6 @@ const navItems = computed(() => [
 .admin-content {
   flex: 1;
   overflow-y: auto;
-  padding: 32px 24px;
-  max-width: 900px;
+  padding: 32px 40px;
 }
 </style>
