@@ -583,51 +583,77 @@ async function downloadImage(page: any, imageUrl: string, prefix: string): Promi
 
     console.log(`[ScrapeProfile] Downloading image: ${imageUrl.substring(0, 120)}...`);
 
-    // Strategy 1: Download via Puppeteer page.evaluate fetch (has cookies, same origin)
-    let imageData = await page.evaluate(async (url: string) => {
-      try {
-        const resp = await fetch(url, { credentials: 'include', redirect: 'follow' });
-        if (!resp.ok) return { error: `HTTP ${resp.status}`, size: 0 };
-        const buffer = await resp.arrayBuffer();
-        const contentType = resp.headers.get('content-type') || '';
-        // Convert to base64
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        return { base64: btoa(binary), contentType, size: buffer.byteLength };
-      } catch (e: any) { return { error: e.message || 'fetch failed', size: 0 }; }
-    }, imageUrl);
+    let imageData: { base64?: string; contentType: string; size: number; error?: string } | null = null;
 
-    // Strategy 2: If page.evaluate fetch failed, try with a new page (different origin)
+    // Strategy 1: Download via Puppeteer page.evaluate fetch (has cookies, same origin)
+    try {
+      imageData = await page.evaluate(async (url: string) => {
+        try {
+          const resp = await fetch(url, { credentials: 'include', redirect: 'follow' });
+          if (!resp.ok) return { error: `HTTP ${resp.status}`, contentType: '', size: 0 };
+          const buffer = await resp.arrayBuffer();
+          const contentType = resp.headers.get('content-type') || '';
+          if (!contentType.includes('image')) return { error: `Not an image: ${contentType}`, contentType, size: 0 };
+          const bytes = new Uint8Array(buffer);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          return { base64: btoa(binary), contentType, size: buffer.byteLength };
+        } catch (e: any) { return { error: e.message || 'fetch failed', contentType: '', size: 0 }; }
+      }, imageUrl);
+    } catch (evalErr: any) {
+      console.warn(`[ScrapeProfile] page.evaluate failed (page closed?): ${evalErr.message?.substring(0, 100)}`);
+    }
+
+    // Strategy 2: If page fetch failed, try with a new Puppeteer page (separate context)
     if (!imageData || imageData.error || !imageData.base64 || imageData.size < 100) {
-      console.log(`[ScrapeProfile] Page fetch failed (${imageData?.error || 'empty'}), trying direct page navigation...`);
+      console.log(`[ScrapeProfile] Page fetch failed (${imageData?.error || 'empty'}), trying direct navigation...`);
       try {
         const browser = page.browser();
         const imgPage = await browser.newPage();
-        const response = await imgPage.goto(imageUrl, { waitUntil: 'load', timeout: 15000 });
-        if (response && response.ok()) {
-          const buffer = await response.buffer();
-          const contentType = response.headers()['content-type'] || '';
-          if (buffer && buffer.length > 100) {
-            imageData = { base64: buffer.toString('base64'), contentType, size: buffer.length };
-            console.log(`[ScrapeProfile] Direct navigation download succeeded: ${buffer.length} bytes`);
+        try {
+          const response = await imgPage.goto(imageUrl, { waitUntil: 'load', timeout: 15000 });
+          if (response && response.ok()) {
+            const buffer = await response.buffer();
+            const contentType = response.headers()['content-type'] || '';
+            if (buffer && buffer.length > 100) {
+              imageData = { base64: buffer.toString('base64'), contentType, size: buffer.length };
+              console.log(`[ScrapeProfile] Direct navigation succeeded: ${buffer.length} bytes`);
+            }
           }
+        } finally {
+          await imgPage.close().catch(() => {});
         }
-        await imgPage.close();
       } catch (e: any) {
-        console.warn(`[ScrapeProfile] Direct navigation also failed: ${e.message}`);
+        console.warn(`[ScrapeProfile] Direct navigation failed: ${e.message?.substring(0, 100)}`);
       }
     }
 
-    if (!imageData || imageData.error) {
-      console.warn(`[ScrapeProfile] Image download failed: ${imageData?.error || 'no data'}`);
-      return null;
+    // Strategy 3: Last resort — Node.js fetch (no browser cookies but works for public CDN URLs)
+    if (!imageData || imageData.error || !imageData.base64 || imageData.size < 100) {
+      console.log(`[ScrapeProfile] Browser methods failed, trying Node.js fetch...`);
+      try {
+        const resp = await fetch(imageUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0 Safari/537.36' },
+          redirect: 'follow',
+          signal: AbortSignal.timeout(15000),
+        });
+        if (resp.ok) {
+          const buffer = Buffer.from(await resp.arrayBuffer());
+          const contentType = resp.headers.get('content-type') || '';
+          if (buffer.length > 100) {
+            imageData = { base64: buffer.toString('base64'), contentType, size: buffer.length };
+            console.log(`[ScrapeProfile] Node.js fetch succeeded: ${buffer.length} bytes`);
+          }
+        }
+      } catch (e: any) {
+        console.warn(`[ScrapeProfile] Node.js fetch failed: ${e.message?.substring(0, 100)}`);
+      }
     }
 
-    if (!imageData.base64 || imageData.size < 100) {
-      console.warn(`[ScrapeProfile] Image too small or empty: ${imageData.size} bytes`);
+    if (!imageData || !imageData.base64 || imageData.size < 100) {
+      console.warn(`[ScrapeProfile] All download strategies failed for: ${imageUrl.substring(0, 120)}`);
       return null;
     }
 
@@ -644,10 +670,10 @@ async function downloadImage(page: any, imageUrl: string, prefix: string): Promi
     const buffer = Buffer.from(imageData.base64, 'base64');
     fs.writeFileSync(filePath, buffer);
 
-    console.log(`[ScrapeProfile] Image saved: ${filename} (${imageData.size} bytes, ${imageData.contentType})`);
+    console.log(`[ScrapeProfile] Image saved: ${filename} (${buffer.length} bytes, ${imageData.contentType})`);
     return `/uploads/profiles/${filename}`;
-  } catch (err) {
-    console.warn(`[ScrapeProfile] Failed to download image: ${imageUrl.substring(0, 120)}`, err);
+  } catch (err: any) {
+    console.warn(`[ScrapeProfile] Failed to download image: ${imageUrl.substring(0, 120)}`, err?.message);
     return null;
   }
 }
@@ -666,7 +692,10 @@ async function downloadProfileImages(page: any, profile: ProfileData, baseUrl: s
       profile.profileImageUrl = `${baseUrl}${localPath}`;
       console.log(`[ScrapeProfile] Profile image saved as: ${profile.profileImageUrl}`);
     } else {
-      console.warn(`[ScrapeProfile] Failed to download profile image, keeping original URL`);
+      // Don't keep expired CDN URL — it will be broken in the note
+      console.warn(`[ScrapeProfile] Failed to download profile image, removing from note`);
+      profile.rawMetadata.originalProfileImageUrl = profile.profileImageUrl;
+      profile.profileImageUrl = '';
     }
   } else {
     console.warn(`[ScrapeProfile] No profile image URL to download`);
@@ -682,10 +711,10 @@ async function downloadProfileImages(page: any, profile: ProfileData, baseUrl: s
         profile.rawMetadata[`originalExtraImage_${i}`] = imgUrl;
         downloadedExtras.push(`${baseUrl}${localPath}`);
       } else {
-        downloadedExtras.push(imgUrl); // Keep original URL as fallback
+        // Skip failed images — don't include expired CDN URLs
+        console.warn(`[ScrapeProfile] Extra image ${i} download failed, skipping`);
+        profile.rawMetadata[`originalExtraImage_${i}`] = imgUrl;
       }
-    } else {
-      downloadedExtras.push(imgUrl);
     }
   }
   profile.extraImages = downloadedExtras;
