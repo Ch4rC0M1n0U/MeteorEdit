@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
         name: 'MeteorEdit',
@@ -37,6 +37,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/uploads/],
