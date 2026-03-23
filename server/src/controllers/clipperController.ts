@@ -387,6 +387,7 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
     // Capture screenshot BEFORE creating node
     const filename = `clip-${Date.now()}.png`;
     const screenshotPath = url ? await captureScreenshot(url, filename) : null;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     // Build TipTap-compatible JSON content
     const tiptapNodes: any[] = [
@@ -424,7 +425,7 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
       tiptapNodes.push({
         type: 'image',
         attrs: {
-          src: `/${screenshotPath}`,
+          src: `${baseUrl}/${screenshotPath}`,
           alt: `Capture de ${title}`,
           title: `Screenshot - ${url}`,
         },
