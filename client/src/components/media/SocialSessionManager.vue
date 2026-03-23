@@ -84,7 +84,7 @@
           <button class="ssm-back-btn" @click="currentView = 'list'">
             <v-icon size="16">mdi-arrow-left</v-icon>
           </button>
-          <div class="ssm-view-header-icon" :style="iconStyle(importPlatform!, true)">
+          <div class="ssm-view-header-icon" :style="importPlatform ? iconStyle(importPlatform, true) : {}">
             <v-icon size="18" color="#fff">mdi-cookie</v-icon>
           </div>
           <span class="ssm-view-title">
@@ -142,7 +142,7 @@
           <button class="ssm-back-btn" @click="cancelLogin">
             <v-icon size="16">mdi-arrow-left</v-icon>
           </button>
-          <div class="ssm-view-header-icon" :style="iconStyle(loginPlatform!, true)">
+          <div class="ssm-view-header-icon" :style="loginPlatform ? iconStyle(loginPlatform, true) : {}">
             <v-icon size="18" color="#fff">{{ loginPlatform?.icon }}</v-icon>
           </div>
           <span class="ssm-view-title">
