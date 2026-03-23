@@ -25,162 +25,74 @@
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="ssm-loader" />
 
-    <!-- Platform grid -->
-    <div class="ssm-platforms">
-      <div
-        v-for="p in platformList"
-        :key="p.key"
-        :class="['ssm-platform', { 'ssm-platform--connected': isConnected(p.key) }]"
-      >
-        <div class="ssm-platform-left">
-          <div class="ssm-platform-icon" :style="iconStyle(p, isConnected(p.key))">
-            <v-icon size="20" :color="isConnected(p.key) ? '#fff' : p.color">{{ p.icon }}</v-icon>
-          </div>
-          <div class="ssm-platform-details">
-            <span class="ssm-platform-name">{{ p.name }}</span>
-            <span v-if="isConnected(p.key)" class="ssm-platform-date mono">
-              {{ formatDate(getConnectedDate(p.key)) }}
-            </span>
-            <span v-else class="ssm-platform-date ssm-platform-date--off mono">
-              {{ $t('social.session.notConnected') }}
-            </span>
-          </div>
-        </div>
-
-        <div class="ssm-platform-actions">
-          <button
-            v-if="!isConnected(p.key)"
-            class="ssm-btn ssm-btn--connect"
-            @click="openPlatformSite(p)"
-            :title="$t('social.session.openSite')"
-          >
-            <v-icon size="14" class="mr-1">mdi-open-in-new</v-icon>
-            {{ $t('social.session.openSite') }}
-          </button>
-          <button
-            class="ssm-btn ssm-btn--import"
-            @click="openImportDialog(p)"
-            :title="$t('social.session.importCookies')"
-          >
-            <v-icon size="14">mdi-cookie</v-icon>
-          </button>
-          <button
-            v-if="isConnected(p.key)"
-            class="ssm-btn ssm-btn--disconnect"
-            @click="confirmDisconnect(p)"
-          >
-            {{ $t('social.session.disconnect') }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Login Dialog -->
-    <v-dialog v-model="loginDialog" max-width="420" persistent :z-index="2500">
-      <div class="ssm-dialog glass-card">
-        <div class="ssm-dialog-header">
-          <div class="ssm-dialog-icon" :style="iconStyle(loginPlatform!, true)">
-            <v-icon size="22" color="#fff">{{ loginPlatform?.icon }}</v-icon>
-          </div>
-          <span class="ssm-dialog-title">
-            {{ $t('social.session.connectTo', { platform: loginPlatform?.name }) }}
-          </span>
-          <button class="ssm-close-btn" @click="cancelLogin" :disabled="loginLoading">
-            <v-icon size="16">mdi-close</v-icon>
-          </button>
-        </div>
-
-        <div class="ssm-dialog-body">
-          <!-- Waiting state -->
-          <div v-if="loginLoading" class="ssm-dialog-status">
-            <div class="ssm-pulse-ring">
-              <v-progress-circular indeterminate :color="loginPlatform?.color" size="56" width="3" />
+    <!-- ═══ VIEW: Platform list ═══ -->
+    <template v-if="currentView === 'list'">
+      <div class="ssm-platforms">
+        <div
+          v-for="p in platformList"
+          :key="p.key"
+          :class="['ssm-platform', { 'ssm-platform--connected': isConnected(p.key) }]"
+        >
+          <div class="ssm-platform-left">
+            <div class="ssm-platform-icon" :style="iconStyle(p, isConnected(p.key))">
+              <v-icon size="20" :color="isConnected(p.key) ? '#fff' : p.color">{{ p.icon }}</v-icon>
             </div>
-            <p class="ssm-dialog-msg">{{ $t('social.session.loginInProgress') }}</p>
-            <p class="ssm-dialog-hint">{{ $t('social.session.loginHint') }}</p>
-            <div class="ssm-dialog-timer mono">
-              {{ formatTimer(loginElapsed) }} / 5:00
+            <div class="ssm-platform-details">
+              <span class="ssm-platform-name">{{ p.name }}</span>
+              <span v-if="isConnected(p.key)" class="ssm-platform-date mono">
+                {{ formatDate(getConnectedDate(p.key)) }}
+              </span>
+              <span v-else class="ssm-platform-date ssm-platform-date--off mono">
+                {{ $t('social.session.notConnected') }}
+              </span>
             </div>
           </div>
 
-          <!-- Success state -->
-          <div v-else-if="loginResult === 'success'" class="ssm-dialog-status">
-            <div class="ssm-result-icon ssm-result-icon--success">
-              <v-icon size="32" color="#fff">mdi-check</v-icon>
-            </div>
-            <p class="ssm-dialog-msg ssm-dialog-msg--success">{{ $t('social.session.loginSuccess') }}</p>
+          <div class="ssm-platform-actions">
+            <button
+              v-if="!isConnected(p.key)"
+              class="ssm-btn ssm-btn--connect"
+              @click="openPlatformSite(p)"
+              :title="$t('social.session.openSite')"
+            >
+              <v-icon size="14" class="mr-1">mdi-open-in-new</v-icon>
+              {{ $t('social.session.openSite') }}
+            </button>
+            <button
+              class="ssm-btn ssm-btn--import"
+              @click="openImportView(p)"
+              :title="$t('social.session.importCookies')"
+            >
+              <v-icon size="14">mdi-cookie</v-icon>
+            </button>
+            <button
+              v-if="isConnected(p.key)"
+              class="ssm-btn ssm-btn--disconnect"
+              @click="openDisconnectView(p)"
+            >
+              {{ $t('social.session.disconnect') }}
+            </button>
           </div>
-
-          <!-- Error state -->
-          <div v-else-if="loginResult === 'error'" class="ssm-dialog-status">
-            <div class="ssm-result-icon ssm-result-icon--error">
-              <v-icon size="32" color="#fff">mdi-close</v-icon>
-            </div>
-            <p class="ssm-dialog-msg ssm-dialog-msg--error">{{ loginErrorMessage }}</p>
-          </div>
-
-          <!-- Timeout state -->
-          <div v-else-if="loginResult === 'timeout'" class="ssm-dialog-status">
-            <div class="ssm-result-icon ssm-result-icon--warning">
-              <v-icon size="32" color="#fff">mdi-clock-alert-outline</v-icon>
-            </div>
-            <p class="ssm-dialog-msg ssm-dialog-msg--error">{{ $t('social.session.loginTimeout') }}</p>
-          </div>
-
-          <!-- Initial state -->
-          <div v-else class="ssm-dialog-status">
-            <div class="ssm-dialog-icon-lg" :style="iconStyle(loginPlatform!, true)">
-              <v-icon size="36" color="#fff">{{ loginPlatform?.icon }}</v-icon>
-            </div>
-            <p class="ssm-dialog-msg">{{ $t('social.session.loginReady') }}</p>
-            <p class="ssm-dialog-hint">{{ $t('social.session.loginReadyHint') }}</p>
-          </div>
-        </div>
-
-        <div class="ssm-dialog-actions">
-          <button
-            v-if="!loginLoading && loginResult === null"
-            class="ssm-btn ssm-btn--primary"
-            @click="startLogin"
-          >
-            <v-icon size="14" class="mr-1">mdi-launch</v-icon>
-            {{ $t('social.session.launchLogin') }}
-          </button>
-          <button
-            v-if="loginResult === 'error' || loginResult === 'timeout'"
-            class="ssm-btn ssm-btn--primary"
-            @click="retryLogin"
-          >
-            <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
-            {{ $t('social.session.retry') }}
-          </button>
-          <button
-            v-if="!loginLoading"
-            class="ssm-btn ssm-btn--ghost"
-            @click="closeLoginDialog"
-          >
-            {{ $t('common.close') }}
-          </button>
         </div>
       </div>
-    </v-dialog>
+    </template>
 
-    <!-- Import Cookies Dialog -->
-    <v-dialog v-model="importDialog" max-width="520" persistent :z-index="2500">
-      <div class="ssm-dialog glass-card">
-        <div class="ssm-dialog-header">
-          <div class="ssm-dialog-icon" :style="iconStyle(importPlatform!, true)">
-            <v-icon size="22" color="#fff">mdi-cookie</v-icon>
+    <!-- ═══ VIEW: Import cookies ═══ -->
+    <template v-if="currentView === 'import'">
+      <div class="ssm-view">
+        <div class="ssm-view-header">
+          <button class="ssm-back-btn" @click="currentView = 'list'">
+            <v-icon size="16">mdi-arrow-left</v-icon>
+          </button>
+          <div class="ssm-view-header-icon" :style="iconStyle(importPlatform!, true)">
+            <v-icon size="18" color="#fff">mdi-cookie</v-icon>
           </div>
-          <span class="ssm-dialog-title">
+          <span class="ssm-view-title">
             {{ $t('social.session.importCookiesTitle', { platform: importPlatform?.name }) }}
           </span>
-          <button class="ssm-close-btn" @click="importDialog = false" :disabled="importing">
-            <v-icon size="16">mdi-close</v-icon>
-          </button>
         </div>
 
-        <div class="ssm-dialog-body">
+        <div class="ssm-view-body">
           <p class="ssm-import-hint">
             {{ $t('social.session.importCookiesHint') }}
           </p>
@@ -207,7 +119,7 @@
           <p v-if="importSuccess" class="ssm-import-success">{{ importSuccess }}</p>
         </div>
 
-        <div class="ssm-dialog-actions">
+        <div class="ssm-view-actions">
           <button
             class="ssm-btn ssm-btn--primary"
             :disabled="importing || !importJson.trim()"
@@ -216,34 +128,105 @@
             <v-icon size="14" class="mr-1">mdi-import</v-icon>
             {{ importing ? $t('social.session.importing') : $t('social.session.importAction') }}
           </button>
-          <button class="ssm-btn ssm-btn--ghost" @click="importDialog = false" :disabled="importing">
+          <button class="ssm-btn ssm-btn--ghost" @click="currentView = 'list'" :disabled="importing">
+            {{ $t('common.cancel') }}
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- ═══ VIEW: Login (Puppeteer) ═══ -->
+    <template v-if="currentView === 'login'">
+      <div class="ssm-view">
+        <div class="ssm-view-header">
+          <button class="ssm-back-btn" @click="cancelLogin">
+            <v-icon size="16">mdi-arrow-left</v-icon>
+          </button>
+          <div class="ssm-view-header-icon" :style="iconStyle(loginPlatform!, true)">
+            <v-icon size="18" color="#fff">{{ loginPlatform?.icon }}</v-icon>
+          </div>
+          <span class="ssm-view-title">
+            {{ $t('social.session.connectTo', { platform: loginPlatform?.name }) }}
+          </span>
+        </div>
+
+        <div class="ssm-view-body">
+          <!-- Waiting state -->
+          <div v-if="loginLoading" class="ssm-dialog-status">
+            <div class="ssm-pulse-ring">
+              <v-progress-circular indeterminate :color="loginPlatform?.color" size="56" width="3" />
+            </div>
+            <p class="ssm-dialog-msg">{{ $t('social.session.loginInProgress') }}</p>
+            <p class="ssm-dialog-hint">{{ $t('social.session.loginHint') }}</p>
+            <span class="ssm-dialog-timer mono">{{ formatTimer(loginElapsed) }}</span>
+          </div>
+
+          <!-- Success -->
+          <div v-else-if="loginResult === 'success'" class="ssm-dialog-status">
+            <div class="ssm-result-icon ssm-result-icon--success">
+              <v-icon size="28" color="#fff">mdi-check</v-icon>
+            </div>
+            <p class="ssm-dialog-msg ssm-dialog-msg--success">{{ $t('social.session.loginSuccess') }}</p>
+          </div>
+
+          <!-- Error -->
+          <div v-else-if="loginResult === 'error'" class="ssm-dialog-status">
+            <div class="ssm-result-icon ssm-result-icon--error">
+              <v-icon size="28" color="#fff">mdi-close</v-icon>
+            </div>
+            <p class="ssm-dialog-msg ssm-dialog-msg--error">{{ loginErrorMessage || $t('social.session.loginError') }}</p>
+          </div>
+
+          <!-- Timeout -->
+          <div v-else-if="loginResult === 'timeout'" class="ssm-dialog-status">
+            <div class="ssm-result-icon ssm-result-icon--warning">
+              <v-icon size="28" color="#fff">mdi-clock-alert-outline</v-icon>
+            </div>
+            <p class="ssm-dialog-msg ssm-dialog-msg--error">{{ $t('social.session.loginTimeout') }}</p>
+          </div>
+        </div>
+
+        <div class="ssm-view-actions">
+          <button
+            v-if="loginResult === 'error' || loginResult === 'timeout'"
+            class="ssm-btn ssm-btn--primary"
+            @click="retryLogin"
+          >
+            <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
+            {{ $t('social.session.retry') }}
+          </button>
+          <button
+            v-if="!loginLoading"
+            class="ssm-btn ssm-btn--ghost"
+            @click="currentView = 'list'"
+          >
             {{ $t('common.close') }}
           </button>
         </div>
       </div>
-    </v-dialog>
+    </template>
 
-    <!-- Disconnect Confirm Dialog -->
-    <v-dialog v-model="disconnectDialog" max-width="380" :z-index="2500">
-      <div class="ssm-dialog glass-card">
-        <div class="ssm-dialog-header">
+    <!-- ═══ VIEW: Disconnect confirm ═══ -->
+    <template v-if="currentView === 'disconnect'">
+      <div class="ssm-view">
+        <div class="ssm-view-header">
+          <button class="ssm-back-btn" @click="currentView = 'list'">
+            <v-icon size="16">mdi-arrow-left</v-icon>
+          </button>
           <div class="ssm-result-icon ssm-result-icon--error" style="width:32px;height:32px;">
             <v-icon size="18" color="#fff">mdi-link-off</v-icon>
           </div>
-          <span class="ssm-dialog-title">{{ $t('social.session.confirmDisconnect') }}</span>
-          <button class="ssm-close-btn" @click="disconnectDialog = false">
-            <v-icon size="16">mdi-close</v-icon>
-          </button>
+          <span class="ssm-view-title">{{ $t('social.session.confirmDisconnect') }}</span>
         </div>
 
-        <div class="ssm-dialog-body">
+        <div class="ssm-view-body">
           <p class="ssm-dialog-msg">
             {{ $t('social.session.confirmDisconnectMsg', { platform: disconnectPlatform?.name }) }}
           </p>
         </div>
 
-        <div class="ssm-dialog-actions">
-          <button class="ssm-btn ssm-btn--ghost" @click="disconnectDialog = false" :disabled="disconnecting">
+        <div class="ssm-view-actions">
+          <button class="ssm-btn ssm-btn--ghost" @click="currentView = 'list'" :disabled="disconnecting">
             {{ $t('common.cancel') }}
           </button>
           <button
@@ -256,7 +239,7 @@
           </button>
         </div>
       </div>
-    </v-dialog>
+    </template>
   </div>
 </template>
 
@@ -306,6 +289,9 @@ const platformList: Platform[] = [
   { key: 'strava', name: 'Strava', icon: 'mdi-run', color: '#FC4C02' },
 ];
 
+// --- Navigation ---
+const currentView = ref<'list' | 'import' | 'login' | 'disconnect'>('list');
+
 // --- State ---
 const loading = ref(false);
 const connectedPlatforms = ref<CookieRecord[]>([]);
@@ -314,8 +300,7 @@ const connectedCount = computed(() =>
   platformList.filter(p => isConnected(p.key)).length
 );
 
-// Login dialog
-const loginDialog = ref(false);
+// Login
 const loginPlatform = ref<Platform | null>(null);
 const loginLoading = ref(false);
 const loginResult = ref<'success' | 'error' | 'timeout' | null>(null);
@@ -324,16 +309,14 @@ const loginElapsed = ref(0);
 let loginTimerInterval: ReturnType<typeof setInterval> | null = null;
 let loginAbortController: AbortController | null = null;
 
-// Import dialog
-const importDialog = ref(false);
+// Import
 const importPlatform = ref<Platform | null>(null);
 const importJson = ref('');
 const importing = ref(false);
 const importError = ref('');
 const importSuccess = ref('');
 
-// Disconnect dialog
-const disconnectDialog = ref(false);
+// Disconnect
 const disconnectPlatform = ref<Platform | null>(null);
 const disconnecting = ref(false);
 
@@ -388,14 +371,14 @@ function openPlatformSite(platform: Platform) {
   if (url) window.open(url, '_blank');
 }
 
-// --- Login flow (legacy, kept for reference) ---
-function openLoginDialog(platform: Platform) {
+// --- Login flow ---
+function openLoginView(platform: Platform) {
   loginPlatform.value = platform;
   loginResult.value = null;
   loginErrorMessage.value = '';
   loginLoading.value = false;
   loginElapsed.value = 0;
-  loginDialog.value = true;
+  currentView.value = 'login';
 }
 
 function startLogin() {
@@ -439,14 +422,10 @@ function cancelLogin() {
   if (loginLoading.value && loginAbortController) {
     loginAbortController.abort();
   }
-  closeLoginDialog();
-}
-
-function closeLoginDialog() {
-  loginDialog.value = false;
   loginLoading.value = false;
   clearLoginTimer();
   loginAbortController = null;
+  currentView.value = 'list';
 }
 
 function retryLogin() {
@@ -463,13 +442,13 @@ function clearLoginTimer() {
 }
 
 // --- Import flow ---
-function openImportDialog(platform: Platform) {
+function openImportView(platform: Platform) {
   importPlatform.value = platform;
   importJson.value = '';
   importError.value = '';
   importSuccess.value = '';
   importing.value = false;
-  importDialog.value = true;
+  currentView.value = 'import';
 }
 
 async function doImportCookies() {
@@ -497,7 +476,7 @@ async function doImportCookies() {
     const { data } = await api.post(`/social/cookies/${importPlatform.value.key}/import`, { cookies });
     importSuccess.value = t('social.session.importSuccessMsg', { count: data.cookieCount });
     await fetchStatus();
-    setTimeout(() => { importDialog.value = false; }, 1500);
+    setTimeout(() => { currentView.value = 'list'; }, 1500);
   } catch (err: any) {
     importError.value = err.response?.data?.message || t('social.session.importFailed');
   } finally {
@@ -506,9 +485,10 @@ async function doImportCookies() {
 }
 
 // --- Disconnect flow ---
-function confirmDisconnect(platform: Platform) {
+function openDisconnectView(platform: Platform) {
   disconnectPlatform.value = platform;
-  disconnectDialog.value = true;
+  disconnecting.value = false;
+  currentView.value = 'disconnect';
 }
 
 async function doDisconnect() {
@@ -517,7 +497,7 @@ async function doDisconnect() {
   try {
     await api.delete(`/social/cookies/${disconnectPlatform.value.key}`);
     await fetchStatus();
-    disconnectDialog.value = false;
+    currentView.value = 'list';
   } catch {
     // Silently fail, user can retry
   } finally {
@@ -765,45 +745,86 @@ onUnmounted(() => {
   border-color: var(--me-border);
 }
 
-/* Dialog */
-.ssm-dialog {
-  padding: 0;
-  overflow: hidden;
-}
-.ssm-dialog-header {
+/* Platform actions row */
+.ssm-platform-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 6px;
+}
+
+/* Import button */
+.ssm-btn--import {
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-muted);
+  padding: 6px 8px;
+  border-radius: var(--me-radius-xs);
+}
+.ssm-btn--import:hover:not(:disabled) {
+  border-color: var(--me-accent);
+  color: var(--me-accent);
+  background: var(--me-accent-glow);
+}
+
+/* ═══ Inline views (replace nested v-dialogs) ═══ */
+.ssm-view {
+  display: flex;
+  flex-direction: column;
+}
+.ssm-view-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--me-border);
   background: var(--me-bg-elevated);
 }
-.ssm-dialog-icon {
-  width: 36px;
-  height: 36px;
+.ssm-view-header-icon {
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.ssm-dialog-icon-lg {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.ssm-dialog-title {
-  font-size: 15px;
+.ssm-view-title {
+  font-size: 14px;
   font-weight: 700;
   color: var(--me-text-primary);
   flex: 1;
 }
-.ssm-dialog-body {
-  padding: 28px 24px;
+.ssm-view-body {
+  padding: 24px;
 }
+.ssm-view-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--me-border);
+}
+.ssm-back-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.ssm-back-btn:hover {
+  color: var(--me-text-primary);
+  background: var(--me-bg-elevated);
+  border-color: var(--me-border-hover);
+}
+
+/* Status (login view) */
 .ssm-dialog-status {
   display: flex;
   flex-direction: column;
@@ -837,13 +858,6 @@ onUnmounted(() => {
   background: var(--me-bg-deep);
   border: 1px solid var(--me-border);
 }
-.ssm-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--me-border);
-}
 
 /* Result icons */
 .ssm-result-icon {
@@ -867,7 +881,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
 }
 
-/* Pulse animation for loading */
+/* Pulse animation */
 .ssm-pulse-ring {
   position: relative;
 }
@@ -886,28 +900,7 @@ onUnmounted(() => {
   50% { opacity: 0.3; transform: scale(1.05); }
 }
 
-/* Platform actions row */
-.ssm-platform-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Import button */
-.ssm-btn--import {
-  background: none;
-  border: 1px solid var(--me-border);
-  color: var(--me-text-muted);
-  padding: 6px 8px;
-  border-radius: var(--me-radius-xs);
-}
-.ssm-btn--import:hover:not(:disabled) {
-  border-color: var(--me-accent);
-  color: var(--me-accent);
-  background: var(--me-accent-glow);
-}
-
-/* Import dialog */
+/* Import */
 .ssm-import-hint {
   font-size: 13px;
   color: var(--me-text-secondary);
@@ -949,4 +942,5 @@ onUnmounted(() => {
 
 /* Utilities */
 .mr-1 { margin-right: 4px; }
+.ml-1 { margin-left: 4px; }
 </style>
