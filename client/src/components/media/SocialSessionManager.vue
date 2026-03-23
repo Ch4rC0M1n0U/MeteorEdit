@@ -26,7 +26,7 @@
     <v-progress-linear v-if="loading" indeterminate color="primary" class="ssm-loader" />
 
     <!-- ═══ VIEW: Platform list ═══ -->
-    <template v-if="currentView === 'list'">
+    <div v-show="currentView === 'list'">
       <div class="ssm-platforms">
         <div
           v-for="p in platformList"
@@ -75,10 +75,10 @@
           </div>
         </div>
       </div>
-    </template>
+    </div>
 
     <!-- ═══ VIEW: Import cookies ═══ -->
-    <template v-if="currentView === 'import'">
+    <div v-show="currentView === 'import'">
       <div class="ssm-view">
         <div class="ssm-view-header">
           <button class="ssm-back-btn" @click="currentView = 'list'">
@@ -133,10 +133,10 @@
           </button>
         </div>
       </div>
-    </template>
+    </div>
 
     <!-- ═══ VIEW: Login (Puppeteer) ═══ -->
-    <template v-if="currentView === 'login'">
+    <div v-show="currentView === 'login'">
       <div class="ssm-view">
         <div class="ssm-view-header">
           <button class="ssm-back-btn" @click="cancelLogin">
@@ -204,10 +204,10 @@
           </button>
         </div>
       </div>
-    </template>
+    </div>
 
     <!-- ═══ VIEW: Disconnect confirm ═══ -->
-    <template v-if="currentView === 'disconnect'">
+    <div v-show="currentView === 'disconnect'">
       <div class="ssm-view">
         <div class="ssm-view-header">
           <button class="ssm-back-btn" @click="currentView = 'list'">
@@ -239,7 +239,7 @@
           </button>
         </div>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
