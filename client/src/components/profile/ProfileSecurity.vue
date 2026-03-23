@@ -198,7 +198,7 @@ async function disable2FA() {
 </script>
 
 <style scoped>
-.profile-security { max-width: 800px; }
+.profile-security { }
 .admin-section-header { margin-bottom: 20px; }
 .admin-section-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
 .branding-card { padding: 20px; margin-bottom: 16px; }

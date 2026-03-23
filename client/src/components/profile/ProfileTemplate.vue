@@ -670,7 +670,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.profile-template { max-width: 800px; }
+.profile-template { }
 .admin-section-header { margin-bottom: 20px; }
 .admin-section-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
 

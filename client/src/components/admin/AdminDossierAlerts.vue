@@ -159,7 +159,7 @@ async function save() {
 
 <style scoped>
 .admin-dossier-alerts {
-  max-width: 800px;
+
 }
 .admin-section-header {
   margin-bottom: 24px;

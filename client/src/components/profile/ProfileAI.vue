@@ -345,7 +345,7 @@ onMounted(loadPrefs);
 </script>
 
 <style scoped>
-.profile-ai { max-width: 800px; }
+.profile-ai { }
 .ai-card { background: var(--me-bg-surface); border: 1px solid var(--me-border); border-radius: var(--me-radius-md); padding: 20px; margin-bottom: 16px; }
 .ai-card-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
 .ai-icon { width: 40px; height: 40px; border-radius: var(--me-radius-xs); background: var(--me-accent-glow); display: flex; align-items: center; justify-content: center; color: var(--me-accent); flex-shrink: 0; }
