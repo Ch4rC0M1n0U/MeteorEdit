@@ -243,6 +243,7 @@ onMounted(() => {
 .me-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .profile-activity {
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   gap: 16px;

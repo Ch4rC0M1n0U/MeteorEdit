@@ -384,6 +384,7 @@ watch(() => prefs.language, (newLang) => {
 </script>
 
 <style scoped>
+.profile-prefs { max-width: 800px; }
 .admin-section-header { margin-bottom: 20px; }
 .admin-section-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
 .branding-card { padding: 20px; }

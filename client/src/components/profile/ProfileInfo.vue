@@ -366,6 +366,7 @@ async function saveSignature() {
 </script>
 
 <style scoped>
+.profile-info { max-width: 800px; }
 .admin-section-header { margin-bottom: 20px; }
 .admin-section-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
 .branding-card { padding: 20px; margin-bottom: 16px; }

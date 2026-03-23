@@ -95,6 +95,7 @@ const sections = computed(() => [
 .branding-card-title { font-size: 14px; font-weight: 700; color: var(--me-text-primary); margin-bottom: 4px; display: flex; align-items: center; }
 
 .profile-shortcuts {
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   gap: 16px;

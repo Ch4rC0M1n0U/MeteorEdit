@@ -205,7 +205,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.profile-data { max-width: 640px; }
+.profile-data { max-width: 800px; }
 
 /* Shared profile styles */
 .admin-section-header { margin-bottom: 20px; }

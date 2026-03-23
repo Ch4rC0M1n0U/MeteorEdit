@@ -109,5 +109,5 @@ onMounted(async () => {
 .admin-nav-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: var(--me-radius-xs); background: none; border: none; color: var(--me-text-secondary); font-size: 14px; cursor: pointer; transition: all 0.15s; text-align: left; }
 .admin-nav-item:hover { background: var(--me-accent-glow); color: var(--me-text-primary); }
 .admin-nav-item--active { background: var(--me-accent-glow); color: var(--me-accent); font-weight: 600; }
-.admin-content { flex: 1; overflow-y: auto; padding: 32px 24px; max-width: 1100px; }
+.admin-content { flex: 1; overflow-y: auto; padding: 32px 24px; }
 </style>
