@@ -645,7 +645,7 @@ async function downloadImage(page: any, imageUrl: string, prefix: string): Promi
     fs.writeFileSync(filePath, buffer);
 
     console.log(`[ScrapeProfile] Image saved: ${filename} (${imageData.size} bytes, ${imageData.contentType})`);
-    return `uploads/profiles/${filename}`;
+    return `/uploads/profiles/${filename}`;
   } catch (err) {
     console.warn(`[ScrapeProfile] Failed to download image: ${imageUrl.substring(0, 120)}`, err);
     return null;

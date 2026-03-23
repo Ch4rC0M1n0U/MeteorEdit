@@ -44,7 +44,7 @@ async function downloadExternalImage(imageUrl: string, _serverUrl: string, prefi
     fs.writeFileSync(filePath, buffer);
     console.log(`[Elephantastic] Image saved: ${filename} (${buffer.length} bytes)`);
     // Return relative path — served by express static / serveUploadFile
-    return `uploads/profiles/${filename}`;
+    return `/uploads/profiles/${filename}`;
   } catch (err: any) {
     console.log(`[Elephantastic] Image download error: ${err.message} for ${imageUrl.substring(0, 80)}`);
     return imageUrl; // Fallback to original URL
