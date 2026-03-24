@@ -356,8 +356,8 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
 
     console.log(`Screenshot captured: ${filepath}`);
     return `uploads/screenshots/${filename}`;
-  } catch (err) {
-    console.error('Screenshot capture failed:', err);
+  } catch (err: any) {
+    console.error(`[Clipper] Screenshot capture FAILED for ${url}: ${err?.message || err}`);
     if (browser) {
       try { await browser.close(); } catch (_) { /* ignore */ }
     }
@@ -387,7 +387,9 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
 
     // Capture screenshot BEFORE creating node
     const filename = `clip-${Date.now()}.png`;
+    console.log(`[Clipper] url="${url}", title="${title}", will capture screenshot: ${!!url}`);
     const screenshotPath = url ? await captureScreenshot(url, filename) : null;
+    console.log(`[Clipper] screenshotPath=${screenshotPath}`);
     const baseUrl = getBaseUrl(req);
 
     // Build TipTap-compatible JSON content
