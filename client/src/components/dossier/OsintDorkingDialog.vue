@@ -147,6 +147,7 @@ const categories = computed<DorkCategory[]>(() => [
     fields: [
       { key: 'firstName', label: t('dossier.dorkFieldFirstName'), placeholder: 'Jean' },
       { key: 'lastName', label: t('dossier.dorkFieldLastName'), placeholder: 'Dupont' },
+      { key: 'dob', label: t('dossier.dorkFieldDOB'), placeholder: '15/03/1985', hint: t('dossier.dorkFieldDOBHint') },
       { key: 'city', label: t('dossier.dorkFieldCity'), placeholder: 'Bruxelles', hint: t('dossier.dorkFieldCityHint') },
       { key: 'employer', label: t('dossier.dorkFieldEmployer'), placeholder: 'Entreprise SA', hint: t('dossier.dorkFieldEmployerHint') },
     ],
@@ -154,25 +155,60 @@ const categories = computed<DorkCategory[]>(() => [
       t('dossier.dorkTipIdentity1'),
       t('dossier.dorkTipIdentity2'),
       t('dossier.dorkTipIdentity3'),
+      t('dossier.dorkTipIdentity4'),
     ],
     generate(v) {
       const r: DorkResult[] = [];
       const fn = v.firstName?.trim(); const ln = v.lastName?.trim();
-      const city = v.city?.trim(); const emp = v.employer?.trim();
+      const dob = v.dob?.trim(); const city = v.city?.trim(); const emp = v.employer?.trim();
       if (!fn && !ln) return r;
       const full = [fn, ln].filter(Boolean).join(' ');
+
+      // --- Exact match ---
       r.push(d(`"${full}"`, t('dossier.dorkExactMatch')));
+
+      // --- Date of birth combinations ---
+      if (dob) {
+        // Parse various date formats
+        const parts = dob.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+        if (parts) {
+          const day = parts[1].padStart(2, '0');
+          const month = parts[2].padStart(2, '0');
+          const year = parts[3].length === 2 ? `19${parts[3]}` : parts[3];
+          r.push(d(`"${full}" "${day}/${month}/${year}" OR "${year}-${month}-${day}" OR "${day}-${month}-${year}"`, `${t('dossier.dorkExactMatch')} + ${t('dossier.dorkFieldDOB')}`));
+          r.push(d(`"${full}" "${day}/${month}/${year}"`, `${t('dossier.dorkFieldDOB')} (DD/MM/YYYY)`));
+          r.push(d(`"${full}" "${year}"`, `${t('dossier.dorkExactMatch')} + ${t('dossier.dorkBirthYear')}`));
+        } else {
+          r.push(d(`"${full}" "${dob}"`, `${t('dossier.dorkExactMatch')} + ${t('dossier.dorkFieldDOB')}`));
+        }
+      }
+
+      // --- Social networks ---
       r.push(d(`"${full}" site:linkedin.com`, 'LinkedIn'));
       r.push(d(`"${full}" site:facebook.com`, 'Facebook'));
       r.push(d(`"${full}" site:twitter.com OR site:x.com`, 'Twitter / X'));
       r.push(d(`"${full}" site:instagram.com`, 'Instagram'));
-      r.push(d(`"${full}" filetype:pdf`, t('dossier.dorkPDF')));
+
+      // --- File types ---
+      r.push(d(`"${full}" filetype:pdf`, 'PDF'));
+      r.push(d(`"${full}" filetype:doc OR filetype:docx`, 'Word (DOC/DOCX)'));
+      r.push(d(`"${full}" filetype:xls OR filetype:xlsx`, 'Excel (XLS/XLSX)'));
+      r.push(d(`"${full}" filetype:ppt OR filetype:pptx`, 'PowerPoint (PPT/PPTX)'));
+
+      // --- Specific searches ---
       r.push(d(`"${full}" CV OR resume OR curriculum`, t('dossier.dorkCV')));
+      r.push(d(`"${full}" jugement OR tribunal OR condamnation`, t('dossier.dorkJudicial')));
+      r.push(d(`"${full}" site:societe.com OR site:pappers.fr OR site:kbo.be`, t('dossier.dorkCompanyRegistry')));
       if (fn && ln) r.push(d(`"${ln}" "${fn}" site:linkedin.com`, t('dossier.dorkNameVariant')));
+
+      // --- City refinement ---
       if (city) {
         r.push(d(`"${full}" "${city}"`, `${t('dossier.dorkExactMatch')} + ${t('dossier.dorkFieldCity')}`));
         r.push(d(`"${full}" "${city}" site:facebook.com`, `Facebook + ${city}`));
+        r.push(d(`"${full}" "${city}" filetype:pdf`, `PDF + ${city}`));
       }
+
+      // --- Employer refinement ---
       if (emp) {
         r.push(d(`"${full}" "${emp}"`, `${t('dossier.dorkExactMatch')} + ${t('dossier.dorkFieldEmployer')}`));
         r.push(d(`"${full}" "${emp}" site:linkedin.com`, `LinkedIn + ${emp}`));
