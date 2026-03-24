@@ -200,6 +200,7 @@
     "reverseImageDropHint": "Glisser-deposer, Ctrl+V ou cliquez pour choisir un fichier",
     "reverseImageUrlPlaceholder": "Ou collez l'URL de l'image...",
     "reverseImageClear": "Effacer",
+    "reverseImageLocalHint": "Image locale — ouvrez le moteur puis deposez l'image manuellement sur la page",
     "reverseImageEngines": "Rechercher avec",
     "reverseEngineGoogleDesc": "Objets, lieux, textes, visages",
     "reverseEngineYandexDesc": "Meilleur moteur gratuit pour les visages",

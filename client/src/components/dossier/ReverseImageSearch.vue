@@ -52,7 +52,11 @@
         </div>
 
         <!-- Search engines -->
-        <div v-if="searchUrl" class="ris-engines">
+        <div v-if="isLocalImage" class="ris-local-hint">
+          <v-icon size="14">mdi-information-outline</v-icon>
+          {{ t('dossier.reverseImageLocalHint') }}
+        </div>
+        <div v-if="searchUrl || isLocalImage" class="ris-engines">
           <div class="ris-engines-title">{{ t('dossier.reverseImageEngines') }}</div>
           <div class="ris-engine-grid">
             <a v-for="engine in engines" :key="engine.name" :href="engine.url" target="_blank" rel="noopener" class="ris-engine-card">
@@ -82,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -102,8 +106,21 @@ const searchUrl = computed(() => {
 
 interface SearchEngine { name: string; url: string; icon: string; desc: string }
 
+const isLocalImage = computed(() => previewSrc.value && !searchUrl.value);
+
 const engines = computed<SearchEngine[]>(() => {
   const url = searchUrl.value;
+  // For local images (paste/upload), show upload-based engines
+  if (!url && isLocalImage.value) {
+    return [
+      { name: 'Google Lens', url: 'https://lens.google.com/', icon: 'https://www.google.com/favicon.ico', desc: t('dossier.reverseEngineGoogleDesc') },
+      { name: 'Yandex Images', url: 'https://yandex.com/images/', icon: 'https://yandex.com/favicon.ico', desc: t('dossier.reverseEngineYandexDesc') },
+      { name: 'Bing Visual', url: 'https://www.bing.com/visualsearch', icon: 'https://www.bing.com/favicon.ico', desc: t('dossier.reverseEngineBingDesc') },
+      { name: 'TinEye', url: 'https://tineye.com/', icon: 'https://tineye.com/favicon.ico', desc: t('dossier.reverseEngineTineyeDesc') },
+      { name: 'PimEyes', url: 'https://pimeyes.com/en', icon: 'https://pimeyes.com/favicon.ico', desc: t('dossier.reverseEnginePimeyesDesc') },
+      { name: 'FaceCheck.ID', url: 'https://facecheck.id', icon: 'https://facecheck.id/favicon.ico', desc: t('dossier.reverseEngineFacecheckDesc') },
+    ];
+  }
   if (!url) return [];
   const enc = encodeURIComponent(url);
   return [
@@ -152,6 +169,24 @@ const engines = computed<SearchEngine[]>(() => {
   ];
 });
 
+// Listen for paste globally when dialog is open
+function globalPaste(e: ClipboardEvent) {
+  if (!model.value) return;
+  onPaste(e);
+}
+
+watch(model, (open) => {
+  if (open) {
+    document.addEventListener('paste', globalPaste);
+  } else {
+    document.removeEventListener('paste', globalPaste);
+  }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('paste', globalPaste);
+});
+
 function triggerFileInput() {
   if (!previewSrc.value) fileInput.value?.click();
 }
@@ -176,18 +211,21 @@ function onDrop(e: DragEvent) {
 function onPaste(e: ClipboardEvent) {
   const items = e.clipboardData?.items;
   if (!items) return;
+  // Check for image blob first (copy image from browser, screenshot, etc.)
   for (const item of items) {
     if (item.type.startsWith('image/')) {
+      e.preventDefault();
       const file = item.getAsFile();
       if (file) loadFile(file);
       return;
     }
   }
-  // Check for URL in text
+  // Check for URL in text (any image URL, with or without extension)
   const text = e.clipboardData?.getData('text/plain');
-  if (text?.startsWith('http') && /\.(jpg|jpeg|png|gif|webp)/i.test(text)) {
-    imageUrl.value = text;
-    previewSrc.value = text;
+  if (text?.trim().startsWith('http')) {
+    e.preventDefault();
+    imageUrl.value = text.trim();
+    previewSrc.value = text.trim();
   }
 }
 
@@ -248,6 +286,9 @@ function clearImage() {
 .ris-url-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .ris-clear-btn { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--me-text-muted); background: none; border: none; cursor: pointer; padding: 0; align-self: flex-start; }
 .ris-clear-btn:hover { color: var(--me-accent); }
+
+/* Local image hint */
+.ris-local-hint { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--me-text-muted); padding: 8px 10px; border-radius: 6px; background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.2); }
 
 /* Engines */
 .ris-engines-title { font-size: 12px; font-weight: 600; color: var(--me-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }

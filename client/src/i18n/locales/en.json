@@ -188,6 +188,7 @@
     "reverseImageDropHint": "Drag-and-drop, Ctrl+V, or click to browse",
     "reverseImageUrlPlaceholder": "Or paste the image URL...",
     "reverseImageClear": "Clear",
+    "reverseImageLocalHint": "Local image — open the engine then drop the image manually on the page",
     "reverseImageEngines": "Search with",
     "reverseEngineGoogleDesc": "Objects, places, text, faces",
     "reverseEngineYandexDesc": "Best free engine for faces",
