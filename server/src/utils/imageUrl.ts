@@ -28,11 +28,18 @@ export function normalizeUploadPath(filePath: string): string {
 
 /**
  * Build the base URL from request headers (works behind reverse proxies).
- * Uses X-Forwarded-Proto and Host headers set by nginx.
+ *
+ * Uses the original Host header from the browser (which contains the correct
+ * external port like 100.64.0.2:5173), NOT X-Forwarded-Host (which contains
+ * the internal nginx port like 100.64.0.2:443).
+ *
+ * For protocol, we trust X-Forwarded-Proto since nginx correctly sets it.
  */
 export function getBaseUrl(req: Request): string {
   const protocol = req.headers['x-forwarded-proto']?.toString().split(',')[0] || req.protocol;
-  const host = req.headers['x-forwarded-host']?.toString() || req.get('host') || 'localhost:3001';
+  // Use the Host header from the original client request (has correct external port)
+  // req.get('host') returns the Host header value in Express
+  const host = req.get('host') || 'localhost:3001';
   return `${protocol}://${host}`;
 }
 
