@@ -10,6 +10,7 @@ import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { logActivity } from '../utils/activityLogger';
 import { decryptCookies } from '../utils/cookieCrypto';
+import { getBaseUrl, toAbsoluteUrlFromBase } from '../utils/imageUrl';
 import { ProfileData } from '../scrapers/types';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
@@ -689,7 +690,7 @@ async function downloadProfileImages(page: any, profile: ProfileData, baseUrl: s
     const localPath = await downloadImage(page, profile.profileImageUrl, 'profile');
     if (localPath) {
       profile.rawMetadata.originalProfileImageUrl = profile.profileImageUrl;
-      profile.profileImageUrl = `${baseUrl}${localPath}`;
+      profile.profileImageUrl = toAbsoluteUrlFromBase(localPath, baseUrl);
       console.log(`[ScrapeProfile] Profile image saved as: ${profile.profileImageUrl}`);
     } else {
       // Don't keep expired CDN URL — it will be broken in the note
@@ -709,7 +710,7 @@ async function downloadProfileImages(page: any, profile: ProfileData, baseUrl: s
       const localPath = await downloadImage(page, imgUrl, 'extra');
       if (localPath) {
         profile.rawMetadata[`originalExtraImage_${i}`] = imgUrl;
-        downloadedExtras.push(`${baseUrl}${localPath}`);
+        downloadedExtras.push(toAbsoluteUrlFromBase(localPath, baseUrl));
       } else {
         // Skip failed images — don't include expired CDN URLs
         console.warn(`[ScrapeProfile] Extra image ${i} download failed, skipping`);
@@ -732,7 +733,7 @@ async function recoverMetadataImages(profile: ProfileData, baseUrl: string): Pro
     console.log(`[ScrapeProfile] Recovering profile image from metadata...`);
     const localPath = await downloadImageNodeFetch(profile.rawMetadata.originalProfileImageUrl, 'profile');
     if (localPath) {
-      profile.profileImageUrl = `${baseUrl}${localPath}`;
+      profile.profileImageUrl = toAbsoluteUrlFromBase(localPath, baseUrl);
       console.log(`[ScrapeProfile] Profile image recovered: ${profile.profileImageUrl}`);
     }
   }
@@ -744,7 +745,7 @@ async function recoverMetadataImages(profile: ProfileData, baseUrl: string): Pro
       if (origUrl && typeof origUrl === 'string' && origUrl.startsWith('http')) {
         const localPath = await downloadImageNodeFetch(origUrl, 'extra');
         if (localPath) {
-          profile.extraImages.push(`${baseUrl}${localPath}`);
+          profile.extraImages.push(toAbsoluteUrlFromBase(localPath, baseUrl));
           console.log(`[ScrapeProfile] Extra image ${i} recovered`);
         }
       }
@@ -772,7 +773,7 @@ async function recoverMetadataImages(profile: ProfileData, baseUrl: string): Pro
     if (imgUrl.includes('1x1') || imgUrl.includes('pixel') || imgUrl.includes('blank')) continue;
     const localPath = await downloadImageNodeFetch(imgUrl, 'meta');
     if (localPath) {
-      profile.extraImages.push(`${baseUrl}${localPath}`);
+      profile.extraImages.push(toAbsoluteUrlFromBase(localPath, baseUrl));
       additionalCount++;
       console.log(`[ScrapeProfile] Metadata image recovered: ${imgUrl.substring(0, 80)}`);
     }
@@ -960,7 +961,7 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
 
     // ── Download profile images locally before closing browser ──
     // This is critical because platforms like Instagram/Facebook use expiring image URLs
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
     await downloadProfileImages(page, profileData, baseUrl);
 
     // ── Close browser ──
@@ -976,7 +977,7 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
 
     // Replace screenshot placeholder with actual URL
     if (profileData.rawMetadata?.screenshotPath) {
-      const screenshotUrl = `${baseUrl}${profileData.rawMetadata.screenshotPath}`;
+      const screenshotUrl = toAbsoluteUrlFromBase(profileData.rawMetadata.screenshotPath, baseUrl);
       const contentStr = JSON.stringify(tiptapContent);
       const replaced = contentStr.replace('__SCREENSHOT_PLACEHOLDER__', screenshotUrl);
       Object.assign(tiptapContent, JSON.parse(replaced));

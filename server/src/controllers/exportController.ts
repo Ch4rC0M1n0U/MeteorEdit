@@ -7,6 +7,7 @@ import Dossier from '../models/Dossier';
 import DossierNode from '../models/DossierNode';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
+import { getBaseUrl, toAbsoluteUrlFromBase } from '../utils/imageUrl';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 const PROFILES_DIR = path.join(UPLOAD_DIR, 'profiles');
@@ -278,7 +279,7 @@ async function buildElephantasticNote(item: any, serverUrl: string): Promise<any
         type: 'paragraph',
         content: [{
           type: 'image',
-          attrs: { src: localUrl.startsWith('/') ? `${serverUrl}${localUrl}` : localUrl, alt: img.label },
+          attrs: { src: toAbsoluteUrlFromBase(localUrl, serverUrl), alt: img.label },
         }],
       });
     }
@@ -445,7 +446,7 @@ export async function importElephantastic(req: AuthRequest, res: Response): Prom
     });
 
     const createdNodes: any[] = [folder.toObject()];
-    const serverUrl = `${req.protocol}://${req.get('host')}`;
+    const serverUrl = getBaseUrl(req);
 
     // Create a note for each selected item
     for (let i = 0; i < items.length; i++) {

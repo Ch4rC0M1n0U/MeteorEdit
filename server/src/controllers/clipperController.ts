@@ -6,6 +6,7 @@ import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { logActivity } from '../utils/activityLogger';
 import { computeFileHash } from '../utils/hashFile';
+import { getBaseUrl, toAbsoluteUrlFromBase } from '../utils/imageUrl';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 
@@ -387,7 +388,7 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
     // Capture screenshot BEFORE creating node
     const filename = `clip-${Date.now()}.png`;
     const screenshotPath = url ? await captureScreenshot(url, filename) : null;
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
 
     // Build TipTap-compatible JSON content
     const tiptapNodes: any[] = [
@@ -425,7 +426,7 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
       tiptapNodes.push({
         type: 'image',
         attrs: {
-          src: `${baseUrl}/${screenshotPath}`,
+          src: toAbsoluteUrlFromBase(screenshotPath, baseUrl),
           alt: `Capture de ${title}`,
           title: `Screenshot - ${url}`,
         },

@@ -6,6 +6,7 @@ import DossierNode from '../models/DossierNode';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
 import { createNotification } from '../utils/notifier';
+import { toAbsoluteUrl } from '../utils/imageUrl';
 import User from '../models/User';
 
 /** Check if user is owner or collaborator of a dossier */
@@ -367,9 +368,7 @@ export async function transferDocumentToNode(req: AuthRequest, res: Response): P
     };
 
     if (imageExts.includes(ext)) {
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-      const host = req.headers['host'];
-      const imageUrl = `${protocol}://${host}/${filePath}`;
+      const imageUrl = toAbsoluteUrl(filePath, req);
       nodeData.type = 'note';
       nodeData.content = {
         type: 'doc',
