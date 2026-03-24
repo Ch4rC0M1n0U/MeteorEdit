@@ -201,8 +201,25 @@ async function copyImage() {
     const imgSrc = decryptedSrc.value || props.node.attrs.src;
     const response = await fetch(imgSrc);
     const blob = await response.blob();
+
+    // Convert to PNG blob for clipboard (ensures compatibility with external apps)
+    const pngBlob = await new Promise<Blob>((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob((b) => resolve(b || blob), 'image/png');
+      };
+      img.onerror = () => resolve(blob);
+      img.src = URL.createObjectURL(blob);
+    });
+
     await navigator.clipboard.write([
-      new ClipboardItem({ [blob.type]: blob }),
+      new ClipboardItem({ 'image/png': pngBlob }),
     ]);
     copied.value = true;
     setTimeout(() => { copied.value = false; }, 1500);
@@ -216,11 +233,13 @@ async function copyImage() {
 
 function handleKeydown(e: KeyboardEvent) {
   if (!selected.value) return;
-  if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
     e.preventDefault();
+    e.stopPropagation();
     copyImage();
-  } else if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+  } else if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X')) {
     e.preventDefault();
+    e.stopPropagation();
     copyImage().then(() => props.deleteNode());
   }
 }
