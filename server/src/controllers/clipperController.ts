@@ -344,6 +344,33 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
     // Brief settle time after second pass
     await new Promise(r => setTimeout(r, 1000));
 
+    // Force full page height: remove overflow:hidden, scroll to trigger lazy-loading
+    await page.evaluate(() => {
+      document.documentElement.style.overflow = 'visible';
+      document.body.style.overflow = 'visible';
+      document.documentElement.style.height = 'auto';
+      document.body.style.height = 'auto';
+      // Remove position:fixed/sticky elements that clip content
+      document.querySelectorAll('*').forEach(el => {
+        const style = window.getComputedStyle(el);
+        if (style.position === 'fixed' || style.position === 'sticky') {
+          (el as HTMLElement).style.position = 'absolute';
+        }
+      });
+    });
+
+    // Scroll to bottom to trigger lazy-loaded content, then back to top
+    await page.evaluate(async () => {
+      const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+      const height = document.body.scrollHeight;
+      for (let y = 0; y < height; y += 500) {
+        window.scrollTo(0, y);
+        await delay(100);
+      }
+      window.scrollTo(0, 0);
+      await delay(500);
+    });
+
     const screenshotDir = path.join(UPLOAD_DIR, 'screenshots');
     if (!fs.existsSync(screenshotDir)) {
       fs.mkdirSync(screenshotDir, { recursive: true });
