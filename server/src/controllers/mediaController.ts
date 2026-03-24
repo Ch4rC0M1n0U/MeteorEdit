@@ -6,6 +6,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
+import { getBaseUrl } from '../utils/imageUrl';
 import DossierNode from '../models/DossierNode';
 
 const execFileAsync = promisify(execFile);
@@ -1120,5 +1121,27 @@ export async function analyzeFile(req: AuthRequest, res: Response): Promise<void
   } catch (error: any) {
     console.error('analyzeFile error:', error?.message || error);
     res.status(500).json({ error: 'Échec de l\'analyse technique' });
+  }
+}
+
+// ─── Reverse image search: upload temp image ──────────────────────────────────
+
+/**
+ * Upload an image temporarily for reverse image search.
+ * Returns the public URL so the client can pass it to search engines.
+ * POST /api/media/reverse-image-upload
+ */
+export async function reverseImageUpload(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+    const baseUrl = getBaseUrl(req);
+    const url = `${baseUrl}/uploads/${req.file.filename}`;
+    res.json({ url });
+  } catch (error: any) {
+    console.error('reverseImageUpload error:', error?.message || error);
+    res.status(500).json({ error: 'Upload failed' });
   }
 }

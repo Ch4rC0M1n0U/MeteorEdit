@@ -187,6 +187,7 @@
     "reverseImageDrop": "Drop or paste an image here",
     "reverseImageDropHint": "Drag-and-drop, Ctrl+V, or click to browse",
     "reverseImageUrlPlaceholder": "Or paste the image URL...",
+    "reverseImageUploading": "Uploading...",
     "reverseImageClear": "Clear",
     "reverseImageLocalHint": "Local image — open the engine then drop the image manually on the page",
     "reverseImageEngines": "Search with",

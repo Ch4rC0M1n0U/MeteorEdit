@@ -51,12 +51,14 @@
           </button>
         </div>
 
-        <!-- Search engines -->
-        <div v-if="isLocalImage" class="ris-local-hint">
-          <v-icon size="14">mdi-information-outline</v-icon>
-          {{ t('dossier.reverseImageLocalHint') }}
+        <!-- Uploading indicator -->
+        <div v-if="uploading" class="ris-uploading">
+          <v-icon size="14" class="me-spin">mdi-loading</v-icon>
+          {{ t('dossier.reverseImageUploading') }}
         </div>
-        <div v-if="searchUrl || isLocalImage" class="ris-engines">
+
+        <!-- Search engines -->
+        <div v-if="searchUrl" class="ris-engines">
           <div class="ris-engines-title">{{ t('dossier.reverseImageEngines') }}</div>
           <div class="ris-engine-grid">
             <a v-for="engine in engines" :key="engine.name" :href="engine.url" target="_blank" rel="noopener" class="ris-engine-card">
@@ -88,6 +90,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
+import api, { SERVER_URL } from '../../services/api';
 
 const { t } = useI18n();
 const model = defineModel<boolean>({ default: false });
@@ -95,10 +98,14 @@ const model = defineModel<boolean>({ default: false });
 const imageUrl = ref('');
 const previewSrc = ref('');
 const dragging = ref(false);
+const uploading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
+// Public URL after upload to server (for local images)
+const uploadedPublicUrl = ref('');
 
-// The URL used for search engines (either typed URL or uploaded image's public URL)
+// The URL used for search engines
 const searchUrl = computed(() => {
+  if (uploadedPublicUrl.value) return uploadedPublicUrl.value;
   if (imageUrl.value.trim().startsWith('http')) return imageUrl.value.trim();
   if (previewSrc.value.startsWith('http')) return previewSrc.value;
   return '';
@@ -106,21 +113,8 @@ const searchUrl = computed(() => {
 
 interface SearchEngine { name: string; url: string; icon: string; desc: string }
 
-const isLocalImage = computed(() => previewSrc.value && !searchUrl.value);
-
 const engines = computed<SearchEngine[]>(() => {
   const url = searchUrl.value;
-  // For local images (paste/upload), show upload-based engines
-  if (!url && isLocalImage.value) {
-    return [
-      { name: 'Google Lens', url: 'https://lens.google.com/', icon: 'https://www.google.com/favicon.ico', desc: t('dossier.reverseEngineGoogleDesc') },
-      { name: 'Yandex Images', url: 'https://yandex.com/images/', icon: 'https://yandex.com/favicon.ico', desc: t('dossier.reverseEngineYandexDesc') },
-      { name: 'Bing Visual', url: 'https://www.bing.com/visualsearch', icon: 'https://www.bing.com/favicon.ico', desc: t('dossier.reverseEngineBingDesc') },
-      { name: 'TinEye', url: 'https://tineye.com/', icon: 'https://tineye.com/favicon.ico', desc: t('dossier.reverseEngineTineyeDesc') },
-      { name: 'PimEyes', url: 'https://pimeyes.com/en', icon: 'https://pimeyes.com/favicon.ico', desc: t('dossier.reverseEnginePimeyesDesc') },
-      { name: 'FaceCheck.ID', url: 'https://facecheck.id', icon: 'https://facecheck.id/favicon.ico', desc: t('dossier.reverseEngineFacecheckDesc') },
-    ];
-  }
   if (!url) return [];
   const enc = encodeURIComponent(url);
   return [
@@ -236,15 +230,30 @@ function onUrlPaste(e: ClipboardEvent) {
   }, 50);
 }
 
-function loadFile(file: File) {
+async function loadFile(file: File) {
+  // Show preview immediately
   const reader = new FileReader();
-  reader.onload = () => {
-    previewSrc.value = reader.result as string;
-    // For local files, we can't use reverse search by URL
-    // User needs to upload to a public URL first or use engines that support upload
-    imageUrl.value = '';
-  };
+  reader.onload = () => { previewSrc.value = reader.result as string; };
   reader.readAsDataURL(file);
+
+  // Upload to server to get a public URL for reverse search engines
+  uploading.value = true;
+  uploadedPublicUrl.value = '';
+  imageUrl.value = '';
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await api.post('/media/reverse-image-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    if (data.url) {
+      uploadedPublicUrl.value = data.url;
+    }
+  } catch (err) {
+    console.error('Upload failed:', err);
+  } finally {
+    uploading.value = false;
+  }
 }
 
 function loadFromUrl() {
@@ -255,6 +264,7 @@ function loadFromUrl() {
 function clearImage() {
   previewSrc.value = '';
   imageUrl.value = '';
+  uploadedPublicUrl.value = '';
   if (fileInput.value) fileInput.value.value = '';
 }
 </script>
@@ -287,8 +297,8 @@ function clearImage() {
 .ris-clear-btn { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--me-text-muted); background: none; border: none; cursor: pointer; padding: 0; align-self: flex-start; }
 .ris-clear-btn:hover { color: var(--me-accent); }
 
-/* Local image hint */
-.ris-local-hint { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--me-text-muted); padding: 8px 10px; border-radius: 6px; background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.2); }
+/* Uploading */
+.ris-uploading { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--me-accent); padding: 8px 10px; border-radius: 6px; background: rgba(var(--me-accent-rgb, 59, 130, 246), 0.06); }
 
 /* Engines */
 .ris-engines-title { font-size: 12px; font-weight: 600; color: var(--me-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }

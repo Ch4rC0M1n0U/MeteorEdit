@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { fetchOembed, uploadMedia, captureFrame, captureEmbed, replaceCapture, replaceCaptureEncrypted, encryptMediaFile, deleteCapture, analyzeFile } from '../controllers/mediaController';
+import { fetchOembed, uploadMedia, captureFrame, captureEmbed, replaceCapture, replaceCaptureEncrypted, encryptMediaFile, deleteCapture, analyzeFile, reverseImageUpload } from '../controllers/mediaController';
 import { downloadVideo } from '../controllers/downloadController';
 import { upload } from '../config/upload';
 
@@ -104,5 +104,6 @@ router.delete('/capture', deleteCapture);
  *         description: Erreur lors de l'analyse
  */
 router.post('/analyze', analyzeFile);
+router.post('/reverse-image-upload', upload.single('file'), reverseImageUpload);
 
 export default router;
