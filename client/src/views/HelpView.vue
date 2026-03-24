@@ -1302,6 +1302,66 @@ docker compose --profile ai --profile tools up -d</code></pre>
       },
     ],
   },
+  {
+    id: 'whats-new',
+    label: 'Quoi de neuf',
+    icon: 'mdi-star-outline',
+    articles: [
+      {
+        id: 'wn-340',
+        title: 'v3.4.0-beta.1',
+        keywords: ['version', 'changelog', 'nouveautes', 'mise a jour', '3.4.0'],
+        content: `<h2>v3.4.0-beta.1 — 24 mars 2026</h2>
+<h3>OSINT Dorking</h3>
+<ul>
+<li><strong>Module OSINT Dorking</strong> — Accessible depuis Outils > OSINT Dorking, genere des requetes de recherche avancees (Google, Bing, Yandex, DuckDuckGo) pour chaque entite du dossier</li>
+<li><strong>Requetes adaptees par type</strong> — Email, telephone, identite, pseudo, IP, IBAN, vehicule, adresse, comptes sociaux</li>
+<li><strong>Selection batch</strong> — Selectionnez toutes les entites ou seulement certaines, ajoutez des termes personnalises</li>
+<li><strong>Export vers note</strong> — Envoyez le rapport complet en note TipTap avec liens cliquables</li>
+<li><strong>Bouton dorking rapide</strong> — Icone loupe sur chaque entite dans Info dossier</li>
+</ul>
+<h3>Analyse technique de medias</h3>
+<ul>
+<li><strong>Analyse EXIF/ffprobe</strong> — Bouton d'analyse sur les noeuds media (images, audio, video)</li>
+<li><strong>Metadonnees extraites</strong> — Appareil, GPS (avec lien Google Maps), dates, codec, resolution, audio, logiciel</li>
+<li><strong>Hash SHA256</strong> — Calcul automatique pour verification d'integrite</li>
+<li><strong>Note structuree</strong> — Rapport genere en TipTap avec tableaux par categorie</li>
+</ul>
+<h3>Gestion des images (refonte)</h3>
+<ul>
+<li><strong>Helper centralise</strong> — Nouveau module imageUrl.ts elimine les incoherences d'URLs entre controleurs</li>
+<li><strong>Copier-coller vers apps externes</strong> — Conversion canvas PNG pour compatibilite OneNote, Word, PowerPoint</li>
+<li><strong>Recuperation post-navigateur</strong> — Scan des metadonnees pour retrouver les images manquantes apres scraping</li>
+<li><strong>URLs absolues correctes</strong> — Detection automatique du protocole/hote via X-Forwarded headers</li>
+</ul>
+<h3>Ameliorations</h3>
+<ul>
+<li><strong>Arborescence illimitee</strong> — Tout type de noeud peut avoir des enfants (pas seulement les dossiers)</li>
+<li><strong>Badge embargo</strong> — Icone visible sur les dossiers sous embargo dans la liste principale</li>
+<li><strong>AdminSecurity</strong> — Page refondue avec largeur uniformisee et composants custom</li>
+<li><strong>Limite import</strong> — Passage de 10 MB a 100 MB pour les imports volumineux (Elephantastic, WhatsApp)</li>
+<li><strong>PWA desactivee</strong> — Incompatible avec les certificats auto-signes, remplacee par selfDestroying</li>
+<li><strong>i18n corrige</strong> — Correction des caracteres speciaux dans les traductions (vue-i18n SyntaxError: 2)</li>
+</ul>`,
+      },
+      {
+        id: 'wn-330',
+        title: 'v3.3.0-beta.1',
+        keywords: ['version', 'changelog', '3.3.0'],
+        content: `<h2>v3.3.0-beta.1 — 20 mars 2026</h2>
+<ul>
+<li>i18n multilingue complet (FR/EN/NL)</li>
+<li>LanguageTool (correcteur orthographique dans TipTap)</li>
+<li>Setup wizard avec mode dev</li>
+<li>Docker production-ready (healthchecks, nginx, profiles)</li>
+<li>PWA (offline, update prompt)</li>
+<li>API publique Swagger/OpenAPI 3.0.3</li>
+<li>Cookie Bridge extension Chrome</li>
+<li>Gestionnaire de sessions sociales</li>
+</ul>`,
+      },
+    ],
+  },
 ];
 
 // Search
