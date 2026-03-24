@@ -64,6 +64,10 @@
                 <v-icon size="16">mdi-account-search-outline</v-icon>
                 <span>{{ $t('social.profile.title') }}</span>
               </button>
+              <button class="dv-export-option" @click="osintDorkingOpen = true">
+                <v-icon size="16">mdi-search-web</v-icon>
+                <span>OSINT Dorking</span>
+              </button>
             </div>
           </v-menu>
           <!-- Export -->
@@ -346,6 +350,12 @@
       />
     </v-dialog>
 
+    <!-- OSINT Dorking -->
+    <OsintDorkingDialog
+      v-model="osintDorkingOpen"
+      v-if="osintDorkingOpen && dossierStore.currentDossier"
+    />
+
     <!-- Elephantastic Import -->
     <ElephantasticImportDialog
       v-model="elephantasticOpen"
@@ -598,6 +608,7 @@ import ImageAnnotator from '../editor/ImageAnnotator.vue';
 import PomodoroTimer from '../common/PomodoroTimer.vue';
 import TaskPanel from './TaskPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
+import OsintDorkingDialog from './OsintDorkingDialog.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
 const DatasetEditor = defineAsyncComponent(() =>
   import('../dataset/DatasetEditor.vue')
@@ -623,6 +634,7 @@ const disclaimerDismissed = ref(false);
 
 const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);
+const osintDorkingOpen = ref(false);
 const elephantasticOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
