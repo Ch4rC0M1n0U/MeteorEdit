@@ -68,6 +68,10 @@
                 <v-icon size="16">mdi-search-web</v-icon>
                 <span>OSINT Dorking</span>
               </button>
+              <button class="dv-export-option" @click="reverseImageOpen = true">
+                <v-icon size="16">mdi-image-search-outline</v-icon>
+                <span>{{ $t('dossier.reverseImageTitle') }}</span>
+              </button>
             </div>
           </v-menu>
           <!-- Export -->
@@ -350,6 +354,9 @@
       />
     </v-dialog>
 
+    <!-- Reverse Image Search -->
+    <ReverseImageSearch v-model="reverseImageOpen" />
+
     <!-- OSINT Dorking -->
     <OsintDorkingDialog
       v-model="osintDorkingOpen"
@@ -609,6 +616,7 @@ import PomodoroTimer from '../common/PomodoroTimer.vue';
 import TaskPanel from './TaskPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
 import OsintDorkingDialog from './OsintDorkingDialog.vue';
+import ReverseImageSearch from './ReverseImageSearch.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
 const DatasetEditor = defineAsyncComponent(() =>
   import('../dataset/DatasetEditor.vue')
@@ -635,6 +643,7 @@ const disclaimerDismissed = ref(false);
 const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);
 const osintDorkingOpen = ref(false);
+const reverseImageOpen = ref(false);
 const elephantasticOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
