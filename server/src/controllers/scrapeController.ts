@@ -1031,3 +1031,326 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
     });
   }
 }
+
+// ─── Multi-platform username scanner ─────────────────────────────────────────
+
+/**
+ * URL patterns for username-based scanning.
+ * Each platform maps a username to a profile URL.
+ * Only platforms where username → URL is deterministic.
+ */
+const SCAN_PLATFORMS: Array<{
+  id: string;
+  label: string;
+  urlTemplate: (username: string) => string;
+  emoji: string;
+}> = [
+  { id: 'instagram', label: 'Instagram', urlTemplate: (u) => `https://www.instagram.com/${u}/`, emoji: '\u{1F4F7}' },
+  { id: 'facebook', label: 'Facebook', urlTemplate: (u) => `https://www.facebook.com/${u}`, emoji: '\u{1F465}' },
+  { id: 'x', label: 'X / Twitter', urlTemplate: (u) => `https://x.com/${u}`, emoji: '\u{1D54F}' },
+  { id: 'tiktok', label: 'TikTok', urlTemplate: (u) => `https://www.tiktok.com/@${u}`, emoji: '\u{1F3B5}' },
+  { id: 'snapchat', label: 'Snapchat', urlTemplate: (u) => `https://www.snapchat.com/add/${u}`, emoji: '\u{1F47B}' },
+  { id: 'youtube', label: 'YouTube', urlTemplate: (u) => `https://www.youtube.com/@${u}`, emoji: '\u{1F4FA}' },
+  { id: 'linkedin', label: 'LinkedIn', urlTemplate: (u) => `https://www.linkedin.com/in/${u}`, emoji: '\u{1F4BC}' },
+  { id: 'threads', label: 'Threads', urlTemplate: (u) => `https://www.threads.net/@${u}`, emoji: '\u{1F9F5}' },
+  { id: 'telegram', label: 'Telegram', urlTemplate: (u) => `https://t.me/${u}`, emoji: '\u{2708}' },
+  { id: 'linktree', label: 'Linktree', urlTemplate: (u) => `https://linktr.ee/${u}`, emoji: '\u{1F332}' },
+  { id: 'paypal', label: 'PayPal', urlTemplate: (u) => `https://paypal.me/${u}`, emoji: '\u{1F4B3}' },
+  { id: 'strava', label: 'Strava', urlTemplate: (u) => `https://www.strava.com/athletes/${u}`, emoji: '\u{1F3C3}' },
+  // New platforms (simple URL-based check)
+  { id: 'reddit', label: 'Reddit', urlTemplate: (u) => `https://www.reddit.com/user/${u}`, emoji: '\u{1F4AC}' },
+  { id: 'github', label: 'GitHub', urlTemplate: (u) => `https://github.com/${u}`, emoji: '\u{1F4BB}' },
+  { id: 'twitch', label: 'Twitch', urlTemplate: (u) => `https://www.twitch.tv/${u}`, emoji: '\u{1F3AE}' },
+  { id: 'pinterest', label: 'Pinterest', urlTemplate: (u) => `https://www.pinterest.com/${u}/`, emoji: '\u{1F4CC}' },
+  { id: 'medium', label: 'Medium', urlTemplate: (u) => `https://medium.com/@${u}`, emoji: '\u{270D}' },
+  { id: 'vinted', label: 'Vinted', urlTemplate: (u) => `https://www.vinted.be/member/${u}`, emoji: '\u{1F457}' },
+  { id: 'flickr', label: 'Flickr', urlTemplate: (u) => `https://www.flickr.com/people/${u}/`, emoji: '\u{1F4F8}' },
+  { id: 'behance', label: 'Behance', urlTemplate: (u) => `https://www.behance.net/${u}`, emoji: '\u{1F3A8}' },
+  { id: 'steam', label: 'Steam', urlTemplate: (u) => `https://steamcommunity.com/id/${u}`, emoji: '\u{1F3AE}' },
+  { id: 'trustpilot', label: 'Trustpilot', urlTemplate: (u) => `https://www.trustpilot.com/users/${u}`, emoji: '\u{2B50}' },
+  { id: '2ememain', label: '2ememain', urlTemplate: (u) => `https://www.2ememain.be/u/${u}/`, emoji: '\u{1F6D2}' },
+];
+
+/**
+ * Simple profile check for platforms without a full scraper.
+ * Uses Puppeteer to visit the URL and determine if a real profile exists.
+ * Returns basic ProfileData or null if not found.
+ */
+async function simpleProfileCheck(page: any, url: string, platform: string, username: string): Promise<ProfileData | null> {
+  try {
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    const status = response?.status() || 0;
+
+    // Clear 404 = not found
+    if (status === 404) return null;
+
+    // Check page content for error indicators
+    const pageContent = await page.evaluate(() => {
+      return {
+        title: document.title,
+        body: document.body?.innerText?.substring(0, 2000) || '',
+        h1: document.querySelector('h1')?.textContent || '',
+        ogImage: (document.querySelector('meta[property="og:image"]') as HTMLMetaElement)?.content || '',
+        ogTitle: (document.querySelector('meta[property="og:title"]') as HTMLMetaElement)?.content || '',
+        ogDesc: (document.querySelector('meta[property="og:description"]') as HTMLMetaElement)?.content || '',
+      };
+    });
+
+    // Common "not found" patterns
+    const notFoundPatterns = [
+      /not found/i, /page not found/i, /doesn.?t exist/i, /n.?existe pas/i,
+      /404/i, /no user/i, /user not found/i, /account suspended/i,
+      /this page isn/i, /sorry.*available/i, /profil introuvable/i,
+      /account.*deleted/i, /gebruiker.*niet.*gevonden/i,
+    ];
+
+    const combinedText = `${pageContent.title} ${pageContent.h1} ${pageContent.body.substring(0, 500)}`;
+    for (const pattern of notFoundPatterns) {
+      if (pattern.test(combinedText)) return null;
+    }
+
+    // If we got here with a 200, likely a real profile
+    if (status >= 200 && status < 400) {
+      return {
+        platform,
+        username,
+        displayName: pageContent.ogTitle || pageContent.h1 || username,
+        bio: pageContent.ogDesc || '',
+        profileImageUrl: pageContent.ogImage || '',
+        stats: {},
+        registrationDate: null,
+        extraImages: [],
+        rawMetadata: { url, checkedAt: new Date().toISOString() },
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Multi-platform username scanner.
+ * POST /api/social/scan-username
+ * Body: { username, dossierId, parentId?, platforms?: string[] }
+ * Response: SSE stream with progress + results
+ */
+export async function scanUsername(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const { username, dossierId, parentId, platforms } = req.body;
+  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+  const ua = req.headers['user-agent'] || '';
+
+  if (!username || !dossierId) {
+    res.status(400).json({ error: 'username et dossierId requis' });
+    return;
+  }
+
+  if (!(await checkDossierAccess(dossierId, userId))) {
+    res.status(403).json({ error: 'Acces refuse' });
+    return;
+  }
+
+  // SSE setup
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (data: any) => {
+    try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch { /* client disconnected */ }
+  };
+
+  const cleanUsername = username.trim().replace(/^@/, '');
+  const selectedPlatforms = platforms?.length
+    ? SCAN_PLATFORMS.filter(p => platforms.includes(p.id))
+    : SCAN_PLATFORMS;
+
+  send({ type: 'start', total: selectedPlatforms.length, username: cleanUsername });
+
+  let browser: any;
+  const results: Array<{ platform: string; label: string; emoji: string; found: boolean; profile?: ProfileData; url: string }> = [];
+
+  try {
+    // Load cookies and settings
+    const settings = await SiteSettings.findOne().lean();
+    const allCookies = await SocialCookie.find({ userId }).lean();
+
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      args: [
+        '--no-sandbox', '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        `--user-agent=${CHROME_USER_AGENT}`,
+      ],
+      defaultViewport: { width: 1920, height: 1080 },
+    });
+
+    const baseUrl = getBaseUrl(req);
+
+    for (let i = 0; i < selectedPlatforms.length; i++) {
+      const sp = selectedPlatforms[i];
+      const profileUrl = sp.urlTemplate(cleanUsername);
+
+      send({ type: 'scanning', index: i, platform: sp.id, label: sp.label, emoji: sp.emoji });
+
+      try {
+        const page = await browser.newPage();
+        await page.setUserAgent(CHROME_USER_AGENT);
+        await page.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'webdriver', { get: () => false });
+        });
+
+        // Inject cookies for this platform if available
+        const platformCookies = allCookies.find((c: any) => c.platform === sp.id);
+        if (platformCookies?.cookies) {
+          try {
+            const decrypted = decryptCookies(platformCookies.cookies);
+            const normalized = decrypted.map((c: any) => ({
+              name: c.name, value: c.value, domain: c.domain,
+              path: c.path || '/', expires: c.expires > 0 ? c.expires : undefined,
+              httpOnly: c.httpOnly ?? false, secure: c.secure ?? false,
+              sameSite: c.sameSite === 'None' ? 'None' as const : c.sameSite === 'Lax' ? 'Lax' as const : undefined,
+            })).filter((c: any) => c.name && c.value && c.domain);
+            await page.setCookie(...normalized);
+          } catch { /* skip cookies */ }
+        }
+
+        let profile: ProfileData | null = null;
+
+        // Use full scraper if available, otherwise simple check
+        if (SCRAPERS[sp.id]) {
+          try {
+            profile = await SCRAPERS[sp.id].scrape(page, profileUrl);
+            // Validate: scraper returned data but is it a real profile?
+            if (profile && !profile.displayName && !profile.username && !profile.bio && Object.keys(profile.stats).length === 0) {
+              profile = null; // Empty profile = not found
+            }
+          } catch {
+            profile = null;
+          }
+        } else {
+          profile = await simpleProfileCheck(page, profileUrl, sp.id, cleanUsername);
+        }
+
+        // Download profile image if found
+        if (profile?.profileImageUrl) {
+          try {
+            await downloadProfileImages(page, profile, baseUrl);
+          } catch { /* skip image download */ }
+        }
+
+        await page.close();
+
+        const found = profile !== null;
+        results.push({ platform: sp.id, label: sp.label, emoji: sp.emoji, found, profile: profile || undefined, url: profileUrl });
+        send({ type: 'result', index: i, platform: sp.id, label: sp.label, emoji: sp.emoji, found, url: profileUrl,
+          displayName: profile?.displayName || null, bio: profile?.bio?.substring(0, 200) || null,
+          profileImage: profile?.profileImageUrl || null, stats: profile?.stats || null });
+
+      } catch (err: any) {
+        results.push({ platform: sp.id, label: sp.label, emoji: sp.emoji, found: false, url: profileUrl });
+        send({ type: 'result', index: i, platform: sp.id, label: sp.label, emoji: sp.emoji, found: false, url: profileUrl, error: err?.message?.substring(0, 100) });
+      }
+    }
+
+    await browser.close();
+    browser = undefined;
+
+    // Create folder node with sub-notes for found profiles
+    const foundResults = results.filter(r => r.found && r.profile);
+
+    if (foundResults.length > 0) {
+      // Create parent folder
+      const lastNode = await DossierNode.findOne({ dossierId, parentId: parentId || null, deletedAt: null }).sort({ order: -1 }).lean();
+      const folder = await DossierNode.create({
+        dossierId,
+        parentId: parentId || null,
+        type: 'folder',
+        title: `Scan — ${cleanUsername}`,
+        order: (lastNode?.order ?? 0) + 1,
+      });
+
+      // Create a summary note
+      const summaryContent: any[] = [
+        { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: `Scan multi-plateforme — ${cleanUsername}` }] },
+        { type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'italic' }], text: `${foundResults.length} profil(s) trouve(s) sur ${selectedPlatforms.length} plateformes — ${new Date().toLocaleDateString('fr-FR')}` }] },
+        { type: 'horizontalRule' },
+      ];
+
+      // Summary table
+      const headerRow = {
+        type: 'tableRow',
+        content: [
+          { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Plateforme' }] }] },
+          { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Statut' }] }] },
+          { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Nom' }] }] },
+        ],
+      };
+
+      const dataRows = results.map(r => ({
+        type: 'tableRow',
+        content: [
+          { type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: `${r.emoji} ${r.label}` }] }] },
+          { type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: r.found ? 'Trouve' : 'Non trouve' }] }] },
+          { type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: r.profile?.displayName || '—' }] }] },
+        ],
+      }));
+
+      summaryContent.push({ type: 'table', content: [headerRow, ...dataRows] });
+
+      await DossierNode.create({
+        dossierId,
+        parentId: folder._id,
+        type: 'note',
+        title: `Resume du scan — ${cleanUsername}`,
+        content: { type: 'doc', content: summaryContent },
+        order: 0,
+      });
+
+      // Create sub-notes for each found profile using buildTipTapContent
+      for (let i = 0; i < foundResults.length; i++) {
+        const r = foundResults[i];
+        if (!r.profile) continue;
+
+        // Recover images from metadata
+        await recoverMetadataImages(r.profile, baseUrl);
+
+        const tiptapContent = buildTipTapContent(r.profile, r.platform, r.url);
+        const platformLabel = r.label;
+        const nodeTitle = `${r.profile.displayName || r.profile.username || cleanUsername} — ${platformLabel}`;
+
+        await DossierNode.create({
+          dossierId,
+          parentId: folder._id,
+          type: 'note',
+          title: nodeTitle,
+          content: tiptapContent,
+          order: i + 1,
+        });
+      }
+
+      send({ type: 'done', folderId: folder._id, folderTitle: folder.title, found: foundResults.length, total: selectedPlatforms.length });
+
+      // Log activity
+      await logActivity(userId, 'social.scan', 'dossier', dossierId, {
+        username: cleanUsername,
+        platformsScanned: selectedPlatforms.length,
+        profilesFound: foundResults.length,
+        platforms: foundResults.map(r => r.platform),
+      }, ip, ua);
+
+    } else {
+      send({ type: 'done', folderId: null, found: 0, total: selectedPlatforms.length });
+    }
+
+  } catch (err: any) {
+    console.error('[ScanUsername] Error:', err?.message || err);
+    if (browser) await browser.close().catch(() => {});
+    send({ type: 'error', message: err?.message || 'Erreur inconnue' });
+  } finally {
+    res.end();
+  }
+}

@@ -3,7 +3,7 @@ import path from 'path';
 import multer from 'multer';
 import { authenticate } from '../middleware/auth';
 import { socialLogin, listCookies, deleteCookies, importCookies, generateBridgeToken, uploadCookiesFile } from '../controllers/socialAuthController';
-import { scrapeProfile } from '../controllers/scrapeController';
+import { scrapeProfile, scanUsername } from '../controllers/scrapeController';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 } });
@@ -368,5 +368,6 @@ router.get('/extension-download', async (_req, res) => {
  *         description: Erreur lors de l'extraction du profil
  */
 router.post('/scrape-profile', authenticate, scrapeProfile);
+router.post('/scan-username', authenticate, scanUsername);
 
 export default router;

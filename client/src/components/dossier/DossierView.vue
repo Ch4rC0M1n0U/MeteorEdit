@@ -72,6 +72,10 @@
                 <v-icon size="16">mdi-image-search-outline</v-icon>
                 <span>{{ $t('dossier.reverseImageTitle') }}</span>
               </button>
+              <button class="dv-export-option" @click="usernameScanOpen = true">
+                <v-icon size="16">mdi-radar</v-icon>
+                <span>{{ $t('dossier.scanTitle') }}</span>
+              </button>
             </div>
           </v-menu>
           <!-- Export -->
@@ -357,6 +361,9 @@
     <!-- Reverse Image Search -->
     <ReverseImageSearch v-model="reverseImageOpen" />
 
+    <!-- Username Scanner -->
+    <UsernameScanDialog v-model="usernameScanOpen" />
+
     <!-- OSINT Dorking -->
     <OsintDorkingDialog
       v-model="osintDorkingOpen"
@@ -617,6 +624,7 @@ import TaskPanel from './TaskPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
 import OsintDorkingDialog from './OsintDorkingDialog.vue';
 import ReverseImageSearch from './ReverseImageSearch.vue';
+import UsernameScanDialog from './UsernameScanDialog.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
 const DatasetEditor = defineAsyncComponent(() =>
   import('../dataset/DatasetEditor.vue')
@@ -644,6 +652,7 @@ const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);
 const osintDorkingOpen = ref(false);
 const reverseImageOpen = ref(false);
+const usernameScanOpen = ref(false);
 const elephantasticOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
