@@ -185,7 +185,7 @@
     "dorkCatFinancialDesc": "IBAN, bedrijfsnaam, register",
     "scanTitle": "Multi-platform scanner",
     "scanInputLabel": "Zoek een doelwit",
-    "scanInputPlaceholder": "gebruikersnaam, +32475123456, naam@email.com, Jan Jansen, 1-ABC-234...",
+    "scanInputPlaceholder": "gebruikersnaam, +32475123456, naam{'@'}email.com, Jan Jansen, 1-ABC-234...",
     "scanStart": "Scannen",
     "scanScanning": "Bezig met scannen...",
     "scanFound": "gevonden",

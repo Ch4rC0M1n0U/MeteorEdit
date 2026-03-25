@@ -185,7 +185,7 @@
     "dorkCatFinancialDesc": "IBAN, company name, registry",
     "scanTitle": "Multi-platform scanner",
     "scanInputLabel": "Search a target",
-    "scanInputPlaceholder": "username, +32475123456, name@email.com, John Doe, 1-ABC-234...",
+    "scanInputPlaceholder": "username, +32475123456, name{'@'}email.com, John Doe, 1-ABC-234...",
     "scanStart": "Scan",
     "scanScanning": "Scanning...",
     "scanFound": "found",

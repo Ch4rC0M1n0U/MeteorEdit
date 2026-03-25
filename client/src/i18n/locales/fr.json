@@ -197,7 +197,7 @@
     "dorkTipImage4": "PimEyes et FaceCheck.ID sont specialises en reconnaissance faciale (services payants)",
     "scanTitle": "Scanner multi-plateforme",
     "scanInputLabel": "Rechercher une cible",
-    "scanInputPlaceholder": "pseudo, +32475123456, nom@email.com, Jean Dupont, 1-ABC-234...",
+    "scanInputPlaceholder": "pseudo, +32475123456, nom{'@'}email.com, Jean Dupont, 1-ABC-234...",
     "scanStart": "Scanner",
     "scanScanning": "Scan en cours...",
     "scanFound": "trouve(s)",
