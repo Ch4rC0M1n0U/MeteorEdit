@@ -1028,6 +1028,44 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
           docChildren.push(...resolved);
         }
       }
+
+      // Observations / comments
+      if (md.observations?.length) {
+        docChildren.push(new Paragraph({
+          children: [new TextRun({
+            text: 'Observations',
+            font: docxFont(tpl),
+            size: ptToHalfPt(tpl.headingSize || 14),
+            bold: true,
+            color: hexToRgb(tpl.accentColor),
+          })],
+          spacing: { before: 200, after: 100 },
+        }));
+
+        for (const obs of md.observations) {
+          const dateStr = obs.date
+            ? new Date(obs.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '';
+          docChildren.push(new Paragraph({
+            children: [
+              new TextRun({
+                text: `[${dateStr}] `,
+                font: docxFont(tpl),
+                size: ptToHalfPt(tpl.bodySize || 11),
+                color: '888888',
+                italics: true,
+              }),
+              new TextRun({
+                text: obs.text || '',
+                font: docxFont(tpl),
+                size: ptToHalfPt(tpl.bodySize || 11),
+              }),
+            ],
+            spacing: { before: 40, after: 40 },
+            indent: { left: 360 },
+          }));
+        }
+      }
     } else if (section.blocks && section.blocks.length > 0) {
       // Rich ContentBlock rendering (preferred)
       const images: { src: string; placeholder: Paragraph }[] = [];
