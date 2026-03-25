@@ -376,10 +376,35 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
       });
     }
 
+    // --- Anti-detection: spoof webdriver, plugins, languages ---
+    await page.evaluateOnNewDocument(`(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+      Object.defineProperty(navigator, 'languages', { get: () => ['fr-BE', 'fr', 'en'] });
+      window.chrome = { runtime: {} };
+    })()`);
+
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
 
     // Wait for CSS/fonts/images to fully render
     await new Promise(r => setTimeout(r, 3000));
+
+    // --- Bypass: DPG Media consent redirect ---
+    // DPG redirects to myprivacy.dpgmedia.be/consent which renders a CMP that
+    // doesn't work in headless Chrome. The page defines a redirect() function
+    // that navigates to the callback URL — we call it directly.
+    const currentUrl = page.url();
+    if (currentUrl.includes('myprivacy.dpgmedia.be/consent')) {
+      console.log(`[Clipper] DPG consent redirect detected, calling redirect()...`);
+      try {
+        await page.evaluate('if (typeof redirect === "function") redirect();');
+        await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {});
+        await new Promise(r => setTimeout(r, 3000));
+        console.log(`[Clipper] DPG consent bypassed, now at: ${page.url()}`);
+      } catch (err) {
+        console.warn('[Clipper] DPG consent bypass failed:', err);
+      }
+    }
 
     // --- Bypass: Check for Sourcepoint CMP iframe (DPG Media) ---
     await dismissSourcepointCMP(page);
