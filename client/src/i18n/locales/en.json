@@ -1241,7 +1241,20 @@
     "deleteSelection": "Delete selection",
     "rename": "Rename",
     "openPreferences": "Preferences",
-    "closeDialog": "Close dialog/panel"
+    "closeDialog": "Close dialog/panel",
+    "mediaPlayer": "Media player",
+    "playPause": "Play / Pause",
+    "stop": "Stop",
+    "toggleLoop": "Toggle loop",
+    "toggleSpectrogram": "Show/hide spectrogram",
+    "addAnnotation": "Add annotation at current timecode",
+    "rewind5": "Rewind 5 seconds",
+    "forward5": "Forward 5 seconds",
+    "rewind15": "Rewind 15 seconds",
+    "forward15": "Forward 15 seconds",
+    "volumeUp": "Volume up",
+    "volumeDown": "Volume down",
+    "speedPresets": "Playback speed (0.5x to 2x)"
   },
   "securityAdvanced": {
     "title": "Advanced security",

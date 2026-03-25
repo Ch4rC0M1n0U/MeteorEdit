@@ -1252,8 +1252,21 @@
     "newNode": "Nouveau node",
     "deleteSelection": "Supprimer sélection",
     "rename": "Renommer",
-    "openPreferences": "Préférences",
-    "closeDialog": "Fermer dialogue/panel"
+    "openPreferences": "Preferences",
+    "closeDialog": "Fermer dialogue/panel",
+    "mediaPlayer": "Lecteur media",
+    "playPause": "Lecture / Pause",
+    "stop": "Arreter",
+    "toggleLoop": "Activer/desactiver la boucle",
+    "toggleSpectrogram": "Afficher/masquer le spectrogramme",
+    "addAnnotation": "Ajouter une annotation au timecode actuel",
+    "rewind5": "Reculer de 5 secondes",
+    "forward5": "Avancer de 5 secondes",
+    "rewind15": "Reculer de 15 secondes",
+    "forward15": "Avancer de 15 secondes",
+    "volumeUp": "Augmenter le volume",
+    "volumeDown": "Diminuer le volume",
+    "speedPresets": "Vitesse de lecture (0.5x a 2x)"
   },
   "securityAdvanced": {
     "title": "Sécurité avancée",

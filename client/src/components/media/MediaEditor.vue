@@ -568,6 +568,16 @@ function onWaveformTimeUpdate(time: number) {
 
 function onWaveformReady(dur: number) {
   duration.value = dur;
+  currentTime.value = 0;
+  // Sync existing annotation markers on waveform
+  const anns = props.node.mediaData?.annotations || [];
+  if (anns.length > 0) {
+    nextTick(() => {
+      waveformPlayerRef.value?.syncAnnotationMarkers(
+        anns.map((a: any) => ({ id: a.id, timestamp: a.timestamp }))
+      );
+    });
+  }
 }
 
 function onWaveformSeek(time: number) {
@@ -697,6 +707,7 @@ async function captureFrame() {
       };
       props.node.mediaData.annotations.push(annotation);
       saveMediaData();
+      waveformPlayerRef.value?.addAnnotationMarker(ts, annotation.id);
     } else if (isEmbed.value) {
       // Embed (YouTube/Vimeo): extract frame server-side via yt-dlp + ffmpeg
       const url = props.node.mediaData?.source?.url || '';
@@ -743,6 +754,7 @@ async function captureFrame() {
       };
       props.node.mediaData.annotations.push(annotation);
       saveMediaData();
+      waveformPlayerRef.value?.addAnnotationMarker(ts, annotation.id);
     }
   } catch (err) {
     console.error('Capture failed:', err);
@@ -771,6 +783,9 @@ function addNote() {
   };
   props.node.mediaData.annotations.push(annotation);
   saveMediaData();
+
+  // Add orange marker on waveform
+  waveformPlayerRef.value?.addAnnotationMarker(ts, annotation.id);
 
   // Start editing the new note immediately
   nextTick(() => {

@@ -1240,7 +1240,20 @@
     "deleteSelection": "Selectie verwijderen",
     "rename": "Hernoemen",
     "openPreferences": "Voorkeuren",
-    "closeDialog": "Dialoog/paneel sluiten"
+    "closeDialog": "Dialoog/paneel sluiten",
+    "mediaPlayer": "Mediaspeler",
+    "playPause": "Afspelen / Pauzeren",
+    "stop": "Stoppen",
+    "toggleLoop": "Lus aan/uit",
+    "toggleSpectrogram": "Spectrogram tonen/verbergen",
+    "addAnnotation": "Annotatie toevoegen op huidige tijdcode",
+    "rewind5": "5 seconden terugspoelen",
+    "forward5": "5 seconden vooruitspoelen",
+    "rewind15": "15 seconden terugspoelen",
+    "forward15": "15 seconden vooruitspoelen",
+    "volumeUp": "Volume omhoog",
+    "volumeDown": "Volume omlaag",
+    "speedPresets": "Afspeelsnelheid (0.5x tot 2x)"
   },
   "securityAdvanced": {
     "title": "Geavanceerde beveiliging",

@@ -192,7 +192,66 @@ watch(zoomLevel, (level) => {
   if (ws) ws.zoom(level);
 });
 
+// --- Keyboard shortcuts ---
+function handleKeyboard(e: KeyboardEvent) {
+  // Don't capture if user is typing in an input/textarea
+  const tag = (e.target as HTMLElement)?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+  // Don't capture if Ctrl/Meta is held (avoid conflicts with editor shortcuts)
+  if (e.ctrlKey || e.metaKey) return;
+
+  switch (e.key) {
+    case ' ': // Space = play/pause
+      e.preventDefault();
+      togglePlay();
+      break;
+    case 's': // S = stop
+    case 'S':
+      e.preventDefault();
+      stop();
+      break;
+    case 'l': // L = toggle loop
+    case 'L':
+      e.preventDefault();
+      toggleLoop();
+      break;
+    case 'g': // G = toggle spectrogram
+    case 'G':
+      e.preventDefault();
+      showSpectrogram.value = !showSpectrogram.value;
+      break;
+    case 'm': // M = add annotation at current time
+    case 'M':
+      e.preventDefault();
+      emit('add-annotation', currentTime.value);
+      break;
+    case 'ArrowLeft': // Left = rewind 5s, Shift+Left = 15s
+      e.preventDefault();
+      seekTo(Math.max(0, currentTime.value - (e.shiftKey ? 15 : 5)));
+      break;
+    case 'ArrowRight': // Right = forward 5s, Shift+Right = 15s
+      e.preventDefault();
+      seekTo(Math.min(duration.value, currentTime.value + (e.shiftKey ? 15 : 5)));
+      break;
+    case 'ArrowUp': // Up = volume up
+      e.preventDefault();
+      volume.value = Math.min(1, volume.value + 0.1);
+      break;
+    case 'ArrowDown': // Down = volume down
+      e.preventDefault();
+      volume.value = Math.max(0, volume.value - 0.1);
+      break;
+    case '1': setSpeed(0.5); break;
+    case '2': setSpeed(0.75); break;
+    case '3': setSpeed(1); break;
+    case '4': setSpeed(1.25); break;
+    case '5': setSpeed(1.5); break;
+    case '6': setSpeed(2); break;
+  }
+}
+
 onMounted(() => {
+  document.addEventListener('keydown', handleKeyboard);
   if (!waveformRef.value) return;
   const accent = props.accentColor || getComputedStyle(document.documentElement).getPropertyValue('--me-accent').trim() || '#7c3aed';
 
@@ -282,6 +341,7 @@ watch(() => props.src, (newSrc) => {
 });
 
 onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeyboard);
   ws?.destroy();
   ws = null;
 });
