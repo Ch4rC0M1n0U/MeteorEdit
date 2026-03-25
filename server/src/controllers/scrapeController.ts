@@ -1162,17 +1162,38 @@ async function simpleProfileCheck(page: any, url: string, platform: string, user
       if (pattern.test(combinedText)) return null;
     }
 
-    // Additional validation: the page must contain the username somewhere
-    // (prevents generic landing pages from being counted as "found")
-    const bodyLower = pageContent.body.toLowerCase();
+    // Validate that the page is a REAL profile, not just a page mentioning the username
+    // in a "not found" context. Check for positive profile indicators.
     const userLower = username.toLowerCase();
-    const hasUsernameOnPage = bodyLower.includes(userLower)
-      || pageContent.ogTitle.toLowerCase().includes(userLower)
-      || pageContent.h1.toLowerCase().includes(userLower);
+    const hasProfileIndicators = (
+      // Username in OG title (profile pages set this)
+      pageContent.ogTitle.toLowerCase().includes(userLower) ||
+      // Username in H1 (profile header)
+      pageContent.h1.toLowerCase().includes(userLower) ||
+      // JSON-LD structured data (only real profiles have this)
+      !!pageContent.jsonLd ||
+      // Canonical URL contains the username
+      pageContent.canonicalUrl.toLowerCase().includes(userLower)
+    );
 
-    // If the page doesn't mention the username at all, it's likely a generic page
-    if (!hasUsernameOnPage && !pageContent.jsonLd) {
-      console.log(`[ScanUsername] ${platform}: page loaded but username "${username}" not found in content — skipping as false positive`);
+    // Check for negative context: username appears but in error/not-found message
+    const bodySnippet = pageContent.body.substring(0, 1500).toLowerCase();
+    const negativeContext = [
+      `${userLower}" doesn`, `${userLower}" does not`, `${userLower}" is not`,
+      `${userLower} doesn`, `${userLower} does not`, `${userLower} is not`,
+      `${userLower}" n'existe`, `${userLower} n'existe`, `${userLower} introuvable`,
+      `${userLower}" not found`, `${userLower} not found`,
+      `${userLower}" niet gevonden`, `${userLower} niet gevonden`,
+      `no user named ${userLower}`, `no results for ${userLower}`,
+    ].some(neg => bodySnippet.includes(neg));
+
+    if (negativeContext) {
+      console.log(`[ScanUsername] ${platform}: username "${username}" found in negative context — false positive`);
+      return null;
+    }
+
+    if (!hasProfileIndicators) {
+      console.log(`[ScanUsername] ${platform}: no profile indicators for "${username}" — skipping as false positive`);
       return null;
     }
 
