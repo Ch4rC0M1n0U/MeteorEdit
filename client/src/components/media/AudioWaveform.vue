@@ -47,6 +47,11 @@
         <v-icon size="16">mdi-chart-bar</v-icon>
       </button>
 
+      <!-- Audio filters toggle -->
+      <button class="aw-btn" :class="{ 'aw-btn--active': showFilters }" @click="showFilters = !showFilters" :title="t('media.audioFilters')">
+        <v-icon size="16">mdi-tune-variant</v-icon>
+      </button>
+
       <!-- Zoom -->
       <div class="aw-zoom">
         <v-icon size="14" color="var(--me-text-muted)">mdi-magnify</v-icon>
@@ -57,6 +62,55 @@
       <div class="aw-volume">
         <v-icon size="16" color="var(--me-text-muted)">{{ volume === 0 ? 'mdi-volume-off' : 'mdi-volume-high' }}</v-icon>
         <input type="range" min="0" max="1" step="0.05" v-model.number="volume" class="aw-volume-slider" />
+      </div>
+    </div>
+
+    <!-- Audio Filters Panel -->
+    <div v-if="showFilters" class="aw-filters">
+      <div class="aw-filters-header">
+        <v-icon size="16">mdi-tune-variant</v-icon>
+        <span>{{ t('media.audioFilters') }}</span>
+        <button class="aw-filters-reset" @click="resetFilters">
+          <v-icon size="14">mdi-refresh</v-icon>
+          {{ t('media.resetFilters') }}
+        </button>
+      </div>
+
+      <!-- Presets -->
+      <div class="aw-presets">
+        <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'voice' }" @click="applyPreset('voice')">
+          <v-icon size="14">mdi-account-voice</v-icon>
+          {{ t('media.presetVoice') }}
+        </button>
+        <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'background' }" @click="applyPreset('background')">
+          <v-icon size="14">mdi-music-note</v-icon>
+          {{ t('media.presetBackground') }}
+        </button>
+        <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'clarity' }" @click="applyPreset('clarity')">
+          <v-icon size="14">mdi-ear-hearing</v-icon>
+          {{ t('media.presetClarity') }}
+        </button>
+        <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'bass' }" @click="applyPreset('bass')">
+          <v-icon size="14">mdi-speaker</v-icon>
+          {{ t('media.presetBass') }}
+        </button>
+      </div>
+
+      <!-- 5-band EQ -->
+      <div class="aw-eq">
+        <div v-for="band in eqBands" :key="band.label" class="aw-eq-band">
+          <input
+            type="range"
+            min="-20"
+            max="20"
+            step="1"
+            :value="band.gain"
+            class="aw-eq-slider"
+            @input="setEqBand(band.index, Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="aw-eq-value mono">{{ band.gain > 0 ? '+' : '' }}{{ band.gain }}</span>
+          <span class="aw-eq-label mono">{{ band.label }}</span>
+        </div>
       </div>
     </div>
 
@@ -103,6 +157,19 @@ const zoomLevel = ref(1);
 const showSpectrogram = ref(false);
 const loopEnabled = ref(false);
 const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const showFilters = ref(false);
+const activePreset = ref('');
+
+// 5-band EQ: Sub-bass, Bass, Mids, Presence, Brilliance
+const EQ_FREQUENCIES = [80, 250, 1000, 3000, 8000];
+const EQ_LABELS = ['80', '250', '1k', '3k', '8k'];
+interface EqBand { index: number; label: string; freq: number; gain: number }
+const eqGains = ref([0, 0, 0, 0, 0]);
+const eqBands = computed<EqBand[]>(() =>
+  EQ_FREQUENCIES.map((freq, i) => ({ index: i, label: EQ_LABELS[i], freq, gain: eqGains.value[i] }))
+);
+
+let audioFilters: BiquadFilterNode[] = [];
 
 let ws: WaveSurfer | null = null;
 let regionsPlugin: any = null;
@@ -192,6 +259,80 @@ watch(zoomLevel, (level) => {
   if (ws) ws.zoom(level);
 });
 
+// --- Audio filters (Web Audio API EQ) ---
+function initFilters() {
+  if (!ws || audioFilters.length > 0) return;
+  const backend = (ws as any).backend || (ws as any).getMediaElement?.()?.parentNode;
+  // WaveSurfer v7 exposes getFilters/setFilters
+  const audioCtx: AudioContext | undefined = (ws as any).options?.audioContext || (ws as any).backend?.ac;
+
+  // Create 5-band parametric EQ
+  // WaveSurfer v7: use ws.setFilters() to inject Web Audio nodes
+  try {
+    const ctx = new AudioContext();
+    audioFilters = EQ_FREQUENCIES.map((freq, i) => {
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'peaking';
+      filter.frequency.value = freq;
+      filter.Q.value = 1.4;
+      filter.gain.value = eqGains.value[i];
+      return filter;
+    });
+    // Connect filters in series and inject into WaveSurfer
+    // WaveSurfer v7 supports setFilters()
+    if (typeof (ws as any).setFilters === 'function') {
+      (ws as any).setFilters(audioFilters);
+    }
+  } catch (err) {
+    console.warn('Audio filter init failed:', err);
+  }
+}
+
+function setEqBand(index: number, gain: number) {
+  eqGains.value[index] = gain;
+  activePreset.value = '';
+  if (audioFilters.length === 0) initFilters();
+  if (audioFilters[index]) {
+    audioFilters[index].gain.value = gain;
+  }
+}
+
+function applyPreset(preset: string) {
+  activePreset.value = preset;
+  let gains: number[];
+  switch (preset) {
+    case 'voice':
+      // Boost voice frequencies (250Hz-3kHz), cut sub-bass and high
+      gains = [-10, 4, 8, 6, -4];
+      break;
+    case 'background':
+      // Cut voice frequencies, boost bass and high (ambient/background sounds)
+      gains = [6, -2, -12, -10, 8];
+      break;
+    case 'clarity':
+      // Boost presence and brilliance for speech clarity
+      gains = [-4, 0, 4, 8, 6];
+      break;
+    case 'bass':
+      // Boost low frequencies
+      gains = [12, 8, 0, -2, -4];
+      break;
+    default:
+      gains = [0, 0, 0, 0, 0];
+  }
+  eqGains.value = gains;
+  if (audioFilters.length === 0) initFilters();
+  gains.forEach((g, i) => {
+    if (audioFilters[i]) audioFilters[i].gain.value = g;
+  });
+}
+
+function resetFilters() {
+  activePreset.value = '';
+  eqGains.value = [0, 0, 0, 0, 0];
+  audioFilters.forEach(f => { f.gain.value = 0; });
+}
+
 // --- Keyboard shortcuts ---
 function handleKeyboard(e: KeyboardEvent) {
   // Don't capture if user is typing in an input/textarea
@@ -219,6 +360,11 @@ function handleKeyboard(e: KeyboardEvent) {
     case 'G':
       e.preventDefault();
       showSpectrogram.value = !showSpectrogram.value;
+      break;
+    case 'f': // F = toggle filters
+    case 'F':
+      e.preventDefault();
+      showFilters.value = !showFilters.value;
       break;
     case 'm': // M = add annotation at current time
     case 'M':
@@ -438,6 +584,97 @@ defineExpose({ seekTo, getCurrentTime: () => currentTime.value, addAnnotationMar
   width: 60px;
   height: 4px;
   accent-color: var(--me-accent);
+}
+
+/* Audio Filters Panel */
+.aw-filters {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--me-border);
+  background: var(--me-bg-surface, #1e1e30);
+}
+.aw-filters-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  margin-bottom: 10px;
+}
+.aw-filters-reset {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--me-text-muted);
+  background: none;
+  border: 1px solid var(--me-border);
+  border-radius: 5px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.aw-filters-reset:hover { border-color: var(--me-accent); color: var(--me-accent); }
+
+/* Presets */
+.aw-presets {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.aw-preset-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--me-border);
+  background: none;
+  color: var(--me-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.aw-preset-btn:hover { border-color: var(--me-accent); color: var(--me-text-primary); }
+.aw-preset-btn--active { border-color: var(--me-accent); color: white; background: var(--me-accent); }
+
+/* 5-band EQ */
+.aw-eq {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 8px 0;
+}
+.aw-eq-band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+.aw-eq-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: slider-vertical;
+  width: 20px;
+  height: 80px;
+  accent-color: var(--me-accent);
+  cursor: pointer;
+}
+.aw-eq-value {
+  font-size: 10px;
+  color: var(--me-text-primary);
+  font-weight: 600;
+  min-width: 28px;
+  text-align: center;
+}
+.aw-eq-label {
+  font-size: 10px;
+  color: var(--me-text-muted);
 }
 
 /* Hint */
