@@ -506,7 +506,6 @@ watch(() => props.src, (newSrc) => {
     showFilters.value = false;
     loopEnabled.value = false;
     loopRegion = null;
-    markers.value = [];
     activePreset.value = '';
     eqGains.value = [0, 0, 0, 0, 0];
     // Reset audio filters gains (don't destroy — mediaSource can only be created once)
