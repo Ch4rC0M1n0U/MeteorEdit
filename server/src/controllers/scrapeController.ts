@@ -1141,18 +1141,48 @@ async function simpleProfileCheck(page: any, url: string, platform: string, user
       };
     });
 
-    // Common "not found" patterns
+    // Common "not found" patterns — aggressive to reduce false positives
     const notFoundPatterns = [
       /not found/i, /page not found/i, /doesn.?t exist/i, /n.?existe pas/i,
       /404/i, /no user/i, /user not found/i, /account suspended/i,
       /this page isn/i, /sorry.*available/i, /profil introuvable/i,
       /account.*deleted/i, /gebruiker.*niet.*gevonden/i,
       /cette page n.est pas disponible/i, /pagina niet gevonden/i,
+      /no results/i, /aucun r.sultat/i, /geen resultaat/i,
+      /sign.?up/i, /create.*account/i, /cr.er.*compte/i,
+      /join.*today/i, /inscri/i, /register/i,
+      /login.*required/i, /connecte/i,
+      /hmm.*this page/i, /oops/i, /we couldn/i,
+      /page.*removed/i, /content.*unavailable/i,
+      /suspended/i, /banned/i, /restricted/i,
     ];
 
-    const combinedText = `${pageContent.title} ${pageContent.h1} ${pageContent.body.substring(0, 500)}`;
+    const combinedText = `${pageContent.title} ${pageContent.h1} ${pageContent.body.substring(0, 800)}`;
     for (const pattern of notFoundPatterns) {
       if (pattern.test(combinedText)) return null;
+    }
+
+    // Additional validation: the page must contain the username somewhere
+    // (prevents generic landing pages from being counted as "found")
+    const bodyLower = pageContent.body.toLowerCase();
+    const userLower = username.toLowerCase();
+    const hasUsernameOnPage = bodyLower.includes(userLower)
+      || pageContent.ogTitle.toLowerCase().includes(userLower)
+      || pageContent.h1.toLowerCase().includes(userLower);
+
+    // If the page doesn't mention the username at all, it's likely a generic page
+    if (!hasUsernameOnPage && !pageContent.jsonLd) {
+      console.log(`[ScanUsername] ${platform}: page loaded but username "${username}" not found in content — skipping as false positive`);
+      return null;
+    }
+
+    // Redirect to homepage/login = not found
+    if (pageContent.url && !pageContent.url.toLowerCase().includes(userLower)) {
+      const urlPath = new URL(pageContent.url).pathname;
+      if (urlPath === '/' || urlPath.includes('login') || urlPath.includes('signup') || urlPath.includes('register')) {
+        console.log(`[ScanUsername] ${platform}: redirected to ${urlPath} — not found`);
+        return null;
+      }
     }
 
     // If we got here with a 200, extract meaningful profile data
