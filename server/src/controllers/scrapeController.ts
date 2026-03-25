@@ -1207,7 +1207,7 @@ export async function scanUsername(req: AuthRequest, res: Response): Promise<voi
         const platformCookies = allCookies.find((c: any) => c.platform === sp.id);
         if (platformCookies?.cookies) {
           try {
-            const decrypted = decryptCookies(platformCookies.cookies);
+            const decrypted = decryptCookies(platformCookies.cookies) as any[];
             const normalized = decrypted.map((c: any) => ({
               name: c.name, value: c.value, domain: c.domain,
               path: c.path || '/', expires: c.expires > 0 ? c.expires : undefined,
