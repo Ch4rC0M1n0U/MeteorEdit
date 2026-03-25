@@ -66,6 +66,10 @@
             <v-icon size="14">mdi-pencil</v-icon>
             {{ t('media.note') }}
           </button>
+          <button class="me-btn me-btn--observation" @click="showObservation = true">
+            <v-icon size="14">mdi-comment-text-outline</v-icon>
+            {{ t('media.observation') }}
+          </button>
           <button class="me-btn me-btn--meta" @click="showMetadata = true">
             <v-icon size="14">mdi-information-outline</v-icon>
             {{ t('media.metadata') }}
@@ -88,6 +92,21 @@
             <v-icon size="14">{{ expanded ? 'mdi-arrow-collapse' : 'mdi-arrow-expand' }}</v-icon>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Observations list -->
+    <div v-if="props.node.mediaData?.observations?.length" class="me-observations">
+      <div class="me-obs-title">
+        <v-icon size="14">mdi-comment-text-outline</v-icon>
+        {{ t('media.observations') }} ({{ props.node.mediaData.observations.length }})
+      </div>
+      <div v-for="(obs, i) in props.node.mediaData.observations" :key="i" class="me-obs-item">
+        <span class="me-obs-date mono">{{ new Date(obs.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</span>
+        <span class="me-obs-text">{{ obs.text }}</span>
+        <button class="me-obs-del" @click="deleteObservation(i)" :title="t('common.delete')">
+          <v-icon size="12">mdi-close</v-icon>
+        </button>
       </div>
     </div>
 
@@ -194,6 +213,35 @@
     <!-- Hidden canvas for frame capture -->
     <canvas ref="canvasRef" class="me-canvas-hidden" />
 
+    <!-- Observation Dialog -->
+    <v-dialog v-model="showObservation" max-width="560">
+      <div class="glass-card" style="padding: 0; border-radius: 12px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--me-border); font-size: 14px; font-weight: 600; color: var(--me-text-primary);">
+          <v-icon size="18" color="var(--me-accent)">mdi-comment-text-outline</v-icon>
+          {{ t('media.observationTitle') }}
+          <button style="margin-left: auto; background: none; border: none; color: var(--me-text-muted); cursor: pointer; display: flex;" @click="showObservation = false">
+            <v-icon size="18">mdi-close</v-icon>
+          </button>
+        </div>
+        <div style="padding: 16px 18px;">
+          <p style="font-size: 12px; color: var(--me-text-muted); margin-bottom: 10px;">{{ t('media.observationDesc') }}</p>
+          <textarea
+            v-model="observationText"
+            class="me-observation-textarea"
+            :placeholder="t('media.observationPlaceholder')"
+            rows="6"
+          ></textarea>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+            <button class="me-btn-ghost me-btn-sm" @click="showObservation = false">{{ t('common.cancel') }}</button>
+            <button class="me-btn me-btn--accent me-btn-sm" @click="saveObservation" :disabled="!observationText.trim()">
+              <v-icon size="14" class="mr-1">mdi-check</v-icon>
+              {{ t('common.save') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </v-dialog>
+
     <!-- Metadata Dialog -->
     <MediaMetadataDialog
       v-model="showMetadata"
@@ -279,6 +327,8 @@ const currentTime = ref(0);
 const duration = ref(0);
 const capturing = ref(false);
 const showMetadata = ref(false);
+const showObservation = ref(false);
+const observationText = ref('');
 const sessionManagerOpen = ref(false);
 const filter = ref('');
 const sortAsc = ref(true);
@@ -524,6 +574,29 @@ function onWaveformSeek(time: number) {
 }
 
 // --- Technical analysis ---
+// --- Observation / Comments ---
+function saveObservation() {
+  if (!observationText.value.trim()) return;
+  const observations = props.node.mediaData?.observations || [];
+  const newObs = {
+    text: observationText.value.trim(),
+    date: new Date().toISOString(),
+    author: 'user',
+  };
+  observations.push(newObs);
+  const updatedMediaData = { ...props.node.mediaData, observations };
+  dossierStore.updateNode(props.node._id, { mediaData: updatedMediaData } as any);
+  observationText.value = '';
+  showObservation.value = false;
+}
+
+function deleteObservation(index: number) {
+  const observations = [...(props.node.mediaData?.observations || [])];
+  observations.splice(index, 1);
+  const updatedMediaData = { ...props.node.mediaData, observations };
+  dossierStore.updateNode(props.node._id, { mediaData: updatedMediaData } as any);
+}
+
 async function runAnalysis() {
   if (!props.node.mediaData?.source || analyzing.value) return;
   analyzing.value = true;
@@ -1464,6 +1537,19 @@ onBeforeUnmount(() => {
 .me-spin {
   animation: me-spin 1s linear infinite;
 }
+
+/* Observations */
+.me-observations { padding: 8px 12px; margin: 0 8px 8px; border-radius: 6px; border: 1px solid var(--me-border); background: var(--me-bg-deep); }
+.me-obs-title { font-size: 12px; font-weight: 600; color: var(--me-text-secondary); display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+.me-obs-item { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(var(--me-border-rgb, 128,128,128), 0.2); }
+.me-obs-item:last-child { border-bottom: none; }
+.me-obs-date { font-size: 10px; color: var(--me-text-muted); white-space: nowrap; padding-top: 2px; }
+.me-obs-text { font-size: 12px; color: var(--me-text-primary); flex: 1; line-height: 1.4; }
+.me-obs-del { background: none; border: none; color: var(--me-text-muted); cursor: pointer; padding: 2px; flex-shrink: 0; }
+.me-obs-del:hover { color: #f44336; }
+.me-observation-textarea { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--me-border); background: var(--me-bg-deep); color: var(--me-text-primary); font-size: 13px; font-family: inherit; resize: vertical; outline: none; }
+.me-observation-textarea:focus { border-color: var(--me-accent); }
+.me-btn--accent { background: var(--me-accent); color: white; border: none; }
 </style>
 
 <style>
