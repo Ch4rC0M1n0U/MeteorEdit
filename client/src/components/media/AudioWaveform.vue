@@ -479,10 +479,24 @@ watch(showSpectrogram, (show) => {
 
 watch(() => props.src, (newSrc) => {
   if (ws && newSrc) {
-    ws.load(newSrc);
-    markers.value = [];
-    loopRegion = null;
+    // Reset all UI state when switching audio files
+    isPlaying.value = false;
+    currentTime.value = 0;
+    duration.value = 0;
+    playbackRate.value = 1;
+    zoomLevel.value = 1;
+    showSpectrogram.value = false;
+    showFilters.value = false;
     loopEnabled.value = false;
+    loopRegion = null;
+    markers.value = [];
+    activePreset.value = '';
+    eqGains.value = [0, 0, 0, 0, 0];
+    // Reset audio filters
+    audioFilters.forEach(f => { try { f.gain.value = 0; } catch {} });
+    audioFilters = [];
+    // Load new source
+    ws.load(newSrc);
   }
 });
 
