@@ -1159,7 +1159,10 @@ export async function scanUsername(req: AuthRequest, res: Response): Promise<voi
   res.flushHeaders();
 
   const send = (data: any) => {
-    try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch { /* client disconnected */ }
+    try {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+      if (typeof (res as any).flush === 'function') (res as any).flush();
+    } catch { /* client disconnected */ }
   };
 
   const cleanUsername = username.trim().replace(/^@/, '');
