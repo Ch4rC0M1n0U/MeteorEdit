@@ -329,10 +329,11 @@ function richTextRuns(children: ContentBlock[], tpl: PdfTemplateConfig): Paragra
       continue;
     }
     if (child.type !== 'text') continue;
+    if (!child.text && child.text !== '') continue;
 
     const m = child.marks || {};
     const baseOpts: Record<string, unknown> = {
-      text: child.text,
+      text: child.text || '',
       font: m.code ? 'Courier New' : docxFont(tpl),
       size: m.code ? ptToHalfPt(tpl.body.fontSize - 1) : ptToHalfPt(tpl.body.fontSize),
       bold: m.bold || undefined,
@@ -352,7 +353,7 @@ function richTextRuns(children: ContentBlock[], tpl: PdfTemplateConfig): Paragra
       baseOpts.shading = { type: ShadingType.CLEAR, fill: 'F0F0F0' };
     }
 
-    if (m.link) {
+    if (m.link && typeof m.link === 'string') {
       // Render as clickable hyperlink (blue + underlined)
       const linkRun = new TextRun({
         ...baseOpts,
