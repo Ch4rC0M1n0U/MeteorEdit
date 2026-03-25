@@ -7,6 +7,7 @@ import Dossier from '../models/Dossier';
 import { logActivity } from '../utils/activityLogger';
 import { computeFileHash } from '../utils/hashFile';
 import { getBaseUrl, toAbsoluteUrlFromBase } from '../utils/imageUrl';
+import { getBypassRules, getUA, getExtraHeaders } from '../utils/bypassRules';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 
@@ -18,6 +19,16 @@ async function dismissCookieBanners(page: any): Promise<void> {
   try {
     // Common selectors for "accept all cookies" buttons across various consent frameworks
     const acceptSelectors = [
+      // --- DPG Media (7sur7, HLN, De Morgen, Humo) ---
+      'button.message-component.message-button.no-children.focusable.sp_choice_type_11',
+      'button[title="D\'accord"]',
+      'button[title="Akkoord"]',
+      'button[title="Agree"]',
+      '.sp_choice_type_11', // Sourcepoint CMP accept button
+      '#sp-cc-accept',
+      // --- Sourcepoint CMP (used by DPG, VRT, etc.) ---
+      'button[aria-label="D\'accord"]',
+      'button[aria-label="Akkoord"]',
       // --- Social Media specific ---
       // Instagram cookie consent
       '[data-testid="cookie-policy-manage-dialog-accept-button"]',
@@ -97,6 +108,7 @@ async function dismissCookieBanners(page: any): Promise<void> {
     // Fallback: find buttons by text content (French & English)
     const clickByTextScript = `(() => {
       const keywords = [
+        "d'accord", 'akkoord', 'alle accepteren', 'alles accepteren',
         'autoriser tous les cookies', 'autoriser les cookies essentiels',
         'accepter tout', 'tout accepter', 'accept all', 'allow all',
         'tout autoriser', 'autoriser tous', 'autoriser les cookies', "j'accepte",
@@ -239,6 +251,9 @@ async function dismissCookieBanners(page: any): Promise<void> {
         '[class*="cookie-banner"]', '[class*="cookie-consent"]', '[class*="gdpr"]',
         '[id*="cookie-banner"]', '[id*="cookie-consent"]',
         '#qc-cmp2-container', '.didomi-popup-container', '.fc-consent-root',
+        // Sourcepoint CMP (DPG Media: 7sur7, HLN, De Morgen)
+        'div[id^="sp_message_container"]', '.sp-message-open',
+        'iframe[id^="sp_message_iframe"]',
         // Social media specific overlays
         '[data-testid="cookie-policy-manage-dialog"]',
         '[data-testid="login_dialog"]',
@@ -318,19 +333,56 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
   let browser: any = null;
   try {
     const puppeteer = await import('puppeteer-core');
+    const bypassRule = getBypassRules(url);
+
     browser = await puppeteer.default.launch({
       headless: true,
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+      args: [
+        '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
+        '--disable-blink-features=AutomationControlled',
+      ],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
-    // Set a realistic user agent so sites serve proper CSS
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+
+    // --- Bypass: User-Agent ---
+    const ua = getUA(bypassRule);
+    await page.setUserAgent(ua);
+
+    // --- Bypass: Extra headers (Referer, X-Forwarded-For) ---
+    const extraHeaders = getExtraHeaders(bypassRule);
+    if (Object.keys(extraHeaders).length > 0) {
+      await page.setExtraHTTPHeaders(extraHeaders);
+    }
+
+    // --- Bypass: Clear cookies for metered paywalls ---
+    if (bypassRule && !bypassRule.allowCookies) {
+      const client = await page.target().createCDPSession();
+      await client.send('Network.clearBrowserCookies');
+    }
+
+    // --- Bypass: Block paywall scripts ---
+    if (bypassRule?.blockPatterns && bypassRule.blockPatterns.length > 0) {
+      await page.setRequestInterception(true);
+      const patterns = bypassRule.blockPatterns;
+      page.on('request', (req: any) => {
+        const reqUrl = req.url();
+        if (patterns.some((p: RegExp) => p.test(reqUrl))) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
+    }
+
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
 
     // Wait for CSS/fonts/images to fully render
     await new Promise(r => setTimeout(r, 3000));
+
+    // --- Bypass: Check for Sourcepoint CMP iframe (DPG Media) ---
+    await dismissSourcepointCMP(page);
 
     // Dismiss cookie/GDPR banners automatically
     await dismissCookieBanners(page);
@@ -343,6 +395,28 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
 
     // Brief settle time after second pass
     await new Promise(r => setTimeout(r, 1000));
+
+    // --- Bypass: Remove paywall overlays & unhide content ---
+    if (bypassRule) {
+      await applyDomBypass(page, bypassRule);
+    }
+
+    // --- Bypass: Try extracting article from JSON-LD (fallback enrichment) ---
+    // This doesn't affect the screenshot but logs if full article was found
+    const hasJsonArticle = await page.evaluate(`(() => {
+      const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+      for (const s of Array.from(scripts)) {
+        try {
+          const d = JSON.parse(s.textContent || '');
+          if (d.articleBody) return true;
+          if (Array.isArray(d) && d.some(i => i.articleBody)) return true;
+        } catch {}
+      }
+      return false;
+    })()`);
+    if (hasJsonArticle) {
+      console.log(`[Clipper] JSON-LD articleBody found for ${url} — full article available`);
+    }
 
     // Force full page height: remove overflow:hidden, scroll to trigger lazy-loading
     await page.evaluate(() => {
@@ -389,6 +463,105 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
       try { await browser.close(); } catch (_) { /* ignore */ }
     }
     return null;
+  }
+}
+
+/**
+ * Dismiss Sourcepoint CMP consent dialog (used by DPG Media, VRT, etc.)
+ * These CMPs render inside an iframe, so we need to switch context.
+ */
+async function dismissSourcepointCMP(page: any): Promise<void> {
+  try {
+    // Sourcepoint renders in an iframe with src containing "sourcepoint" or class "sp-message-iframe"
+    const iframeHandle = await page.$('iframe[id^="sp_message_iframe"], iframe[class*="sp-message"], iframe[title*="SP Consent"]');
+    if (iframeHandle) {
+      const frame = await iframeHandle.contentFrame();
+      if (frame) {
+        // Try common Sourcepoint accept buttons inside the iframe
+        const spSelectors = [
+          'button[title="D\'accord"]',
+          'button[title="Akkoord"]',
+          'button[title="Agree"]',
+          'button[title="Accept"]',
+          'button[title="OK"]',
+          'button.sp_choice_type_11',
+          'button[aria-label="D\'accord"]',
+          'button[aria-label="Akkoord"]',
+        ];
+        for (const sel of spSelectors) {
+          try {
+            const btn = await frame.$(sel);
+            if (btn) {
+              await btn.click();
+              await new Promise(r => setTimeout(r, 500));
+              return;
+            }
+          } catch {}
+        }
+        // Fallback: find button by text content inside iframe
+        const clicked = await frame.evaluate(() => {
+          const keywords = ["d'accord", 'akkoord', 'agree', 'accept', 'ok'];
+          const buttons = Array.from(document.querySelectorAll('button'));
+          for (const kw of keywords) {
+            for (const btn of buttons) {
+              const text = btn.innerText?.toLowerCase().trim();
+              if (text && (text === kw || text.includes(kw))) {
+                btn.click();
+                return true;
+              }
+            }
+          }
+          return false;
+        });
+        if (clicked) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+      }
+    }
+  } catch (err) {
+    // Non-critical
+    console.warn('[Clipper] Sourcepoint CMP dismissal failed (non-critical):', err);
+  }
+}
+
+/**
+ * Apply DOM-level bypass: remove paywall overlays, unhide content, strip classes.
+ */
+async function applyDomBypass(page: any, rule: import('../utils/bypassRules').BypassRule): Promise<void> {
+  try {
+    const removeSelectors = rule.removeSelectors || [];
+    const unhideSelectors = rule.unhideSelectors || [];
+    const stripClasses = rule.stripClasses || [];
+
+    await page.evaluate((removeSels: string[], unhideSels: string[], stripCls: string[]) => {
+      // Remove paywall elements
+      for (const sel of removeSels) {
+        document.querySelectorAll(sel).forEach(el => el.remove());
+      }
+      // Unhide blurred/locked content
+      for (const sel of unhideSels) {
+        document.querySelectorAll(sel).forEach(el => {
+          (el as HTMLElement).style.filter = 'none';
+          (el as HTMLElement).style.webkitFilter = 'none';
+          (el as HTMLElement).style.overflow = 'visible';
+          (el as HTMLElement).style.maxHeight = 'none';
+          (el as HTMLElement).style.display = '';
+        });
+      }
+      // Strip paywall-related classes
+      if (stripCls.length > 0) {
+        document.querySelectorAll('*').forEach(el => {
+          for (const cls of stripCls) {
+            el.classList.remove(cls);
+          }
+        });
+      }
+      // Restore body scroll
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+    }, removeSelectors, unhideSelectors, stripClasses);
+  } catch (err) {
+    console.warn('[Clipper] DOM bypass failed (non-critical):', err);
   }
 }
 
