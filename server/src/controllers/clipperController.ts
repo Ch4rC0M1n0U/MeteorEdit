@@ -406,6 +406,28 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
       }
     }
 
+    // --- Cleanup: Remove DPG consent overlay that persists after redirect ---
+    await page.evaluate(`(() => {
+      // DPG consent modal overlay
+      const modal = document.querySelector('#message.modal');
+      if (modal) modal.remove();
+      // DPG consent container/backdrop
+      document.querySelectorAll('.modal-backdrop, [class*="consent-overlay"], [class*="privacy-gate"]').forEach(el => el.remove());
+      // Any remaining fixed overlay from DPG
+      document.querySelectorAll('div').forEach(el => {
+        const s = getComputedStyle(el);
+        if (s.position === 'fixed' && parseInt(s.zIndex) >= 999) {
+          const text = (el.innerText || '').toLowerCase();
+          if (/confidentialit|privacy|cookie|consent|dpg/i.test(text) || el.querySelector('img[src*="dpgmedia"]')) {
+            el.remove();
+          }
+        }
+      });
+      // Restore scroll
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+    })()`);
+
     // --- Bypass: Check for Sourcepoint CMP iframe (DPG Media) ---
     await dismissSourcepointCMP(page);
 
