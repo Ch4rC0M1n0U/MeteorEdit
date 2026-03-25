@@ -492,6 +492,10 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
       await delay(500);
     });
 
+    // --- Final cleanup: aggressively remove consent overlays before screenshot ---
+    // The consent popup may re-inject after navigation, so poll + click + nuke
+    await dismissConsentOverlays(page);
+
     const screenshotDir = path.join(UPLOAD_DIR, 'screenshots');
     if (!fs.existsSync(screenshotDir)) {
       fs.mkdirSync(screenshotDir, { recursive: true });
@@ -609,6 +613,136 @@ async function applyDomBypass(page: any, rule: import('../utils/bypassRules').By
     }, removeSelectors, unhideSelectors, stripClasses);
   } catch (err) {
     console.warn('[Clipper] DOM bypass failed (non-critical):', err);
+  }
+}
+
+/**
+ * Final aggressive cleanup of consent/cookie overlays right before screenshot.
+ * Polls for dynamically-injected consent popups, tries clicking accept buttons,
+ * then force-removes any remaining overlay by structure/content.
+ */
+async function dismissConsentOverlays(page: any): Promise<void> {
+  try {
+    // Step 1: Poll up to 3 seconds for a consent "accept" button to appear and click it
+    for (let i = 0; i < 6; i++) {
+      const clicked = await page.evaluate(`(() => {
+        // Try clicking buttons by text
+        const keywords = ["d'accord", "akkoord", "accept all", "accepter tout", "tout accepter",
+          "allow all", "agree", "j'accepte", "ok, got it", "got it"];
+        const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+        for (const kw of keywords) {
+          for (const btn of buttons) {
+            const text = (btn.innerText || '').toLowerCase().trim();
+            if (text && (text === kw || text.startsWith(kw))) {
+              const s = getComputedStyle(btn);
+              if (s.display !== 'none' && s.visibility !== 'hidden' && btn.offsetWidth > 0) {
+                btn.click();
+                return kw;
+              }
+            }
+          }
+        }
+        return null;
+      })()`);
+      if (clicked) {
+        console.log(`[Clipper] Clicked consent button: "${clicked}"`);
+        await new Promise(r => setTimeout(r, 1500));
+        break;
+      }
+
+      // Also check inside iframes
+      const frames = page.frames();
+      for (const frame of frames) {
+        if (frame === page.mainFrame()) continue;
+        try {
+          const iframeClicked = await frame.evaluate(() => {
+            const keywords = ["d'accord", "akkoord", "accept", "agree", "ok"];
+            const buttons = Array.from(document.querySelectorAll('button'));
+            for (const kw of keywords) {
+              for (const btn of buttons) {
+                if ((btn.innerText || '').toLowerCase().includes(kw) && btn.offsetWidth > 0) {
+                  btn.click();
+                  return btn.innerText.trim();
+                }
+              }
+            }
+            return null;
+          }).catch(() => null);
+          if (iframeClicked) {
+            console.log(`[Clipper] Clicked consent in iframe: "${iframeClicked}"`);
+            await new Promise(r => setTimeout(r, 1500));
+            break;
+          }
+        } catch {}
+      }
+
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    // Step 2: Force-remove any remaining consent/privacy overlay from the DOM
+    await page.evaluate(`(() => {
+      // Known consent container selectors
+      const selectors = [
+        '#message.modal', '#consent-modal', '#privacy-modal',
+        'div[id^="sp_message_container"]', 'iframe[id^="sp_message_iframe"]',
+        '#onetrust-consent-sdk', '#CybotCookiebotDialog',
+        '.qc-cmp2-container', '.didomi-popup-container', '.fc-consent-root',
+        '[class*="consent-overlay"]', '[class*="privacy-gate"]',
+        '.modal-backdrop', '.consent-wall',
+      ];
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => el.remove());
+      });
+
+      // Remove any large overlay containing consent keywords + buttons/logo
+      const consentRe = /paramètres de confidentialit|cookie.?policy|privacy.?settings|vos param|dpgmedia/i;
+      const buttonRe = /d.accord|akkoord|accept|modifier manuellement|manage preferences/i;
+      document.querySelectorAll('div, section, aside, dialog, form').forEach(el => {
+        if (el.tagName === 'BODY' || el.tagName === 'HTML') return;
+        if (el.closest('article') || el.querySelector('article')) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width < 250 || rect.height < 150) return;
+        const text = (el.innerText || '').substring(0, 1000);
+        if (!consentRe.test(text)) return;
+        if (buttonRe.test(text) || el.querySelector('img[src*="dpgmedia"], img[src*="consent"], img[alt*="dpg"]')) {
+          el.remove();
+        }
+      });
+
+      // Nuclear option: remove ALL fixed/absolute overlays with high z-index that aren't the nav
+      document.querySelectorAll('div').forEach(el => {
+        const s = getComputedStyle(el);
+        const z = parseInt(s.zIndex) || 0;
+        if ((s.position === 'fixed' || s.position === 'absolute') && z >= 500) {
+          const rect = el.getBoundingClientRect();
+          // Large centered overlay (not a narrow nav bar)
+          if (rect.width > 300 && rect.height > 200 && rect.width < window.innerWidth * 0.9) {
+            const text = (el.innerText || '').toLowerCase();
+            if (/confidentialit|consent|cookie|privacy|d.accord|akkoord/.test(text)) {
+              el.remove();
+            }
+          }
+        }
+      });
+
+      // Remove any backdrop (semi-transparent full-screen overlay)
+      document.querySelectorAll('div').forEach(el => {
+        const s = getComputedStyle(el);
+        if (s.position !== 'fixed' && s.position !== 'absolute') return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width < window.innerWidth * 0.8 || rect.height < window.innerHeight * 0.8) return;
+        const bg = s.backgroundColor;
+        const rgba = bg.match(/rgba\\((\\d+),\\s*(\\d+),\\s*(\\d+),\\s*([\\d.]+)\\)/);
+        if (rgba && parseFloat(rgba[4]) > 0 && parseFloat(rgba[4]) < 1) {
+          el.remove();
+        }
+      });
+
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = 'auto';
+    })()`);
+  } catch (err) {
+    console.warn('[Clipper] Consent overlay cleanup failed (non-critical):', err);
   }
 }
 
