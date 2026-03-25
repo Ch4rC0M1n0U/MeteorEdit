@@ -60,40 +60,6 @@
       </div>
     </div>
 
-    <!-- Markers list -->
-    <div v-if="markers.length > 0" class="aw-markers">
-      <div class="aw-markers-title">
-        <v-icon size="14">mdi-map-marker-outline</v-icon>
-        {{ t('media.markers') }} ({{ markers.length }})
-      </div>
-      <div v-for="(marker, i) in markers" :key="i" class="aw-marker" @click="seekTo(marker.time)">
-        <span class="aw-marker-time mono">{{ formatTime(marker.time) }}</span>
-        <span class="aw-marker-label">{{ marker.label }}</span>
-        <button class="aw-marker-del" @click.stop="removeMarker(i)">
-          <v-icon size="12">mdi-close</v-icon>
-        </button>
-      </div>
-    </div>
-
-    <!-- Add marker dialog (inline) -->
-    <div v-if="showMarkerInput" class="aw-marker-add">
-      <span class="mono" style="font-size: 11px; color: var(--me-text-muted);">{{ formatTime(markerTime) }}</span>
-      <input
-        ref="markerInputRef"
-        v-model="markerLabel"
-        class="aw-marker-input"
-        :placeholder="t('media.markerPlaceholder')"
-        @keyup.enter="confirmMarker"
-        @keyup.esc="showMarkerInput = false"
-      />
-      <button class="aw-btn" @click="confirmMarker" style="padding: 2px;">
-        <v-icon size="14">mdi-check</v-icon>
-      </button>
-      <button class="aw-btn" @click="showMarkerInput = false" style="padding: 2px;">
-        <v-icon size="14">mdi-close</v-icon>
-      </button>
-    </div>
-
     <!-- Hint -->
     <div class="aw-hint mono">
       {{ t('media.waveformHint') }}
@@ -121,13 +87,12 @@ const emit = defineEmits<{
   'timeupdate': [time: number];
   'ready': [duration: number];
   'seek': [time: number];
-  'markers-change': [markers: Array<{ time: number; label: string }>];
+  'add-annotation': [timestamp: number];
 }>();
 
 const waveformRef = ref<HTMLElement | null>(null);
 const spectrogramRef = ref<HTMLElement | null>(null);
 const timelineRef = ref<HTMLElement | null>(null);
-const markerInputRef = ref<HTMLInputElement | null>(null);
 
 const isPlaying = ref(false);
 const currentTime = ref(0);
@@ -137,14 +102,7 @@ const playbackRate = ref(1);
 const zoomLevel = ref(1);
 const showSpectrogram = ref(false);
 const loopEnabled = ref(false);
-const showMarkerInput = ref(false);
-const markerLabel = ref('');
-const markerTime = ref(0);
-
 const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
-
-interface Marker { time: number; label: string }
-const markers = ref<Marker[]>([]);
 
 let ws: WaveSurfer | null = null;
 let regionsPlugin: any = null;
@@ -197,36 +155,35 @@ function toggleLoop() {
   }
 }
 
-// Markers
-function addMarkerAtCurrentTime() {
-  markerTime.value = currentTime.value;
-  markerLabel.value = '';
-  showMarkerInput.value = true;
-  nextTick(() => markerInputRef.value?.focus());
+// Annotation markers on waveform (visual indicators for existing annotations)
+function addAnnotationMarker(timestamp: number, id: string) {
+  if (!regionsPlugin) return;
+  regionsPlugin.addRegion({
+    id: `annot-${id}`,
+    start: timestamp,
+    end: timestamp + 0.3,
+    color: 'rgba(255, 152, 0, 0.5)',
+    drag: false,
+    resize: false,
+  });
 }
 
-function confirmMarker() {
-  if (!markerLabel.value.trim()) markerLabel.value = `Marker ${markers.value.length + 1}`;
-  markers.value.push({ time: markerTime.value, label: markerLabel.value.trim() });
-  markers.value.sort((a, b) => a.time - b.time);
-  showMarkerInput.value = false;
-  emit('markers-change', markers.value);
+function removeAnnotationMarker(id: string) {
+  if (!regionsPlugin) return;
+  const regions = regionsPlugin.getRegions();
+  const region = regions.find((r: any) => r.id === `annot-${id}`);
+  if (region) region.remove();
+}
 
-  // Add visual marker on waveform
-  if (regionsPlugin) {
-    regionsPlugin.addRegion({
-      start: markerTime.value,
-      end: markerTime.value + 0.1,
-      color: 'rgba(255, 152, 0, 0.6)',
-      drag: false,
-      resize: false,
-    });
+function syncAnnotationMarkers(annotations: Array<{ id: string; timestamp: number }>) {
+  if (!regionsPlugin) return;
+  // Remove all annotation markers
+  const regions = regionsPlugin.getRegions();
+  regions.filter((r: any) => r.id?.startsWith('annot-')).forEach((r: any) => r.remove());
+  // Re-add from current annotations
+  for (const a of annotations) {
+    addAnnotationMarker(a.timestamp, a.id);
   }
-}
-
-function removeMarker(index: number) {
-  markers.value.splice(index, 1);
-  emit('markers-change', markers.value);
 }
 
 watch(volume, (v) => { ws?.setVolume(v); });
@@ -258,13 +215,13 @@ onMounted(() => {
 
   ws = WaveSurfer.create({
     container: waveformRef.value,
-    waveColor: 'rgba(255,255,255,0.25)',
+    waveColor: '#6b7280',
     progressColor: accent,
-    cursorColor: accent,
+    cursorColor: '#ffffff',
     cursorWidth: 2,
-    barWidth: 2,
+    barWidth: 3,
     barGap: 1,
-    barRadius: 2,
+    barRadius: 3,
     height: 100,
     normalize: true,
     url: props.src,
@@ -285,9 +242,9 @@ onMounted(() => {
   ws.on('pause', () => { isPlaying.value = false; });
   ws.on('seeking', (time: number) => { emit('seek', time); });
 
-  // Double-click on waveform = add marker
+  // Double-click on waveform = request annotation at current time
   ws.on('dblclick', () => {
-    addMarkerAtCurrentTime();
+    emit('add-annotation', currentTime.value);
   });
 
   // Loop: when playback reaches end of region, loop back
@@ -329,66 +286,74 @@ onBeforeUnmount(() => {
   ws = null;
 });
 
-defineExpose({ seekTo, getCurrentTime: () => currentTime.value, addMarkerAtCurrentTime });
+defineExpose({ seekTo, getCurrentTime: () => currentTime.value, addAnnotationMarker, removeAnnotationMarker, syncAnnotationMarkers });
 </script>
 
 <style scoped>
 .aw-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  background: rgba(0,0,0,0.2);
-  border-radius: 8px;
+  gap: 8px;
+  padding: 14px;
+  background: var(--me-bg-deep, #1a1a2e);
+  border-radius: 10px;
+  border: 1px solid var(--me-border);
 }
 
-.aw-waveform { width: 100%; cursor: pointer; }
-.aw-spectrogram { width: 100%; border-radius: 4px; overflow: hidden; }
-.aw-timeline { width: 100%; }
+.aw-waveform { width: 100%; cursor: pointer; border-radius: 6px; overflow: hidden; }
+.aw-spectrogram { width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid var(--me-border); }
+.aw-timeline { width: 100%; opacity: 0.8; }
 
 .aw-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
+  padding: 6px 0;
+  border-top: 1px solid var(--me-border);
+  margin-top: 2px;
 }
 
 .aw-btn {
   background: none;
-  border: none;
+  border: 1px solid transparent;
   color: var(--me-text-secondary);
   cursor: pointer;
-  padding: 4px;
+  padding: 5px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
 }
-.aw-btn:hover { background: rgba(255,255,255,0.1); color: var(--me-text-primary); }
-.aw-btn--active { color: var(--me-accent); background: rgba(var(--me-accent-rgb, 124,58,237), 0.15); }
-.aw-btn--play { background: rgba(255,255,255,0.08); border-radius: 50%; padding: 6px; }
+.aw-btn:hover { background: rgba(var(--me-accent-rgb, 124,58,237), 0.1); color: var(--me-text-primary); border-color: var(--me-border); }
+.aw-btn--active { color: var(--me-accent); background: rgba(var(--me-accent-rgb, 124,58,237), 0.15); border-color: var(--me-accent); }
+.aw-btn--play { background: var(--me-accent); color: white; border-radius: 50%; padding: 7px; border: none; }
+.aw-btn--play:hover { filter: brightness(1.15); background: var(--me-accent); color: white; border: none; }
 
 .aw-time {
-  font-size: 12px;
-  color: var(--me-text-muted);
-  min-width: 90px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  min-width: 100px;
+  letter-spacing: 0.5px;
 }
 
 /* Speed buttons */
-.aw-speed { display: flex; gap: 2px; }
+.aw-speed { display: flex; gap: 3px; }
 .aw-speed-btn {
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid transparent;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--me-border);
   background: none;
-  color: var(--me-text-muted);
-  font-size: 10px;
+  color: var(--me-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
 }
-.aw-speed-btn:hover { border-color: var(--me-border); color: var(--me-text-primary); }
-.aw-speed-btn--active { border-color: var(--me-accent); color: var(--me-accent); background: rgba(var(--me-accent-rgb, 124,58,237), 0.1); }
+.aw-speed-btn:hover { border-color: var(--me-accent); color: var(--me-text-primary); }
+.aw-speed-btn--active { border-color: var(--me-accent); color: white; background: var(--me-accent); }
 
 /* Zoom */
 .aw-zoom {
@@ -397,7 +362,7 @@ defineExpose({ seekTo, getCurrentTime: () => currentTime.value, addMarkerAtCurre
   gap: 4px;
 }
 .aw-zoom-slider {
-  width: 60px;
+  width: 70px;
   height: 4px;
   accent-color: var(--me-accent);
 }
@@ -410,70 +375,16 @@ defineExpose({ seekTo, getCurrentTime: () => currentTime.value, addMarkerAtCurre
   margin-left: auto;
 }
 .aw-volume-slider {
-  width: 50px;
+  width: 60px;
   height: 4px;
   accent-color: var(--me-accent);
 }
 
-/* Markers */
-.aw-markers {
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--me-border);
-  background: rgba(0,0,0,0.15);
-}
-.aw-markers-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--me-text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-.aw-marker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background 0.15s;
-}
-.aw-marker:hover { background: rgba(255,255,255,0.06); }
-.aw-marker-time { font-size: 10px; color: var(--me-accent); min-width: 40px; }
-.aw-marker-label { flex: 1; color: var(--me-text-primary); }
-.aw-marker-del { background: none; border: none; color: var(--me-text-muted); cursor: pointer; padding: 2px; }
-.aw-marker-del:hover { color: #f44336; }
-
-/* Marker input */
-.aw-marker-add {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: rgba(var(--me-accent-rgb, 124,58,237), 0.08);
-  border: 1px solid var(--me-accent);
-}
-.aw-marker-input {
-  flex: 1;
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--me-border);
-  background: var(--me-bg-deep);
-  color: var(--me-text-primary);
-  font-size: 12px;
-  outline: none;
-}
-.aw-marker-input:focus { border-color: var(--me-accent); }
-
 /* Hint */
 .aw-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--me-text-muted);
   text-align: center;
-  opacity: 0.6;
+  padding: 2px 0;
 }
 </style>

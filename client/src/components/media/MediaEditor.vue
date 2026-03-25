@@ -22,6 +22,7 @@
         @timeupdate="onWaveformTimeUpdate"
         @ready="onWaveformReady"
         @seek="onWaveformSeek"
+        @add-annotation="onWaveformAnnotation"
       />
 
       <!-- YouTube embed -->
@@ -777,6 +778,29 @@ function addNote() {
   });
 }
 
+// --- Waveform double-click → annotation ---
+function onWaveformAnnotation(timestamp: number) {
+  if (!props.node.mediaData) return;
+  if (!props.node.mediaData.annotations) {
+    props.node.mediaData.annotations = [];
+  }
+  const annotation: MediaAnnotation = {
+    id: generateUUID(),
+    timestamp,
+    type: 'note',
+    comment: '',
+    createdAt: new Date().toISOString(),
+  };
+  props.node.mediaData.annotations.push(annotation);
+  saveMediaData();
+
+  // Add orange marker on waveform
+  waveformPlayerRef.value?.addAnnotationMarker(timestamp, annotation.id);
+
+  // Start editing immediately
+  nextTick(() => { startEdit(annotation); });
+}
+
 // --- Delete annotation ---
 function deleteAnnotation(id: string) {
   if (!props.node.mediaData) return;
@@ -789,6 +813,8 @@ function deleteAnnotation(id: string) {
     }
     props.node.mediaData.annotations.splice(idx, 1);
     saveMediaData();
+    // Remove orange marker from waveform
+    waveformPlayerRef.value?.removeAnnotationMarker(id);
   }
 }
 
