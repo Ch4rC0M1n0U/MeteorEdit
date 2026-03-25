@@ -1069,6 +1069,7 @@ const SCAN_PLATFORMS: Array<{
   { id: 'steam', label: 'Steam', urlTemplate: (u) => `https://steamcommunity.com/id/${u}`, emoji: '\u{1F3AE}' },
   { id: 'trustpilot', label: 'Trustpilot', urlTemplate: (u) => `https://www.trustpilot.com/users/${u}`, emoji: '\u{2B50}' },
   { id: '2ememain', label: '2ememain', urlTemplate: (u) => `https://www.2ememain.be/u/${u}/`, emoji: '\u{1F6D2}' },
+  { id: 'leboncoin', label: 'LeBonCoin', urlTemplate: (u) => `https://www.leboncoin.fr/profil/${u}`, emoji: '\u{1F4E6}' },
 ];
 
 /**
@@ -1084,15 +1085,59 @@ async function simpleProfileCheck(page: any, url: string, platform: string, user
     // Clear 404 = not found
     if (status === 404) return null;
 
-    // Check page content for error indicators
+    // Wait for content to render
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Extract rich metadata from the page
     const pageContent = await page.evaluate(() => {
+      const getMeta = (name: string) => {
+        const el = document.querySelector(`meta[property="${name}"], meta[name="${name}"]`) as HTMLMetaElement;
+        return el?.content || '';
+      };
+
+      // Collect all images that could be profile pictures
+      const images: string[] = [];
+      document.querySelectorAll('img').forEach(img => {
+        const src = img.src;
+        if (src && !src.includes('data:') && !src.includes('1x1') && !src.includes('pixel')
+            && img.naturalWidth > 50 && img.naturalHeight > 50) {
+          images.push(src);
+        }
+      });
+
+      // Extract all links from the page
+      const links: string[] = [];
+      document.querySelectorAll('a[href]').forEach(a => {
+        const href = (a as HTMLAnchorElement).href;
+        if (href.startsWith('http') && !href.includes(window.location.hostname)) {
+          links.push(href);
+        }
+      });
+
+      // Try to find structured data
+      let jsonLd: any = null;
+      document.querySelectorAll('script[type="application/ld+json"]').forEach(s => {
+        try { jsonLd = JSON.parse(s.textContent || ''); } catch {}
+      });
+
       return {
         title: document.title,
-        body: document.body?.innerText?.substring(0, 2000) || '',
-        h1: document.querySelector('h1')?.textContent || '',
-        ogImage: (document.querySelector('meta[property="og:image"]') as HTMLMetaElement)?.content || '',
-        ogTitle: (document.querySelector('meta[property="og:title"]') as HTMLMetaElement)?.content || '',
-        ogDesc: (document.querySelector('meta[property="og:description"]') as HTMLMetaElement)?.content || '',
+        body: document.body?.innerText?.substring(0, 3000) || '',
+        h1: document.querySelector('h1')?.textContent?.trim() || '',
+        h2: document.querySelector('h2')?.textContent?.trim() || '',
+        ogImage: getMeta('og:image'),
+        ogTitle: getMeta('og:title'),
+        ogDesc: getMeta('og:description'),
+        ogSiteName: getMeta('og:site_name'),
+        twitterCard: getMeta('twitter:card'),
+        twitterTitle: getMeta('twitter:title'),
+        twitterImage: getMeta('twitter:image'),
+        description: getMeta('description'),
+        canonicalUrl: (document.querySelector('link[rel="canonical"]') as HTMLLinkElement)?.href || '',
+        images: images.slice(0, 5),
+        externalLinks: [...new Set(links)].slice(0, 10),
+        jsonLd,
+        url: window.location.href,
       };
     });
 
@@ -1102,6 +1147,7 @@ async function simpleProfileCheck(page: any, url: string, platform: string, user
       /404/i, /no user/i, /user not found/i, /account suspended/i,
       /this page isn/i, /sorry.*available/i, /profil introuvable/i,
       /account.*deleted/i, /gebruiker.*niet.*gevonden/i,
+      /cette page n.est pas disponible/i, /pagina niet gevonden/i,
     ];
 
     const combinedText = `${pageContent.title} ${pageContent.h1} ${pageContent.body.substring(0, 500)}`;
@@ -1109,18 +1155,51 @@ async function simpleProfileCheck(page: any, url: string, platform: string, user
       if (pattern.test(combinedText)) return null;
     }
 
-    // If we got here with a 200, likely a real profile
+    // If we got here with a 200, extract meaningful profile data
     if (status >= 200 && status < 400) {
+      // Build display name from best available source
+      const displayName = pageContent.ogTitle || pageContent.twitterTitle || pageContent.h1 || username;
+
+      // Build bio from description sources
+      const bio = pageContent.ogDesc || pageContent.description || pageContent.h2 || '';
+
+      // Best profile image
+      const profileImage = pageContent.ogImage || pageContent.twitterImage || pageContent.images[0] || '';
+
+      // Build stats from JSON-LD if available
+      const stats: Record<string, string | number> = {};
+      if (pageContent.jsonLd) {
+        const ld = Array.isArray(pageContent.jsonLd) ? pageContent.jsonLd[0] : pageContent.jsonLd;
+        if (ld.interactionStatistic) {
+          const interactions = Array.isArray(ld.interactionStatistic) ? ld.interactionStatistic : [ld.interactionStatistic];
+          for (const stat of interactions) {
+            if (stat.interactionType?.['@type'] && stat.userInteractionCount !== undefined) {
+              const type = stat.interactionType['@type'].replace('http://schema.org/', '').replace('Action', '');
+              stats[type] = stat.userInteractionCount;
+            }
+          }
+        }
+        if (ld.memberOf) stats['groups'] = Array.isArray(ld.memberOf) ? ld.memberOf.length : 1;
+        if (ld.dateCreated) stats['created'] = ld.dateCreated;
+      }
+
       return {
         platform,
         username,
-        displayName: pageContent.ogTitle || pageContent.h1 || username,
-        bio: pageContent.ogDesc || '',
-        profileImageUrl: pageContent.ogImage || '',
-        stats: {},
-        registrationDate: null,
-        extraImages: [],
-        rawMetadata: { url, checkedAt: new Date().toISOString() },
+        displayName,
+        bio,
+        profileImageUrl: profileImage,
+        stats,
+        registrationDate: pageContent.jsonLd?.dateCreated || null,
+        extraImages: pageContent.images.filter((img: string) => img !== profileImage).slice(0, 3),
+        rawMetadata: {
+          url: pageContent.url,
+          canonicalUrl: pageContent.canonicalUrl,
+          ogSiteName: pageContent.ogSiteName,
+          externalLinks: pageContent.externalLinks,
+          jsonLd: pageContent.jsonLd,
+          checkedAt: new Date().toISOString(),
+        },
       };
     }
 
