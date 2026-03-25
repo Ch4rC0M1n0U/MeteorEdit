@@ -260,29 +260,46 @@ watch(zoomLevel, (level) => {
 });
 
 // --- Audio filters (Web Audio API EQ) ---
+let audioCtx: AudioContext | null = null;
+let mediaSource: MediaElementAudioSourceNode | null = null;
+
 function initFilters() {
   if (!ws || audioFilters.length > 0) return;
-  const backend = (ws as any).backend || (ws as any).getMediaElement?.()?.parentNode;
-  // WaveSurfer v7 exposes getFilters/setFilters
-  const audioCtx: AudioContext | undefined = (ws as any).options?.audioContext || (ws as any).backend?.ac;
 
-  // Create 5-band parametric EQ
-  // WaveSurfer v7: use ws.setFilters() to inject Web Audio nodes
   try {
-    const ctx = new AudioContext();
+    // Get the actual <audio> element from WaveSurfer
+    const mediaEl = (ws as any).getMediaElement?.() as HTMLMediaElement | undefined;
+    if (!mediaEl) {
+      console.warn('Audio filter init: no media element found');
+      return;
+    }
+
+    // Create AudioContext and connect media element source
+    // Note: createMediaElementSource can only be called ONCE per element
+    if (!audioCtx) {
+      audioCtx = new AudioContext();
+      mediaSource = audioCtx.createMediaElementSource(mediaEl);
+    }
+
+    // Create 5-band parametric EQ filters
     audioFilters = EQ_FREQUENCIES.map((freq, i) => {
-      const filter = ctx.createBiquadFilter();
+      const filter = audioCtx!.createBiquadFilter();
       filter.type = 'peaking';
       filter.frequency.value = freq;
       filter.Q.value = 1.4;
       filter.gain.value = eqGains.value[i];
       return filter;
     });
-    // Connect filters in series and inject into WaveSurfer
-    // WaveSurfer v7 supports setFilters()
-    if (typeof (ws as any).setFilters === 'function') {
-      (ws as any).setFilters(audioFilters);
+
+    // Connect chain: source → filter1 → filter2 → ... → destination
+    let prev: AudioNode = mediaSource!;
+    for (const filter of audioFilters) {
+      prev.connect(filter);
+      prev = filter;
     }
+    prev.connect(audioCtx.destination);
+
+    console.log('[AudioEQ] Filters initialized and connected');
   } catch (err) {
     console.warn('Audio filter init failed:', err);
   }
@@ -492,9 +509,8 @@ watch(() => props.src, (newSrc) => {
     markers.value = [];
     activePreset.value = '';
     eqGains.value = [0, 0, 0, 0, 0];
-    // Reset audio filters
+    // Reset audio filters gains (don't destroy — mediaSource can only be created once)
     audioFilters.forEach(f => { try { f.gain.value = 0; } catch {} });
-    audioFilters = [];
     // Load new source
     ws.load(newSrc);
   }
