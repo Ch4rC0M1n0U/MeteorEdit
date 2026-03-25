@@ -58,16 +58,34 @@
         </div>
 
         <!-- Search engines -->
-        <div v-if="searchUrl" class="ris-engines">
+        <div v-if="previewSrc" class="ris-engines">
           <div class="ris-engines-title">{{ t('dossier.reverseImageEngines') }}</div>
+          <div v-if="isPublicUrl" class="ris-mode-hint ris-mode-direct">
+            <v-icon size="14">mdi-link-variant</v-icon>
+            {{ t('dossier.reverseImageDirectMode') }}
+          </div>
+          <div v-else class="ris-mode-hint ris-mode-clipboard">
+            <v-icon size="14">mdi-content-paste</v-icon>
+            {{ t('dossier.reverseImageClipboardMode') }}
+          </div>
           <div class="ris-engine-grid">
-            <a v-for="engine in engines" :key="engine.name" :href="engine.url" target="_blank" rel="noopener" class="ris-engine-card">
+            <button
+              v-for="engine in engines"
+              :key="engine.name"
+              class="ris-engine-card"
+              @click="openEngine(engine)"
+            >
               <img :src="engine.icon" width="20" height="20" :alt="engine.name" />
               <span class="ris-engine-name">{{ engine.name }}</span>
               <span class="ris-engine-desc">{{ engine.desc }}</span>
-            </a>
+            </button>
           </div>
         </div>
+
+        <!-- Toast -->
+        <v-snackbar v-model="toastVisible" :timeout="3000" color="success" location="bottom right">
+          {{ t('dossier.reverseImageCopied') }}
+        </v-snackbar>
 
         <!-- Tips -->
         <div class="ris-tips">
@@ -90,7 +108,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
-import api, { SERVER_URL } from '../../services/api';
 
 const { t } = useI18n();
 const model = defineModel<boolean>({ default: false });
@@ -99,69 +116,130 @@ const imageUrl = ref('');
 const previewSrc = ref('');
 const dragging = ref(false);
 const uploading = ref(false);
+const toastVisible = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
-// Public URL after upload to server (for local images)
-const uploadedPublicUrl = ref('');
+// Track if we have a public URL (externally accessible) vs local blob
+const isPublicUrl = computed(() => {
+  const url = imageUrl.value.trim();
+  // A URL is "public" if it's not a local/private IP
+  if (!url.startsWith('http')) return false;
+  try {
+    const host = new URL(url).hostname;
+    // Private/local IPs
+    if (['localhost', '127.0.0.1', '0.0.0.0'].includes(host)) return false;
+    if (host.startsWith('10.') || host.startsWith('192.168.') || host.startsWith('172.')) return false;
+    if (host.startsWith('100.64.') || host.startsWith('100.65.')) return false; // Tailscale
+    return true;
+  } catch { return false; }
+});
 
-// The URL used for search engines
+// Public URL for direct engine links
 const searchUrl = computed(() => {
-  if (uploadedPublicUrl.value) return uploadedPublicUrl.value;
-  if (imageUrl.value.trim().startsWith('http')) return imageUrl.value.trim();
-  if (previewSrc.value.startsWith('http')) return previewSrc.value;
+  if (isPublicUrl.value) return imageUrl.value.trim();
   return '';
 });
 
-interface SearchEngine { name: string; url: string; icon: string; desc: string }
+interface SearchEngine { name: string; directUrl: string; uploadUrl: string; icon: string; desc: string }
 
 const engines = computed<SearchEngine[]>(() => {
   const url = searchUrl.value;
-  if (!url) return [];
-  const enc = encodeURIComponent(url);
+  const enc = url ? encodeURIComponent(url) : '';
   return [
     {
       name: 'Google Lens',
-      url: `https://lens.google.com/uploadbyurl?url=${enc}`,
+      directUrl: enc ? `https://lens.google.com/uploadbyurl?url=${enc}` : '',
+      uploadUrl: 'https://lens.google.com/',
       icon: 'https://www.google.com/favicon.ico',
       desc: t('dossier.reverseEngineGoogleDesc'),
     },
     {
       name: 'Yandex Images',
-      url: `https://yandex.com/images/search?rpt=imageview&url=${enc}`,
+      directUrl: enc ? `https://yandex.com/images/search?rpt=imageview&url=${enc}` : '',
+      uploadUrl: 'https://yandex.com/images/',
       icon: 'https://yandex.com/favicon.ico',
       desc: t('dossier.reverseEngineYandexDesc'),
     },
     {
       name: 'Bing Visual',
-      url: `https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIIRP&sbisrc=UrlPaste&q=imgurl:${enc}`,
+      directUrl: enc ? `https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIIRP&sbisrc=UrlPaste&q=imgurl:${enc}` : '',
+      uploadUrl: 'https://www.bing.com/visualsearch',
       icon: 'https://www.bing.com/favicon.ico',
       desc: t('dossier.reverseEngineBingDesc'),
     },
     {
       name: 'TinEye',
-      url: `https://tineye.com/search?url=${enc}`,
+      directUrl: enc ? `https://tineye.com/search?url=${enc}` : '',
+      uploadUrl: 'https://tineye.com/',
       icon: 'https://tineye.com/favicon.ico',
       desc: t('dossier.reverseEngineTineyeDesc'),
     },
     {
       name: 'PimEyes',
-      url: 'https://pimeyes.com/en',
+      directUrl: '',
+      uploadUrl: 'https://pimeyes.com/en',
       icon: 'https://pimeyes.com/favicon.ico',
       desc: t('dossier.reverseEnginePimeyesDesc'),
     },
     {
       name: 'FaceCheck.ID',
-      url: 'https://facecheck.id',
+      directUrl: '',
+      uploadUrl: 'https://facecheck.id',
       icon: 'https://facecheck.id/favicon.ico',
       desc: t('dossier.reverseEngineFacecheckDesc'),
     },
     {
       name: 'Baidu',
-      url: `https://graph.baidu.com/details?isfromtus498=1&uptpl=imgup&image=${enc}`,
+      directUrl: enc ? `https://graph.baidu.com/details?isfromtus498=1&uptpl=imgup&image=${enc}` : '',
+      uploadUrl: 'https://graph.baidu.com/pcpage/index?tpl_from=pc',
       icon: 'https://www.baidu.com/favicon.ico',
       desc: t('dossier.reverseEngineBaiduDesc'),
     },
   ];
 });
+
+/**
+ * Open a search engine. For public URLs, use direct link.
+ * For local images, copy image to clipboard first, then open upload page.
+ */
+async function openEngine(engine: SearchEngine) {
+  if (isPublicUrl.value && engine.directUrl) {
+    // Public URL: direct link works
+    window.open(engine.directUrl, '_blank');
+    return;
+  }
+
+  // Local image: copy to clipboard, then open engine's upload page
+  try {
+    const src = previewSrc.value;
+    if (src) {
+      // Convert to PNG blob for clipboard
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = src;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), 'image/png');
+      });
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob }),
+      ]);
+      toastVisible.value = true;
+    }
+  } catch (err) {
+    console.warn('Could not copy image to clipboard:', err);
+  }
+
+  // Open engine's upload page
+  window.open(engine.uploadUrl, '_blank');
+}
 
 // Listen for paste globally when dialog is open
 function globalPaste(e: ClipboardEvent) {
@@ -230,30 +308,11 @@ function onUrlPaste(e: ClipboardEvent) {
   }, 50);
 }
 
-async function loadFile(file: File) {
-  // Show preview immediately
+function loadFile(file: File) {
   const reader = new FileReader();
   reader.onload = () => { previewSrc.value = reader.result as string; };
   reader.readAsDataURL(file);
-
-  // Upload to server to get a public URL for reverse search engines
-  uploading.value = true;
-  uploadedPublicUrl.value = '';
   imageUrl.value = '';
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const { data } = await api.post('/media/reverse-image-upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    if (data.url) {
-      uploadedPublicUrl.value = data.url;
-    }
-  } catch (err) {
-    console.error('Upload failed:', err);
-  } finally {
-    uploading.value = false;
-  }
 }
 
 function loadFromUrl() {
@@ -299,6 +358,11 @@ function clearImage() {
 
 /* Uploading */
 .ris-uploading { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--me-accent); padding: 8px 10px; border-radius: 6px; background: rgba(var(--me-accent-rgb, 59, 130, 246), 0.06); }
+
+/* Mode hints */
+.ris-mode-hint { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; }
+.ris-mode-direct { color: #4caf50; background: rgba(76, 175, 80, 0.08); border: 1px solid rgba(76, 175, 80, 0.2); }
+.ris-mode-clipboard { color: var(--me-accent); background: rgba(var(--me-accent-rgb, 59, 130, 246), 0.06); border: 1px solid rgba(var(--me-accent-rgb, 59, 130, 246), 0.2); }
 
 /* Engines */
 .ris-engines-title { font-size: 12px; font-weight: 600; color: var(--me-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }

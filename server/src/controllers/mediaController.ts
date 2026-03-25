@@ -1127,8 +1127,8 @@ export async function analyzeFile(req: AuthRequest, res: Response): Promise<void
 // ─── Reverse image search: upload temp image ──────────────────────────────────
 
 /**
- * Upload an image temporarily for reverse image search.
- * Uploads to a public temporary image host so search engines can access it.
+ * Upload an image temporarily for reverse image search preview.
+ * Returns the local server URL (for preview only).
  * POST /api/media/reverse-image-upload
  */
 export async function reverseImageUpload(req: AuthRequest, res: Response): Promise<void> {
@@ -1137,70 +1137,9 @@ export async function reverseImageUpload(req: AuthRequest, res: Response): Promi
       res.status(400).json({ error: 'No file uploaded' });
       return;
     }
-
-    const filepath = path.resolve(UPLOAD_DIR, req.file.filename);
-    if (!fs.existsSync(filepath)) {
-      res.status(400).json({ error: 'File not found after upload' });
-      return;
-    }
-
-    // Try uploading to public temporary hosts (image must be publicly accessible
-    // for Google Lens, Yandex, TinEye etc. to fetch it)
-    let publicUrl = '';
-
-    // Strategy 1: 0x0.st (simple, no API key)
-    try {
-      const FormData = (await import('form-data')).default;
-      const form = new FormData();
-      form.append('file', fs.createReadStream(filepath));
-      const resp = await fetch('https://0x0.st', {
-        method: 'POST',
-        body: form as any,
-        signal: AbortSignal.timeout(15000),
-      });
-      if (resp.ok) {
-        publicUrl = (await resp.text()).trim();
-        console.log(`[ReverseImage] Uploaded to 0x0.st: ${publicUrl}`);
-      }
-    } catch (err: any) {
-      console.warn(`[ReverseImage] 0x0.st failed: ${err?.message?.substring(0, 100)}`);
-    }
-
-    // Strategy 2: litterbox.catbox.moe (temporary, 24h)
-    if (!publicUrl) {
-      try {
-        const FormData = (await import('form-data')).default;
-        const form = new FormData();
-        form.append('reqtype', 'fileupload');
-        form.append('time', '24h');
-        form.append('fileToUpload', fs.createReadStream(filepath));
-        const resp = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
-          method: 'POST',
-          body: form as any,
-          signal: AbortSignal.timeout(15000),
-        });
-        if (resp.ok) {
-          publicUrl = (await resp.text()).trim();
-          console.log(`[ReverseImage] Uploaded to litterbox: ${publicUrl}`);
-        }
-      } catch (err: any) {
-        console.warn(`[ReverseImage] litterbox failed: ${err?.message?.substring(0, 100)}`);
-      }
-    }
-
-    // Fallback: return local server URL (works if server is publicly accessible)
-    if (!publicUrl) {
-      const baseUrl = getBaseUrl(req);
-      publicUrl = `${baseUrl}/uploads/${req.file.filename}`;
-      console.log(`[ReverseImage] Fallback to local URL: ${publicUrl}`);
-    }
-
-    // Clean up local file after a delay (not needed once uploaded publicly)
-    setTimeout(() => {
-      try { fs.unlinkSync(filepath); } catch { /* ignore */ }
-    }, 60000);
-
-    res.json({ url: publicUrl });
+    const baseUrl = getBaseUrl(req);
+    const url = `${baseUrl}/uploads/${req.file.filename}`;
+    res.json({ url });
   } catch (error: any) {
     console.error('reverseImageUpload error:', error?.message || error);
     res.status(500).json({ error: 'Upload failed' });
