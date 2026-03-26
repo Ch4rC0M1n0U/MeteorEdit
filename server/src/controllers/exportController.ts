@@ -441,7 +441,7 @@ export async function importElephantastic(req: AuthRequest, res: Response): Prom
       dossierId,
       parentId: parentId || null,
       type: 'folder',
-      title: `\u{1F418} ${entityName}`,
+      title: entityName,
       order: folderOrder,
     });
 
