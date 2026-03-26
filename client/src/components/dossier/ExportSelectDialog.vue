@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, defineComponent, h } from 'vue';
+import { ref, computed, watch, defineComponent, h, resolveComponent } from 'vue';
 import type { DossierNode } from '../../types';
 
 const model = defineModel<boolean>({ default: false });
@@ -193,15 +193,16 @@ const ExportNodeItem: any = defineComponent({
     const icon = computed(() => NODE_ICONS[props.node.type] || 'mdi-file');
 
     return () => {
+      const VIcon = resolveComponent('v-icon') as any;
       const nodeEl = h('div', {
-        class: ['es-node', isSelected.value ? 'es-node--selected' : ''],
+        class: ['es-node', isSelected.value ? 'es-node--selected' : 'es-node--unselected'],
         style: { paddingLeft: `${props.depth * 20 + 8}px` },
         onClick: () => emit('toggle', props.node._id),
       }, [
-        h('v-icon', { size: 16, class: isSelected.value ? 'es-node-check es-node-check--active' : 'es-node-check' },
+        h(VIcon, { size: 16, class: isSelected.value ? 'es-node-check es-node-check--active' : 'es-node-check' },
           () => isSelected.value ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'
         ),
-        h('v-icon', { size: 16, class: 'es-node-icon' }, () => icon.value),
+        h(VIcon, { size: 16, class: 'es-node-icon' }, () => icon.value),
         h('span', { class: 'es-node-title' }, props.node.title),
       ]);
 
@@ -248,13 +249,17 @@ const ExportNodeItem: any = defineComponent({
 .es-node {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; cursor: pointer; transition: all 0.15s;
-  user-select: none; opacity: 0.5; border-left: 3px solid transparent;
+  user-select: none; border-left: 3px solid transparent;
 }
-.es-node:hover { background: rgba(255,255,255,0.06); opacity: 0.7; }
-.es-node--selected { background: rgba(var(--me-accent-rgb, 66,133,244), 0.12); border-left: 3px solid var(--me-accent); opacity: 1; }
-.es-node--selected:hover { background: rgba(var(--me-accent-rgb, 66,133,244), 0.2); }
-.es-node-check { color: var(--me-text-muted); flex-shrink: 0; opacity: 0.4; }
-.es-node-check--active { color: var(--me-accent); opacity: 1; }
+.es-node:hover { background: rgba(255,255,255,0.06); }
+/* Selected: highlighted with accent background + border */
+.es-node--selected { background: rgba(var(--me-accent-rgb, 66,133,244), 0.15); border-left: 3px solid var(--me-accent); }
+.es-node--selected:hover { background: rgba(var(--me-accent-rgb, 66,133,244), 0.22); }
+/* Unselected: dimmed and muted */
+.es-node--unselected { opacity: 0.45; }
+.es-node--unselected:hover { opacity: 0.7; }
+.es-node-check { color: var(--me-text-muted); flex-shrink: 0; }
+.es-node-check--active { color: var(--me-accent); }
 .es-node-icon { color: var(--me-text-muted); flex-shrink: 0; }
 .es-node--selected .es-node-icon { color: var(--me-accent); }
 .es-node-title { font-size: 13px; color: var(--me-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
