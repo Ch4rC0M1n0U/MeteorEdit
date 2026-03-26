@@ -23,6 +23,18 @@ export async function getBranding(_req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function getSettings(_req: AuthRequest, res: Response): Promise<void> {
+  try {
+    let settings = await SiteSettings.findOne();
+    if (!settings) {
+      settings = await SiteSettings.create({});
+    }
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function updateSettings(req: AuthRequest, res: Response): Promise<void> {
   try {
     const update: Record<string, any> = {};

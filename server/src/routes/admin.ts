@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { listUsers, updateUser, deleteUser, resetUserPassword, resetUser2FA, getAuditLogs, getAuditStats } from '../controllers/adminController';
-import { updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, uploadLoginBackground, deleteLoginBackground, testEmail, detectOsintTools } from '../controllers/settingsController';
+import { getSettings, updateSettings, uploadLogo, deleteLogo, uploadFavicon, deleteFavicon, uploadLoginBackground, deleteLoginBackground, testEmail, detectOsintTools } from '../controllers/settingsController';
 import { exportBackup, importBackup, getStorageInfo, scanOrphans, cleanOrphans } from '../controllers/backupController';
 import { getStats } from '../controllers/statsController';
 import { getPluginSettings, updatePluginSettings } from '../controllers/pluginSettingsController';
@@ -211,6 +211,7 @@ router.post('/users/:id/reset-2fa', resetUser2FA);
  *             schema:
  *               $ref: '#/components/schemas/SiteSettings'
  */
+router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
 
 /**
