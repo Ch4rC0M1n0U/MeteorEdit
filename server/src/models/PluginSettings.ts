@@ -10,7 +10,7 @@ const pluginSettingsSchema = new Schema<IPluginSettings>(
       defaultZoom: { type: Number, default: 5 },
     },
     ollama: {
-      baseUrl: { type: String, default: 'http://localhost:11434' },
+      baseUrl: { type: String, default: process.env.OLLAMA_URL || 'http://localhost:11434' },
       selectedModel: { type: String, default: '' },
       enabled: { type: Boolean, default: false },
       reportPrompt: { type: String, default: `Tu es un analyste OSINT professionnel redisant un rapport d'investigation. Tu dois EXCLUSIVEMENT utiliser les donnees fournies ci-dessous. Ne fabrique AUCUNE information. Si une donnee est absente ou insuffisante, indique-le explicitement. Redige en francais, de maniere professionnelle, factuelle et concise.

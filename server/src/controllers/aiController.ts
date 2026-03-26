@@ -105,7 +105,12 @@ async function getAiConfig(userId?: string): Promise<AiConfig & { isCommercial: 
 async function getOllamaConfig() {
   let settings = await PluginSettings.findOne();
   if (!settings) settings = await PluginSettings.create({});
-  return settings.ollama;
+  const config = settings.ollama;
+  // Use OLLAMA_URL env var as fallback when DB has default localhost value
+  if (process.env.OLLAMA_URL && (!config.baseUrl || config.baseUrl === 'http://localhost:11434')) {
+    config.baseUrl = process.env.OLLAMA_URL;
+  }
+  return config;
 }
 
 /** Stream text generation from Claude API via SSE */
