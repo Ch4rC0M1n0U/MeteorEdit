@@ -28,7 +28,8 @@ const DOCX_FONT_MAP: Record<FontFamily, string> = {
   'Helvetica': 'Arial',
 };
 
-function hexToRgb(hex: string): string {
+function hexToRgb(hex: string | undefined | null): string {
+  if (!hex) return '000000';
   return hex.replace('#', '').toUpperCase();
 }
 
