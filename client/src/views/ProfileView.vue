@@ -33,6 +33,7 @@
       <ProfileActivity v-else-if="activeSection === 'activity'" />
       <ProfileEncryption v-else-if="activeSection === 'encryption'" />
       <ProfileAI v-else-if="activeSection === 'ai'" />
+      <ProfileApiKeys v-else-if="activeSection === 'api-keys'" />
     </main>
   </div>
 </template>
@@ -52,6 +53,7 @@ import ProfileShortcuts from '../components/profile/ProfileShortcuts.vue';
 import ProfileActivity from '../components/profile/ProfileActivity.vue';
 import ProfileEncryption from '../components/profile/ProfileEncryption.vue';
 import ProfileAI from '../components/profile/ProfileAI.vue';
+import ProfileApiKeys from '../components/profile/ProfileApiKeys.vue';
 import api from '../services/api';
 
 const route = useRoute();
@@ -81,6 +83,7 @@ const navItems = computed<NavItem[]>(() => [
   { id: 'notifications', label: t('profile.notifications'), icon: 'mdi-bell-cog-outline' },
   { id: 'shortcuts', label: t('profile.keyboardShortcuts'), icon: 'mdi-keyboard-outline' },
   ...(aiIndividualMode.value ? [{ id: 'ai', label: t('profile.ai.navLabel'), icon: 'mdi-robot-outline' }] : []),
+  { id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi-key-variant' },
 
   { type: 'group', label: t('profile.data') },
   { id: 'activity', label: t('profile.activityLog'), icon: 'mdi-history' },

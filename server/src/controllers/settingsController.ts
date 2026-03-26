@@ -60,6 +60,7 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
       smtpPort: { min: 1, max: 65535 },
       clipperTimeoutMs: { min: 5000, max: 120000 },
       clipperQuality: { min: 10, max: 100 },
+      trashAutoDeleteDays: { min: 0, max: 365 },
     };
     for (const [field, range] of Object.entries(numFields)) {
       if (typeof body[field] === 'number') {

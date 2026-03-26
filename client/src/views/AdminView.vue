@@ -42,6 +42,7 @@
       <AdminEncryptionStatus v-else-if="activeSection === 'encryption'" />
       <AdminOsint v-else-if="activeSection === 'osint'" />
       <AdminLanguageTool v-else-if="activeSection === 'languagetool'" />
+      <ProfileApiKeys v-else-if="activeSection === 'api-keys'" />
     </main>
   </div>
 </template>
@@ -65,6 +66,7 @@ import AdminAI from '../components/admin/AdminAI.vue';
 import AdminEncryptionStatus from '../components/admin/AdminEncryptionStatus.vue';
 import AdminOsint from '../components/admin/AdminOsint.vue';
 import AdminLanguageTool from '../components/admin/AdminLanguageTool.vue';
+import ProfileApiKeys from '../components/profile/ProfileApiKeys.vue';
 
 const { t } = useI18n();
 
@@ -87,6 +89,7 @@ const navItems = computed(() => [
   { type: 'item' as const, id: 'osint', label: 'OSINT', icon: 'mdi-earth-arrow-right' },
   { type: 'item' as const, id: 'languagetool', label: t('admin.languageTool'), icon: 'mdi-spellcheck' },
   { type: 'item' as const, id: 'email', label: t('admin.emailSmtp'), icon: 'mdi-email-outline' },
+  { type: 'item' as const, id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi-key-variant' },
   { type: 'group' as const, label: t('admin.maintenance') },
   { type: 'item' as const, id: 'clipper', label: t('admin.webClipper'), icon: 'mdi-scissors-cutting' },
   { type: 'item' as const, id: 'plugins', label: t('admin.plugins'), icon: 'mdi-puzzle-outline' },

@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
+import jwt from 'jsonwebtoken';
 import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -11,6 +12,7 @@ import dotenv from 'dotenv';
 const execFileAsync = promisify(execFile);
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
+import { authLimiter, apiLimiter, heavyLimiter } from './middleware/rateLimit';
 import { connectDB } from './config/database';
 import { setupSocket } from './socket';
 import authRoutes from './routes/auth';
@@ -33,6 +35,7 @@ import encryptionRoutes from './routes/encryption';
 import languagetoolRoutes from './routes/languagetool';
 import changelogRoutes from './routes/changelog';
 import setupRoutes from './routes/setup';
+import apiKeyRoutes from './routes/apiKeys';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
 import { startYjsServer } from './yjs-server';
@@ -60,7 +63,15 @@ app.use(helmet({
     },
   },
 }));
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : undefined;
+
+app.use(cors({
+  origin: allowedOrigins || true,
+  credentials: true,
+  optionsSuccessStatus: 200,
+}));
 app.use(compression());
 app.use(express.json({ limit: '100mb' }));
 
@@ -70,12 +81,26 @@ app.use('/uploads/branding', express.static(path.join(__dirname, '..', process.e
 import { serveUploadFile } from './controllers/fileController';
 app.get('/uploads/*filepath', serveUploadFile);
 
-// Swagger API documentation (public, no auth required)
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+// Swagger API documentation (protected in production)
+const swaggerAuth = (req: any, res: any, next: any) => {
+  if (process.env.NODE_ENV === 'development') return next();
+  const token = req.headers.authorization?.split(' ')[1] || req.query.token;
+  if (!token) {
+    res.status(401).json({ error: 'Authentication required to view API docs' });
+    return;
+  }
+  try {
+    jwt.verify(token, process.env.JWT_SECRET!);
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+app.use('/api-docs', swaggerAuth, swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'MeteorEdit API Documentation',
 }));
-app.get('/api-docs.json', (_req, res) => {
+app.get('/api-docs.json', swaggerAuth, (_req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
@@ -105,6 +130,16 @@ app.get('/api/social/extension-download', async (_req, res) => {
   }
 });
 
+// Rate limiting (must be before routes)
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/refresh', authLimiter);
+app.use('/api/ai', heavyLimiter);
+app.use('/api/clip', heavyLimiter);
+app.use('/api/export', heavyLimiter);
+app.use('/api/media/analyze', heavyLimiter);
+app.use('/api', apiLimiter);
+
 app.use('/api/setup', setupRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api', checkMaintenance);
@@ -126,6 +161,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/encryption', encryptionRoutes);
 app.use('/api/languagetool', languagetoolRoutes);
 app.use('/api/changelog', changelogRoutes);
+app.use('/api/api-keys', apiKeyRoutes);
 
 setupSocket(httpServer);
 

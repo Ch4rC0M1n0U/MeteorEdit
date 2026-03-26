@@ -110,7 +110,7 @@
       </div>
 
       <div class="alerts-actions">
-        <button class="me-btn-primary" @click="saveAlerts" :disabled="savingAlerts">
+        <button class="alerts-save-btn" @click="saveAlerts" :disabled="savingAlerts">
           <v-icon size="16" class="mr-1">mdi-content-save-outline</v-icon>
           {{ savingAlerts ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
@@ -256,4 +256,20 @@ async function saveAlerts() {
   font-size: 13px;
   color: var(--me-success, #4ade80);
 }
+.alerts-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--me-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.alerts-save-btn:hover { filter: brightness(1.15); }
+.alerts-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

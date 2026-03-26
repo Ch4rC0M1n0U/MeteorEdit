@@ -32,7 +32,12 @@ export function getUserSockets(): Map<string, Set<string>> {
 
 export function setupSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: {
+      origin: process.env.ALLOWED_ORIGINS
+        ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+        : '*',
+      methods: ['GET', 'POST'],
+    },
   });
   ioInstance = io;
 
