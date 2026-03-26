@@ -352,6 +352,60 @@
       </div>
     </div>
 
+    <!-- Observations style -->
+    <div class="tpl-card glass-card fade-in fade-in-delay-5">
+      <h3 class="tpl-card-title mono">
+        <v-icon size="16" class="mr-1">mdi-eye-outline</v-icon>
+        Style des observations
+      </h3>
+      <div class="tpl-row tpl-row-3col">
+        <div class="tpl-field">
+          <label class="tpl-label mono">Gras</label>
+          <v-switch v-model="tpl.observations!.bold" hide-details density="compact" color="primary" />
+        </div>
+        <div class="tpl-field">
+          <label class="tpl-label mono">Italique</label>
+          <v-switch v-model="tpl.observations!.italic" hide-details density="compact" color="primary" />
+        </div>
+      </div>
+      <div class="tpl-row tpl-row-3col">
+        <div class="tpl-field">
+          <label class="tpl-label mono">Fond</label>
+          <div class="tpl-color-row">
+            <input type="color" v-model="tpl.observations!.bgColor" class="tpl-color-input" />
+            <span class="tpl-color-hex mono">{{ tpl.observations?.bgColor }}</span>
+            <button class="tpl-remove-btn" title="Sans fond" @click="tpl.observations!.bgColor = ''">
+              <v-icon size="12">mdi-close</v-icon>
+            </button>
+          </div>
+        </div>
+        <div class="tpl-field">
+          <label class="tpl-label mono">Bordure</label>
+          <div class="tpl-color-row">
+            <input type="color" v-model="tpl.observations!.borderColor" class="tpl-color-input" />
+            <span class="tpl-color-hex mono">{{ tpl.observations?.borderColor }}</span>
+            <button class="tpl-remove-btn" title="Sans bordure" @click="tpl.observations!.borderColor = ''">
+              <v-icon size="12">mdi-close</v-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Observation preview -->
+      <div class="tpl-obs-preview" :style="{
+        fontFamily: tpl.fontFamily,
+        fontSize: tpl.body.fontSize + 'pt',
+        fontWeight: tpl.observations?.bold ? 'bold' : 'normal',
+        fontStyle: tpl.observations?.italic ? 'italic' : 'normal',
+        backgroundColor: tpl.observations?.bgColor || 'transparent',
+        border: tpl.observations?.borderColor ? '1px solid ' + tpl.observations.borderColor : 'none',
+        padding: '8px 12px',
+        borderRadius: '4px',
+        marginTop: '8px',
+      }">
+        Exemple d'observation sur un media analyse
+      </div>
+    </div>
+
     <!-- Footer config -->
     <div class="tpl-card glass-card fade-in fade-in-delay-5">
       <h3 class="tpl-card-title mono">

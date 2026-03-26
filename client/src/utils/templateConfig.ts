@@ -52,6 +52,7 @@ export interface PdfTemplateConfig {
   body: { fontSize: number; color: string };
   spacing: SpacingConfig;
   table: TableStyle;
+  observations?: { bold: boolean; italic: boolean; bgColor: string; borderColor: string };
   disclaimer: { color: string };
   footer: { format: string; lineColor: string };
 }
@@ -87,6 +88,7 @@ export const DEFAULT_TEMPLATE: PdfTemplateConfig = {
   body: { fontSize: 10, color: '#000000' },
   spacing: { lineHeight: 1.4, paragraphSpacing: 3, sectionSpacing: 6 },
   table: { headerBgColor: '#29417a', headerTextColor: '#ffffff', borderColor: '#cccccc', borderWidth: 0.5, alternateRowColor: '#f5f5f5' },
+  observations: { bold: true, italic: true, bgColor: '#F0F0F0', borderColor: '#CCCCCC' },
   disclaimer: { color: '#ee0000' },
   footer: { format: 'Page {page} | {pages}', lineColor: '#29417a' },
 };
@@ -108,6 +110,10 @@ export function mergePdfTemplate(target: PdfTemplateConfig, source: Partial<Reco
   if (source.body) Object.assign(target.body, source.body);
   if (source.spacing) Object.assign(target.spacing, source.spacing);
   if (source.table) Object.assign(target.table, source.table);
+  if (source.observations) {
+    if (!target.observations) target.observations = { bold: true, italic: true, bgColor: '#F0F0F0', borderColor: '#CCCCCC' };
+    Object.assign(target.observations, source.observations);
+  }
   if (source.disclaimer) Object.assign(target.disclaimer, source.disclaimer);
   if (source.footer) Object.assign(target.footer, source.footer);
 }

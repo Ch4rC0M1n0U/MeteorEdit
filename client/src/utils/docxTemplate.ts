@@ -1004,6 +1004,33 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
     // Media node rendering
     if (section.mediaData) {
       const md = section.mediaData;
+
+      // Observations — rendered right after the section title
+      if (md.observations?.length) {
+        const obsStyle = tpl.observations || { bold: true, italic: true, bgColor: '#F0F0F0', borderColor: '#CCCCCC' };
+        for (const obs of md.observations) {
+          if (!obs.text) continue;
+          const obsBorderColor = hexToRgb(obsStyle.borderColor);
+          docChildren.push(new Paragraph({
+            children: [new TextRun({
+              text: obs.text,
+              font: docxFont(tpl),
+              size: ptToHalfPt(tpl.body.fontSize),
+              bold: obsStyle.bold,
+              italics: obsStyle.italic,
+            })],
+            spacing: { before: 60, after: 60 },
+            shading: obsStyle.bgColor ? { type: ShadingType.CLEAR, fill: hexToRgb(obsStyle.bgColor) } : undefined,
+            border: obsStyle.borderColor ? {
+              top: { style: BorderStyle.SINGLE, size: 1, color: obsBorderColor },
+              bottom: { style: BorderStyle.SINGLE, size: 1, color: obsBorderColor },
+              left: { style: BorderStyle.SINGLE, size: 1, color: obsBorderColor },
+              right: { style: BorderStyle.SINGLE, size: 1, color: obsBorderColor },
+            } : undefined,
+          }));
+        }
+      }
+
       const metaObj = { ...md.metadata, url: md.source?.url };
       docChildren.push(...renderMediaMetadataDocx(metaObj, tpl));
 
@@ -1028,44 +1055,6 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
           const seqElements = renderMediaAnnotationsSequentialDocx(md.annotations, tpl, images);
           const resolved = await resolveBlockImages(seqElements, images, data.serverUrl, data.dossierId);
           docChildren.push(...resolved);
-        }
-      }
-
-      // Observations / comments
-      if (md.observations?.length) {
-        docChildren.push(new Paragraph({
-          children: [new TextRun({
-            text: 'Observations',
-            font: docxFont(tpl),
-            size: ptToHalfPt(tpl.headingSize || 14),
-            bold: true,
-            color: hexToRgb(tpl.accentColor),
-          })],
-          spacing: { before: 200, after: 100 },
-        }));
-
-        for (const obs of md.observations) {
-          const dateStr = obs.date
-            ? new Date(obs.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-            : '';
-          docChildren.push(new Paragraph({
-            children: [
-              new TextRun({
-                text: `[${dateStr}] `,
-                font: docxFont(tpl),
-                size: ptToHalfPt(tpl.bodySize || 11),
-                color: '888888',
-                italics: true,
-              }),
-              new TextRun({
-                text: obs.text || '',
-                font: docxFont(tpl),
-                size: ptToHalfPt(tpl.bodySize || 11),
-              }),
-            ],
-            spacing: { before: 40, after: 40 },
-            indent: { left: 360 },
-          }));
         }
       }
     } else if (section.blocks && section.blocks.length > 0) {
