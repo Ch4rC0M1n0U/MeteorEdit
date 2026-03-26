@@ -953,62 +953,80 @@ export async function reformulateText(req: AuthRequest, res: Response) {
 
   const prompt = `Reformule ce texte en style ${toneDesc}. Reponds UNIQUEMENT avec la reformulation.\n\n${text.trim()}`;
 
+  // Helper: call Ollama as fallback
+  async function callOllama(signal: AbortSignal): Promise<string> {
+    const ollamaConfig = await getOllamaConfig();
+    if (!ollamaConfig.enabled || !ollamaConfig.selectedModel) throw new Error('Ollama non configure');
+    const response = await fetch(`${ollamaConfig.baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: ollamaConfig.selectedModel,
+        prompt,
+        stream: false,
+        options: { temperature: 0.7, num_predict: 256 },
+      }),
+      signal,
+    });
+    if (!response.ok) throw new Error(`Ollama status ${response.status}`);
+    const data = await response.json() as { response?: string };
+    return data.response || '';
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     let result = '';
+    let usedProvider: string = config.provider;
 
     if (config.provider === 'claude' && config.claudeApiKey) {
-      // Claude API
-      const Anthropic = (await import('@anthropic-ai/sdk')).default;
-      const client = new Anthropic({ apiKey: config.claudeApiKey });
-      const msg = await client.messages.create({
-        model: config.claudeModel,
-        max_tokens: 256,
-        temperature: 0.7,
-        messages: [{ role: 'user', content: prompt }],
-      });
-      result = msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
-    } else if (config.provider === 'openai' && config.openaiApiKey) {
-      // OpenAI API
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.openaiApiKey}` },
-        body: JSON.stringify({
-          model: config.openaiModel,
-          messages: [{ role: 'user', content: prompt }],
+      try {
+        const Anthropic = (await import('@anthropic-ai/sdk')).default;
+        const client = new Anthropic({ apiKey: config.claudeApiKey });
+        const msg = await client.messages.create({
+          model: config.claudeModel,
           max_tokens: 256,
           temperature: 0.7,
-        }),
-        signal: controller.signal,
-      });
-      if (!resp.ok) throw new Error(`OpenAI status ${resp.status}`);
-      const data = await resp.json() as any;
-      result = data.choices?.[0]?.message?.content || '';
+          messages: [{ role: 'user', content: prompt }],
+        });
+        result = msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
+      } catch (err: any) {
+        // Fallback to Ollama on quota/rate limit/auth errors
+        console.warn(`[AI] Claude failed (${err.status || err.message}), falling back to Ollama`);
+        result = await callOllama(controller.signal);
+        usedProvider = 'ollama (fallback)';
+      }
+    } else if (config.provider === 'openai' && config.openaiApiKey) {
+      try {
+        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.openaiApiKey}` },
+          body: JSON.stringify({
+            model: config.openaiModel,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 256,
+            temperature: 0.7,
+          }),
+          signal: controller.signal,
+        });
+        if (!resp.ok) throw new Error(`OpenAI status ${resp.status}`);
+        const data = await resp.json() as any;
+        result = data.choices?.[0]?.message?.content || '';
+      } catch (err: any) {
+        // Fallback to Ollama on quota/rate limit/auth errors
+        console.warn(`[AI] OpenAI failed (${err.message}), falling back to Ollama`);
+        result = await callOllama(controller.signal);
+        usedProvider = 'ollama (fallback)';
+      }
     } else {
-      // Ollama (local)
-      const ollamaConfig = await getOllamaConfig();
-      const response = await fetch(`${ollamaConfig.baseUrl}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: ollamaConfig.selectedModel || config.model,
-          prompt,
-          stream: false,
-          options: { temperature: 0.7, num_predict: 256 },
-        }),
-        signal: controller.signal,
-      });
-      if (!response.ok) throw new Error(`Ollama status ${response.status}`);
-      const data = await response.json() as { response?: string };
-      result = data.response || '';
+      result = await callOllama(controller.signal);
     }
 
     clearTimeout(timeout);
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
-    await logActivity(userId, 'ai.reformulate', 'system', null, { textLength: text.length, tone, provider: config.provider }, ip, ua);
+    await logActivity(userId, 'ai.reformulate', 'system', null, { textLength: text.length, tone, provider: usedProvider }, ip, ua);
 
     result = result.trim().replace(/^["']|["']$/g, '');
     res.json({ suggestions: [result] });
