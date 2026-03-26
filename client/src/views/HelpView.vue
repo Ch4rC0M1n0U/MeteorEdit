@@ -372,7 +372,7 @@ const categories: Category[] = [
       {
         id: 'nd-media',
         title: 'Analyse média (vidéo / audio)',
-        keywords: ['média', 'media', 'vidéo', 'video', 'audio', 'youtube', 'vimeo', 'soundcloud', 'oembed', 'annotation', 'capture', 'timestamp', 'horodatage', 'analyse', 'waveform', 'onde'],
+        keywords: ['média', 'media', 'vidéo', 'video', 'audio', 'youtube', 'vimeo', 'soundcloud', 'oembed', 'annotation', 'capture', 'timestamp', 'horodatage', 'analyse', 'waveform', 'onde', 'egaliseur', 'equalizer', 'filtre', 'preset'],
         content: `<h2>Analyse média — Vidéo et audio</h2>
 <p>Le noeud de type <strong>média</strong> permet d'analyser des contenus vidéo et audio directement dans votre enquête.</p>
 
@@ -394,6 +394,14 @@ const categories: Category[] = [
 <li><strong>Navigation</strong> — Cliquez n'importe où sur la waveform pour naviguer dans le fichier</li>
 <li><strong>Contrôles</strong> — Play/pause, volume, affichage du temps courant et de la durée totale</li>
 <li><strong>Annotations</strong> — Le même système d'annotations horodatées que pour la vidéo est disponible sur la waveform audio</li>
+</ul>
+
+<h3>Filtres audio et egaliseur</h3>
+<p>Le lecteur audio dispose d'un <strong>egaliseur 5 bandes</strong> permettant d'ajuster les frequences en temps reel :</p>
+<ul>
+<li><strong>5 bandes</strong> — Graves, bas-mediums, mediums, hauts-mediums, aigus</li>
+<li><strong>Presets</strong> — Voice (optimise pour la voix), Bass Boost, Treble, Noise Reduction, Telephone</li>
+<li><strong>Raccourcis clavier</strong> — Controles de lecture audio accessibles au clavier (play/pause, avance, recul)</li>
 </ul>
 
 <h3>Capture d'image (screenshot)</h3>
@@ -467,7 +475,8 @@ const categories: Category[] = [
 <h3>Capture automatique</h3>
 <ul>
 <li>Un screenshot pleine page est pris automatiquement</li>
-<li>Les bannières de cookies et modals de connexion sont supprimés automatiquement</li>
+<li>Les bannières de cookies et de consentement sont supprimées automatiquement (OneTrust, Cookiebot, Didomi, DPG Media, etc.)</li>
+<li>Les paywalls de la presse belge sont contournes automatiquement (DPG, Mediahuis, Rossel, IPM)</li>
 <li>Les captures sont chiffrées de bout en bout</li>
 </ul>
 <h3>Annoter une capture</h3>
@@ -497,6 +506,10 @@ const categories: Category[] = [
 </ul>
 <h3>Export sélectif</h3>
 <p>Pour PDF, DOCX et impression, une boîte de dialogue vous permet de choisir quels noeuds inclure. Utilisez les cases à cocher pour sélectionner/désélectionner des éléments.</p>
+<h3>Observations</h3>
+<p>Les observations des noeuds sont affichees apres le titre de section. Le style est configurable : <strong>gras</strong>, <strong>italique</strong>, <strong>fond colore</strong> ou <strong>bordure</strong>.</p>
+<h3>Sous-noeuds</h3>
+<p>Les sous-noeuds des notes et medias sont desormais inclus automatiquement dans l'export, preservant la hierarchie complete du dossier.</p>
 <h3>Importer un dossier JSON</h3>
 <p>Depuis la page d'accueil, cliquez sur le bouton <strong>Importer</strong> pour charger un fichier JSON exporté précédemment.</p>
 <ul>
@@ -537,7 +550,7 @@ const categories: Category[] = [
 <li><strong>Résumé de noeud</strong> — Synthèse du contenu d'une note</li>
 <li><strong>Résumé de dossier</strong> — Vue d'ensemble de toute l'enquête</li>
 </ul>
-<p>Les résumés sont générés via <strong>Ollama</strong> (IA locale). Aucune donnée ne quitte votre serveur.</p>`,
+<p>Les résumés sont générés via le provider IA configure (Claude, OpenAI ou <strong>Ollama</strong> en local). Avec Ollama, aucune donnée ne quitte votre serveur.</p>`,
       },
       {
         id: 'ai-enrichment',
@@ -549,6 +562,27 @@ const categories: Category[] = [
 <li>Cliquez sur le bouton IA à côté d'une entité</li>
 <li>L'IA génère un résumé des informations connues</li>
 <li>Fonctionne pour tous les types : identités, téléphones, réseaux sociaux, etc.</li>
+</ul>`,
+      },
+      {
+        id: 'ai-reformulation',
+        title: 'Reformulation IA',
+        keywords: ['reformulation', 'réécriture', 'ton', 'formel', 'concis', 'fluide', 'simple', 'baguette', 'ia', 'ai', 'claude', 'openai', 'ollama'],
+        content: `<h2>Reformulation IA</h2>
+<p>L'editeur de notes integre un outil de <strong>reformulation par IA</strong> permettant de reecrire du texte selon differents tons.</p>
+<h3>Utilisation</h3>
+<ol>
+<li>Selectionnez du texte dans l'editeur de notes</li>
+<li>Cliquez sur le bouton <strong>baguette magique</strong> dans la barre d'outils</li>
+<li>Choisissez le ton souhaite : <strong>Formel</strong>, <strong>Concis</strong>, <strong>Fluide</strong> ou <strong>Simple</strong></li>
+<li>Le texte selectionne est remplace par la version reformulee</li>
+</ol>
+<h3>Providers IA</h3>
+<p>La reformulation utilise le provider IA configure dans l'administration :</p>
+<ul>
+<li><strong>Claude</strong> (Anthropic) — Via cle API</li>
+<li><strong>OpenAI</strong> — Via cle API</li>
+<li><strong>Ollama</strong> — IA locale (fallback automatique si le provider principal echoue)</li>
 </ul>`,
       },
       {
@@ -605,6 +639,43 @@ const categories: Category[] = [
 <p>Votre mot de passe protège votre clé privée de chiffrement. <strong>Ne le perdez jamais</strong> — sans lui, vos données chiffrées sont irrécupérables.</p>
 <h3>Collaboration chiffrée</h3>
 <p>Lorsque vous ajoutez un collaborateur à un dossier, la clé de chiffrement du dossier est automatiquement partagée de manière sécurisée via le chiffrement asymétrique RSA.</p>`,
+      },
+      {
+        id: 'sec-apikeys',
+        title: 'Cles API',
+        keywords: ['api', 'cle', 'key', 'token', 'programmatique', 'externe', 'x-api-key', 'permission', 'read', 'write', 'clip', 'export', 'root'],
+        content: `<h2>Cles API</h2>
+<p>Les cles API permettent un <strong>acces programmatique</strong> a MeteorEdit depuis des outils externes (scripts, automatisations, integrations).</p>
+<h3>Creation</h3>
+<ul>
+<li>Depuis <strong>Administration > Clefs API</strong> (admin) ou <strong>Profil > Clefs API</strong> (utilisateur)</li>
+<li>Attribuez un nom, une date d'expiration optionnelle et des permissions</li>
+<li>L'URL du serveur est affichee pour faciliter la configuration</li>
+</ul>
+<h3>Permissions</h3>
+<ul>
+<li><strong>read</strong> — Lecture des dossiers et noeuds</li>
+<li><strong>write</strong> — Creation et modification</li>
+<li><strong>clip</strong> — Capture web via le clipper</li>
+<li><strong>export</strong> — Export de dossiers</li>
+<li><strong>root</strong> — Acces complet a toutes les fonctionnalites</li>
+</ul>
+<h3>Utilisation</h3>
+<p>Ajoutez l'en-tete <code>X-API-Key</code> a vos requetes HTTP :</p>
+<pre><code>curl -H "X-API-Key: votre-cle" https://votre-serveur/api/dossiers</code></pre>`,
+      },
+      {
+        id: 'sec-ratelimit',
+        title: 'Rate limiting',
+        keywords: ['rate', 'limit', 'limitation', 'requete', 'throttle', 'securite', 'ddos'],
+        content: `<h2>Rate limiting</h2>
+<p>Pour proteger le serveur contre les abus, des limites de requetes sont appliquees automatiquement :</p>
+<ul>
+<li><strong>Authentification</strong> — 15 requetes par fenetre de 15 minutes (login, register, refresh)</li>
+<li><strong>API generale</strong> — 120 requetes par minute</li>
+<li><strong>Operations lourdes</strong> — 10 requetes par minute (IA, web clipper, export)</li>
+</ul>
+<p>En cas de depassement, une reponse <code>429 Too Many Requests</code> est retournee. Attendez la fin de la fenetre pour reprendre.</p>`,
       },
       {
         id: 'sec-password',
@@ -672,12 +743,14 @@ const categories: Category[] = [
         content: `<h2>Configuration de l'IA</h2>
 <p>Depuis <strong>Administration > Intelligence Artificielle</strong> :</p>
 <ul>
-<li><strong>URL Ollama</strong> — Adresse du serveur Ollama</li>
+<li><strong>Provider</strong> — Choisissez entre Claude (Anthropic), OpenAI ou Ollama (local)</li>
+<li><strong>URL Ollama</strong> — Adresse du serveur Ollama (si provider local)</li>
 <li><strong>Modèle</strong> — Sélection du modèle de langage</li>
 <li><strong>Prompts</strong> — Personnalisation des prompts d'enrichissement et de résumé</li>
+<li><strong>Reformulation</strong> — Tons disponibles : Formel, Concis, Fluide, Simple</li>
 <li><strong>Test de connexion</strong> — Vérifiez que le serveur IA est accessible</li>
 </ul>
-<p>L'IA fonctionne entièrement en local via Ollama. Aucune donnée n'est envoyée à des services externes.</p>`,
+<p>Avec Ollama, l'IA fonctionne entièrement en local. Avec Claude ou OpenAI, les données transitent par leurs API respectives.</p>`,
       },
       {
         id: 'adm-storage',
@@ -737,7 +810,7 @@ const categories: Category[] = [
         content: `<h2>Réseau & Annonces</h2>
 <p>Depuis <strong>Administration > Réseau & Annonces</strong> :</p>
 <ul>
-<li><strong>CORS / Origines autorisées</strong> — Liste des domaines autorisés à accéder à l'API (* = tout autoriser)</li>
+<li><strong>CORS / Origines autorisées</strong> — Liste des domaines autorisés à accéder à l'API (* = tout autoriser). Configurable aussi via la variable d'environnement <code>ALLOWED_ORIGINS</code></li>
 <li><strong>Bannière d'annonce</strong> — Affiche un bandeau visible par tous les utilisateurs (info, warning ou erreur)</li>
 </ul>`,
       },
@@ -1297,7 +1370,14 @@ docker compose --profile ai --profile tools up -d</code></pre>
 <tr><td><code>COOKIE_ENCRYPTION_KEY</code></td><td>Cle de chiffrement des cookies</td></tr>
 <tr><td><code>LANGUAGETOOL_URL</code></td><td>URL du service LanguageTool (optionnel)</td></tr>
 <tr><td><code>OLLAMA_URL</code></td><td>URL du service Ollama (optionnel)</td></tr>
+<tr><td><code>ALLOWED_ORIGINS</code></td><td>Origines CORS autorisees (virgules, defaut: *)</td></tr>
 </table>
+<h3>Securite en production</h3>
+<ul>
+<li><strong>Swagger protege</strong> — La documentation API (<code>/api-docs</code>) requiert une authentification en production</li>
+<li><strong>Rate limiting</strong> — Limites automatiques sur les endpoints d'authentification et les operations lourdes</li>
+<li><strong>CORS</strong> — Configurez <code>ALLOWED_ORIGINS</code> pour restreindre les domaines autorises</li>
+</ul>
 <p><strong>Important :</strong> Ne jamais utiliser les valeurs par defaut en production. Generez des secrets uniques.</p>`,
       },
     ],
@@ -1309,9 +1389,9 @@ docker compose --profile ai --profile tools up -d</code></pre>
     articles: [
       {
         id: 'wn-340',
-        title: 'v3.4.0-beta.1',
+        title: 'v3.4.0',
         keywords: ['version', 'changelog', 'nouveautes', 'mise a jour', '3.4.0'],
-        content: `<h2>v3.4.0-beta.1 — 24 mars 2026</h2>
+        content: `<h2>v3.4.0 — 26 mars 2026</h2>
 <h3>OSINT Dorking</h3>
 <ul>
 <li><strong>Module OSINT Dorking</strong> — Accessible depuis Outils > OSINT Dorking, genere des requetes de recherche avancees (Google, Bing, Yandex, DuckDuckGo) pour chaque entite du dossier</li>
@@ -1334,6 +1414,36 @@ docker compose --profile ai --profile tools up -d</code></pre>
 <li><strong>Recuperation post-navigateur</strong> — Scan des metadonnees pour retrouver les images manquantes apres scraping</li>
 <li><strong>URLs absolues correctes</strong> — Detection automatique du protocole/hote via X-Forwarded headers</li>
 </ul>
+<h3>Filtres audio et egaliseur</h3>
+<ul>
+<li><strong>Egaliseur 5 bandes</strong> — Ajustez les frequences audio (graves, mediums, aigus) avec un egaliseur graphique</li>
+<li><strong>Presets audio</strong> — Voice, Bass Boost, Treble, Noise Reduction, Telephone</li>
+<li><strong>Raccourcis clavier</strong> — Controles de lecture audio accessibles au clavier</li>
+</ul>
+<h3>Reformulation IA</h3>
+<ul>
+<li><strong>Reformulation dans l'editeur</strong> — Selectionnez du texte, cliquez sur la baguette magique et choisissez un ton (Formel, Concis, Fluide, Simple)</li>
+<li><strong>Multi-provider</strong> — Fonctionne avec Claude, OpenAI ou Ollama selon la configuration, avec fallback automatique vers Ollama</li>
+</ul>
+<h3>Cles API et securite</h3>
+<ul>
+<li><strong>Cles API externes</strong> — Gerez des cles API depuis Admin > Clefs API ou votre Profil pour un acces programmatique</li>
+<li><strong>Permissions granulaires</strong> — read, write, clip, export, root (acces complet)</li>
+<li><strong>Rate limiting</strong> — Auth: 15 req/15min, API: 120 req/min, operations lourdes (IA, clip, export): 10 req/min</li>
+<li><strong>Restriction CORS</strong> — Configurable via la variable ALLOWED_ORIGINS</li>
+<li><strong>Swagger protege</strong> — Documentation API authentifiee en production</li>
+</ul>
+<h3>Export ameliore</h3>
+<ul>
+<li><strong>Observations apres le titre</strong> — Style configurable (gras, italique, fond, bordure)</li>
+<li><strong>Sous-noeuds exportes</strong> — Les sous-noeuds des notes et medias sont desormais inclus dans l'export</li>
+<li><strong>Contraste visuel</strong> — Meilleur contraste dans la boite de selection d'export</li>
+</ul>
+<h3>Web Clipper ameliore</h3>
+<ul>
+<li><strong>Suppression cookies/consent</strong> — Detection automatique des bannieres OneTrust, Cookiebot, Didomi, DPG Media et autres</li>
+<li><strong>Bypass paywall</strong> — Contournement des paywalls de la presse belge (DPG, Mediahuis, Rossel, IPM)</li>
+</ul>
 <h3>Ameliorations</h3>
 <ul>
 <li><strong>Arborescence illimitee</strong> — Tout type de noeud peut avoir des enfants (pas seulement les dossiers)</li>
@@ -1342,6 +1452,7 @@ docker compose --profile ai --profile tools up -d</code></pre>
 <li><strong>Limite import</strong> — Passage de 10 MB a 100 MB pour les imports volumineux (Elephantastic, WhatsApp)</li>
 <li><strong>PWA desactivee</strong> — Incompatible avec les certificats auto-signes, remplacee par selfDestroying</li>
 <li><strong>i18n corrige</strong> — Correction des caracteres speciaux dans les traductions (vue-i18n SyntaxError: 2)</li>
+<li><strong>Admin Dossiers</strong> — Les parametres sont desormais correctement sauvegardes et charges (endpoint GET ajoute)</li>
 </ul>`,
       },
       {
@@ -1356,7 +1467,6 @@ docker compose --profile ai --profile tools up -d</code></pre>
 <li>Docker production-ready (healthchecks, nginx, profiles)</li>
 <li>PWA (offline, update prompt)</li>
 <li>API publique Swagger/OpenAPI 3.0.3</li>
-<li>Cookie Bridge extension Chrome</li>
 <li>Gestionnaire de sessions sociales</li>
 </ul>`,
       },

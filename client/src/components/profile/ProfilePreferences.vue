@@ -113,75 +113,6 @@
       </div>
     </div>
 
-    <!-- Extension Cookie Bridge -->
-    <div class="branding-card glass-card fade-in fade-in-delay-4 mt-4">
-      <h3 class="section-title mono">
-        <v-icon size="16" class="mr-1">mdi-cookie-outline</v-icon>
-        {{ $t('preferences.cookieBridge') }}
-      </h3>
-      <p class="section-desc mt-2">{{ $t('preferences.cookieBridgeDesc') }}</p>
-
-      <!-- Download extension -->
-      <div class="settings-group mt-3">
-        <label class="settings-label mono">{{ $t('preferences.downloadExtension') }}</label>
-        <div class="bridge-actions">
-          <v-btn color="primary" variant="outlined" size="small" prepend-icon="mdi-download" @click="downloadExtension">
-            {{ $t('preferences.downloadZip') }}
-          </v-btn>
-        </div>
-      </div>
-
-      <!-- Instructions -->
-      <div class="bridge-instructions mt-3">
-        <h4 class="mono" style="font-size: 12px; opacity: 0.7; margin-bottom: 8px;">{{ $t('preferences.installSteps') }}</h4>
-        <ol class="bridge-steps">
-          <li>{{ $t('preferences.step1Download') }}</li>
-          <li>{{ $t('preferences.step2Unzip') }}</li>
-          <li>{{ $t('preferences.step3Chrome') }}</li>
-          <li>{{ $t('preferences.step4DevMode') }}</li>
-          <li>{{ $t('preferences.step5Load') }}</li>
-        </ol>
-      </div>
-
-      <!-- Generate bridge token + QR -->
-      <div class="settings-group mt-4">
-        <label class="settings-label mono">{{ $t('preferences.configureExtension') }}</label>
-        <v-btn color="primary" variant="tonal" size="small" prepend-icon="mdi-qrcode" @click="generateBridgeToken" :loading="bridgeLoading">
-          {{ $t('preferences.generateQrCode') }}
-        </v-btn>
-      </div>
-
-      <!-- QR Code display -->
-      <div v-if="bridgeQrData" class="bridge-qr-section mt-3">
-        <div class="bridge-qr-card glass-card">
-          <img :src="bridgeQrData" alt="QR Code" class="bridge-qr-img" />
-          <p class="bridge-qr-hint mono">{{ $t('preferences.scanQrHint') }}</p>
-          <div class="bridge-url-row mt-2">
-            <code class="bridge-url">{{ bridgeConfigUrl }}</code>
-            <v-btn icon size="x-small" variant="text" @click="copyBridgeUrl">
-              <v-icon size="14">mdi-content-copy</v-icon>
-            </v-btn>
-          </div>
-          <p class="bridge-expiry mono mt-1">{{ $t('preferences.tokenExpiry24h') }}</p>
-        </div>
-      </div>
-
-      <!-- Import cookies.txt -->
-      <div class="settings-group mt-4">
-        <label class="settings-label mono">{{ $t('preferences.importCookiesFile') }}</label>
-        <p class="section-desc">{{ $t('preferences.cookiesFileDesc') }}</p>
-        <div class="bridge-actions mt-2">
-          <v-btn color="secondary" variant="outlined" size="small" prepend-icon="mdi-file-upload-outline" @click="cookiesFileInput?.click()">
-            {{ $t('preferences.uploadCookiesTxt') }}
-          </v-btn>
-          <input ref="cookiesFileInput" type="file" accept=".txt" hidden @change="uploadCookiesFile" />
-        </div>
-        <v-alert v-if="cookiesUploadResult" :type="cookiesUploadResult.type" variant="tonal" density="compact" class="mt-2" closable @click:close="cookiesUploadResult = null">
-          {{ cookiesUploadResult.message }}
-        </v-alert>
-      </div>
-    </div>
-
     <!-- Comportement -->
     <div class="branding-card glass-card fade-in fade-in-delay-4 mt-4">
       <h3 class="section-title mono">
@@ -211,11 +142,6 @@ import api from '../../services/api';
 const { t, locale } = useI18n();
 
 const saveStatus = ref<'saved' | 'saving' | 'error' | null>(null);
-const bridgeLoading = ref(false);
-const bridgeQrData = ref<string | null>(null);
-const bridgeConfigUrl = ref('');
-const cookiesFileInput = ref<HTMLInputElement | null>(null);
-const cookiesUploadResult = ref<{ type: 'success' | 'error'; message: string } | null>(null);
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let statusTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -333,47 +259,6 @@ function debouncedSave() {
 watch(prefs, () => {
   debouncedSave();
 });
-
-function downloadExtension() {
-  const token = localStorage.getItem('accessToken') || '';
-  window.open(`/api/social/extension-download?token=${encodeURIComponent(token)}`, '_blank');
-}
-
-async function generateBridgeToken() {
-  bridgeLoading.value = true;
-  try {
-    const { data } = await api.post('/social/bridge-token');
-    const serverUrl = window.location.origin;
-    bridgeConfigUrl.value = `${serverUrl}/extension-config?url=${encodeURIComponent(serverUrl)}&token=${encodeURIComponent(data.token)}`;
-
-    // Generate QR code using canvas
-    const QRCode = await import('qrcode');
-    bridgeQrData.value = await QRCode.toDataURL(bridgeConfigUrl.value, { width: 200, margin: 2, color: { dark: '#e2e8f0', light: '#111827' } });
-  } catch {
-    bridgeQrData.value = null;
-  } finally {
-    bridgeLoading.value = false;
-  }
-}
-
-function copyBridgeUrl() {
-  navigator.clipboard.writeText(bridgeConfigUrl.value);
-}
-
-async function uploadCookiesFile(event: Event) {
-  const input = event.target as HTMLInputElement;
-  if (!input.files?.length) return;
-  const file = input.files[0]!;
-  const formData = new FormData();
-  formData.append('cookiesFile', file);
-  try {
-    const { data } = await api.post('/social/cookies-file', formData);
-    cookiesUploadResult.value = { type: 'success', message: `${data.cookieCount} cookies ${data.platform} ${t('preferences.imported')}` };
-  } catch (e: any) {
-    cookiesUploadResult.value = { type: 'error', message: e.response?.data?.message || t('preferences.importError') };
-  }
-  input.value = '';
-}
 
 // Sync language with i18n
 watch(() => prefs.language, (newLang) => {

@@ -109,27 +109,6 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Extension download — public, before any auth middleware
-app.get('/api/social/extension-download', async (_req, res) => {
-  try {
-    const archiver = await import('archiver');
-    const extDir = path.resolve(__dirname, '..', 'extension');
-    const fs2 = await import('fs');
-    if (!fs2.existsSync(extDir)) {
-      res.status(404).json({ message: 'Extension not found' });
-      return;
-    }
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="meteoredit-cookie-bridge.zip"');
-    const archive = archiver.default('zip', { zlib: { level: 9 } });
-    archive.pipe(res);
-    archive.directory(extDir, 'meteoredit-cookie-bridge');
-    archive.finalize();
-  } catch (err: any) {
-    res.status(500).json({ message: 'Failed to create zip' });
-  }
-});
-
 // Rate limiting (must be before routes)
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);

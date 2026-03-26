@@ -253,44 +253,6 @@ router.post('/bridge-token', authenticate, generateBridgeToken);
  */
 router.post('/cookies-file', authenticate, upload.single('cookiesFile'), uploadCookiesFile);
 
-/**
- * @swagger
- * /api/social/extension-download:
- *   get:
- *     tags: [Social]
- *     summary: Telecharger l'extension Cookie Bridge
- *     description: Telecharge l'extension Chrome MeteorEdit Cookie Bridge en fichier ZIP.
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Fichier ZIP de l'extension
- *         content:
- *           application/zip:
- *             schema:
- *               type: string
- *               format: binary
- */
-router.get('/extension-download', async (_req, res) => {
-  try {
-    const archiver = await import('archiver');
-    const extensionDir = path.resolve(__dirname, '..', '..', '..', 'extension');
-    const fs = await import('fs');
-    if (!fs.existsSync(extensionDir)) {
-      res.status(404).json({ message: 'Extension not found on server' });
-      return;
-    }
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="meteoredit-cookie-bridge.zip"');
-    const archive = archiver.default('zip', { zlib: { level: 9 } });
-    archive.pipe(res);
-    archive.directory(extensionDir, 'meteoredit-cookie-bridge');
-    archive.finalize();
-  } catch (err: any) {
-    console.error('Extension download error:', err);
-    res.status(500).json({ message: 'Failed to create extension zip' });
-  }
-});
 
 /**
  * @swagger
