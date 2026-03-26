@@ -540,6 +540,38 @@ onMounted(fetchKeys);
   gap: 4px;
 }
 
+.me-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--me-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.me-btn:hover { filter: brightness(1.15); }
+.me-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+.me-btn-sm { padding: 6px 12px; font-size: 12px; }
+.me-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--me-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.me-btn-ghost:hover { background: rgba(255,255,255,0.06); color: var(--me-text-primary); }
 .me-btn-danger {
   background: var(--me-danger, #ef4444) !important;
   color: #fff !important;
