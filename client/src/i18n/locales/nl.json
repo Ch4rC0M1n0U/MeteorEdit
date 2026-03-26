@@ -469,6 +469,8 @@
     "comments": "Opmerkingen",
     "saveAsTemplate": "Opslaan als sjabloon",
     "spellCheck": "Spellingcontrole",
+    "reformulate": "Selectie herformuleren (AI)",
+    "reformSuggestions": "Herformuleringsuggesties",
     "placeholder": "Begin met schrijven...",
     "insertLinkTitle": "Link invoegen",
     "insertLinkPrompt": "Voer de URL van de link in:",

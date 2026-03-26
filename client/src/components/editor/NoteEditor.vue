@@ -152,6 +152,19 @@
         </button>
       </div>
 
+      <!-- AI Reformulate -->
+      <div class="ne-separator" />
+      <div class="ne-toolbar-group">
+        <button
+          class="ne-btn"
+          :disabled="!hasSelection || reformulating"
+          @click="reformulateSelection"
+          :title="$t('editor.reformulate')"
+        >
+          <v-icon size="18" :class="{ spin: reformulating }">{{ reformulating ? 'mdi-loading' : 'mdi-auto-fix' }}</v-icon>
+        </button>
+      </div>
+
       <template v-if="ltAvailable">
         <div class="ne-separator" />
         <div class="ne-toolbar-group">
@@ -160,6 +173,26 @@
           </button>
         </div>
       </template>
+    </div>
+
+    <!-- Reformulation suggestions panel -->
+    <div v-if="reformSuggestions.length > 0" class="ne-reform-panel glass-card">
+      <div class="ne-reform-header">
+        <v-icon size="16" color="var(--me-accent)">mdi-auto-fix</v-icon>
+        <span class="ne-reform-title mono">{{ $t('editor.reformSuggestions') }}</span>
+        <button class="ne-reform-close" @click="reformSuggestions = []">
+          <v-icon size="14">mdi-close</v-icon>
+        </button>
+      </div>
+      <div
+        v-for="(suggestion, i) in reformSuggestions"
+        :key="i"
+        class="ne-reform-item"
+        @click="applyReformulation(suggestion)"
+      >
+        <span class="ne-reform-text">{{ suggestion }}</span>
+        <v-icon size="14" class="ne-reform-apply">mdi-check</v-icon>
+      </div>
     </div>
 
     <!-- Presence indicators -->
@@ -235,6 +268,14 @@ const commentCount = ref(0);
 const spellCheckEnabled = ref(false);
 const ltAvailable = ref(false);
 const ltLanguage = ref('auto');
+const reformulating = ref(false);
+const reformSuggestions = ref<string[]>([]);
+const reformSelectionRange = ref<{ from: number; to: number } | null>(null);
+const hasSelection = computed(() => {
+  if (!editor.value) return false;
+  const { from, to } = editor.value.state.selection;
+  return to - from > 2;
+});
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Load spell check prefs from user preferences
@@ -279,6 +320,35 @@ function toggleSpellCheck() {
   editor.value?.view.dispatch(
     editor.value.view.state.tr.setMeta(languageToolPluginKey, { enabled: spellCheckEnabled.value })
   );
+}
+
+async function reformulateSelection() {
+  if (!editor.value || reformulating.value) return;
+  const { from, to } = editor.value.state.selection;
+  const selectedText = editor.value.state.doc.textBetween(from, to, ' ');
+  if (!selectedText.trim() || selectedText.length < 3) return;
+
+  reformulating.value = true;
+  reformSuggestions.value = [];
+  reformSelectionRange.value = { from, to };
+
+  try {
+    const { data } = await api.post('/ai/reformulate', { text: selectedText });
+    reformSuggestions.value = data.suggestions || [];
+  } catch (err: any) {
+    console.error('Reformulation failed:', err);
+    reformSuggestions.value = [];
+  } finally {
+    reformulating.value = false;
+  }
+}
+
+function applyReformulation(suggestion: string) {
+  if (!editor.value || !reformSelectionRange.value) return;
+  const { from, to } = reformSelectionRange.value;
+  editor.value.chain().focus().deleteRange({ from, to }).insertContentAt(from, suggestion).run();
+  reformSuggestions.value = [];
+  reformSelectionRange.value = null;
 }
 
 function handleMention(userId: string, _label: string) {
@@ -701,6 +771,78 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: 0 4px;
   font-family: var(--me-font-mono);
+}
+
+/* Reformulation panel */
+.ne-reform-panel {
+  margin: 0 8px 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--me-accent);
+}
+.ne-reform-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--me-border);
+}
+.ne-reform-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  flex: 1;
+}
+.ne-reform-close {
+  background: none;
+  border: none;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+}
+.ne-reform-close:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--me-text-primary);
+}
+.ne-reform-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s;
+  margin-bottom: 4px;
+}
+.ne-reform-item:hover {
+  background: rgba(var(--me-accent-rgb, 66,133,244), 0.12);
+}
+.ne-reform-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--me-text-secondary);
+  line-height: 1.4;
+}
+.ne-reform-item:hover .ne-reform-text {
+  color: var(--me-text-primary);
+}
+.ne-reform-apply {
+  color: var(--me-accent);
+  opacity: 0;
+  transition: opacity 0.12s;
+  margin-top: 2px;
+}
+.ne-reform-item:hover .ne-reform-apply {
+  opacity: 1;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
 

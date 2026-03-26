@@ -482,6 +482,8 @@
     "comments": "Commentaires",
     "saveAsTemplate": "Sauvegarder comme modèle",
     "spellCheck": "Correcteur orthographique",
+    "reformulate": "Reformuler la selection (IA)",
+    "reformSuggestions": "Suggestions de reformulation",
     "placeholder": "Commencez à écrire...",
     "insertLinkTitle": "Insérer un lien",
     "insertLinkPrompt": "Saisissez l'URL du lien :",

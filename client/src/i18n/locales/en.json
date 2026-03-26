@@ -470,6 +470,8 @@
     "comments": "Comments",
     "saveAsTemplate": "Save as template",
     "spellCheck": "Spell checker",
+    "reformulate": "Reformulate selection (AI)",
+    "reformSuggestions": "Reformulation suggestions",
     "placeholder": "Start writing...",
     "insertLinkTitle": "Insert a link",
     "insertLinkPrompt": "Enter the link URL:",

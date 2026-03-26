@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { getAiStatus, getAiClientConfig, generateReport, cancelGenerateReport, enrichEntity, cancelEnrichEntity, summarizeContent, testUserClaudeConnection, testUserOpenAIConnection } from '../controllers/aiController';
+import { getAiStatus, getAiClientConfig, generateReport, cancelGenerateReport, enrichEntity, cancelEnrichEntity, summarizeContent, reformulateText, testUserClaudeConnection, testUserOpenAIConnection } from '../controllers/aiController';
 
 const router = Router();
 router.use(authenticate);
@@ -206,5 +206,6 @@ router.post('/enrich-entity/cancel', cancelEnrichEntity);
  *         description: Erreur Ollama
  */
 router.post('/summarize', summarizeContent);
+router.post('/reformulate', reformulateText);
 
 export default router;
