@@ -12,6 +12,60 @@ import { getBypassRules, getUA, getExtraHeaders } from '../utils/bypassRules';
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 
 /**
+ * Consent/cookie management platform scripts to block universally.
+ * Blocking these prevents consent popups from ever rendering on ANY site.
+ */
+const CONSENT_SCRIPT_PATTERNS: RegExp[] = [
+  // --- DPG Media (7sur7, HLN, De Morgen, Humo, VTM) ---
+  /myprivacy[-.]dpgmedia/i,
+  /myprivacy-static\.dpgmedia\.net\/consent/i,
+  /sp\.dpgmedia\.net/i,
+  /pg\.dpgmedia\.be\/api\/consent/i,
+  // --- Sourcepoint ---
+  /cdn\.privacy-mgmt\.com/i,
+  /sourcepoint\.mgr\.consensu\.org/i,
+  // --- OneTrust ---
+  /cdn\.cookielaw\.org/i,
+  /optanon\.blob\.core\.windows\.net/i,
+  /onetrust\.com\/consent/i,
+  /geolocation\.onetrust\.com/i,
+  // --- Cookiebot ---
+  /consent\.cookiebot\.com/i,
+  /consentcdn\.cookiebot\.com/i,
+  // --- Didomi ---
+  /sdk\.privacy-center\.org/i,
+  /api\.privacy-center\.org/i,
+  /cdn\.didomi\.io/i,
+  // --- Quantcast / TCF ---
+  /quantcast\.mgr\.consensu\.org/i,
+  /cmp\.quantcast\.com/i,
+  /apis\.quantcast\.mgr/i,
+  // --- TrustArc ---
+  /consent\.trustarc\.com/i,
+  /consent-pref\.trustarc\.com/i,
+  // --- Axeptio ---
+  /client\.axept\.io/i,
+  /static\.axept\.io/i,
+  // --- Iubenda ---
+  /cdn\.iubenda\.com\/cs/i,
+  // --- Usercentrics ---
+  /app\.usercentrics\.eu/i,
+  /aggregator\.service\.usercentrics/i,
+  // --- CookieFirst ---
+  /consent\.cookiefirst\.com/i,
+  // --- Osano ---
+  /cmp\.osano\.com/i,
+  // --- Civic Cookie Control ---
+  /cc\.cdn\.civiccomputing\.com/i,
+  // --- Cookie Information ---
+  /policy\.app\.cookieinformation\.com/i,
+  // --- Generic consent/GDPR scripts ---
+  /consent-manager/i,
+  /cookie-consent\.js/i,
+  /gdpr-consent/i,
+];
+
+/**
  * Attempts to dismiss cookie/GDPR consent banners by clicking common accept buttons
  * and hiding known cookie banner elements.
  */
@@ -362,19 +416,24 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
       await client.send('Network.clearBrowserCookies');
     }
 
-    // --- Bypass: Block paywall scripts ---
-    if (bypassRule?.blockPatterns && bypassRule.blockPatterns.length > 0) {
-      await page.setRequestInterception(true);
-      const patterns = bypassRule.blockPatterns;
-      page.on('request', (req: any) => {
-        const reqUrl = req.url();
-        if (patterns.some((p: RegExp) => p.test(reqUrl))) {
-          req.abort();
-        } else {
-          req.continue();
-        }
-      });
-    }
+    // --- Block consent/cookie CMP scripts + paywall scripts ---
+    // Always intercept requests to block consent popups on ALL sites
+    await page.setRequestInterception(true);
+    const paywallPatterns = bypassRule?.blockPatterns || [];
+    page.on('request', (req: any) => {
+      const reqUrl = req.url();
+      // Block known consent/cookie management platforms (universal)
+      if (CONSENT_SCRIPT_PATTERNS.some((p: RegExp) => p.test(reqUrl))) {
+        req.abort();
+        return;
+      }
+      // Block paywall scripts (per-domain rules)
+      if (paywallPatterns.length > 0 && paywallPatterns.some((p: RegExp) => p.test(reqUrl))) {
+        req.abort();
+        return;
+      }
+      req.continue();
+    });
 
     // --- Anti-detection: spoof webdriver, plugins, languages ---
     await page.evaluateOnNewDocument(`(() => {
