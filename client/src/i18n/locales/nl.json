@@ -835,6 +835,7 @@
     "keyPermWrite": "Schrijven",
     "keyPermClip": "Web Clipper",
     "keyPermExport": "Exporteren",
+    "keyPermRoot": "Root (volledige toegang)",
     "keyCreated": "Aangemaakt",
     "keyLastUsed": "Laatst gebruikt",
     "keyNever": "Nooit",

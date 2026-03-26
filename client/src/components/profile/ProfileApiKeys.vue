@@ -166,6 +166,14 @@
                 density="compact"
                 hide-details
               />
+              <v-checkbox
+                v-model="createForm.permissions"
+                value="root"
+                :label="t('admin.keyPermRoot')"
+                density="compact"
+                hide-details
+                color="error"
+              />
             </div>
           </div>
           <div class="form-group">
@@ -266,6 +274,7 @@ const permLabel = (p: string): string => {
     write: t('admin.keyPermWrite'),
     clip: t('admin.keyPermClip'),
     export: t('admin.keyPermExport'),
+    root: t('admin.keyPermRoot'),
   };
   return map[p] || p;
 };

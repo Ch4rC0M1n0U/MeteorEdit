@@ -848,6 +848,7 @@
     "keyPermWrite": "Écriture",
     "keyPermClip": "Web Clipper",
     "keyPermExport": "Export",
+    "keyPermRoot": "Root (tous les droits)",
     "keyCreated": "Créée le",
     "keyLastUsed": "Dernière utilisation",
     "keyNever": "Jamais",

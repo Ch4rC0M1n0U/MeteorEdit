@@ -836,6 +836,7 @@
     "keyPermWrite": "Write",
     "keyPermClip": "Web Clipper",
     "keyPermExport": "Export",
+    "keyPermRoot": "Root (full access)",
     "keyCreated": "Created",
     "keyLastUsed": "Last Used",
     "keyNever": "Never",
