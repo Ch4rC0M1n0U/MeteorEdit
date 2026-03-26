@@ -155,14 +155,36 @@
       <!-- AI Reformulate -->
       <div class="ne-separator" />
       <div class="ne-toolbar-group">
-        <button
-          class="ne-btn"
-          :disabled="!hasSelection || reformulating"
-          @click="reformulateSelection"
-          :title="$t('editor.reformulate')"
-        >
-          <v-icon size="18" :class="{ spin: reformulating }">{{ reformulating ? 'mdi-loading' : 'mdi-auto-fix' }}</v-icon>
-        </button>
+        <v-menu :close-on-content-click="true" location="bottom">
+          <template #activator="{ props: menuProps }">
+            <button
+              class="ne-btn"
+              v-bind="menuProps"
+              :disabled="!hasSelection || reformulating"
+              :title="$t('editor.reformulate')"
+            >
+              <v-icon size="18" :class="{ spin: reformulating }">{{ reformulating ? 'mdi-loading' : 'mdi-auto-fix' }}</v-icon>
+            </button>
+          </template>
+          <v-list density="compact" class="ne-reform-menu">
+            <v-list-item @click="reformulateSelection('formal')">
+              <template #prepend><v-icon size="16">mdi-briefcase-outline</v-icon></template>
+              <v-list-item-title>{{ $t('editor.toneFormal') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="reformulateSelection('concise')">
+              <template #prepend><v-icon size="16">mdi-arrow-collapse-horizontal</v-icon></template>
+              <v-list-item-title>{{ $t('editor.toneConcise') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="reformulateSelection('fluent')">
+              <template #prepend><v-icon size="16">mdi-water-outline</v-icon></template>
+              <v-list-item-title>{{ $t('editor.toneFluent') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="reformulateSelection('simple')">
+              <template #prepend><v-icon size="16">mdi-text-short</v-icon></template>
+              <v-list-item-title>{{ $t('editor.toneSimple') }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </div>
 
       <template v-if="ltAvailable">
@@ -322,7 +344,7 @@ function toggleSpellCheck() {
   );
 }
 
-async function reformulateSelection() {
+async function reformulateSelection(tone: string = 'fluent') {
   if (!editor.value || reformulating.value) return;
   const { from, to } = editor.value.state.selection;
   const selectedText = editor.value.state.doc.textBetween(from, to, ' ');
@@ -333,7 +355,7 @@ async function reformulateSelection() {
   reformSelectionRange.value = { from, to };
 
   try {
-    const { data } = await api.post('/ai/reformulate', { text: selectedText });
+    const { data } = await api.post('/ai/reformulate', { text: selectedText, tone });
     reformSuggestions.value = data.suggestions || [];
   } catch (err: any) {
     console.error('Reformulation failed:', err);

@@ -930,7 +930,7 @@ Fournis un resume structure en points cles (bullet points). Sois concis mais com
   }
 }
 
-// POST /api/ai/reformulate - Reformulate selected text with tone variants
+// POST /api/ai/reformulate - Reformulate selected text (single reformulation, fast)
 export async function reformulateText(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
   const { text, tone } = req.body;
@@ -943,28 +943,21 @@ export async function reformulateText(req: AuthRequest, res: Response) {
     return res.status(400).json({ message: 'IA non configuree' });
   }
 
-  const toneInstructions: Record<string, string> = {
-    formal: 'dans un style formel et professionnel',
-    concise: 'de maniere plus concise et directe',
-    fluent: 'de maniere plus fluide et naturelle',
-    simple: 'dans un langage plus simple et accessible',
+  const toneMap: Record<string, string> = {
+    formal: 'formel et professionnel',
+    concise: 'concis et direct',
+    fluent: 'fluide et naturel',
+    simple: 'simple et accessible',
   };
-  const toneDesc = toneInstructions[tone] || 'de 3 manieres differentes (formelle, concise, fluide)';
+  const toneDesc = toneMap[tone || 'fluent'] || 'fluide et naturel';
 
-  const prompt = tone
-    ? `Reformule le texte suivant ${toneDesc}. Reponds UNIQUEMENT avec la reformulation, sans explication ni commentaire.
-
-Texte: "${text.trim()}"`
-    : `Propose 3 reformulations du texte suivant en francais:
-1. Version formelle et professionnelle
-2. Version concise et directe
-3. Version fluide et naturelle
-
-Reponds UNIQUEMENT avec les 3 reformulations numerotees, sans explication.
-
-Texte: "${text.trim()}"`;
+  // Short, focused prompt = faster response
+  const prompt = `Reformule ce texte en style ${toneDesc}. Reponds UNIQUEMENT avec la reformulation.\n\n${text.trim()}`;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
     const response = await fetch(`${config.baseUrl}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -972,9 +965,12 @@ Texte: "${text.trim()}"`;
         model: config.selectedModel,
         prompt,
         stream: false,
-        options: { temperature: 0.7, num_predict: 512 },
+        options: { temperature: 0.7, num_predict: 256 },
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) throw new Error(`Ollama status ${response.status}`);
     const data = await response.json() as { response?: string };
@@ -983,21 +979,12 @@ Texte: "${text.trim()}"`;
     const ua = req.headers['user-agent'] || '';
     await logActivity(userId, 'ai.reformulate', 'system', null, { textLength: text.length, tone }, ip, ua);
 
-    const result = data.response?.trim() || '';
-
-    // Parse numbered suggestions if no specific tone requested
-    if (!tone) {
-      const suggestions: string[] = [];
-      const lines = result.split('\n').filter((l: string) => l.trim());
-      for (const line of lines) {
-        const match = line.match(/^\d+[\.\)]\s*(.+)/);
-        if (match) suggestions.push(match[1].trim());
-      }
-      return res.json({ suggestions: suggestions.length > 0 ? suggestions : [result] });
-    }
-
+    const result = (data.response?.trim() || '').replace(/^["']|["']$/g, '');
     res.json({ suggestions: [result] });
   } catch (err: any) {
+    if (err.name === 'AbortError') {
+      return res.status(504).json({ message: 'Reformulation timeout (30s)' });
+    }
     res.status(502).json({ message: `Erreur IA: ${err.message}` });
   }
 }
