@@ -1410,6 +1410,8 @@ function walkTreeDocx(
       const num = nextSectionNumber(counter, hl);
       const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
       sections.push({ title: `${num} ${node.title}`, level: hl, paragraphs: [], blocks });
+      // Recurse into children of notes (e.g. article linked to an audio file)
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter, mediaFormat);
     } else if (node.type === 'media' && node.mediaData) {
       const num = nextSectionNumber(counter, hl);
       sections.push({
@@ -1419,6 +1421,8 @@ function walkTreeDocx(
         mediaData: node.mediaData,
         mediaFormat,
       });
+      // Recurse into children of media nodes (e.g. press article under audio)
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter, mediaFormat);
     }
   }
 }
