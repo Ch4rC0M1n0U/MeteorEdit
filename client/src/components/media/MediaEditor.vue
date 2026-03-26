@@ -67,7 +67,7 @@
             <v-icon size="14">mdi-pencil</v-icon>
             {{ t('media.note') }}
           </button>
-          <button class="me-btn me-btn--observation" @click="showObservation = true">
+          <button class="me-btn me-btn--observation" @click="editingObsIndex = null; observationText = ''; showObservation = true">
             <v-icon size="14">mdi-comment-text-outline</v-icon>
             {{ t('media.observation') }}
           </button>
@@ -105,6 +105,9 @@
       <div v-for="(obs, i) in props.node.mediaData.observations" :key="i" class="me-obs-item">
         <span class="me-obs-date mono">{{ new Date(obs.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</span>
         <span class="me-obs-text">{{ obs.text }}</span>
+        <button class="me-obs-edit" @click="editObservation(i)" :title="t('common.edit')">
+          <v-icon size="12">mdi-pencil</v-icon>
+        </button>
         <button class="me-obs-del" @click="deleteObservation(i)" :title="t('common.delete')">
           <v-icon size="12">mdi-close</v-icon>
         </button>
@@ -329,6 +332,7 @@ const duration = ref(0);
 const capturing = ref(false);
 const showMetadata = ref(false);
 const showObservation = ref(false);
+const editingObsIndex = ref<number | null>(null);
 const observationText = ref('');
 const sessionManagerOpen = ref(false);
 const filter = ref('');
@@ -588,17 +592,34 @@ function onWaveformSeek(time: number) {
 // --- Observation / Comments ---
 function saveObservation() {
   if (!observationText.value.trim()) return;
-  const observations = props.node.mediaData?.observations || [];
-  const newObs = {
-    text: observationText.value.trim(),
-    date: new Date().toISOString(),
-    author: 'user',
-  };
-  observations.push(newObs);
+  const observations = [...(props.node.mediaData?.observations || [])];
+  if (editingObsIndex.value !== null && editingObsIndex.value < observations.length) {
+    // Edit existing observation
+    observations[editingObsIndex.value] = {
+      ...observations[editingObsIndex.value],
+      text: observationText.value.trim(),
+    };
+  } else {
+    // New observation
+    observations.push({
+      text: observationText.value.trim(),
+      date: new Date().toISOString(),
+      author: 'user',
+    });
+  }
   const updatedMediaData = { ...props.node.mediaData, observations };
   dossierStore.updateNode(props.node._id, { mediaData: updatedMediaData } as any);
   observationText.value = '';
+  editingObsIndex.value = null;
   showObservation.value = false;
+}
+
+function editObservation(index: number) {
+  const obs = props.node.mediaData?.observations?.[index];
+  if (!obs) return;
+  observationText.value = obs.text;
+  editingObsIndex.value = index;
+  showObservation.value = true;
 }
 
 function deleteObservation(index: number) {
@@ -1586,6 +1607,8 @@ onBeforeUnmount(() => {
 .me-obs-item:last-child { border-bottom: none; }
 .me-obs-date { font-size: 10px; color: var(--me-text-muted); white-space: nowrap; padding-top: 2px; }
 .me-obs-text { font-size: 12px; color: var(--me-text-primary); flex: 1; line-height: 1.4; }
+.me-obs-edit { background: none; border: none; color: var(--me-text-muted); cursor: pointer; padding: 2px; flex-shrink: 0; }
+.me-obs-edit:hover { color: var(--me-accent); }
 .me-obs-del { background: none; border: none; color: var(--me-text-muted); cursor: pointer; padding: 2px; flex-shrink: 0; }
 .me-obs-del:hover { color: #f44336; }
 .me-observation-textarea { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--me-border); background: var(--me-bg-deep); color: var(--me-text-primary); font-size: 13px; font-family: inherit; resize: vertical; outline: none; }
