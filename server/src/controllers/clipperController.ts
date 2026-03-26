@@ -17,10 +17,10 @@ const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR ||
  */
 const CONSENT_SCRIPT_PATTERNS: RegExp[] = [
   // --- DPG Media (7sur7, HLN, De Morgen, Humo, VTM) ---
-  /myprivacy[-.]dpgmedia/i,
-  /myprivacy-static\.dpgmedia\.net\/consent/i,
-  /sp\.dpgmedia\.net/i,
+  /myprivacy-static\.dpgmedia\.net\/consent\.js/i,
+  /sp\.dpgmedia\.net\//i,
   /pg\.dpgmedia\.be\/api\/consent/i,
+  /pg\.dpgmedia\.net\/api\/metrics/i,
   // --- Sourcepoint ---
   /cdn\.privacy-mgmt\.com/i,
   /sourcepoint\.mgr\.consensu\.org/i,
@@ -418,19 +418,25 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
 
     // --- Block consent/cookie CMP scripts + paywall scripts ---
     // Always intercept requests to block consent popups on ALL sites
+    // IMPORTANT: only block script/xhr/fetch resources, NEVER block document navigations
     await page.setRequestInterception(true);
     const paywallPatterns = bypassRule?.blockPatterns || [];
     page.on('request', (req: any) => {
       const reqUrl = req.url();
-      // Block known consent/cookie management platforms (universal)
-      if (CONSENT_SCRIPT_PATTERNS.some((p: RegExp) => p.test(reqUrl))) {
-        req.abort();
-        return;
-      }
-      // Block paywall scripts (per-domain rules)
-      if (paywallPatterns.length > 0 && paywallPatterns.some((p: RegExp) => p.test(reqUrl))) {
-        req.abort();
-        return;
+      const resourceType = req.resourceType();
+      // Never block page navigations (document) or images/fonts/media
+      const blockableTypes = ['script', 'xhr', 'fetch', 'stylesheet'];
+      if (blockableTypes.includes(resourceType)) {
+        // Block known consent/cookie management platforms (universal)
+        if (CONSENT_SCRIPT_PATTERNS.some((p: RegExp) => p.test(reqUrl))) {
+          req.abort();
+          return;
+        }
+        // Block paywall scripts (per-domain rules)
+        if (paywallPatterns.length > 0 && paywallPatterns.some((p: RegExp) => p.test(reqUrl))) {
+          req.abort();
+          return;
+        }
       }
       req.continue();
     });
