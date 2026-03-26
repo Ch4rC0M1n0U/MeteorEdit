@@ -247,14 +247,14 @@ const ExportNodeItem: any = defineComponent({
 
 .es-node {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; cursor: pointer; transition: background 0.12s;
-  user-select: none;
+  padding: 7px 10px; cursor: pointer; transition: all 0.15s;
+  user-select: none; opacity: 0.5; border-left: 3px solid transparent;
 }
-.es-node:hover { background: rgba(255,255,255,0.06); }
-.es-node--selected { background: rgba(var(--me-accent-rgb, 66,133,244), 0.15); border-left: 3px solid var(--me-accent); }
-.es-node--selected:hover { background: rgba(var(--me-accent-rgb, 66,133,244), 0.22); }
-.es-node-check { color: var(--me-text-muted); flex-shrink: 0; }
-.es-node-check--active { color: var(--me-accent); }
+.es-node:hover { background: rgba(255,255,255,0.06); opacity: 0.7; }
+.es-node--selected { background: rgba(var(--me-accent-rgb, 66,133,244), 0.12); border-left: 3px solid var(--me-accent); opacity: 1; }
+.es-node--selected:hover { background: rgba(var(--me-accent-rgb, 66,133,244), 0.2); }
+.es-node-check { color: var(--me-text-muted); flex-shrink: 0; opacity: 0.4; }
+.es-node-check--active { color: var(--me-accent); opacity: 1; }
 .es-node-icon { color: var(--me-text-muted); flex-shrink: 0; }
 .es-node--selected .es-node-icon { color: var(--me-accent); }
 .es-node-title { font-size: 13px; color: var(--me-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
