@@ -930,7 +930,7 @@ Fournis un resume structure en points cles (bullet points). Sois concis mais com
   }
 }
 
-// POST /api/ai/reformulate - Reformulate selected text (single reformulation, fast)
+// POST /api/ai/reformulate - Reformulate selected text (supports all AI providers)
 export async function reformulateText(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
   const { text, tone } = req.body;
@@ -938,8 +938,8 @@ export async function reformulateText(req: AuthRequest, res: Response) {
   if (!text?.trim()) return res.status(400).json({ message: 'Texte requis' });
   if (text.length > 2000) return res.status(400).json({ message: 'Texte trop long (max 2000 caracteres)' });
 
-  const config = await getOllamaConfig();
-  if (!config.enabled || !config.selectedModel) {
+  const config = await getAiConfig(userId);
+  if (!config.enabled || !config.model) {
     return res.status(400).json({ message: 'IA non configuree' });
   }
 
@@ -951,35 +951,66 @@ export async function reformulateText(req: AuthRequest, res: Response) {
   };
   const toneDesc = toneMap[tone || 'fluent'] || 'fluide et naturel';
 
-  // Short, focused prompt = faster response
   const prompt = `Reformule ce texte en style ${toneDesc}. Reponds UNIQUEMENT avec la reformulation.\n\n${text.trim()}`;
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    let result = '';
 
-    const response = await fetch(`${config.baseUrl}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: config.selectedModel,
-        prompt,
-        stream: false,
-        options: { temperature: 0.7, num_predict: 256 },
-      }),
-      signal: controller.signal,
-    });
+    if (config.provider === 'claude' && config.claudeApiKey) {
+      // Claude API
+      const Anthropic = (await import('@anthropic-ai/sdk')).default;
+      const client = new Anthropic({ apiKey: config.claudeApiKey });
+      const msg = await client.messages.create({
+        model: config.claudeModel,
+        max_tokens: 256,
+        temperature: 0.7,
+        messages: [{ role: 'user', content: prompt }],
+      });
+      result = msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
+    } else if (config.provider === 'openai' && config.openaiApiKey) {
+      // OpenAI API
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.openaiApiKey}` },
+        body: JSON.stringify({
+          model: config.openaiModel,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 256,
+          temperature: 0.7,
+        }),
+        signal: controller.signal,
+      });
+      if (!resp.ok) throw new Error(`OpenAI status ${resp.status}`);
+      const data = await resp.json() as any;
+      result = data.choices?.[0]?.message?.content || '';
+    } else {
+      // Ollama (local)
+      const ollamaConfig = await getOllamaConfig();
+      const response = await fetch(`${ollamaConfig.baseUrl}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: ollamaConfig.selectedModel || config.model,
+          prompt,
+          stream: false,
+          options: { temperature: 0.7, num_predict: 256 },
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`Ollama status ${response.status}`);
+      const data = await response.json() as { response?: string };
+      result = data.response || '';
+    }
 
     clearTimeout(timeout);
 
-    if (!response.ok) throw new Error(`Ollama status ${response.status}`);
-    const data = await response.json() as { response?: string };
-
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
-    await logActivity(userId, 'ai.reformulate', 'system', null, { textLength: text.length, tone }, ip, ua);
+    await logActivity(userId, 'ai.reformulate', 'system', null, { textLength: text.length, tone, provider: config.provider }, ip, ua);
 
-    const result = (data.response?.trim() || '').replace(/^["']|["']$/g, '');
+    result = result.trim().replace(/^["']|["']$/g, '');
     res.json({ suggestions: [result] });
   } catch (err: any) {
     if (err.name === 'AbortError') {
