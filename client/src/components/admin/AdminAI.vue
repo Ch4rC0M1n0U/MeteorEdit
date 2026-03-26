@@ -1185,10 +1185,29 @@ async function deleteTemplate(id: string) {
   }
 }
 
-onMounted(() => {
-  loadSettings();
+onMounted(async () => {
+  await loadSettings();
   loadModels();
   loadTemplates();
+  // Auto-test external AI connections if keys are configured
+  if (claudeHasKey.value && form.claudeEnabled) {
+    try {
+      const { data } = await api.post('/ai/test/claude');
+      claudeConnectionOk.value = true;
+      claudeTestStatus.value = { ok: true, message: data.message || t('admin.connected') };
+    } catch {
+      claudeConnectionOk.value = false;
+    }
+  }
+  if (openaiHasKey.value && form.openaiEnabled) {
+    try {
+      const { data } = await api.post('/ai/test/openai');
+      openaiConnectionOk.value = true;
+      openaiTestStatus.value = { ok: true, message: data.message || t('admin.connected') };
+    } catch {
+      openaiConnectionOk.value = false;
+    }
+  }
 });
 
 onUnmounted(() => {
