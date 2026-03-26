@@ -172,17 +172,12 @@ export function resolveLogoUrl(logo: string, serverUrl: string): string {
 export async function loadTemplateLogos(tpl: PdfTemplateConfig, serverUrl: string): Promise<PdfLogoData> {
   let logoLeft: string | null = null;
   let logoRight: string | null = null;
+  // Only load logos if explicitly configured — no hardcoded fallbacks
   if (tpl.header.logoLeft) {
     try { logoLeft = await loadImageAsDataUrl(resolveLogoUrl(tpl.header.logoLeft, serverUrl)); } catch { /* */ }
   }
-  if (!logoLeft) {
-    try { logoLeft = await loadImageAsDataUrl(new URL('/logo-pjf.jpeg', window.location.origin).href); } catch { /* */ }
-  }
   if (tpl.header.logoRight) {
     try { logoRight = await loadImageAsDataUrl(resolveLogoUrl(tpl.header.logoRight, serverUrl)); } catch { /* */ }
-  }
-  if (!logoRight) {
-    try { logoRight = await loadImageAsDataUrl(new URL('/logo-dr5.png', window.location.origin).href); } catch { /* */ }
   }
   return { logoLeft, logoRight };
 }
