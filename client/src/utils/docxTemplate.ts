@@ -30,7 +30,15 @@ const DOCX_FONT_MAP: Record<FontFamily, string> = {
 
 function hexToRgb(hex: string | undefined | null): string {
   if (!hex) return '000000';
-  return hex.replace('#', '').toUpperCase();
+  const cleaned = hex.replace('#', '').trim();
+  // Only accept valid 3 or 6 digit hex values — reject CSS variables, rgb(), etc.
+  if (/^[0-9a-fA-F]{3}$/.test(cleaned)) {
+    return (cleaned[0]! + cleaned[0] + cleaned[1] + cleaned[1] + cleaned[2] + cleaned[2]).toUpperCase();
+  }
+  if (/^[0-9a-fA-F]{6}$/.test(cleaned)) {
+    return cleaned.toUpperCase();
+  }
+  return '000000';
 }
 
 function ptToHalfPt(pt: number): number {
