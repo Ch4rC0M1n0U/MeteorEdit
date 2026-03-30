@@ -226,6 +226,7 @@ const platforms = [
   { key: 'paypal', name: 'PayPal', icon: 'mdi-credit-card-outline' },
   { key: 'telegram', name: 'Telegram', icon: 'mdi-send' },
   { key: 'strava', name: 'Strava', icon: 'mdi-run' },
+  { key: 'mastodon', name: 'Mastodon', icon: 'mdi-mastodon' },
 ];
 
 function isPlatformEnabled(key: string): boolean {

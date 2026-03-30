@@ -29,6 +29,7 @@ import * as linktreeScraper from '../scrapers/linktree';
 import * as paypalScraper from '../scrapers/paypal';
 import * as telegramScraper from '../scrapers/telegram';
 import * as stravaScraper from '../scrapers/strava';
+import * as mastodonScraper from '../scrapers/mastodon';
 
 const CHROME_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -47,6 +48,7 @@ const PLATFORM_PATTERNS: Array<{ pattern: RegExp; platform: string }> = [
   { pattern: /(?:paypal\.me|paypalme)/i, platform: 'paypal' },
   { pattern: /(?:t\.me|telegram\.me|telegram\.org)/i, platform: 'telegram' },
   { pattern: /strava\.com/i, platform: 'strava' },
+  { pattern: /mastodon\.|mstdn\.|piaille\.fr|framapiaf\.org|mamot\.fr|social\.tcit\.fr|toot\.|pouet\./i, platform: 'mastodon' },
 ];
 
 const SCRAPERS: Record<string, { scrape: (page: any, url: string) => Promise<ProfileData> }> = {
@@ -63,6 +65,7 @@ const SCRAPERS: Record<string, { scrape: (page: any, url: string) => Promise<Pro
   paypal: paypalScraper,
   telegram: telegramScraper,
   strava: stravaScraper,
+  mastodon: mastodonScraper,
 };
 
 const PLATFORM_EMOJIS: Record<string, string> = {
@@ -79,12 +82,18 @@ const PLATFORM_EMOJIS: Record<string, string> = {
   paypal: '\u{1F4B3}',     // credit card
   telegram: '\u{2708}',    // airplane (Telegram paper plane)
   strava: '\u{1F3C3}',     // runner
+  mastodon: '\u{1F418}',    // elephant (Mastodon mascot)
 };
 
 function detectPlatform(url: string): string | null {
   for (const { pattern, platform } of PLATFORM_PATTERNS) {
     if (pattern.test(url)) return platform;
   }
+  // Generic fallback: if URL contains /@username, assume Mastodon instance
+  try {
+    const urlObj = new URL(url);
+    if (/^\/@[^\/]+/.test(urlObj.pathname)) return 'mastodon';
+  } catch { /* ignore invalid URLs */ }
   return null;
 }
 
@@ -195,6 +204,13 @@ function buildTipTapContent(profile: ProfileData, platform: string, sourceUrl?: 
   if (meta.lastSeen) rows.push(['Dernière connexion', meta.lastSeen]);
   if (meta.birthday) rows.push(['Anniversaire', String(meta.birthday)]);
   if (meta.paypalUrl) rows.push(['PayPal URL', meta.paypalUrl]);
+  // Mastodon-specific
+  if (meta.instance) rows.push(['Instance', meta.instance]);
+  if (meta.customFields?.length > 0) {
+    for (const field of meta.customFields) {
+      rows.push(['Champ personnalisé', field]);
+    }
+  }
   // Strava-specific
   if (meta.premium) rows.push(['Strava Premium', 'Oui']);
   if (meta.summit) rows.push(['Strava Summit', 'Oui']);
@@ -863,7 +879,7 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
     // ── Detect platform ──
     const platform = detectPlatform(url);
     if (!platform) {
-      res.status(400).json({ message: 'URL non reconnue. Plateformes supportées : Snapchat, Instagram, TikTok, YouTube, Facebook, X/Twitter, WhatsApp, Threads, LinkedIn, PayPal, Telegram.' });
+      res.status(400).json({ message: 'URL non reconnue. Plateformes supportées : Snapchat, Instagram, TikTok, YouTube, Facebook, X/Twitter, WhatsApp, Threads, LinkedIn, PayPal, Telegram, Mastodon.' });
       return;
     }
 

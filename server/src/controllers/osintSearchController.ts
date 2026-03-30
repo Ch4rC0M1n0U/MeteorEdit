@@ -9,10 +9,11 @@ const SEARXNG_URL = process.env.SEARXNG_URL || 'http://100.64.0.2:8091';
 const DORK_TEMPLATES: Record<string, string> = {
   telegram: 'site:t.me OR site:tgstat.com OR site:telemetr.io',
   leaks: 'site:pastebin.com OR site:rentry.co OR site:ghostbin.com',
-  social: 'site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com',
+  social: 'site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:mastodon.social',
   email: 'site:pastebin.com OR site:t.me OR intext:password',
   phone: 'site:t.me OR site:facebook.com OR site:whatsapp.com',
   username: 'site:t.me OR site:instagram.com OR site:github.com OR site:reddit.com',
+  mastodon: 'site:mastodon.social OR site:piaille.fr OR site:framapiaf.org OR site:mstdn.social',
 };
 
 // POST /api/osint/search

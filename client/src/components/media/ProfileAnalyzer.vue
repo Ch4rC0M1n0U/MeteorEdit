@@ -33,7 +33,7 @@
       </div>
 
       <!-- Cookie status -->
-      <div v-if="detectedPlatform && detectedPlatform !== 'whatsapp'" class="pa-cookie-status">
+      <div v-if="detectedPlatform && detectedPlatform !== 'whatsapp' && detectedPlatform !== 'mastodon'" class="pa-cookie-status">
         <div v-if="cookieLoading" class="pa-cookie-checking">
           <v-icon size="14" class="pa-spin">mdi-loading</v-icon>
           <span>{{ $t('social.profile.checkingCookies') }}</span>
@@ -120,6 +120,7 @@ const PLATFORM_PATTERNS: Array<{ pattern: RegExp; platform: string }> = [
   { pattern: /(?:paypal\.me|paypalme)/i, platform: 'paypal' },
   { pattern: /(?:t\.me|telegram\.me|telegram\.org)/i, platform: 'telegram' },
   { pattern: /strava\.com/i, platform: 'strava' },
+  { pattern: /mastodon\.|mstdn\.|piaille\.fr|framapiaf\.org|mamot\.fr|social\.tcit\.fr|toot\.|pouet\./i, platform: 'mastodon' },
 ];
 
 const PLATFORM_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
@@ -136,6 +137,7 @@ const PLATFORM_CONFIG: Record<string, { icon: string; color: string; label: stri
   paypal: { icon: 'mdi-credit-card-outline', color: '#003087', label: 'PayPal' },
   telegram: { icon: 'mdi-send', color: '#0088cc', label: 'Telegram' },
   strava: { icon: 'mdi-run', color: '#FC4C02', label: 'Strava' },
+  mastodon: { icon: 'mdi-mastodon', color: '#6364FF', label: 'Mastodon' },
 };
 
 const platformIcon = computed(() => detectedPlatform.value ? PLATFORM_CONFIG[detectedPlatform.value]?.icon || 'mdi-web' : 'mdi-web');
@@ -150,6 +152,11 @@ function detectPlatform(inputUrl: string): string | null {
   for (const { pattern, platform } of PLATFORM_PATTERNS) {
     if (pattern.test(inputUrl)) return platform;
   }
+  // Generic fallback: if URL contains /@username, assume Mastodon instance
+  try {
+    const urlObj = new URL(inputUrl);
+    if (/^\/@[^\/]+/.test(urlObj.pathname)) return 'mastodon';
+  } catch { /* ignore invalid URLs */ }
   return null;
 }
 
@@ -161,7 +168,7 @@ function onUrlChange() {
 // Fetch cookies once and check against detected platform
 watch(detectedPlatform, async (platform) => {
   hasCookies.value = false;
-  if (!platform || platform === 'whatsapp') return;
+  if (!platform || platform === 'whatsapp' || platform === 'mastodon') return;
 
   if (!cookiesFetched.value) {
     cookieLoading.value = true;
