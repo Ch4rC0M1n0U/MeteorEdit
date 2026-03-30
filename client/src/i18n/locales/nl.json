@@ -1734,5 +1734,19 @@
     "previousPage": "Vorige",
     "nextPage": "Volgende",
     "engine": "Bron"
+  },
+  "webcheck": {
+    "title": "Import Web-Check",
+    "description": "Importeer een JSON-bestand geexporteerd vanuit Web-Check om een webanalyse-notitie aan te maken.",
+    "dropOrClick": "Sleep het JSON-bestand of klik om te selecteren",
+    "selectCategories": "Selecteer categorieen om te importeren",
+    "selectAll": "Alles selecteren",
+    "deselectAll": "Alles deselecteren",
+    "import": "Importeren",
+    "importing": "Importeren...",
+    "parseError": "Fout bij het lezen van JSON-bestand",
+    "domainDetected": "Domein gedetecteerd",
+    "importSuccess": "Web-Check analyse geimporteerd",
+    "categories": "categorieen geselecteerd"
   }
 }

@@ -1747,5 +1747,19 @@
     "previousPage": "Précédent",
     "nextPage": "Suivant",
     "engine": "Source"
+  },
+  "webcheck": {
+    "title": "Import Web-Check",
+    "description": "Importez un fichier JSON exporté depuis Web-Check pour créer une note d'analyse web.",
+    "dropOrClick": "Glissez le fichier JSON ou cliquez pour sélectionner",
+    "selectCategories": "Sélectionner les catégories à importer",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "import": "Importer",
+    "importing": "Import en cours...",
+    "parseError": "Erreur de lecture du fichier JSON",
+    "domainDetected": "Domaine détecté",
+    "importSuccess": "Analyse Web-Check importée",
+    "categories": "catégories sélectionnées"
   }
 }

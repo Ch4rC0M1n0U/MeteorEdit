@@ -37,6 +37,7 @@ import changelogRoutes from './routes/changelog';
 import osintSearchRoutes from './routes/osintSearch';
 import setupRoutes from './routes/setup';
 import apiKeyRoutes from './routes/apiKeys';
+import webcheckRoutes from './routes/webcheck';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
 import { startYjsServer } from './yjs-server';
@@ -143,6 +144,7 @@ app.use('/api/languagetool', languagetoolRoutes);
 app.use('/api/changelog', changelogRoutes);
 app.use('/api/osint', osintSearchRoutes);
 app.use('/api/api-keys', apiKeyRoutes);
+app.use('/api', webcheckRoutes);
 
 setupSocket(httpServer);
 
