@@ -47,6 +47,13 @@ const dossierSchema = new Schema<IDossier>(
     attributionDate: { type: Date, default: null },
     closureDate: { type: Date, default: null },
     linkedDocuments: [linkedDocumentSchema],
+    finalReport: {
+      fileName: { type: String, default: null },
+      filePath: { type: String, default: null },
+      fileSize: { type: Number, default: null },
+      mimeType: { type: String, default: null },
+      uploadedAt: { type: Date, default: null },
+    },
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     collaborators: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     encryptionKeys: [{

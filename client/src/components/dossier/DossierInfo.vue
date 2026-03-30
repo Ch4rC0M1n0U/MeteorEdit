@@ -346,6 +346,103 @@
         </div>
       </div>
 
+      <!-- CLOTURE DU RAPPORT -->
+      <div class="di-section di-full-width" v-if="dossierStore.currentDossier">
+        <div class="di-section-header">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-file-check-outline</v-icon>
+            {{ $t('dossier.closingReport') }}
+          </h3>
+        </div>
+
+        <!-- Report exists -->
+        <div v-if="dossierStore.currentDossier.finalReport?.filePath" class="di-report-card">
+          <div class="di-report-info">
+            <v-icon size="20" class="mr-2" color="primary">mdi-file-document-check-outline</v-icon>
+            <div class="di-report-meta">
+              <span class="di-report-name">{{ dossierStore.currentDossier.finalReport.fileName }}</span>
+              <span class="di-report-details mono">
+                {{ formatFileSize(dossierStore.currentDossier.finalReport.fileSize || 0) }}
+                <template v-if="dossierStore.currentDossier.finalReport.uploadedAt">
+                  &mdash; {{ $t('dossier.reportUploadedOn') }} {{ new Date(dossierStore.currentDossier.finalReport.uploadedAt).toLocaleDateString(locale) }}
+                </template>
+              </span>
+            </div>
+          </div>
+          <div class="di-report-actions">
+            <button class="me-btn-small" @click="downloadFinalReport" :title="$t('dossier.downloadReport')">
+              <v-icon size="14" class="mr-1">mdi-download</v-icon>
+              {{ $t('dossier.downloadReport') }}
+            </button>
+            <button class="me-btn-small" @click="showCloseDialog = true" :title="$t('dossier.replaceReport')">
+              <v-icon size="14" class="mr-1">mdi-file-replace-outline</v-icon>
+              {{ $t('dossier.replaceReport') }}
+            </button>
+            <button class="me-btn-small di-btn-danger" @click="confirmDeleteReport" :title="$t('dossier.deleteReport')">
+              <v-icon size="14" class="mr-1">mdi-trash-can-outline</v-icon>
+              {{ $t('dossier.deleteReport') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- No report yet -->
+        <div v-else class="di-report-empty">
+          <p class="di-report-empty-text mono">{{ $t('dossier.closeDossierDesc') }}</p>
+          <button class="me-btn-small" @click="showCloseDialog = true">
+            <v-icon size="14" class="mr-1">mdi-file-check-outline</v-icon>
+            {{ $t('dossier.closeDossier') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Close dossier dialog -->
+      <v-dialog v-model="showCloseDialog" max-width="480" persistent>
+        <v-card class="glass-card">
+          <v-card-title class="mono">{{ $t('dossier.closingReport') }}</v-card-title>
+          <v-card-text>
+            <p class="mb-4" style="opacity: 0.7; font-size: 13px;">{{ $t('dossier.closeDossierDesc') }}</p>
+            <div class="di-report-upload-zone" @click="triggerReportInput" @dragover.prevent @drop.prevent="handleReportDrop">
+              <input ref="reportInput" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden @change="handleReportSelect" />
+              <v-icon size="32" class="mb-2" style="opacity: 0.4;">mdi-file-upload-outline</v-icon>
+              <span class="mono" style="font-size: 13px;">{{ $t('dossier.selectReport') }}</span>
+              <span style="font-size: 11px; opacity: 0.5;">PDF, DOCX</span>
+            </div>
+            <div v-if="selectedReportFile" class="di-report-selected">
+              <v-icon size="16" class="mr-2">mdi-file-document-outline</v-icon>
+              <span class="di-report-selected-name">{{ selectedReportFile.name }}</span>
+              <span class="di-report-selected-size mono">{{ formatFileSize(selectedReportFile.size) }}</span>
+            </div>
+            <v-alert v-if="reportError" type="error" variant="tonal" density="compact" class="mt-3" style="font-size: 13px;">
+              {{ reportError }}
+            </v-alert>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <button class="me-btn-small" @click="cancelCloseDialog">{{ $t('common.cancel') }}</button>
+            <button class="me-btn-small me-btn-primary-sm" :disabled="!selectedReportFile || uploadingReport" @click="submitFinalReport">
+              <v-progress-circular v-if="uploadingReport" indeterminate size="14" width="2" class="mr-1" />
+              {{ $t('dossier.closeDossier') }}
+            </button>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Delete report confirmation dialog -->
+      <v-dialog v-model="showDeleteReportDialog" max-width="400">
+        <v-card class="glass-card">
+          <v-card-title class="mono">{{ $t('dossier.deleteReport') }}</v-card-title>
+          <v-card-text>{{ $t('dossier.deleteReportConfirm') }}</v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <button class="me-btn-small" @click="showDeleteReportDialog = false">{{ $t('common.cancel') }}</button>
+            <button class="me-btn-small di-btn-danger" @click="deleteFinalReport">{{ $t('common.confirm') }}</button>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Closing report snackbar -->
+      <v-snackbar v-model="reportSnackbar" :timeout="3000" color="success">{{ reportSnackbarText }}</v-snackbar>
+
       <!-- CHIFFREMENT E2E (toujours actif, en dernier) -->
       <div class="di-section di-full-width" v-if="dossierStore.currentDossier">
         <div class="di-section-header">
@@ -820,6 +917,115 @@ const availableTags = ref<string[]>([]);
 
 const uploadingDoc = ref(false);
 const docInput = ref<HTMLInputElement | null>(null);
+
+// Closing report
+const showCloseDialog = ref(false);
+const showDeleteReportDialog = ref(false);
+const selectedReportFile = ref<File | null>(null);
+const uploadingReport = ref(false);
+const reportError = ref('');
+const reportInput = ref<HTMLInputElement | null>(null);
+const reportSnackbar = ref(false);
+const reportSnackbarText = ref('');
+
+const ALLOWED_REPORT_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+function triggerReportInput() {
+  reportInput.value?.click();
+}
+
+function handleReportSelect(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (file) validateAndSetReportFile(file);
+  input.value = '';
+}
+
+function handleReportDrop(e: DragEvent) {
+  const file = e.dataTransfer?.files?.[0];
+  if (file) validateAndSetReportFile(file);
+}
+
+function validateAndSetReportFile(file: File) {
+  reportError.value = '';
+  if (!ALLOWED_REPORT_TYPES.includes(file.type)) {
+    reportError.value = t('dossier.invalidFileType');
+    selectedReportFile.value = null;
+    return;
+  }
+  selectedReportFile.value = file;
+}
+
+function cancelCloseDialog() {
+  showCloseDialog.value = false;
+  selectedReportFile.value = null;
+  reportError.value = '';
+}
+
+async function submitFinalReport() {
+  if (!selectedReportFile.value || !dossierStore.currentDossier) return;
+  uploadingReport.value = true;
+  reportError.value = '';
+  try {
+    const dossierId = dossierStore.currentDossier._id;
+    const fd = new FormData();
+    fd.append('finalReport', selectedReportFile.value);
+    await api.post(`/dossiers/${dossierId}/close`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    await dossierStore.openDossier(dossierId);
+    showCloseDialog.value = false;
+    selectedReportFile.value = null;
+    reportSnackbarText.value = t('dossier.closingSuccess');
+    reportSnackbar.value = true;
+  } catch (err: any) {
+    reportError.value = err?.response?.data?.message || err.message || 'Error';
+  } finally {
+    uploadingReport.value = false;
+  }
+}
+
+async function downloadFinalReport() {
+  const d = dossierStore.currentDossier;
+  if (!d?.finalReport?.filePath) return;
+  const token = localStorage.getItem('accessToken');
+  try {
+    const resp = await fetch(`${SERVER_URL}/api/dossiers/${d._id}/final-report`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!resp.ok) throw new Error('Download failed');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = d.finalReport.fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    // silent fail
+  }
+}
+
+function confirmDeleteReport() {
+  showDeleteReportDialog.value = true;
+}
+
+async function deleteFinalReport() {
+  if (!dossierStore.currentDossier) return;
+  const dossierId = dossierStore.currentDossier._id;
+  try {
+    await api.delete(`/dossiers/${dossierId}/final-report`);
+    await dossierStore.openDossier(dossierId);
+    showDeleteReportDialog.value = false;
+    reportSnackbarText.value = t('dossier.reportDeleted');
+    reportSnackbar.value = true;
+  } catch {
+    // silent fail
+  }
+}
 
 const form = reactive({
   title: '',
@@ -3215,5 +3421,113 @@ async function removeCollaborator(userId: string) {
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--me-border);
+}
+
+/* --- Closing Report --- */
+.di-report-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--me-surface-variant, rgba(255,255,255,0.04));
+  border: 1px solid var(--me-border);
+}
+.di-report-info {
+  display: flex;
+  align-items: center;
+}
+.di-report-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.di-report-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.di-report-details {
+  font-size: 12px;
+  opacity: 0.6;
+}
+.di-report-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.di-report-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.di-report-empty-text {
+  font-size: 13px;
+  opacity: 0.6;
+  margin: 0;
+}
+.di-report-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+  border: 2px dashed var(--me-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  gap: 4px;
+}
+.di-report-upload-zone:hover {
+  border-color: var(--me-accent, #6366f1);
+}
+.di-report-selected {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--me-surface-variant, rgba(255,255,255,0.04));
+  border-radius: 8px;
+  font-size: 13px;
+}
+.di-report-selected-name {
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.di-report-selected-size {
+  font-size: 11px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.di-btn-danger {
+  color: var(--me-danger, #f87171) !important;
+  border-color: var(--me-danger, #f87171) !important;
+}
+.di-btn-danger:hover {
+  background: rgba(248, 113, 113, 0.1) !important;
+}
+.me-btn-primary-sm {
+  background: var(--me-accent, #6366f1) !important;
+  color: #fff !important;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+.me-btn-primary-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.me-btn-primary-sm:not(:disabled):hover {
+  opacity: 0.85;
 }
 </style>

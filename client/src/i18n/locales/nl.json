@@ -404,7 +404,20 @@
       "iban": "IBAN / Rekening",
       "pseudo": "Gebruikersnaam",
       "other": "Overig"
-    }
+    },
+    "closingReport": "Afsluitrapport",
+    "closeDossier": "Dossier afsluiten",
+    "closeDossierDesc": "Upload het eindrapport (PDF of DOCX) om dit dossier af te sluiten",
+    "selectReport": "Rapport selecteren",
+    "reportUploaded": "Eindrapport",
+    "reportUploadedOn": "Geüpload op",
+    "downloadReport": "Downloaden",
+    "replaceReport": "Vervangen",
+    "deleteReport": "Rapport verwijderen",
+    "deleteReportConfirm": "Eindrapport definitief verwijderen?",
+    "closingSuccess": "Dossier succesvol afgesloten",
+    "reportDeleted": "Rapport verwijderd",
+    "invalidFileType": "Ongeldig formaat. Alleen PDF- en DOCX-bestanden worden geaccepteerd"
   },
   "tree": {
     "dossierInfo": "Dossierinfo",

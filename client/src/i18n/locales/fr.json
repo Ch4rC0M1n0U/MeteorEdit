@@ -417,7 +417,20 @@
       "iban": "IBAN / Compte",
       "pseudo": "Pseudo",
       "other": "Autre"
-    }
+    },
+    "closingReport": "Clôture du rapport",
+    "closeDossier": "Clôturer le dossier",
+    "closeDossierDesc": "Téléchargez le rapport final (PDF ou DOCX) pour clôturer ce dossier",
+    "selectReport": "Sélectionner le rapport",
+    "reportUploaded": "Rapport final",
+    "reportUploadedOn": "Déposé le",
+    "downloadReport": "Télécharger",
+    "replaceReport": "Remplacer",
+    "deleteReport": "Supprimer le rapport",
+    "deleteReportConfirm": "Supprimer définitivement le rapport final ?",
+    "closingSuccess": "Dossier clôturé avec succès",
+    "reportDeleted": "Rapport supprimé",
+    "invalidFileType": "Format invalide. Seuls les fichiers PDF et DOCX sont acceptés"
   },
   "tree": {
     "dossierInfo": "Info dossier",

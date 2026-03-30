@@ -89,6 +89,13 @@ export interface IDossier extends Document {
   attributionDate: Date | null;
   closureDate: Date | null;
   linkedDocuments: ILinkedDocument[];
+  finalReport: {
+    fileName: string | null;
+    filePath: string | null;
+    fileSize: number | null;
+    mimeType: string | null;
+    uploadedAt: Date | null;
+  };
   owner: Types.ObjectId;
   collaborators: Types.ObjectId[];
   encryptionKeys: { userId: Types.ObjectId; encryptedKey: string }[];

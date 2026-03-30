@@ -429,6 +429,165 @@ export async function transferDocumentToNode(req: AuthRequest, res: Response): P
   }
 }
 
+const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
+
+const ALLOWED_REPORT_MIMETYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+export async function closeDossier(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) {
+      res.status(404).json({ message: 'Dossier not found' });
+      return;
+    }
+    if (dossier.owner.toString() !== req.user!.userId) {
+      res.status(403).json({ message: 'Only owner can close dossier' });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ message: 'Final report file is required (PDF or DOCX)' });
+      return;
+    }
+    if (!ALLOWED_REPORT_MIMETYPES.includes(req.file.mimetype)) {
+      // Clean up the uploaded file
+      const tmpPath = path.resolve(UPLOAD_DIR, req.file.filename);
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+      res.status(400).json({ message: 'Only PDF or DOCX files are allowed' });
+      return;
+    }
+
+    // Remove old report file if exists
+    if (dossier.finalReport?.filePath) {
+      const oldPath = path.resolve(UPLOAD_DIR, dossier.finalReport.filePath.replace(/^uploads\//, ''));
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    dossier.status = 'closed';
+    dossier.closureDate = new Date();
+    dossier.finalReport = {
+      fileName: req.file.originalname,
+      filePath: `uploads/${req.file.filename}`,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      uploadedAt: new Date(),
+    };
+    await dossier.save();
+
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(req.user!.userId, 'dossier.close', 'dossier', dossier._id.toString(), {
+        title: dossier.title,
+        reportFileName: req.file.originalname,
+      }, ip, req.headers['user-agent'] || '');
+    }
+
+    res.json(dossier);
+  } catch (error) {
+    console.error('Close dossier error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function getFinalReport(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) {
+      res.status(404).json({ message: 'Dossier not found' });
+      return;
+    }
+    const userId = req.user!.userId;
+    if (!isOwnerOrCollaborator(dossier, userId)) {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+    if (!dossier.finalReport?.filePath) {
+      res.status(404).json({ message: 'No final report found' });
+      return;
+    }
+
+    const relativePath = dossier.finalReport.filePath.replace(/^uploads\//, '');
+    let filePath = path.resolve(UPLOAD_DIR, relativePath);
+
+    // Try .enc variants if file not found (encrypted files)
+    if (!fs.existsSync(filePath)) {
+      const appendedEnc = filePath + '.enc';
+      const replacedEnc = filePath.replace(/\.[^.]+$/, '.enc');
+      if (fs.existsSync(appendedEnc)) {
+        filePath = appendedEnc;
+      } else if (replacedEnc !== filePath && fs.existsSync(replacedEnc)) {
+        filePath = replacedEnc;
+      } else {
+        res.status(404).json({ message: 'Report file not found on disk' });
+        return;
+      }
+    }
+
+    const isEncrypted = filePath.endsWith('.enc');
+    const contentType = isEncrypted ? 'application/octet-stream' : (dossier.finalReport.mimeType || 'application/octet-stream');
+    const displayName = dossier.finalReport.fileName || 'final-report';
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(displayName)}"`);
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+  } catch (error) {
+    console.error('Get final report error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+export async function deleteFinalReport(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id);
+    if (!dossier) {
+      res.status(404).json({ message: 'Dossier not found' });
+      return;
+    }
+    if (dossier.owner.toString() !== req.user!.userId) {
+      res.status(403).json({ message: 'Only owner can delete final report' });
+      return;
+    }
+    if (!dossier.finalReport?.filePath) {
+      res.status(404).json({ message: 'No final report found' });
+      return;
+    }
+
+    // Delete file from disk (try plain and .enc variants)
+    const relativePath = dossier.finalReport.filePath.replace(/^uploads\//, '');
+    const filePath = path.resolve(UPLOAD_DIR, relativePath);
+    for (const candidate of [filePath, filePath + '.enc', filePath.replace(/\.[^.]+$/, '.enc')]) {
+      if (fs.existsSync(candidate)) fs.unlinkSync(candidate);
+    }
+
+    const oldFileName = dossier.finalReport.fileName;
+    dossier.finalReport = {
+      fileName: null,
+      filePath: null,
+      fileSize: null,
+      mimeType: null,
+      uploadedAt: null,
+    } as any;
+    await dossier.save();
+
+    if (!dossier.isEmbargo) {
+      const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+      await logActivity(req.user!.userId, 'dossier.update', 'dossier', dossier._id.toString(), {
+        title: dossier.title,
+        change: 'final_report_delete',
+        fileName: oldFileName,
+      }, ip, req.headers['user-agent'] || '');
+    }
+
+    res.json(dossier);
+  } catch (error) {
+    console.error('Delete final report error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function deleteLinkedDocument(req: AuthRequest, res: Response): Promise<void> {
   try {
     const dossier = await Dossier.findById(req.params.id);

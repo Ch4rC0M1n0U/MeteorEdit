@@ -405,7 +405,20 @@
       "iban": "IBAN / Account",
       "pseudo": "Username",
       "other": "Other"
-    }
+    },
+    "closingReport": "Closing Report",
+    "closeDossier": "Close Dossier",
+    "closeDossierDesc": "Upload the final report (PDF or DOCX) to close this dossier",
+    "selectReport": "Select report",
+    "reportUploaded": "Final Report",
+    "reportUploadedOn": "Uploaded on",
+    "downloadReport": "Download",
+    "replaceReport": "Replace",
+    "deleteReport": "Delete report",
+    "deleteReportConfirm": "Permanently delete the final report?",
+    "closingSuccess": "Dossier closed successfully",
+    "reportDeleted": "Report deleted",
+    "invalidFileType": "Invalid format. Only PDF and DOCX files are accepted"
   },
   "tree": {
     "dossierInfo": "Case info",
