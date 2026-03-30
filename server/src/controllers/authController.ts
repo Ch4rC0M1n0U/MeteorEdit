@@ -60,6 +60,15 @@ export async function register(req: Request, res: Response): Promise<void> {
       res.status(400).json({ message: 'Email already registered' });
       return;
     }
+    // Check for duplicate firstName+lastName combination (case-insensitive)
+    const duplicateName = await User.findOne({
+      firstName: { $regex: new RegExp(`^${firstName.trim()}$`, 'i') },
+      lastName: { $regex: new RegExp(`^${lastName.trim()}$`, 'i') },
+    });
+    if (duplicateName) {
+      res.status(400).json({ message: 'Un utilisateur avec ce nom et prenom existe deja.' });
+      return;
+    }
     const user = await User.create({
       email, password, firstName, lastName,
       grade: grade || '',

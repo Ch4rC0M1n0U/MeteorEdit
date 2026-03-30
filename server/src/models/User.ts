@@ -69,4 +69,7 @@ userSchema.methods.comparePassword = async function (candidate: string): Promise
   return bcrypt.compare(candidate, this.password);
 };
 
+// Unique compound index: same firstName+lastName combination cannot exist twice
+userSchema.index({ firstName: 1, lastName: 1 }, { unique: true, collation: { locale: 'fr', strength: 2 } });
+
 export default mongoose.model<IUser>('User', userSchema);
