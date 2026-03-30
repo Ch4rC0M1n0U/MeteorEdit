@@ -259,13 +259,13 @@ async function doSearch(page: number) {
 
 async function openExportDialog(result: SearchResult) {
   exportResult.value = result;
-  selectedDossierId.value = null;
+  selectedDossierId.value = (route.query.dossierId as string) || null;
   exportDialogOpen.value = true;
 
   // Load dossiers
   try {
-    const { data } = await api.get('/dossiers');
-    dossiers.value = data;
+    const { data } = await api.get('/dossiers', { params: { limit: 100 } });
+    dossiers.value = data.dossiers || data || [];
   } catch {
     dossiers.value = [];
   }
