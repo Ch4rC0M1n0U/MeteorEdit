@@ -172,11 +172,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import api from '../services/api';
 
 const { t } = useI18n();
+const route = useRoute();
 
 // Search state
 const query = ref('');
@@ -201,7 +203,7 @@ const results = ref<SearchResult[]>([]);
 // Export state
 const exportDialogOpen = ref(false);
 const exportResult = ref<SearchResult | null>(null);
-const selectedDossierId = ref<string | null>(null);
+const selectedDossierId = ref<string | null>((route.query.dossierId as string) || null);
 const exporting = ref(false);
 const dossiers = ref<Array<{ _id: string; title: string }>>([]);
 

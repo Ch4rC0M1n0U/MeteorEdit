@@ -1724,7 +1724,8 @@
     "version": "Version"
   },
   "osint": {
-    "searchTitle": "Recherche OSINT",
+    "searchTitle": "Leaks Search",
+    "leaksSearch": "Leaks Search",
     "searchPlaceholder": "Rechercher (mot-clé, email, téléphone, username...)",
     "categoryAll": "Tout",
     "categoryTelegram": "Telegram",

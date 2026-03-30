@@ -76,6 +76,10 @@
                 <v-icon size="16">mdi-radar</v-icon>
                 <span>{{ $t('dossier.scanTitle') }}</span>
               </button>
+              <button class="dv-export-option" @click="openLeaksSearch">
+                <v-icon size="16">mdi-shield-search</v-icon>
+                <span>{{ $t('osint.leaksSearch') }}</span>
+              </button>
             </div>
           </v-menu>
           <!-- Export -->
@@ -653,6 +657,10 @@ const profileAnalyzerOpen = ref(false);
 const osintDorkingOpen = ref(false);
 const reverseImageOpen = ref(false);
 const usernameScanOpen = ref(false);
+function openLeaksSearch() {
+  const dossierId = dossierStore.currentDossier?._id || '';
+  window.open(`/osint-search?dossierId=${dossierId}`, '_blank');
+}
 const elephantasticOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
