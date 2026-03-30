@@ -87,8 +87,16 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
       res.status(403).json({ message: 'Only owner can update dossier' });
       return;
     }
-    const { collaborators, owner, _id, ...updateData } = req.body;
+    const { collaborators, owner, _id, relatedDossiers, ...updateData } = req.body;
+    // Filter out undefined/null values that could cause Mongoose cast errors
+    for (const key of Object.keys(updateData)) {
+      if (updateData[key] === undefined) delete updateData[key];
+    }
     Object.assign(dossier, updateData);
+    // Handle relatedDossiers separately (array of ObjectIds, filter invalid)
+    if (Array.isArray(relatedDossiers)) {
+      dossier.relatedDossiers = relatedDossiers.filter((id: any) => id && typeof id === 'string' && id.length === 24);
+    }
     // Auto-set closureDate when status changes to closed
     if (req.body.status === 'closed' && !dossier.closureDate) {
       dossier.closureDate = new Date();
@@ -111,8 +119,9 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
       }
     }
     res.json(dossier);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+  } catch (error: any) {
+    console.error('[Dossier] Update failed:', error?.message || error);
+    res.status(500).json({ message: error?.message || 'Server error' });
   }
 }
 
