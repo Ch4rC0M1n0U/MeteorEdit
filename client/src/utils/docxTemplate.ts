@@ -1183,6 +1183,56 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   // ─── BUILD ───
 
   const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: font,
+            size: ptToHalfPt(tpl.body.fontSize),
+            color: hexToRgb(tpl.body.color),
+          },
+          paragraph: {
+            spacing: { line: Math.round((tpl.spacing?.lineHeight || 1.4) * 240) },
+          },
+        },
+        heading1: {
+          run: {
+            font: font,
+            size: ptToHalfPt(tpl.headings.h1.fontSize),
+            bold: tpl.headings.h1.bold,
+            italic: tpl.headings.h1.italic,
+            color: hexToRgb(tpl.headings.h1.color),
+          },
+          paragraph: {
+            spacing: { before: 200, after: 100 },
+          },
+        },
+        heading2: {
+          run: {
+            font: font,
+            size: ptToHalfPt(tpl.headings.h2.fontSize),
+            bold: tpl.headings.h2.bold,
+            italic: tpl.headings.h2.italic,
+            color: hexToRgb(tpl.headings.h2.color),
+          },
+          paragraph: {
+            spacing: { before: 160, after: 80 },
+          },
+        },
+        heading3: {
+          run: {
+            font: font,
+            size: ptToHalfPt(tpl.headings.h3.fontSize),
+            bold: tpl.headings.h3.bold,
+            italic: tpl.headings.h3.italic,
+            color: hexToRgb(tpl.headings.h3.color),
+          },
+          paragraph: {
+            spacing: { before: 120, after: 60 },
+          },
+        },
+      },
+    },
     sections: [{
       properties: {
         page: {
