@@ -935,17 +935,28 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   const font = docxFont(tpl);
   const lineColor = hexToRgb(tpl.header.lineColor);
 
-  // Main title: "Rapport OSINT - Dossier <name>"
+  // Main title: "Rapport OSINT" + "Dossier <name>" on next line
   docChildren.push(new Paragraph({
     children: [new TextRun({
-      text: `Rapport OSINT - Dossier ${data.dossierTitle}`,
+      text: 'Rapport OSINT',
       font,
       size: ptToHalfPt(tpl.cover.titleSize),
       bold: true,
       color: titleColor,
     })],
     alignment: AlignmentType.CENTER,
-    spacing: { before: 200, after: 40 },
+    spacing: { before: 200, after: 0 },
+  }));
+  docChildren.push(new Paragraph({
+    children: [new TextRun({
+      text: `Dossier ${data.dossierTitle}`,
+      font,
+      size: ptToHalfPt(tpl.cover.titleSize),
+      bold: true,
+      color: titleColor,
+    })],
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 0, after: 40 },
   }));
 
   // Report number
