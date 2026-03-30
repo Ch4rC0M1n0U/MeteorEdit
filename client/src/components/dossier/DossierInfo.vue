@@ -183,6 +183,66 @@
         </div>
       </div>
 
+      <!-- DOSSIERS EN RELATION -->
+      <div class="di-section di-full-width" v-if="!isEditing">
+        <div class="di-section-header">
+          <h3 class="di-section-title mono">
+            <v-icon size="16" class="mr-2">mdi-link-variant</v-icon>
+            {{ $t('dossier.relatedDossiers') }}
+            <span v-if="relatedDossierDetails.length" class="di-count">{{ relatedDossierDetails.length }}</span>
+          </h3>
+          <button class="me-btn-small" @click="showRelatedDialog = true">
+            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+            {{ $t('common.add') }}
+          </button>
+        </div>
+        <div v-if="relatedDossierDetails.length" class="di-related-list">
+          <div v-for="rd in relatedDossierDetails" :key="rd._id" class="di-related-item">
+            <v-icon size="14" class="mr-1" color="var(--me-accent)">mdi-folder-outline</v-icon>
+            <span class="di-related-title">{{ rd.title }}</span>
+            <span v-if="rd.referenceNumber" class="di-related-ref mono">{{ rd.referenceNumber }}</span>
+            <v-chip size="x-small" variant="tonal" :color="rd.status === 'closed' ? 'success' : rd.status === 'in_progress' ? 'primary' : 'default'">{{ rd.status }}</v-chip>
+            <button class="me-obs-del" @click="removeRelatedDossier(rd._id)" :title="$t('common.delete')">
+              <v-icon size="12">mdi-close</v-icon>
+            </button>
+          </div>
+        </div>
+        <span v-else class="di-value" style="opacity: 0.5; font-size: 12px;">{{ $t('dossier.noRelatedDossiers') }}</span>
+      </div>
+
+      <!-- Dialog: Add related dossier -->
+      <v-dialog v-model="showRelatedDialog" max-width="440">
+        <div class="glass-card" style="padding: 20px;">
+          <h3 class="mono" style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">
+            <v-icon size="16" class="mr-1">mdi-link-variant</v-icon>
+            {{ $t('dossier.addRelatedDossier') }}
+          </h3>
+          <v-autocomplete
+            v-model="selectedRelatedDossier"
+            :items="availableDossiersForRelation"
+            item-title="title"
+            item-value="_id"
+            density="compact"
+            hide-details
+            :placeholder="$t('dossier.searchDossier')"
+            clearable
+            :no-data-text="$t('common.noResults')"
+          >
+            <template #item="{ item, props: itemProps }">
+              <v-list-item v-bind="itemProps">
+                <template #append>
+                  <span class="mono" style="font-size: 11px; color: var(--me-text-muted);">{{ item.raw.referenceNumber }}</span>
+                </template>
+              </v-list-item>
+            </template>
+          </v-autocomplete>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+            <button class="me-btn-ghost" @click="showRelatedDialog = false">{{ $t('common.cancel') }}</button>
+            <button class="di-btn-primary" :disabled="!selectedRelatedDossier" @click="addRelatedDossier">{{ $t('common.add') }}</button>
+          </div>
+        </div>
+      </v-dialog>
+
       <!-- ENTITES (priorité haute) -->
       <div class="di-section di-full-width">
         <div class="di-section-header">
@@ -936,6 +996,18 @@ const reportInput = ref<HTMLInputElement | null>(null);
 const reportSnackbar = ref(false);
 const reportSnackbarText = ref('');
 
+// Related dossiers
+const showRelatedDialog = ref(false);
+const selectedRelatedDossier = ref<string | null>(null);
+const relatedDossierDetails = ref<Array<{ _id: string; title: string; referenceNumber?: string; status: string }>>([]);
+const allDossiersCache = ref<Array<{ _id: string; title: string; referenceNumber?: string; status: string }>>([]);
+
+const availableDossiersForRelation = computed(() => {
+  const currentId = dossierStore.currentDossier?._id;
+  const relatedIds = new Set((dossierStore.currentDossier as any)?.relatedDossiers?.map((d: any) => typeof d === 'string' ? d : d._id) || []);
+  return allDossiersCache.value.filter(d => d._id !== currentId && !relatedIds.has(d._id));
+});
+
 const ALLOWED_REPORT_TYPES = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -1033,6 +1105,48 @@ async function deleteFinalReport() {
   } catch {
     // silent fail
   }
+}
+
+async function loadRelatedDossiers() {
+  if (!dossierStore.currentDossier) return;
+  const ids: string[] = ((dossierStore.currentDossier as any).relatedDossiers || []).map((d: any) => typeof d === 'string' ? d : d._id);
+  if (ids.length === 0) { relatedDossierDetails.value = []; return; }
+  try {
+    const { data } = await api.get('/dossiers', { params: { limit: 100 } });
+    allDossiersCache.value = data.dossiers || data || [];
+    relatedDossierDetails.value = allDossiersCache.value.filter(d => ids.includes(d._id));
+  } catch {
+    relatedDossierDetails.value = [];
+  }
+}
+
+async function loadAllDossiers() {
+  if (allDossiersCache.value.length > 0) return;
+  try {
+    const { data } = await api.get('/dossiers', { params: { limit: 100 } });
+    allDossiersCache.value = data.dossiers || data || [];
+  } catch { /* */ }
+}
+
+async function addRelatedDossier() {
+  if (!selectedRelatedDossier.value || !dossierStore.currentDossier) return;
+  const dossierId = dossierStore.currentDossier._id;
+  const current: string[] = ((dossierStore.currentDossier as any).relatedDossiers || []).map((d: any) => typeof d === 'string' ? d : d._id);
+  if (current.includes(selectedRelatedDossier.value)) return;
+  current.push(selectedRelatedDossier.value);
+  await dossierStore.updateDossier(dossierId, { relatedDossiers: current } as any);
+  selectedRelatedDossier.value = null;
+  showRelatedDialog.value = false;
+  await loadRelatedDossiers();
+}
+
+async function removeRelatedDossier(id: string) {
+  if (!dossierStore.currentDossier) return;
+  const dossierId = dossierStore.currentDossier._id;
+  const current: string[] = ((dossierStore.currentDossier as any).relatedDossiers || []).map((d: any) => typeof d === 'string' ? d : d._id);
+  const updated = current.filter(rid => rid !== id);
+  await dossierStore.updateDossier(dossierId, { relatedDossiers: updated } as any);
+  await loadRelatedDossiers();
 }
 
 const form = reactive({
@@ -1531,6 +1645,8 @@ onMounted(async () => {
     console.error('Failed to load tags:', e);
   }
   loadAiConfig();
+  loadRelatedDossiers();
+  loadAllDossiers();
   // Load dossier alert thresholds from settings
   try {
     const { data: settings } = await api.get('/admin/settings');
@@ -3540,4 +3656,12 @@ async function removeCollaborator(userId: string) {
 .me-btn-primary-sm:not(:disabled):hover {
   opacity: 0.85;
 }
+/* Related dossiers */
+.di-related-list { display: flex; flex-direction: column; gap: 6px; }
+.di-related-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; background: var(--me-bg-deep); border: 1px solid var(--me-border); }
+.di-related-title { font-size: 13px; font-weight: 600; color: var(--me-text-primary); flex: 1; }
+.di-related-ref { font-size: 11px; color: var(--me-text-muted); }
+.di-btn-primary { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; border-radius: 8px; border: none; background: var(--me-accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.di-btn-primary:hover { filter: brightness(1.15); }
+.di-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
 </style>

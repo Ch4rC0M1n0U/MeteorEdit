@@ -89,6 +89,7 @@ export interface IDossier extends Document {
   attributionDate: Date | null;
   closureDate: Date | null;
   reportNumber: number;
+  relatedDossiers: Types.ObjectId[];
   linkedDocuments: ILinkedDocument[];
   finalReport: {
     fileName: string | null;
