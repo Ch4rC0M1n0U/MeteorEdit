@@ -88,9 +88,14 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
       return;
     }
     const { collaborators, owner, _id, relatedDossiers, ...updateData } = req.body;
-    // Filter out undefined/null values that could cause Mongoose cast errors
+    // Filter out undefined values and encrypted strings sent by E2E clients
+    // Encrypted fields (ENC:...) must not be assigned to embedded schema fields
     for (const key of Object.keys(updateData)) {
-      if (updateData[key] === undefined) delete updateData[key];
+      if (updateData[key] === undefined) {
+        delete updateData[key];
+      } else if (typeof updateData[key] === 'string' && updateData[key].startsWith('ENC:')) {
+        delete updateData[key];
+      }
     }
     Object.assign(dossier, updateData);
     // Handle relatedDossiers separately (array of ObjectIds, filter invalid)
