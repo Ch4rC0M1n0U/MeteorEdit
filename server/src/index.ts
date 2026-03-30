@@ -34,6 +34,7 @@ import socialRoutes from './routes/social';
 import encryptionRoutes from './routes/encryption';
 import languagetoolRoutes from './routes/languagetool';
 import changelogRoutes from './routes/changelog';
+import osintSearchRoutes from './routes/osintSearch';
 import setupRoutes from './routes/setup';
 import apiKeyRoutes from './routes/apiKeys';
 import SiteSettings from './models/SiteSettings';
@@ -140,6 +141,7 @@ app.use('/api/social', socialRoutes);
 app.use('/api/encryption', encryptionRoutes);
 app.use('/api/languagetool', languagetoolRoutes);
 app.use('/api/changelog', changelogRoutes);
+app.use('/api/osint', osintSearchRoutes);
 app.use('/api/api-keys', apiKeyRoutes);
 
 setupSocket(httpServer);

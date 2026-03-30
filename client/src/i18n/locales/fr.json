@@ -88,7 +88,8 @@
     "admin": "Administration",
     "sessions": "Sessions sociales",
     "myAccount": "Mon compte",
-    "whatsNew": "Nouveautés"
+    "whatsNew": "Nouveautés",
+    "osintSearch": "Recherche OSINT"
   },
   "home": {
     "myDossiers": "Mes dossiers",
@@ -1721,5 +1722,29 @@
     "improvement": "Amélioration",
     "noChanges": "Aucune nouveauté pour le moment",
     "version": "Version"
+  },
+  "osint": {
+    "searchTitle": "Recherche OSINT",
+    "searchPlaceholder": "Rechercher (mot-clé, email, téléphone, username...)",
+    "categoryAll": "Tout",
+    "categoryTelegram": "Telegram",
+    "categorySocial": "Réseaux sociaux",
+    "categoryLeaks": "Fuites / Pastes",
+    "categoryDorks": "Google Dorks",
+    "dorkTelegram": "Telegram",
+    "dorkEmail": "Email",
+    "dorkPhone": "Téléphone",
+    "dorkUsername": "Username",
+    "dorkLeaks": "Fuites",
+    "results": "résultats",
+    "noResults": "Aucun résultat",
+    "openLink": "Ouvrir",
+    "exportToNote": "Exporter vers note",
+    "exportSuccess": "Résultat exporté vers le dossier",
+    "selectDossier": "Sélectionner un dossier",
+    "searching": "Recherche en cours...",
+    "previousPage": "Précédent",
+    "nextPage": "Suivant",
+    "engine": "Source"
   }
 }

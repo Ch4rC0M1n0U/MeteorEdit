@@ -88,7 +88,8 @@
     "admin": "Beheer",
     "sessions": "Sociale sessies",
     "myAccount": "Mijn account",
-    "whatsNew": "Nieuw"
+    "whatsNew": "Nieuw",
+    "osintSearch": "OSINT Zoeken"
   },
   "home": {
     "myDossiers": "Mijn dossiers",
@@ -1708,5 +1709,29 @@
     "improvement": "Verbetering",
     "noChanges": "Nog geen wijzigingen",
     "version": "Versie"
+  },
+  "osint": {
+    "searchTitle": "OSINT Zoeken",
+    "searchPlaceholder": "Zoeken (trefwoord, e-mail, telefoon, gebruikersnaam...)",
+    "categoryAll": "Alles",
+    "categoryTelegram": "Telegram",
+    "categorySocial": "Sociale netwerken",
+    "categoryLeaks": "Lekken / Pastes",
+    "categoryDorks": "Google Dorks",
+    "dorkTelegram": "Telegram",
+    "dorkEmail": "E-mail",
+    "dorkPhone": "Telefoon",
+    "dorkUsername": "Gebruikersnaam",
+    "dorkLeaks": "Lekken",
+    "results": "resultaten",
+    "noResults": "Geen resultaten",
+    "openLink": "Openen",
+    "exportToNote": "Exporteren naar notitie",
+    "exportSuccess": "Resultaat geexporteerd naar dossier",
+    "selectDossier": "Selecteer een dossier",
+    "searching": "Zoeken...",
+    "previousPage": "Vorige",
+    "nextPage": "Volgende",
+    "engine": "Bron"
   }
 }

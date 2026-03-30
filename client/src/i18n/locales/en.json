@@ -88,7 +88,8 @@
     "admin": "Administration",
     "sessions": "Social sessions",
     "myAccount": "My account",
-    "whatsNew": "What's new"
+    "whatsNew": "What's new",
+    "osintSearch": "OSINT Search"
   },
   "home": {
     "myDossiers": "My cases",
@@ -1709,5 +1710,29 @@
     "improvement": "Improvement",
     "noChanges": "No changes yet",
     "version": "Version"
+  },
+  "osint": {
+    "searchTitle": "OSINT Search",
+    "searchPlaceholder": "Search (keyword, email, phone, username...)",
+    "categoryAll": "All",
+    "categoryTelegram": "Telegram",
+    "categorySocial": "Social networks",
+    "categoryLeaks": "Leaks / Pastes",
+    "categoryDorks": "Google Dorks",
+    "dorkTelegram": "Telegram",
+    "dorkEmail": "Email",
+    "dorkPhone": "Phone",
+    "dorkUsername": "Username",
+    "dorkLeaks": "Leaks",
+    "results": "results",
+    "noResults": "No results",
+    "openLink": "Open",
+    "exportToNote": "Export to note",
+    "exportSuccess": "Result exported to dossier",
+    "selectDossier": "Select a dossier",
+    "searching": "Searching...",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "engine": "Source"
   }
 }

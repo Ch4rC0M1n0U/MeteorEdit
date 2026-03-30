@@ -61,6 +61,10 @@
             <v-icon size="16" class="mr-2">mdi-shield-account-outline</v-icon>
             {{ t('nav.sessions') }}
           </button>
+          <router-link to="/osint-search" class="me-dropdown-item">
+            <v-icon size="16" class="mr-2">mdi-search-web</v-icon>
+            {{ t('nav.osintSearch') }}
+          </router-link>
           <router-link to="/help" class="me-dropdown-item">
             <v-icon size="16" class="mr-2">mdi-help-circle-outline</v-icon>
             {{ t('nav.help') }}
