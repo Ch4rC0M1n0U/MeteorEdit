@@ -1,8 +1,42 @@
 import { Response } from 'express';
+import path from 'path';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import DossierNode from '../models/DossierNode';
 import Dossier from '../models/Dossier';
 import { logActivity } from '../utils/activityLogger';
+import { getBaseUrl } from '../utils/imageUrl';
+
+const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
+const PROFILES_DIR = path.join(UPLOAD_DIR, 'profiles');
+
+/** Download an external image and store locally for E2E encryption compatibility */
+async function downloadImage(imageUrl: string): Promise<string | null> {
+  if (!imageUrl || !imageUrl.startsWith('http')) return null;
+  try {
+    if (!fs.existsSync(PROFILES_DIR)) fs.mkdirSync(PROFILES_DIR, { recursive: true });
+    const response = await fetch(imageUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) return null;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length < 100) return null;
+    const ct = response.headers.get('content-type') || '';
+    let ext = '.jpg';
+    if (ct.includes('png')) ext = '.png';
+    else if (ct.includes('webp')) ext = '.webp';
+    else if (ct.includes('gif')) ext = '.gif';
+    else if (ct.includes('svg')) ext = '.svg';
+    const filename = `webcheck-${uuidv4().slice(0, 8)}${ext}`;
+    fs.writeFileSync(path.join(PROFILES_DIR, filename), buffer);
+    return `uploads/profiles/${filename}`;
+  } catch {
+    return null;
+  }
+}
 
 // Category definitions with icons and plain-language descriptions for investigators
 const CATEGORIES: Record<string, { icon: string; label: string; description: string }> = {
@@ -196,18 +230,39 @@ function formatHttpSecurity(data: any): any[] {
   return [table(['Header', 'Statut'], rows)];
 }
 
-function formatSocialTags(data: any): any[] {
+async function formatSocialTags(data: any, serverUrl?: string): Promise<any[]> {
   if (!data) return [paragraph([textNode('Non disponible')])];
   const rows: string[][] = [];
   if (data.title) rows.push(['Title', data.title]);
   if (data.description) rows.push(['Description', data.description]);
   if (data.canonicalUrl) rows.push(['URL', data.canonicalUrl]);
-  if (data.ogImage) rows.push(['OG Image', data.ogImage]);
-  if (data.favicon) rows.push(['Favicon', data.favicon]);
   if (data.generator) rows.push(['Generator', data.generator]);
   if (data.themeColor) rows.push(['Theme Color', data.themeColor]);
-  if (!rows.length) return [paragraph([textNode('Aucune meta')])];
-  return [table(['Champ', 'Valeur'], rows)];
+  const result: any[] = rows.length ? [table(['Champ', 'Valeur'], rows)] : [];
+
+  // Download and embed OG image
+  if (data.ogImage) {
+    const localPath = await downloadImage(data.ogImage);
+    if (localPath) {
+      const imgUrl = serverUrl ? `${serverUrl}/${localPath}` : `/${localPath}`;
+      result.push({ type: 'paragraph', content: [{ type: 'image', attrs: { src: imgUrl, alt: 'OG Image', title: 'Open Graph Image' } }] });
+    } else {
+      result.push(paragraph([textNode(`OG Image: ${data.ogImage}`)]));
+    }
+  }
+  // Download and embed favicon
+  if (data.favicon) {
+    const localPath = await downloadImage(data.favicon);
+    if (localPath) {
+      const imgUrl = serverUrl ? `${serverUrl}/${localPath}` : `/${localPath}`;
+      result.push({ type: 'paragraph', content: [{ type: 'image', attrs: { src: imgUrl, alt: 'Favicon', title: 'Favicon' } }] });
+    } else {
+      result.push(paragraph([textNode(`Favicon: ${data.favicon}`)]));
+    }
+  }
+
+  if (!result.length) result.push(paragraph([textNode('Aucune meta')]));
+  return result;
 }
 
 function formatTraceRoute(data: any): any[] {
@@ -417,7 +472,7 @@ function formatSecurityTxt(data: any): any[] {
   return [bulletList(items)];
 }
 
-const FORMATTERS: Record<string, (data: any) => any[]> = {
+const FORMATTERS: Record<string, (data: any, serverUrl?: string) => any[] | Promise<any[]>> = {
   ssl: formatSsl,
   domain: formatDomain,
   headers: formatHeaders,
@@ -479,6 +534,8 @@ export async function importWebCheck(req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    const serverUrl = getBaseUrl(req);
+
     // Verify dossier exists and user has access
     const dossier = await Dossier.findById(id);
     if (!dossier) {
@@ -511,7 +568,7 @@ export async function importWebCheck(req: AuthRequest, res: Response): Promise<v
 
       const formatter = FORMATTERS[catKey];
       if (formatter) {
-        const formatted = formatter(catData);
+        const formatted = await Promise.resolve(formatter(catData, serverUrl));
         docContent.push(...formatted);
       } else {
         // Fallback: show raw JSON (truncated)
