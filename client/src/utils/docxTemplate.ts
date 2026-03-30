@@ -987,12 +987,11 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
     }));
   }
 
-  // Embargo warning — standalone red label
+  // Embargo warning — red label aligned with info rows
   if (data.isEmbargo) {
     docChildren.push(new Paragraph({
-      children: [new TextRun({ text: 'SOUS EMBARGO', font, size: ptToHalfPt(12), bold: true, color: 'CC0000' })],
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 80, after: 40 },
+      children: [new TextRun({ text: 'SOUS EMBARGO', font, size: ptToHalfPt(10), bold: true, color: 'CC0000' })],
+      spacing: { after: 30 },
     }));
   }
 
