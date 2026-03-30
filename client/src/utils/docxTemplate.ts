@@ -936,11 +936,12 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   const lineColor = hexToRgb(tpl.header.lineColor);
 
   // Main title: "Rapport OSINT" + "Dossier <name>" on next line
+  const titleSize = Math.min(tpl.cover.titleSize, 20);
   docChildren.push(new Paragraph({
     children: [new TextRun({
       text: 'Rapport OSINT',
       font,
-      size: ptToHalfPt(tpl.cover.titleSize),
+      size: ptToHalfPt(titleSize),
       bold: true,
       color: titleColor,
     })],
@@ -951,7 +952,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
     children: [new TextRun({
       text: `Dossier ${data.dossierTitle}`,
       font,
-      size: ptToHalfPt(tpl.cover.titleSize),
+      size: ptToHalfPt(titleSize),
       bold: true,
       color: titleColor,
     })],
