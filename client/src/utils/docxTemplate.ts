@@ -974,7 +974,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   if (data.attributionDate) infoRows.push({ label: 'Date d\'attribution', value: data.attributionDate });
   if (data.requester) infoRows.push({ label: 'Demandeur', value: data.requester });
   if (data.classification) infoRows.push({ label: 'Classification', value: data.classification.toUpperCase() });
-  infoRows.push({ label: 'Embargo', value: data.isEmbargo ? 'OUI' : 'NON' });
+  if (data.isEmbargo) infoRows.push({ label: 'Embargo', value: 'SOUS EMBARGO' });
   infoRows.push({ label: 'Date du rapport', value: data.closingDate });
 
   for (const row of infoRows) {
