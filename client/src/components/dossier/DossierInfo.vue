@@ -76,6 +76,10 @@
             <span class="di-value">{{ form.closureDate ? new Date(form.closureDate).toLocaleDateString(locale) : $t('dossier.noDate') }}</span>
             <span v-if="!form.closureDate" class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
           </div>
+          <div class="di-field">
+            <span class="di-label mono">{{ $t('dossier.reportNumber') }}</span>
+            <span class="di-value">{{ form.reportNumber || 1 }}</span>
+          </div>
         </div>
         <div class="di-field" style="margin-top: 12px;">
           <span class="di-label mono">{{ $t('dossier.tags') }}</span>
@@ -520,6 +524,10 @@
             <label class="di-date-label mono">{{ $t('dossier.closureDate') }}</label>
             <input type="date" v-model="form.closureDate" class="di-date-input" />
             <span class="di-hint mono">{{ $t('dossier.autoClosureDate') }}</span>
+          </div>
+          <div class="di-date-field">
+            <label class="di-date-label mono">{{ $t('dossier.reportNumber') }}</label>
+            <input type="number" v-model.number="form.reportNumber" class="di-date-input" min="1" max="99" style="max-width: 80px;" />
           </div>
         </div>
         <v-combobox
@@ -1047,6 +1055,7 @@ const form = reactive({
   arrivalDate: '',
   attributionDate: '',
   closureDate: '',
+  reportNumber: 1,
   linkedDocuments: [] as { _id: string; fileName: string; filePath: string; fileSize: number; originalContentType?: string; uploadedAt: string }[],
 });
 
@@ -1180,6 +1189,7 @@ function loadFromDossier() {
     form.arrivalDate = d.arrivalDate ? d.arrivalDate.substring(0, 10) : '';
     form.attributionDate = d.attributionDate ? d.attributionDate.substring(0, 10) : '';
     form.closureDate = d.closureDate ? d.closureDate.substring(0, 10) : '';
+    form.reportNumber = d.reportNumber || 1;
     form.linkedDocuments = (d.linkedDocuments || []).map((doc: any) => ({ ...doc }));
   }
 }

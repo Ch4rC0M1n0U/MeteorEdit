@@ -46,6 +46,7 @@ const dossierSchema = new Schema<IDossier>(
     arrivalDate: { type: Date, default: null },
     attributionDate: { type: Date, default: null },
     closureDate: { type: Date, default: null },
+    reportNumber: { type: Number, default: 1 },
     linkedDocuments: [linkedDocumentSchema],
     finalReport: {
       fileName: { type: String, default: null },

@@ -88,6 +88,7 @@ export interface IDossier extends Document {
   arrivalDate: Date | null;
   attributionDate: Date | null;
   closureDate: Date | null;
+  reportNumber: number;
   linkedDocuments: ILinkedDocument[];
   finalReport: {
     fileName: string | null;

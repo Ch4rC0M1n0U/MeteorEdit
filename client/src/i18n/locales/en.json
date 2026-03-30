@@ -352,6 +352,7 @@
     "arrivalDate": "Arrival date",
     "attributionDate": "Attribution date",
     "closureDate": "Closure date",
+    "reportNumber": "Report No.",
     "durationWarning": "This dossier has been open for {days} days (threshold: {threshold} days for {classification} dossiers)",
     "durationWarningUrgent": "URGENT — This dossier has been open for {days} days (threshold: {threshold} days)",
     "noDate": "Not set",

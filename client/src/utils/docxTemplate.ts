@@ -892,6 +892,11 @@ export function renderMediaAnnotationsSequentialDocx(
 export interface DocxExportData {
   dossierTitle: string;
   infoLines: string[];
+  reportNumber?: number;
+  attributionDate?: string;
+  requester?: string; // magistrate / demandeur
+  classification?: string;
+  isEmbargo?: boolean;
   sections: Array<{
     title: string;
     level: 'h1' | 'h2' | 'h3';
@@ -926,36 +931,68 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
 
   // ─── TITLE BLOCK ───
 
+  const titleColor = hexToRgb(tpl.cover.titleColor);
+  const font = docxFont(tpl);
+  const lineColor = hexToRgb(tpl.header.lineColor);
+
+  // Main title: "Rapport OSINT - Dossier <name>"
   docChildren.push(new Paragraph({
     children: [new TextRun({
-      text: data.dossierTitle,
-      font: docxFont(tpl),
+      text: `Rapport OSINT - Dossier ${data.dossierTitle}`,
+      font,
       size: ptToHalfPt(tpl.cover.titleSize),
       bold: true,
-      color: hexToRgb(tpl.cover.titleColor),
+      color: titleColor,
     })],
     alignment: AlignmentType.CENTER,
-    spacing: { before: 200, after: 120 },
+    spacing: { before: 200, after: 40 },
   }));
 
-  for (const line of data.infoLines) {
+  // Report number
+  if (data.reportNumber) {
     docChildren.push(new Paragraph({
       children: [new TextRun({
-        text: line,
-        font: docxFont(tpl),
-        size: ptToHalfPt(10),
-        color: '666666',
+        text: `N\u00B0 du Rapport : ${data.reportNumber}`,
+        font,
+        size: ptToHalfPt(12),
+        color: titleColor,
       })],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 40 },
+      spacing: { after: 120 },
     }));
   }
 
   // Separator
   docChildren.push(new Paragraph({
     children: [],
-    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: hexToRgb(tpl.header.lineColor) } },
-    spacing: { before: 160, after: 240 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: lineColor } },
+    spacing: { before: 80, after: 120 },
+  }));
+
+  // Structured info block — two columns layout via tab stops
+  const infoRows: { label: string; value: string }[] = [];
+  if (data.attributionDate) infoRows.push({ label: 'Date d\'attribution', value: data.attributionDate });
+  if (data.requester) infoRows.push({ label: 'Demandeur', value: data.requester });
+  if (data.classification) infoRows.push({ label: 'Classification', value: data.classification.toUpperCase() });
+  infoRows.push({ label: 'Embargo', value: data.isEmbargo ? 'OUI' : 'NON' });
+  infoRows.push({ label: 'Date du rapport', value: data.closingDate });
+
+  for (const row of infoRows) {
+    docChildren.push(new Paragraph({
+      children: [
+        new TextRun({ text: `${row.label} :`, font, size: ptToHalfPt(10), bold: true, color: '444444' }),
+        new TextRun({ text: `\t${row.value}`, font, size: ptToHalfPt(10), color: '222222' }),
+      ],
+      tabStops: [{ type: TabStopType.LEFT, position: 3200 }],
+      spacing: { after: 30 },
+    }));
+  }
+
+  // Separator after info block
+  docChildren.push(new Paragraph({
+    children: [],
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: lineColor } },
+    spacing: { before: 100, after: 240 },
   }));
 
   // ─── TABLE OF CONTENTS ───

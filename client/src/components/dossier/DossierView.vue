@@ -1533,7 +1533,14 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaF
 
     const data: DocxExportData = {
       dossierTitle: dossier.title,
-      infoLines: buildDossierInfoLines(dossier),
+      infoLines: [],
+      reportNumber: (dossier as any).reportNumber || 1,
+      attributionDate: (dossier as any).attributionDate
+        ? new Date((dossier as any).attributionDate).toLocaleDateString('fr-FR')
+        : undefined,
+      requester: (dossier as any).magistrate || undefined,
+      classification: (dossier as any).classification || undefined,
+      isEmbargo: (dossier as any).isEmbargo || false,
       sections,
       closingDate: new Date().toLocaleDateString('fr-FR'),
       closingCity: (authStore.user as any)?.signature?.city || 'Bruxelles',

@@ -364,6 +364,7 @@
     "arrivalDate": "Date d'arrivée",
     "attributionDate": "Date d'attribution",
     "closureDate": "Date de clôture",
+    "reportNumber": "N° du rapport",
     "durationWarning": "Ce dossier est ouvert depuis {days} jours (seuil : {threshold} jours pour les dossiers {classification})",
     "durationWarningUrgent": "URGENT — Ce dossier est ouvert depuis {days} jours (seuil : {threshold} jours)",
     "noDate": "Non définie",

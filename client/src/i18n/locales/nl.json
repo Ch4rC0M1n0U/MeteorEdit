@@ -351,6 +351,7 @@
     "arrivalDate": "Aankomstdatum",
     "attributionDate": "Toewijzingsdatum",
     "closureDate": "Afsluitdatum",
+    "reportNumber": "Rapportnr.",
     "durationWarning": "Dit dossier is al {days} dagen open (drempel: {threshold} dagen voor {classification} dossiers)",
     "durationWarningUrgent": "DRINGEND — Dit dossier is al {days} dagen open (drempel: {threshold} dagen)",
     "noDate": "Niet ingesteld",
