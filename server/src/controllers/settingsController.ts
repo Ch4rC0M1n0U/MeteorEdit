@@ -305,6 +305,9 @@ export async function detectOsintTools(req: AuthRequest, res: Response): Promise
 
     let ytdlpVersion = '';
     let ffmpegVersion = '';
+    let pythonVersion = '';
+    let telethonVersion = '';
+    let exiftoolVersion = '';
 
     try {
       const { stdout } = await execFileAsync(ytdlpPath, ['--version']);
@@ -318,17 +321,35 @@ export async function detectOsintTools(req: AuthRequest, res: Response): Promise
       ffmpegVersion = match ? match[1] : firstLine.trim();
     } catch { /* not found */ }
 
+    try {
+      const { stdout } = await execFileAsync('python3', ['--version']);
+      pythonVersion = stdout.trim().replace('Python ', '');
+    } catch { /* not found */ }
+
+    try {
+      const { stdout } = await execFileAsync('python3', ['-c', 'import telethon; print(telethon.__version__)']);
+      telethonVersion = stdout.trim();
+    } catch { /* not found */ }
+
+    try {
+      const { stdout } = await execFileAsync('exiftool', ['-ver']);
+      exiftoolVersion = stdout.trim();
+    } catch { /* not found */ }
+
     await SiteSettings.updateOne({}, {
       $set: {
         'osint.ytdlpVersion': ytdlpVersion,
         'osint.ffmpegVersion': ffmpegVersion,
+        'osint.pythonVersion': pythonVersion,
+        'osint.telethonVersion': telethonVersion,
+        'osint.exiftoolVersion': exiftoolVersion,
       },
     });
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-    await logActivity(req.user!.userId, 'settings.osint_detect', 'system', null, { ytdlpVersion, ffmpegVersion }, ip);
+    await logActivity(req.user!.userId, 'settings.osint_detect', 'system', null, { ytdlpVersion, ffmpegVersion, pythonVersion, telethonVersion, exiftoolVersion }, ip);
 
-    res.json({ ytdlpVersion, ffmpegVersion });
+    res.json({ ytdlpVersion, ffmpegVersion, pythonVersion, telethonVersion, exiftoolVersion });
   } catch {
     res.status(500).json({ message: 'Detection error' });
   }

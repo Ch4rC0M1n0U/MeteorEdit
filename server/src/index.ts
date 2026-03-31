@@ -38,6 +38,7 @@ import osintSearchRoutes from './routes/osintSearch';
 import setupRoutes from './routes/setup';
 import apiKeyRoutes from './routes/apiKeys';
 import webcheckRoutes from './routes/webcheck';
+import telegramRoutes from './routes/telegram';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
 import { startYjsServer } from './yjs-server';
@@ -146,6 +147,7 @@ app.use('/api/changelog', changelogRoutes);
 app.use('/api/osint', osintSearchRoutes);
 app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api', webcheckRoutes);
+app.use('/api/telegram', telegramRoutes);
 
 setupSocket(httpServer);
 

@@ -49,6 +49,51 @@
               {{ osint.ffmpegVersion || $t('admin.osint.notDetected') }}
             </v-chip>
           </div>
+
+          <div class="tool-row">
+            <div class="tool-info">
+              <span class="tool-name mono">Python</span>
+              <span :class="['status-dot', osint.pythonVersion ? 'status-dot--active' : 'status-dot--error']" />
+            </div>
+            <v-chip
+              :color="osint.pythonVersion ? 'success' : 'error'"
+              size="small"
+              variant="tonal"
+              class="mono"
+            >
+              {{ osint.pythonVersion || $t('admin.osint.notDetected') }}
+            </v-chip>
+          </div>
+
+          <div class="tool-row">
+            <div class="tool-info">
+              <span class="tool-name mono">Telethon</span>
+              <span :class="['status-dot', osint.telethonVersion ? 'status-dot--active' : 'status-dot--error']" />
+            </div>
+            <v-chip
+              :color="osint.telethonVersion ? 'success' : 'error'"
+              size="small"
+              variant="tonal"
+              class="mono"
+            >
+              {{ osint.telethonVersion || $t('admin.osint.notDetected') }}
+            </v-chip>
+          </div>
+
+          <div class="tool-row">
+            <div class="tool-info">
+              <span class="tool-name mono">ExifTool</span>
+              <span :class="['status-dot', osint.exiftoolVersion ? 'status-dot--active' : 'status-dot--error']" />
+            </div>
+            <v-chip
+              :color="osint.exiftoolVersion ? 'success' : 'error'"
+              size="small"
+              variant="tonal"
+              class="mono"
+            >
+              {{ osint.exiftoolVersion || $t('admin.osint.notDetected') }}
+            </v-chip>
+          </div>
         </div>
 
         <div class="tool-actions">
@@ -204,6 +249,9 @@ const osint = reactive({
   ffmpegPath: '',
   ytdlpVersion: '',
   ffmpegVersion: '',
+  pythonVersion: '',
+  telethonVersion: '',
+  exiftoolVersion: '',
 });
 
 const telegramConfig = reactive({
@@ -255,6 +303,9 @@ async function loadSettings() {
       osint.ffmpegPath = data.osint.ffmpegPath ?? '';
       osint.ytdlpVersion = data.osint.ytdlpVersion ?? '';
       osint.ffmpegVersion = data.osint.ffmpegVersion ?? '';
+      osint.pythonVersion = data.osint.pythonVersion ?? '';
+      osint.telethonVersion = data.osint.telethonVersion ?? '';
+      osint.exiftoolVersion = data.osint.exiftoolVersion ?? '';
       if (data.osint.telegramConfig) {
         telegramConfig.apiId = data.osint.telegramConfig.apiId ?? 0;
         telegramConfig.apiHash = data.osint.telegramConfig.apiHash ?? '';
@@ -274,6 +325,9 @@ async function testTools() {
     if (data.osint) {
       osint.ytdlpVersion = data.osint.ytdlpVersion ?? '';
       osint.ffmpegVersion = data.osint.ffmpegVersion ?? '';
+      osint.pythonVersion = data.osint.pythonVersion ?? '';
+      osint.telethonVersion = data.osint.telethonVersion ?? '';
+      osint.exiftoolVersion = data.osint.exiftoolVersion ?? '';
     }
   } finally {
     testing.value = false;
