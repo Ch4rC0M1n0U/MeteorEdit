@@ -892,7 +892,7 @@
     "keyAuthHeader": "En-tête d'authentification",
     "externalApiKeys": "Clefs API externes",
     "googleApiKey": "Google API Key (Telegago)",
-    "googleApiKeyDesc": "Permet la recherche Telegram via Telegago (Google CSE). 100 requêtes gratuites par jour.",
+    "googleApiKeyDesc": "Permet la recherche Telegram via Telegago (Google CSE). Activez l'API «Custom Search API» dans votre projet Google Cloud. 100 requêtes gratuites par jour.",
     "getGoogleApiKey": "Obtenir une clef",
     "storageSubtitle": "Gestion des uploads et de l'espace disque",
     "uploadLimits": "Limites d'upload",
