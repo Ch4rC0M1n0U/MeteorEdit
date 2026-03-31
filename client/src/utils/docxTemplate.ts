@@ -1032,42 +1032,37 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
     spacing: { before: 0, after: 200 },
   }));
 
-  // Info table — blue labels left, values right
+  // Info table — white text on blue background for labels, white bg for values
   const infoTableRows: { label: string; value: string }[] = [
     { label: 'Dossier', value: data.dossierTitle },
     { label: 'N\u00B0 de rapport', value: String(data.reportNumber || 1) },
   ];
-  if (data.attributionDate) infoTableRows.push({ label: 'Date d\'attribution', value: data.attributionDate });
+  if (data.attributionDate) {
+    infoTableRows.push({ label: 'P\u00E9riode de recherche', value: `du ${data.attributionDate} au ${data.closingDate}` });
+  }
   infoTableRows.push({ label: 'Date de cl\u00F4ture', value: data.closingDate });
   infoTableRows.push({ label: 'Type de recherches', value: 'Sources ouvertes (OSINT) uniquement' });
 
+  const thinBorder = { style: BorderStyle.SINGLE as const, size: 4, color: BLUE };
   const infoTable = new Table({
     rows: infoTableRows.map(row => new TableRow({
       children: [
         new TableCell({
           children: [new Paragraph({
-            children: [new TextRun({ text: row.label, font, size: ptToHalfPt(10), bold: true, color: BLUE })],
+            children: [new TextRun({ text: row.label, font, size: ptToHalfPt(10), bold: true, color: 'FFFFFF' })],
           })],
           width: { size: 2800, type: WidthType.DXA },
-          shading: { type: ShadingType.CLEAR, fill: BLUE_LIGHT },
-          borders: {
-            top: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-            bottom: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-            left: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-            right: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-          },
+          shading: { type: ShadingType.CLEAR, fill: BLUE },
+          borders: { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder },
+          verticalAlign: 'center' as any,
         }),
         new TableCell({
           children: [new Paragraph({
-            children: [new TextRun({ text: row.value, font, size: ptToHalfPt(10), color: '333333' })],
+            children: [new TextRun({ text: row.value, font, size: ptToHalfPt(10), color: '333333', italics: true })],
           })],
           width: { size: 6200, type: WidthType.DXA },
-          borders: {
-            top: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-            bottom: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-            left: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-            right: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
-          },
+          borders: { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder },
+          verticalAlign: 'center' as any,
         }),
       ],
     })),
