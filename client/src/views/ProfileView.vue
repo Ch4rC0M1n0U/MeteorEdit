@@ -34,6 +34,7 @@
       <ProfileEncryption v-else-if="activeSection === 'encryption'" />
       <ProfileAI v-else-if="activeSection === 'ai'" />
       <ProfileApiKeys v-else-if="activeSection === 'api-keys'" />
+      <ProfileTelegram v-else-if="activeSection === 'telegram'" />
     </main>
   </div>
 </template>
@@ -54,6 +55,7 @@ import ProfileActivity from '../components/profile/ProfileActivity.vue';
 import ProfileEncryption from '../components/profile/ProfileEncryption.vue';
 import ProfileAI from '../components/profile/ProfileAI.vue';
 import ProfileApiKeys from '../components/profile/ProfileApiKeys.vue';
+import ProfileTelegram from '../components/profile/ProfileTelegram.vue';
 import api from '../services/api';
 
 const route = useRoute();
@@ -84,6 +86,7 @@ const navItems = computed<NavItem[]>(() => [
   { id: 'shortcuts', label: t('profile.keyboardShortcuts'), icon: 'mdi-keyboard-outline' },
   ...(aiIndividualMode.value ? [{ id: 'ai', label: t('profile.ai.navLabel'), icon: 'mdi-robot-outline' }] : []),
   { id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi-key-variant' },
+  { id: 'telegram', label: t('profile.telegram'), icon: 'mdi-send' },
 
   { type: 'group', label: t('profile.data') },
   { id: 'activity', label: t('profile.activityLog'), icon: 'mdi-history' },

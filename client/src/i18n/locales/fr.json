@@ -640,7 +640,25 @@
       "privacyItem2": "Le fournisseur peut traiter temporairement les données pour générer la réponse",
       "privacyItem3": "Les données envoyées via l'API ne sont pas utilisées pour entraîner les modèles",
       "privacyFooter": "Pour les données hautement sensibles, préférez Ollama qui traite tout localement sur votre serveur."
-    }
+    },
+    "telegram": "Telegram"
+  },
+  "telegram": {
+    "connectionTitle": "Connexion Telegram",
+    "connectionDesc": "Connectez votre compte Telegram pour effectuer des recherches directes",
+    "enterPhone": "Numéro de téléphone",
+    "phonePlaceholder": "+32471234567",
+    "sendCode": "Envoyer le code",
+    "enterCode": "Code de vérification",
+    "codePlaceholder": "12345",
+    "verify": "Vérifier",
+    "enter2FA": "Mot de passe 2FA",
+    "connected": "Connecté",
+    "connectedAs": "Connecté en tant que",
+    "disconnect": "Déconnecter",
+    "notConnected": "Non connecté",
+    "sendingCode": "Envoi du code...",
+    "verifying": "Vérification..."
   },
   "preferences": {
     "title": "Préférences",
@@ -1753,7 +1771,9 @@
     "searching": "Recherche en cours...",
     "previousPage": "Précédent",
     "nextPage": "Suivant",
-    "engine": "Source"
+    "engine": "Source",
+    "categoryTelegramDirect": "Telegram (direct)",
+    "telegramNotConnected": "Connectez votre compte Telegram dans Profil > Telegram pour effectuer des recherches directes"
   },
   "webcheck": {
     "title": "Import Web-Check",

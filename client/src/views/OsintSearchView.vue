@@ -63,6 +63,12 @@
         <span>{{ t('osint.searching') }}</span>
       </div>
 
+      <!-- Telegram not connected notice -->
+      <div v-if="telegramNotConnected && activeCategory === 'telegram-direct'" class="osint-telegram-notice glass-card">
+        <v-icon size="18" color="warning">mdi-alert</v-icon>
+        <span>{{ t('osint.telegramNotConnected') }}</span>
+      </div>
+
       <!-- No results -->
       <div v-else-if="searched && results.length === 0" class="osint-no-results glass-card">
         <v-icon size="48" color="var(--me-text-muted)">mdi-magnify-close</v-icon>
@@ -199,6 +205,7 @@ interface SearchResult {
 }
 
 const results = ref<SearchResult[]>([]);
+const telegramNotConnected = ref(false);
 
 // Export state
 const exportDialogOpen = ref(false);
@@ -217,6 +224,7 @@ const categories = computed(() => [
   { key: 'telegram', icon: 'mdi-send', label: t('osint.categoryTelegram') },
   { key: 'telegram-channels', icon: 'mdi-bullhorn-outline', label: t('osint.categoryTelegramChannels') },
   { key: 'telegram-messages', icon: 'mdi-message-text-outline', label: t('osint.categoryTelegramMessages') },
+  { key: 'telegram-direct', icon: 'mdi-send-circle-outline', label: t('osint.categoryTelegramDirect') },
   { key: 'social', icon: 'mdi-account-group', label: t('osint.categorySocial') },
   { key: 'leaks', icon: 'mdi-alert-circle-outline', label: t('osint.categoryLeaks') },
   { key: 'forums', icon: 'mdi-forum-outline', label: t('osint.categoryForums') },
@@ -250,16 +258,45 @@ async function doSearch(page: number) {
   loading.value = true;
   searched.value = true;
   currentPage.value = page;
+  results.value = [];
+  telegramNotConnected.value = false;
 
   try {
-    const { data } = await api.post('/osint/search', {
-      query: query.value.trim(),
-      category: activeCategory.value,
-      page,
-    });
-    results.value = data.results;
-    totalResults.value = data.totalResults;
+    if (activeCategory.value === 'telegram-direct') {
+      const { data } = await api.post('/telegram/search', { query: query.value.trim(), limit: 20 });
+      const channelResults = (data.channels || []).map((ch: any) => ({
+        title: ch.title || ch.username,
+        url: ch.url || `https://t.me/${ch.username}`,
+        content: `${ch.type === 'channel' ? 'Channel' : 'Group'} — ${ch.participantsCount} members`,
+        engine: 'telegram',
+        category: 'telegram',
+        thumbnail: null,
+        publishedDate: null,
+      }));
+      const userResults = (data.users || []).map((u: any) => ({
+        title: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username,
+        url: u.url || `https://t.me/${u.username}`,
+        content: u.username ? `${u.username}` : 'User',
+        engine: 'telegram',
+        category: 'telegram',
+        thumbnail: null,
+        publishedDate: null,
+      }));
+      results.value = [...channelResults, ...userResults];
+      totalResults.value = results.value.length;
+    } else {
+      const { data } = await api.post('/osint/search', {
+        query: query.value.trim(),
+        category: activeCategory.value,
+        page,
+      });
+      results.value = data.results;
+      totalResults.value = data.totalResults;
+    }
   } catch (err: any) {
+    if (err.response?.status === 401 && activeCategory.value === 'telegram-direct') {
+      telegramNotConnected.value = true;
+    }
     results.value = [];
     totalResults.value = 0;
   } finally {
@@ -458,6 +495,16 @@ async function doExport() {
   padding: 40px;
   color: var(--me-text-muted);
   font-size: 14px;
+}
+
+.osint-telegram-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  color: var(--me-text-secondary);
+  font-size: 14px;
+  border-left: 3px solid #ff9800;
 }
 
 .osint-no-results {

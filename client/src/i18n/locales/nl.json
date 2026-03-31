@@ -627,7 +627,25 @@
       "privacyItem2": "De provider kan gegevens tijdelijk verwerken om het antwoord te genereren",
       "privacyItem3": "Via de API verzonden gegevens worden niet gebruikt om modellen te trainen",
       "privacyFooter": "Voor zeer gevoelige gegevens kiest u best voor Ollama, dat alles lokaal op uw server verwerkt."
-    }
+    },
+    "telegram": "Telegram"
+  },
+  "telegram": {
+    "connectionTitle": "Telegram Verbinding",
+    "connectionDesc": "Verbind uw Telegram-account voor directe zoekopdrachten",
+    "enterPhone": "Telefoonnummer",
+    "phonePlaceholder": "+32471234567",
+    "sendCode": "Code verzenden",
+    "enterCode": "Verificatiecode",
+    "codePlaceholder": "12345",
+    "verify": "Verifieren",
+    "enter2FA": "2FA Wachtwoord",
+    "connected": "Verbonden",
+    "connectedAs": "Verbonden als",
+    "disconnect": "Verbinding verbreken",
+    "notConnected": "Niet verbonden",
+    "sendingCode": "Code verzenden...",
+    "verifying": "Verifieren..."
   },
   "preferences": {
     "title": "Voorkeuren",
@@ -1740,7 +1758,9 @@
     "searching": "Zoeken...",
     "previousPage": "Vorige",
     "nextPage": "Volgende",
-    "engine": "Bron"
+    "engine": "Bron",
+    "categoryTelegramDirect": "Telegram (direct)",
+    "telegramNotConnected": "Verbind uw Telegram-account in Profiel > Telegram voor directe zoekopdrachten"
   },
   "webcheck": {
     "title": "Import Web-Check",
