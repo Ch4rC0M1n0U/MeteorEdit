@@ -119,6 +119,7 @@ app.use('/api/ai', heavyLimiter);
 app.use('/api/clip', heavyLimiter);
 app.use('/api/export', heavyLimiter);
 app.use('/api/media/analyze', heavyLimiter);
+// OSINT search: no rate limit (SearxNG handles its own throttling)
 app.use('/api', apiLimiter);
 
 app.use('/api/setup', setupRoutes);

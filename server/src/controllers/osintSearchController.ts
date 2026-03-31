@@ -77,26 +77,11 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       pageno: String(pageNum),
     });
 
-    // Get user's Google API key for Telegago
-    let userGoogleKey = GOOGLE_API_KEY;
-    if (!userGoogleKey) {
-      try {
-        const user = await User.findById(userId).select('preferences');
-        if (user?.preferences?.googleApiKey) userGoogleKey = user.preferences.googleApiKey;
-      } catch { /* */ }
-    }
+    const response = await fetch(`${SEARXNG_URL}/search?${params}`);
+    if (!response.ok) throw new Error(`SearxNG status ${response.status}`);
+    const data = (await response.json()) as any;
 
-    // Run SearxNG + Telegago in parallel for Telegram categories
-    const isTelegramSearch = category && category.startsWith('telegram');
-    const [searxngResponse, telegagoResults] = await Promise.all([
-      fetch(`${SEARXNG_URL}/search?${params}`),
-      isTelegramSearch && userGoogleKey ? searchTelegago(query.trim(), userGoogleKey) : Promise.resolve([]),
-    ]);
-
-    if (!searxngResponse.ok) throw new Error(`SearxNG status ${searxngResponse.status}`);
-    const data = (await searxngResponse.json()) as any;
-
-    const searxngResults = (data.results || []).map((r: any) => ({
+    const results = (data.results || []).map((r: any) => ({
       title: r.title || '',
       url: r.url || '',
       content: r.content || '',
@@ -105,9 +90,6 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       thumbnail: r.thumbnail || null,
       publishedDate: r.publishedDate || null,
     }));
-
-    // Concat all results without deduplication (raw data, duplicates confirm findings)
-    const results = [...telegagoResults, ...searxngResults];
 
     const ip = (
       req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
@@ -120,7 +102,7 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       'osint.search',
       'system',
       null,
-      { query: searchQuery, category, resultCount: results.length, telegagoCount: telegagoResults.length },
+      { query: searchQuery, category, resultCount: results.length },
       ip,
       ua,
     );
