@@ -431,18 +431,22 @@ function contentTable(rows: ContentBlock[][][], tpl: PdfTemplateConfig): Table {
   const colWidth = Math.floor(9000 / colCount); // roughly full width in twips
 
   const tableRows = rows.map((row, rowIdx) => {
-    // Pad row to colCount if needed
     const cells: TableCell[] = [];
     for (let c = 0; c < colCount; c++) {
       const cellBlocks = row[c] || [];
       const cellText = blocksToPlainText(cellBlocks);
-      const isHeader = rowIdx === 0;
-      const useAltBg = !isHeader && rowIdx % 2 === 0 && tpl.table?.alternateRowColor;
-      const fillColor = isHeader && tpl.table?.headerBgColor
-        ? hexToRgb(tpl.table.headerBgColor)
-        : useAltBg && tpl.table?.alternateRowColor
-          ? hexToRgb(tpl.table.alternateRowColor)
-          : undefined;
+      const cellAttrs = (cellBlocks as any)._cellAttrs || {};
+      const isHeader = rowIdx === 0 || cellAttrs.isHeader;
+
+      // Priority: cell custom color > template defaults
+      let fillColor: string | undefined;
+      if (cellAttrs.backgroundColor) {
+        fillColor = hexToRgb(cellAttrs.backgroundColor);
+      } else if (isHeader && tpl.table?.headerBgColor) {
+        fillColor = hexToRgb(tpl.table.headerBgColor);
+      } else if (!isHeader && rowIdx % 2 === 0 && tpl.table?.alternateRowColor) {
+        fillColor = hexToRgb(tpl.table.alternateRowColor);
+      }
 
       cells.push(new TableCell({
         children: [new Paragraph({
@@ -451,12 +455,14 @@ function contentTable(rows: ContentBlock[][][], tpl: PdfTemplateConfig): Table {
             font: docxFont(tpl),
             size: ptToHalfPt(tpl.body.fontSize),
             bold: isHeader || undefined,
-            color: isHeader && tpl.table?.headerTextColor
+            color: isHeader && !cellAttrs.backgroundColor && tpl.table?.headerTextColor
               ? hexToRgb(tpl.table.headerTextColor)
               : tpl.body.color ? hexToRgb(tpl.body.color) : undefined,
           })],
         })],
-        width: { size: colWidth, type: WidthType.DXA },
+        width: { size: colWidth * (cellAttrs.colspan || 1), type: WidthType.DXA },
+        columnSpan: cellAttrs.colspan > 1 ? cellAttrs.colspan : undefined,
+        rowSpan: cellAttrs.rowspan > 1 ? cellAttrs.rowspan : undefined,
         shading: fillColor ? { type: ShadingType.CLEAR, fill: fillColor } : undefined,
       }));
     }

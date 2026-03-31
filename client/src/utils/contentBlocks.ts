@@ -279,7 +279,15 @@ function extractTableRows(nodes?: TipTapNode[]): ContentBlock[][][] {
       if (node.content) {
         for (const cellNode of node.content) {
           if (cellNode.type === 'tableCell' || cellNode.type === 'tableHeader') {
-            cells.push(convertNodes(cellNode.content));
+            const blocks = convertNodes(cellNode.content);
+            // Attach cell attributes (backgroundColor, isHeader, colspan, rowspan) as metadata
+            (blocks as any)._cellAttrs = {
+              backgroundColor: cellNode.attrs?.backgroundColor || null,
+              isHeader: cellNode.type === 'tableHeader',
+              colspan: cellNode.attrs?.colspan || 1,
+              rowspan: cellNode.attrs?.rowspan || 1,
+            };
+            cells.push(blocks);
           }
         }
       }
