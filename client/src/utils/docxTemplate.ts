@@ -278,21 +278,52 @@ function buildHeadingBorder(h: { bgColor: string; borderStyle?: string; borderCo
 function sectionHeading(text: string, tpl: PdfTemplateConfig, level: 'h1' | 'h2' | 'h3'): Paragraph {
   const h = tpl.headings[level];
   const displayText = h.uppercase ? text.toUpperCase() : text;
-  const beforeTwips = level === 'h1' ? 360 : (level === 'h2' ? 240 : 160);
-  const afterTwips = level === 'h1' ? 120 : (level === 'h2' ? 80 : 60);
+  const BLUE = '2E5A88';
+
+  if (level === 'h1') {
+    // H1: Bold blue, border bottom solid blue
+    return new Paragraph({
+      children: [new TextRun({
+        text: displayText,
+        font: docxFont(tpl),
+        size: ptToHalfPt(h.fontSize),
+        bold: true,
+        color: BLUE,
+      })],
+      heading: HeadingLevel.HEADING_1,
+      spacing: { before: 360, after: 120 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: BLUE } },
+    });
+  }
+
+  if (level === 'h2') {
+    // H2: Blue, underlined style
+    return new Paragraph({
+      children: [new TextRun({
+        text: displayText,
+        font: docxFont(tpl),
+        size: ptToHalfPt(h.fontSize),
+        bold: true,
+        color: BLUE,
+        underline: { type: UnderlineType.SINGLE },
+      })],
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 240, after: 80 },
+    });
+  }
+
+  // H3: Blue italic
   return new Paragraph({
     children: [new TextRun({
       text: displayText,
       font: docxFont(tpl),
       size: ptToHalfPt(h.fontSize),
-      bold: h.bold,
-      italics: h.italic,
-      color: hexToRgb(h.color),
+      bold: true,
+      italics: true,
+      color: BLUE,
     })],
-    heading: level === 'h1' ? HeadingLevel.HEADING_1 : level === 'h2' ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
-    shading: h.bgColor ? { type: ShadingType.CLEAR, fill: hexToRgb(h.bgColor) } : undefined,
-    spacing: { before: beforeTwips, after: afterTwips },
-    border: buildHeadingBorder(h),
+    heading: HeadingLevel.HEADING_3,
+    spacing: { before: 160, after: 60 },
   });
 }
 
@@ -968,90 +999,100 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   const logos = await loadLogos(tpl, data.serverUrl);
   const docChildren: (Paragraph | Table)[] = [];
 
-  // ─── TITLE BLOCK ───
+  // ─── PROFESSIONAL OSINT REPORT TITLE BLOCK ───
 
-  const titleColor = hexToRgb(tpl.cover.titleColor);
+  const BLUE = '2E5A88';
+  const BLUE_LIGHT = 'D6E4F0';
   const font = docxFont(tpl);
-  const lineColor = hexToRgb(tpl.header.lineColor);
 
-  // Main title: "Rapport OSINT" + "Dossier <name>" on next line
-  const titleSize = Math.min(tpl.cover.titleSize, 20);
+  // Title banner — dark blue background with white text
   docChildren.push(new Paragraph({
     children: [new TextRun({
       text: 'Rapport OSINT',
       font,
-      size: ptToHalfPt(titleSize),
+      size: ptToHalfPt(22),
       bold: true,
-      color: titleColor,
+      color: 'FFFFFF',
     })],
     alignment: AlignmentType.CENTER,
-    spacing: { before: 200, after: 0 },
+    shading: { type: ShadingType.CLEAR, fill: BLUE },
+    spacing: { before: 0, after: 0 },
   }));
   docChildren.push(new Paragraph({
     children: [new TextRun({
-      text: `Dossier ${data.dossierTitle}`,
+      text: `Dossier \u00AB ${data.dossierTitle} \u00BB \u2013 Rapport n\u00B0 ${data.reportNumber || 1}`,
       font,
-      size: ptToHalfPt(titleSize),
+      size: ptToHalfPt(12),
       bold: true,
-      color: titleColor,
+      italics: true,
+      color: 'FFFFFF',
     })],
     alignment: AlignmentType.CENTER,
-    spacing: { before: 0, after: 40 },
+    shading: { type: ShadingType.CLEAR, fill: BLUE },
+    spacing: { before: 0, after: 200 },
   }));
 
-  // Report number
-  if (data.reportNumber) {
-    docChildren.push(new Paragraph({
-      children: [new TextRun({
-        text: `N\u00B0 du Rapport : ${data.reportNumber}`,
-        font,
-        size: ptToHalfPt(12),
-        color: titleColor,
-      })],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 120 },
-    }));
-  }
+  // Info table — blue labels left, values right
+  const infoTableRows: { label: string; value: string }[] = [
+    { label: 'Dossier', value: data.dossierTitle },
+    { label: 'N\u00B0 de rapport', value: String(data.reportNumber || 1) },
+  ];
+  if (data.attributionDate) infoTableRows.push({ label: 'Date d\'attribution', value: data.attributionDate });
+  infoTableRows.push({ label: 'Date de cl\u00F4ture', value: data.closingDate });
+  infoTableRows.push({ label: 'Type de recherches', value: 'Sources ouvertes (OSINT) uniquement' });
 
-  // Separator
-  docChildren.push(new Paragraph({
-    children: [],
-    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: lineColor } },
-    spacing: { before: 80, after: 120 },
-  }));
-
-  // Structured info block — two columns layout via tab stops
-  const infoRows: { label: string; value: string }[] = [];
-  if (data.attributionDate) infoRows.push({ label: 'Date d\'attribution', value: data.attributionDate });
-  if (data.requester) infoRows.push({ label: 'Demandeur', value: data.requester });
-  if (data.classification) infoRows.push({ label: 'Classification', value: data.classification.toUpperCase() });
-  infoRows.push({ label: 'Date du rapport', value: data.closingDate });
-
-  for (const row of infoRows) {
-    docChildren.push(new Paragraph({
+  const infoTable = new Table({
+    rows: infoTableRows.map(row => new TableRow({
       children: [
-        new TextRun({ text: `${row.label} :`, font, size: ptToHalfPt(10), bold: true, color: '444444' }),
-        new TextRun({ text: `\t${row.value}`, font, size: ptToHalfPt(10), color: '222222' }),
+        new TableCell({
+          children: [new Paragraph({
+            children: [new TextRun({ text: row.label, font, size: ptToHalfPt(10), bold: true, color: BLUE })],
+          })],
+          width: { size: 2800, type: WidthType.DXA },
+          shading: { type: ShadingType.CLEAR, fill: BLUE_LIGHT },
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+            left: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+            right: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+          },
+        }),
+        new TableCell({
+          children: [new Paragraph({
+            children: [new TextRun({ text: row.value, font, size: ptToHalfPt(10), color: '333333' })],
+          })],
+          width: { size: 6200, type: WidthType.DXA },
+          borders: {
+            top: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+            left: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+            right: { style: BorderStyle.SINGLE, size: 1, color: BLUE },
+          },
+        }),
       ],
-      tabStops: [{ type: TabStopType.LEFT, position: 3200 }],
-      spacing: { after: 30 },
-    }));
-  }
+    })),
+    width: { size: 9000, type: WidthType.DXA },
+  });
+  docChildren.push(infoTable);
 
-  // Embargo warning — red label aligned with info rows
+  // Embargo warning
   if (data.isEmbargo) {
     docChildren.push(new Paragraph({
-      children: [new TextRun({ text: 'SOUS EMBARGO', font, size: ptToHalfPt(10), bold: true, color: 'CC0000' })],
-      spacing: { after: 30 },
+      children: [new TextRun({ text: 'SOUS EMBARGO', font, size: ptToHalfPt(11), bold: true, color: 'CC0000' })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 40 },
+      border: {
+        top: { style: BorderStyle.SINGLE, size: 2, color: 'CC0000' },
+        bottom: { style: BorderStyle.SINGLE, size: 2, color: 'CC0000' },
+        left: { style: BorderStyle.SINGLE, size: 2, color: 'CC0000' },
+        right: { style: BorderStyle.SINGLE, size: 2, color: 'CC0000' },
+      },
+      shading: { type: ShadingType.CLEAR, fill: 'FEF2F2' },
     }));
   }
 
-  // Separator after info block
-  docChildren.push(new Paragraph({
-    children: [],
-    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: lineColor } },
-    spacing: { before: 100, after: 240 },
-  }));
+  // Spacer
+  docChildren.push(new Paragraph({ children: [], spacing: { before: 200, after: 0 } }));
 
   // ─── TABLE OF CONTENTS ───
 

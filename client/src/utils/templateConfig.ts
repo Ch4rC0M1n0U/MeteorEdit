@@ -65,32 +65,32 @@ export interface PdfLogoData {
 // ── Defaults ────────────────────────────────────────────────────────
 
 export const DEFAULT_TEMPLATE: PdfTemplateConfig = {
-  fontFamily: 'Calibri',
+  fontFamily: 'Aptos',
   page: { marginH: 20, marginV: 15 },
   header: {
     text: 'PJF Bruxelles - DR5 - Data Management & Analysis',
     logoLeft: '',
     logoRight: '',
-    lineColor: '#29417a',
+    lineColor: '#2E5A88',
   },
   cover: {
     title: 'Rapport OSINT',
-    titleSize: 28,
-    titleColor: '#29417a',
-    subtitleSize: 16,
+    titleSize: 22,
+    titleColor: '#2E5A88',
+    subtitleSize: 12,
     footerText: 'PJF Bruxelles - DR5 - Data Management & Analysis',
   },
   headings: {
-    h1: { fontSize: 14, color: '#000000', bgColor: '#f4c6a0', bold: true, italic: false, uppercase: false, borderStyle: 'none', borderColor: '#29417a', borderWidth: 1 },
-    h2: { fontSize: 12, color: '#000000', bgColor: '#f4c6a0', bold: true, italic: false, uppercase: false, borderStyle: 'none', borderColor: '#29417a', borderWidth: 1 },
-    h3: { fontSize: 11, color: '#000000', bgColor: '', bold: true, italic: false, uppercase: false, borderStyle: 'bottom', borderColor: '#29417a', borderWidth: 1 },
+    h1: { fontSize: 14, color: '#2E5A88', bgColor: '', bold: true, italic: false, uppercase: false, borderStyle: 'bottom', borderColor: '#2E5A88', borderWidth: 2 },
+    h2: { fontSize: 12, color: '#2E5A88', bgColor: '', bold: true, italic: false, uppercase: false, borderStyle: 'none', borderColor: '#2E5A88', borderWidth: 1 },
+    h3: { fontSize: 11, color: '#2E5A88', bgColor: '', bold: true, italic: true, uppercase: false, borderStyle: 'none', borderColor: '#2E5A88', borderWidth: 1 },
   },
-  body: { fontSize: 10, color: '#000000' },
+  body: { fontSize: 10, color: '#333333' },
   spacing: { lineHeight: 1.4, paragraphSpacing: 3, sectionSpacing: 6 },
-  table: { headerBgColor: '#29417a', headerTextColor: '#ffffff', borderColor: '#cccccc', borderWidth: 0.5, alternateRowColor: '#f5f5f5' },
-  observations: { bold: true, italic: true, bgColor: '#F0F0F0', borderColor: '#CCCCCC' },
-  disclaimer: { color: '#ee0000' },
-  footer: { format: 'Page {page} | {pages}', lineColor: '#29417a' },
+  table: { headerBgColor: '#2E5A88', headerTextColor: '#ffffff', borderColor: '#2E5A88', borderWidth: 0.5, alternateRowColor: '#F0F4F8' },
+  observations: { bold: true, italic: true, bgColor: '#F0F4F8', borderColor: '#2E5A88' },
+  disclaimer: { color: '#CC0000' },
+  footer: { format: 'Page {page} | {pages}', lineColor: '#2E5A88' },
 };
 
 export function defaultPdfTemplate(): PdfTemplateConfig {
