@@ -202,17 +202,6 @@
           />
         </div>
 
-        <div class="config-field mt-4">
-          <label class="config-label">{{ $t('admin.osint.telegramSession') }}</label>
-          <v-textarea
-            v-model="telegramConfig.session"
-            density="compact"
-            hide-details
-            rows="2"
-            :placeholder="$t('admin.osint.telegramSessionPlaceholder')"
-          />
-        </div>
-
         <div class="telegram-help mt-4">
           <v-icon size="14" class="mr-1" color="var(--me-text-muted)">mdi-information-outline</v-icon>
           <span>{{ $t('admin.osint.telegramHelp') }}</span>
