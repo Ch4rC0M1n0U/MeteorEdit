@@ -1571,7 +1571,9 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaF
       classification: (dossier as any).classification || undefined,
       isEmbargo: (dossier as any).isEmbargo || false,
       sections,
-      closingDate: new Date().toLocaleDateString('fr-FR'),
+      closingDate: (dossier as any).closureDate
+        ? new Date((dossier as any).closureDate).toLocaleDateString('fr-FR')
+        : '',
       closingCity: (authStore.user as any)?.signature?.city || 'Bruxelles',
       includeToc,
       includeRawMetadata,
