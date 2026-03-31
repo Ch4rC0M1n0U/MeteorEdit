@@ -137,6 +137,31 @@
         <button class="ne-btn" @click="editor.chain().focus().setHorizontalRule().run()" :title="$t('editor.separator')">
           <v-icon size="18">mdi-minus</v-icon>
         </button>
+        <v-menu location="bottom">
+          <template #activator="{ props: menuProps }">
+            <button class="ne-btn" v-bind="menuProps" :title="$t('editor.callouts')">
+              <v-icon size="18">mdi-alert-box-outline</v-icon>
+            </button>
+          </template>
+          <v-list density="compact" class="ne-callout-menu">
+            <v-list-item @click="insertCallout('danger')">
+              <template #prepend><span class="ne-callout-icon ne-callout-icon--danger">&#x26D4;</span></template>
+              <v-list-item-title>{{ $t('editor.calloutDanger') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="insertCallout('warning')">
+              <template #prepend><span class="ne-callout-icon ne-callout-icon--warning">&#x26A0;&#xFE0F;</span></template>
+              <v-list-item-title>{{ $t('editor.calloutWarning') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="insertCallout('info')">
+              <template #prepend><span class="ne-callout-icon ne-callout-icon--info">&#x2139;&#xFE0F;</span></template>
+              <v-list-item-title>{{ $t('editor.calloutInfo') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="insertCallout('success')">
+              <template #prepend><span class="ne-callout-icon ne-callout-icon--success">&#x2705;</span></template>
+              <v-list-item-title>{{ $t('editor.calloutSuccess') }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </div>
 
       <div class="ne-separator" />
@@ -359,6 +384,24 @@
             {{ $t('editor.ctx.reformulate') }}
           </button>
           <div class="ne-ctx-separator" />
+          <div class="ne-ctx-sublabel">{{ $t('editor.callouts') }}</div>
+          <button class="ne-ctx-item" @click="insertCallout('danger')">
+            <span style="font-size: 14px;">&#x26D4;</span>
+            {{ $t('editor.calloutDanger') }}
+          </button>
+          <button class="ne-ctx-item" @click="insertCallout('warning')">
+            <span style="font-size: 14px;">&#x26A0;&#xFE0F;</span>
+            {{ $t('editor.calloutWarning') }}
+          </button>
+          <button class="ne-ctx-item" @click="insertCallout('info')">
+            <span style="font-size: 14px;">&#x2139;&#xFE0F;</span>
+            {{ $t('editor.calloutInfo') }}
+          </button>
+          <button class="ne-ctx-item" @click="insertCallout('success')">
+            <span style="font-size: 14px;">&#x2705;</span>
+            {{ $t('editor.calloutSuccess') }}
+          </button>
+          <div class="ne-ctx-separator" />
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleCodeBlock().run()">
             <v-icon size="14">mdi-code-braces</v-icon>
             {{ $t('editor.ctx.codeBlock') }}
@@ -406,6 +449,7 @@ import { useDossierStore } from '../../stores/dossier';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import CommentSidebar from './CommentSidebar.vue';
 import { createMentionExtension } from './mentionExtension';
+import { Callout } from './calloutExtension';
 import { createLanguageToolExtension, languageToolPluginKey } from './languageToolExtension';
 
 const { t } = useI18n();
@@ -626,6 +670,11 @@ function setHighlight(e: Event) {
   editor.value?.chain().focus().toggleHighlight({ color }).run();
 }
 
+function insertCallout(type: string) {
+  if (!editor.value) return;
+  editor.value.chain().focus().setCallout(type).run();
+}
+
 async function insertLink() {
   if (!editor.value) return;
   const prev = editor.value.getAttributes('link').href || '';
@@ -732,6 +781,7 @@ const editor = useEditor({
     TaskItem.configure({ nested: true }),
     createMentionExtension(handleMention),
     createLanguageToolExtension({ language: getLtLanguage(), enabled: spellCheckEnabled.value }),
+    Callout,
   ],
   onUpdate: ({ editor: ed }) => {
     const json = ed.getJSON();

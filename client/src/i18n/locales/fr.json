@@ -517,6 +517,11 @@
     "templateName": "Nom du modèle",
     "addComment": "Ajouter un commentaire...",
     "anonymous": "Anonyme",
+    "callouts": "Encadr\u00e9s",
+    "calloutDanger": "Attention",
+    "calloutWarning": "Avertissement",
+    "calloutInfo": "Information",
+    "calloutSuccess": "Succ\u00e8s",
     "ctx": {
       "insertColumnBefore": "Ins\u00e9rer colonne avant",
       "insertColumnAfter": "Ins\u00e9rer colonne apr\u00e8s",

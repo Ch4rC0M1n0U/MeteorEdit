@@ -504,6 +504,11 @@
     "templateName": "Sjabloonnaam",
     "addComment": "Opmerking toevoegen...",
     "anonymous": "Anoniem",
+    "callouts": "Kaders",
+    "calloutDanger": "Gevaar",
+    "calloutWarning": "Waarschuwing",
+    "calloutInfo": "Informatie",
+    "calloutSuccess": "Succes",
     "ctx": {
       "insertColumnBefore": "Kolom ervoor invoegen",
       "insertColumnAfter": "Kolom erna invoegen",

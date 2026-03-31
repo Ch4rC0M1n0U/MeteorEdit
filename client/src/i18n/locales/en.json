@@ -505,6 +505,11 @@
     "templateName": "Template name",
     "addComment": "Add a comment...",
     "anonymous": "Anonymous",
+    "callouts": "Callouts",
+    "calloutDanger": "Danger",
+    "calloutWarning": "Warning",
+    "calloutInfo": "Information",
+    "calloutSuccess": "Success",
     "ctx": {
       "insertColumnBefore": "Insert column before",
       "insertColumnAfter": "Insert column after",
