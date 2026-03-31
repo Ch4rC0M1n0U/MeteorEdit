@@ -1038,7 +1038,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
     { label: 'Dossier', value: data.dossierTitle },
     { label: 'N\u00B0 de rapport', value: String(data.reportNumber || 1) },
     { label: 'P\u00E9riode de recherche', value: data.attributionDate ? `du ${data.attributionDate} au ${generationDate}` : generationDate },
-    { label: 'Date de cl\u00F4ture', value: data.closingDate || '\u2014' },
+    { label: 'Date de cl\u00F4ture', value: data.closingDate },
     { label: 'Type de recherches', value: 'Sources ouvertes (OSINT) uniquement' },
   ];
 
