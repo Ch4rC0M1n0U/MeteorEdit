@@ -215,8 +215,11 @@ const snackbarText = ref('');
 const categories = computed(() => [
   { key: null, icon: 'mdi-earth', label: t('osint.categoryAll') },
   { key: 'telegram', icon: 'mdi-send', label: t('osint.categoryTelegram') },
+  { key: 'telegram-channels', icon: 'mdi-bullhorn-outline', label: t('osint.categoryTelegramChannels') },
+  { key: 'telegram-messages', icon: 'mdi-message-text-outline', label: t('osint.categoryTelegramMessages') },
   { key: 'social', icon: 'mdi-account-group', label: t('osint.categorySocial') },
   { key: 'leaks', icon: 'mdi-alert-circle-outline', label: t('osint.categoryLeaks') },
+  { key: 'forums', icon: 'mdi-forum-outline', label: t('osint.categoryForums') },
 ]);
 
 // Quick dork buttons
