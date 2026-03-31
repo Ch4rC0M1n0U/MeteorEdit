@@ -668,10 +668,38 @@ const editor = useEditor({
     Collaboration.configure({ document: ydoc }),
     CollaborationCursorPlugin,
     ResizableImageExtension.configure({ inline: true, allowBase64: true }),
-    Table.configure({ resizable: true }),
+    Table.configure({ resizable: true, allowTableNodeSelection: true }),
     TableRow,
-    TableCell,
-    TableHeader,
+    TableCell.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          backgroundColor: {
+            default: null,
+            parseHTML: (element: HTMLElement) => element.getAttribute('data-bg-color') || element.style.backgroundColor || null,
+            renderHTML: (attributes: any) => {
+              if (!attributes.backgroundColor) return {};
+              return { 'data-bg-color': attributes.backgroundColor, style: `background-color: ${attributes.backgroundColor}` };
+            },
+          },
+        };
+      },
+    }),
+    TableHeader.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          backgroundColor: {
+            default: null,
+            parseHTML: (element: HTMLElement) => element.getAttribute('data-bg-color') || element.style.backgroundColor || null,
+            renderHTML: (attributes: any) => {
+              if (!attributes.backgroundColor) return {};
+              return { 'data-bg-color': attributes.backgroundColor, style: `background-color: ${attributes.backgroundColor}` };
+            },
+          },
+        };
+      },
+    }),
     Link.configure({ openOnClick: false }),
     Placeholder.configure({ placeholder: t('editor.placeholder') }),
     Underline,
