@@ -4,6 +4,34 @@ import { logActivity } from '../utils/activityLogger';
 import DossierNode from '../models/DossierNode';
 
 const SEARXNG_URL = process.env.SEARXNG_URL || 'http://100.64.0.2:8091';
+const TELEGAGO_CSE_ID = '006368593537057042503:efxu7xprihg';
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+
+/** Search Telegago (Google CSE for Telegram) directly */
+async function searchTelegago(query: string): Promise<Array<{ title: string; url: string; content: string; engine: string }>> {
+  if (!GOOGLE_API_KEY) return [];
+  try {
+    const params = new URLSearchParams({
+      key: GOOGLE_API_KEY,
+      cx: TELEGAGO_CSE_ID,
+      q: query,
+      num: '10',
+    });
+    const resp = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json() as any;
+    return (data.items || []).map((item: any) => ({
+      title: item.title || '',
+      url: item.link || '',
+      content: item.snippet || '',
+      engine: 'telegago',
+    }));
+  } catch {
+    return [];
+  }
+}
 
 // Predefined dork templates
 const DORK_TEMPLATES: Record<string, string> = {
@@ -47,12 +75,17 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       pageno: String(pageNum),
     });
 
-    const response = await fetch(`${SEARXNG_URL}/search?${params}`);
-    if (!response.ok) throw new Error(`SearxNG status ${response.status}`);
+    // Run SearxNG + Telegago in parallel for Telegram categories
+    const isTelegramSearch = category && category.startsWith('telegram');
+    const [searxngResponse, telegagoResults] = await Promise.all([
+      fetch(`${SEARXNG_URL}/search?${params}`),
+      isTelegramSearch ? searchTelegago(query.trim()) : Promise.resolve([]),
+    ]);
 
-    const data = (await response.json()) as any;
+    if (!searxngResponse.ok) throw new Error(`SearxNG status ${searxngResponse.status}`);
+    const data = (await searxngResponse.json()) as any;
 
-    const results = (data.results || []).map((r: any) => ({
+    const searxngResults = (data.results || []).map((r: any) => ({
       title: r.title || '',
       url: r.url || '',
       content: r.content || '',
@@ -61,6 +94,16 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       thumbnail: r.thumbnail || null,
       publishedDate: r.publishedDate || null,
     }));
+
+    // Merge SearxNG + Telegago results, deduplicate by URL
+    const seenUrls = new Set<string>();
+    const results: typeof searxngResults = [];
+    for (const r of [...telegagoResults, ...searxngResults]) {
+      if (!seenUrls.has(r.url)) {
+        seenUrls.add(r.url);
+        results.push(r);
+      }
+    }
 
     const ip = (
       req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
@@ -73,7 +116,7 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       'osint.search',
       'system',
       null,
-      { query: searchQuery, category, resultCount: results.length },
+      { query: searchQuery, category, resultCount: results.length, telegagoCount: telegagoResults.length },
       ip,
       ua,
     );
