@@ -89,7 +89,9 @@
     "sessions": "Sociale sessies",
     "myAccount": "Mijn account",
     "whatsNew": "Nieuw",
-    "osintSearch": "OSINT Zoeken"
+    "osintSearch": "OSINT Zoeken",
+    "backendConnected": "Server verbonden",
+    "backendDisconnected": "Server niet verbonden"
   },
   "home": {
     "myDossiers": "Mijn dossiers",

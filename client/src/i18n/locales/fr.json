@@ -89,7 +89,9 @@
     "sessions": "Sessions sociales",
     "myAccount": "Mon compte",
     "whatsNew": "Nouveautés",
-    "osintSearch": "Recherche OSINT"
+    "osintSearch": "Recherche OSINT",
+    "backendConnected": "Serveur connecte",
+    "backendDisconnected": "Serveur deconnecte"
   },
   "home": {
     "myDossiers": "Mes dossiers",

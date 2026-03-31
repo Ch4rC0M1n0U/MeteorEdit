@@ -89,7 +89,9 @@
     "sessions": "Social sessions",
     "myAccount": "My account",
     "whatsNew": "What's new",
-    "osintSearch": "OSINT Search"
+    "osintSearch": "OSINT Search",
+    "backendConnected": "Server connected",
+    "backendDisconnected": "Server disconnected"
   },
   "home": {
     "myDossiers": "My cases",

@@ -240,7 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useConfirm } from '../../composables/useConfirm';
 import { useEditor, EditorContent, Extension } from '@tiptap/vue-3';
@@ -531,24 +531,11 @@ const editor = useEditor({
       const items = event.clipboardData?.items;
       if (!items) return false;
 
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          event.preventDefault();
-          const file = item.getAsFile();
-          if (!file) return false;
-
-          uploadImageFile(file).then(url => {
-            if (url && editor.value) {
-              editor.value.chain().focus().setImage({ src: url }).run();
-            }
-          }).catch(err => console.error('Paste image failed:', err));
-          return true;
-        }
-      }
-
-      // Handle base64 images pasted as HTML (e.g. from Excalidraw)
+      // If clipboard contains HTML text, let TipTap handle it natively
+      // (preserves hyperlinks, formatting, etc. from AI chats)
       const html = event.clipboardData?.getData('text/html');
       if (html) {
+        // Only intercept if it contains base64 images (e.g. from Excalidraw)
         const match = html.match(/<img[^>]+src="(data:[^"]+)"/);
         if (match) {
           event.preventDefault();
@@ -564,6 +551,24 @@ const editor = useEditor({
               }
             })
             .catch(err => console.error('Paste base64 image failed:', err));
+          return true;
+        }
+        // HTML without base64 images: let TipTap handle natively (preserves links)
+        return false;
+      }
+
+      // No HTML content — check for pasted image files
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          event.preventDefault();
+          const file = item.getAsFile();
+          if (!file) return false;
+
+          uploadImageFile(file).then(url => {
+            if (url && editor.value) {
+              editor.value.chain().focus().setImage({ src: url }).run();
+            }
+          }).catch(err => console.error('Paste image failed:', err));
           return true;
         }
       }
@@ -609,6 +614,12 @@ const editor = useEditor({
   },
 });
 
+// Disable browser spellcheck when LanguageTool is active to prevent conflicts
+watch(spellCheckEnabled, (enabled) => {
+  if (editor.value) {
+    editor.value.view.dom.setAttribute('spellcheck', enabled ? 'false' : 'true');
+  }
+});
 
 // Seed initial content into Yjs when first synced
 provider.on('sync', (isSynced: boolean) => {

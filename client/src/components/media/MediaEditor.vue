@@ -1190,19 +1190,20 @@ onBeforeUnmount(() => {
 /* ── Player Section ── */
 .me-player-section {
   background: var(--me-bg-deep);
-  flex-shrink: 1;
+  flex-shrink: 0;
   min-height: 0;
 }
 
 .me-player-video {
   display: block;
   width: 100%;
-  max-height: min(520px, 55vh);
+  max-height: 50vh;
+  object-fit: contain;
   background: #000;
   outline: none;
 }
 .me-editor--expanded .me-player-video {
-  max-height: min(780px, 65vh);
+  max-height: 65vh;
 }
 
 .me-player-audio {

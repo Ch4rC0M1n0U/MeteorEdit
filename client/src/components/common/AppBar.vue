@@ -6,6 +6,11 @@
         <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="me-appbar-logo" />
         <span v-else class="logo-icon">&#9670;</span>
         <span class="mono">{{ brandingStore.appName }}</span>
+        <span
+          class="me-connection-dot"
+          :class="backendConnected ? 'me-connection-dot--ok' : 'me-connection-dot--err'"
+          :title="backendConnected ? t('nav.backendConnected') : t('nav.backendDisconnected')"
+        />
       </button>
     </div>
 
@@ -82,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/auth';
@@ -105,14 +110,32 @@ const { t } = useI18n();
 const sessionManagerOpen = ref(false);
 const whatsNewOpen = ref(false);
 const whatsNewCount = ref(0);
+const backendConnected = ref(true);
+let healthInterval: ReturnType<typeof setInterval> | null = null;
+
+async function checkHealth() {
+  try {
+    await api.get('/health');
+    backendConnected.value = true;
+  } catch {
+    backendConnected.value = false;
+  }
+}
 
 onMounted(async () => {
+  checkHealth();
+  healthInterval = setInterval(checkHealth, 30000);
+
   try {
     const { data } = await api.get('/changelog');
     whatsNewCount.value = data.unreadCount;
   } catch {
     // silent
   }
+});
+
+onUnmounted(() => {
+  if (healthInterval) clearInterval(healthInterval);
 });
 
 const initials = computed(() => {
@@ -173,6 +196,23 @@ function handleLogout() {
 .logo-icon {
   color: var(--me-accent);
   font-size: 16px;
+}
+.me-connection-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  margin-left: 2px;
+  transition: background 0.3s ease, opacity 0.3s ease;
+}
+.me-connection-dot--ok {
+  background: #22c55e;
+  opacity: 0.6;
+}
+.me-connection-dot--err {
+  background: #ef4444;
+  opacity: 0.8;
 }
 .me-appbar-logo {
   height: 24px;
