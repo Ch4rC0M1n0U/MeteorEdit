@@ -37,19 +37,24 @@ async function searchTelegago(query: string, apiKey?: string): Promise<Array<{ t
 
 // Predefined dork templates
 const DORK_TEMPLATES: Record<string, string> = {
-  // Telegago-style: comprehensive Telegram search across all indexers
-  telegram: 'site:t.me OR site:tgstat.com OR site:telemetr.io OR site:telegramchannels.me OR site:lyzem.com OR site:telegram.me OR site:combot.org',
+  // Telegram: comprehensive search across indexers
+  telegram: 'site:t.me OR site:tgstat.com OR site:telemetr.io OR site:telegramchannels.me OR site:telegram.me',
   // Telegram channels specifically
-  'telegram-channels': 'site:t.me -site:t.me/s/ inurl:joinchat OR inurl:/ -inurl:share -inurl:addstickers',
-  // Telegram messages/content search
+  'telegram-channels': 'site:t.me -inurl:share -inurl:addstickers',
+  // Telegram messages/content
   'telegram-messages': 'site:t.me/s/',
-  leaks: 'site:pastebin.com OR site:rentry.co OR site:ghostbin.com OR site:paste.ee OR site:dpaste.org OR site:justpaste.it',
+  // Leaks: force query match with intext to reduce false positives
+  leaks: '(site:pastebin.com OR site:rentry.co OR site:ghostbin.com OR site:paste.ee OR site:justpaste.it OR site:leak.sx OR site:dehashed.com)',
+  // Social networks
   social: 'site:facebook.com OR site:instagram.com OR site:linkedin.com OR site:x.com OR site:mastodon.social OR site:threads.net',
-  email: 'site:pastebin.com OR site:t.me OR site:justpaste.it OR intext:password OR intext:leak',
-  phone: 'site:t.me OR site:facebook.com OR site:whatsapp.com OR site:truecaller.com OR site:sync.me',
+  // Email-specific: look for credentials/leaks
+  email: '(site:pastebin.com OR site:justpaste.it OR site:t.me) (password OR leak OR breach OR credentials)',
+  // Phone lookup
+  phone: 'site:t.me OR site:facebook.com OR site:truecaller.com OR site:sync.me OR site:whocalledme.com',
+  // Username across platforms
   username: 'site:t.me OR site:instagram.com OR site:github.com OR site:reddit.com OR site:x.com OR site:mastodon.social',
   mastodon: 'site:mastodon.social OR site:piaille.fr OR site:framapiaf.org OR site:mstdn.social',
-  // Dark web / forums
+  // Forums
   forums: 'site:reddit.com OR site:4chan.org OR site:lolcow.farm OR site:kiwifarms.net',
 };
 
@@ -66,6 +71,10 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
 
     // Build search query with dork prefix
     let searchQuery = query.trim();
+    // Wrap in quotes for exact match if it looks like a username/identifier (no spaces)
+    if (category && !searchQuery.includes(' ') && !searchQuery.startsWith('"')) {
+      searchQuery = `"${searchQuery}"`;
+    }
     if (category && DORK_TEMPLATES[category]) {
       searchQuery = `${searchQuery} ${DORK_TEMPLATES[category]}`;
     }
