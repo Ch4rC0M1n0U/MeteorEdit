@@ -8,7 +8,8 @@ import SiteSettings from '../models/SiteSettings';
 import { logActivity } from '../utils/activityLogger';
 
 const execFileAsync = promisify(execFile);
-const SCRIPT_PATH = path.resolve(__dirname, '..', 'scripts', 'telegram_client.py');
+// In production, __dirname is /app/dist/controllers/ — script is in /app/src/scripts/
+const SCRIPT_PATH = path.resolve(__dirname, '..', '..', 'src', 'scripts', 'telegram_client.py');
 
 /** Get Telegram API credentials from admin settings */
 async function getTelegramConfig(): Promise<{ apiId: string; apiHash: string }> {
