@@ -236,11 +236,145 @@
       />
     </div>
     <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileSelect" />
+
+    <!-- Context Menu -->
+    <teleport to="body">
+      <div
+        v-if="contextMenu.show"
+        class="ne-context-menu"
+        :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+        @click="contextMenu.show = false"
+      >
+        <!-- Table context -->
+        <template v-if="contextMenu.context === 'table'">
+          <button class="ne-ctx-item" @click="editor?.chain().focus().addColumnBefore().run()">
+            <v-icon size="14">mdi-table-column-plus-before</v-icon>
+            {{ $t('editor.ctx.insertColumnBefore') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().addColumnAfter().run()">
+            <v-icon size="14">mdi-table-column-plus-after</v-icon>
+            {{ $t('editor.ctx.insertColumnAfter') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().addRowBefore().run()">
+            <v-icon size="14">mdi-table-row-plus-before</v-icon>
+            {{ $t('editor.ctx.insertRowBefore') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().addRowAfter().run()">
+            <v-icon size="14">mdi-table-row-plus-after</v-icon>
+            {{ $t('editor.ctx.insertRowAfter') }}
+          </button>
+          <div class="ne-ctx-separator" />
+          <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteColumn().run()">
+            <v-icon size="14">mdi-table-column-remove</v-icon>
+            {{ $t('editor.ctx.deleteColumn') }}
+          </button>
+          <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteRow().run()">
+            <v-icon size="14">mdi-table-row-remove</v-icon>
+            {{ $t('editor.ctx.deleteRow') }}
+          </button>
+          <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteTable().run()">
+            <v-icon size="14">mdi-table-remove</v-icon>
+            {{ $t('editor.ctx.deleteTable') }}
+          </button>
+          <div class="ne-ctx-separator" />
+          <button class="ne-ctx-item" @click="editor?.chain().focus().mergeCells().run()">
+            <v-icon size="14">mdi-table-merge-cells</v-icon>
+            {{ $t('editor.ctx.mergeCells') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().splitCell().run()">
+            <v-icon size="14">mdi-table-split-cell</v-icon>
+            {{ $t('editor.ctx.splitCell') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().toggleHeaderCell().run()">
+            <v-icon size="14">mdi-table-headers-eye</v-icon>
+            {{ $t('editor.ctx.toggleHeader') }}
+          </button>
+          <div class="ne-ctx-separator" />
+          <div class="ne-ctx-sublabel">{{ $t('editor.ctx.cellColor') }}</div>
+          <div class="ne-ctx-colors">
+            <button v-for="c in contextColors" :key="c" class="ne-ctx-color-btn" :style="{ background: c }" @click="editor?.chain().focus().setCellAttribute('backgroundColor', c).run()" :title="c" />
+            <button class="ne-ctx-color-btn ne-ctx-color-reset" @click="editor?.chain().focus().setCellAttribute('backgroundColor', null).run()" title="Reset">
+              <v-icon size="10">mdi-close</v-icon>
+            </button>
+          </div>
+        </template>
+
+        <!-- Image context -->
+        <template v-else-if="contextMenu.context === 'image'">
+          <button class="ne-ctx-item" @click="copyContextImage()">
+            <v-icon size="14">mdi-content-copy</v-icon>
+            {{ $t('editor.ctx.copyImage') }}
+          </button>
+          <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteSelection().run()">
+            <v-icon size="14">mdi-delete-outline</v-icon>
+            {{ $t('editor.ctx.deleteImage') }}
+          </button>
+        </template>
+
+        <!-- Text context (default) -->
+        <template v-else>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().toggleBold().run()">
+            <v-icon size="14">mdi-format-bold</v-icon>
+            {{ $t('editor.ctx.bold') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().toggleItalic().run()">
+            <v-icon size="14">mdi-format-italic</v-icon>
+            {{ $t('editor.ctx.italic') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().toggleUnderline().run()">
+            <v-icon size="14">mdi-format-underline</v-icon>
+            {{ $t('editor.ctx.underline') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().toggleStrike().run()">
+            <v-icon size="14">mdi-format-strikethrough</v-icon>
+            {{ $t('editor.ctx.strikethrough') }}
+          </button>
+          <div class="ne-ctx-separator" />
+          <button class="ne-ctx-item" @click="insertLink()">
+            <v-icon size="14">mdi-link-variant</v-icon>
+            {{ $t('editor.ctx.insertLink') }}
+          </button>
+          <button class="ne-ctx-item" @click="triggerImageUpload()">
+            <v-icon size="14">mdi-image-plus</v-icon>
+            {{ $t('editor.ctx.insertImage') }}
+          </button>
+          <button class="ne-ctx-item" @click="insertTable()">
+            <v-icon size="14">mdi-table</v-icon>
+            {{ $t('editor.ctx.insertTable') }}
+          </button>
+          <div class="ne-ctx-separator" />
+          <button class="ne-ctx-item" @click="editor?.chain().focus().toggleHighlight().run()">
+            <v-icon size="14">mdi-marker</v-icon>
+            {{ $t('editor.ctx.highlight') }}
+          </button>
+          <div class="ne-ctx-colors">
+            <button v-for="c in contextColors" :key="c" class="ne-ctx-color-btn" :style="{ background: c }" @click="editor?.chain().focus().setColor(c).run()" :title="c" />
+            <button class="ne-ctx-color-btn ne-ctx-color-reset" @click="editor?.chain().focus().unsetColor().run()" title="Reset">
+              <v-icon size="10">mdi-close</v-icon>
+            </button>
+          </div>
+          <div class="ne-ctx-separator" />
+          <button class="ne-ctx-item" :disabled="!hasSelection || reformulating" @click="contextMenu.show = false; reformulateSelection('fluent')">
+            <v-icon size="14">mdi-auto-fix</v-icon>
+            {{ $t('editor.ctx.reformulate') }}
+          </button>
+          <div class="ne-ctx-separator" />
+          <button class="ne-ctx-item" @click="editor?.chain().focus().toggleCodeBlock().run()">
+            <v-icon size="14">mdi-code-braces</v-icon>
+            {{ $t('editor.ctx.codeBlock') }}
+          </button>
+          <button class="ne-ctx-item" @click="editor?.chain().focus().setHorizontalRule().run()">
+            <v-icon size="14">mdi-minus</v-icon>
+            {{ $t('editor.ctx.horizontalRule') }}
+          </button>
+        </template>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useConfirm } from '../../composables/useConfirm';
 import { useEditor, EditorContent, Extension } from '@tiptap/vue-3';
@@ -293,6 +427,40 @@ const ltLanguage = ref('auto');
 const reformulating = ref(false);
 const reformSuggestions = ref<string[]>([]);
 const reformSelectionRange = ref<{ from: number; to: number } | null>(null);
+// Context menu
+const contextMenu = reactive({ show: false, x: 0, y: 0, context: 'text' as 'text' | 'table' | 'image' });
+const contextColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#000000', '#ffffff'];
+
+function closeContextMenu() {
+  contextMenu.show = false;
+}
+function handleContextMenuEscape(e: KeyboardEvent) {
+  if (e.key === 'Escape') contextMenu.show = false;
+}
+
+function copyContextImage() {
+  if (!editor.value) return;
+  const { node } = editor.value.state.selection as any;
+  const src = node?.attrs?.src;
+  if (src) {
+    fetch(src)
+      .then(r => r.blob())
+      .then(blob => {
+        navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      })
+      .catch(err => console.error('Copy image failed:', err));
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeContextMenu);
+  document.addEventListener('keydown', handleContextMenuEscape);
+});
+onUnmounted(() => {
+  document.removeEventListener('click', closeContextMenu);
+  document.removeEventListener('keydown', handleContextMenuEscape);
+});
+
 const hasSelection = computed(() => {
   if (!editor.value) return false;
   const { from, to } = editor.value.state.selection;
@@ -595,20 +763,24 @@ const editor = useEditor({
     },
     handleDOMEvents: {
       contextmenu: (_view, event) => {
+        event.preventDefault();
+        const { clientX, clientY } = event;
+        let context: 'text' | 'table' | 'image' = 'text';
+        if (editor.value?.isActive('table')) {
+          context = 'table';
+        } else if (editor.value?.isActive('image') || editor.value?.isActive('resizableImage')) {
+          context = 'image';
+        }
+        // Also detect image via DOM target
         const target = event.target as HTMLElement;
         if (target.tagName === 'IMG') {
-          event.preventDefault();
-          const src = target.getAttribute('src');
-          if (src) {
-            fetch(src)
-              .then(r => r.blob())
-              .then(blob => {
-                navigator.clipboard.write([
-                  new ClipboardItem({ [blob.type]: blob })
-                ]);
-              });
-          }
+          context = 'image';
         }
+        contextMenu.show = true;
+        contextMenu.x = clientX;
+        contextMenu.y = clientY;
+        contextMenu.context = context;
+        return true;
       },
     },
   },
@@ -876,6 +1048,83 @@ onBeforeUnmount(() => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Context menu */
+.ne-context-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 200px;
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.ne-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: none;
+  color: var(--me-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: left;
+}
+.ne-ctx-item:hover {
+  background: rgba(var(--me-accent-rgb, 66, 133, 244), 0.12);
+  color: var(--me-accent);
+}
+.ne-ctx-separator {
+  height: 1px;
+  background: var(--me-border);
+  margin: 4px 8px;
+}
+.ne-ctx-item--danger {
+  color: var(--me-danger, #ef4444);
+}
+.ne-ctx-item--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+.ne-ctx-sublabel {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  padding: 4px 12px 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.ne-ctx-colors {
+  display: flex;
+  gap: 3px;
+  padding: 4px 10px 6px;
+  flex-wrap: wrap;
+}
+.ne-ctx-color-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--me-border);
+  cursor: pointer;
+  transition: transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ne-ctx-color-btn:hover {
+  transform: scale(1.2);
+  border-color: var(--me-accent);
+}
+.ne-ctx-color-reset {
+  background: var(--me-bg-surface) !important;
+}
+.ne-ctx-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>
 
