@@ -190,6 +190,13 @@ function convertNode(node: TipTapNode): ContentBlock | null {
         children: convertNodes(node.content),
       };
 
+    case 'callout':
+      return {
+        type: 'callout',
+        calloutType: node.attrs?.type || 'info',
+        children: convertNodes(node.content),
+      } as any;
+
     case 'codeBlock':
       return {
         type: 'codeBlock',

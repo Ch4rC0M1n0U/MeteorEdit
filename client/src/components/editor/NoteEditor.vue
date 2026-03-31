@@ -384,24 +384,6 @@
             {{ $t('editor.ctx.reformulate') }}
           </button>
           <div class="ne-ctx-separator" />
-          <div class="ne-ctx-sublabel">{{ $t('editor.callouts') }}</div>
-          <button class="ne-ctx-item" @click="insertCallout('danger')">
-            <span style="font-size: 14px;">&#x26D4;</span>
-            {{ $t('editor.calloutDanger') }}
-          </button>
-          <button class="ne-ctx-item" @click="insertCallout('warning')">
-            <span style="font-size: 14px;">&#x26A0;&#xFE0F;</span>
-            {{ $t('editor.calloutWarning') }}
-          </button>
-          <button class="ne-ctx-item" @click="insertCallout('info')">
-            <span style="font-size: 14px;">&#x2139;&#xFE0F;</span>
-            {{ $t('editor.calloutInfo') }}
-          </button>
-          <button class="ne-ctx-item" @click="insertCallout('success')">
-            <span style="font-size: 14px;">&#x2705;</span>
-            {{ $t('editor.calloutSuccess') }}
-          </button>
-          <div class="ne-ctx-separator" />
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleCodeBlock().run()">
             <v-icon size="14">mdi-code-braces</v-icon>
             {{ $t('editor.ctx.codeBlock') }}

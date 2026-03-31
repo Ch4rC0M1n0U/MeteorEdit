@@ -576,6 +576,45 @@ export function renderBlocksToDocx(
         break;
       }
 
+      case 'callout': {
+        const calloutColors: Record<string, { border: string; bg: string; label: string }> = {
+          danger: { border: 'EF4444', bg: 'FEF2F2', label: '\u26D4 ATTENTION' },
+          warning: { border: 'F59E0B', bg: 'FFFBEB', label: '\u26A0\uFE0F AVERTISSEMENT' },
+          info: { border: '3B82F6', bg: 'EFF6FF', label: '\u2139\uFE0F INFORMATION' },
+          success: { border: '22C55E', bg: 'F0FDF4', label: '\u2705 SUCCES' },
+        };
+        const ct = calloutColors[(block as any).calloutType] || calloutColors.info;
+        const calloutText = blocksToPlainText(block.children || []);
+        elements.push(new Paragraph({
+          children: [
+            new TextRun({ text: ct.label, font: docxFont(tpl), size: ptToHalfPt(tpl.body.fontSize), bold: true, color: ct.border }),
+          ],
+          border: {
+            left: { style: BorderStyle.SINGLE, size: 16, color: ct.border },
+            top: { style: BorderStyle.SINGLE, size: 1, color: ct.border },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: ct.border },
+            right: { style: BorderStyle.SINGLE, size: 1, color: ct.border },
+          },
+          shading: { type: ShadingType.CLEAR, fill: ct.bg },
+          spacing: { before: 80, after: 0 },
+          indent: { left: 200 },
+        }));
+        elements.push(new Paragraph({
+          children: [
+            new TextRun({ text: calloutText, font: docxFont(tpl), size: ptToHalfPt(tpl.body.fontSize), color: '333333' }),
+          ],
+          border: {
+            left: { style: BorderStyle.SINGLE, size: 16, color: ct.border },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: ct.border },
+            right: { style: BorderStyle.SINGLE, size: 1, color: ct.border },
+          },
+          shading: { type: ShadingType.CLEAR, fill: ct.bg },
+          spacing: { before: 0, after: 80 },
+          indent: { left: 200 },
+        }));
+        break;
+      }
+
       case 'codeBlock': {
         // Split code text by newlines, render each as a paragraph with monospace font
         const lines = block.text.split('\n');
