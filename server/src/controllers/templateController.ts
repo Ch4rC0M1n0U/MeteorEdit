@@ -49,7 +49,7 @@ export async function getAvailablePlaceholders(_req: AuthRequest, res: Response)
 // GET /api/templates/:id
 export async function getTemplate(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
-  const template = await NoteTemplate.findOne({ _id: req.params.id, owner: userId });
+  const template = await NoteTemplate.findOne({ _id: req.params.id, owner: userId }).lean();
   if (!template) return res.status(404).json({ message: 'Template non trouve' });
   res.json(template);
 }
@@ -102,7 +102,7 @@ export async function resolveTemplate(req: AuthRequest, res: Response) {
   const userId = req.user!.userId;
   const { dossierId } = req.body;
 
-  const template = await NoteTemplate.findOne({ _id: req.params.id, owner: userId });
+  const template = await NoteTemplate.findOne({ _id: req.params.id, owner: userId }).lean();
   if (!template) return res.status(404).json({ message: 'Template non trouve' });
 
   if (!dossierId) return res.status(400).json({ message: 'dossierId requis' });
