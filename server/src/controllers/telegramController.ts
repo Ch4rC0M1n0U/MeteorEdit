@@ -4,7 +4,7 @@ import { promisify } from 'util';
 import path from 'path';
 import { AuthRequest } from '../middleware/auth';
 import User from '../models/User';
-import PluginSettings from '../models/PluginSettings';
+import SiteSettings from '../models/SiteSettings';
 import { logActivity } from '../utils/activityLogger';
 
 const execFileAsync = promisify(execFile);
@@ -12,7 +12,7 @@ const SCRIPT_PATH = path.resolve(__dirname, '..', 'scripts', 'telegram_client.py
 
 /** Get Telegram API credentials from admin settings */
 async function getTelegramConfig(): Promise<{ apiId: string; apiHash: string }> {
-  const settings = await PluginSettings.findOne() as any;
+  const settings = await SiteSettings.findOne() as any;
   const tg = settings?.osint?.telegramConfig;
   return {
     apiId: tg?.apiId?.toString() || process.env.TELEGRAM_API_ID || '',
