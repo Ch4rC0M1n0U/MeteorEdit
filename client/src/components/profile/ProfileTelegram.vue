@@ -147,6 +147,7 @@ const step = ref(1);
 const phonePrefix = ref('+32');
 const phoneNumber = ref('');
 const otpCode = ref('');
+const phoneCodeHash = ref('');
 const password2FA = ref('');
 
 const sendingCode = ref(false);
@@ -205,7 +206,8 @@ async function sendCode() {
   sendingCode.value = true;
   try {
     const fullPhone = phonePrefix.value + phoneNumber.value.replace(/\s/g, '');
-    await api.post('/telegram/auth/send-code', { phone: fullPhone });
+    const { data } = await api.post('/telegram/auth/send-code', { phone: fullPhone });
+    phoneCodeHash.value = data.phoneCodeHash || '';
     step.value = 2;
   } catch (err: any) {
     showError(err.response?.data?.error || 'Error sending code');
@@ -222,8 +224,9 @@ async function verifyCode() {
     const { data } = await api.post('/telegram/auth/sign-in', {
       phone: fullPhone,
       code: otpCode.value.trim(),
+      phoneCodeHash: phoneCodeHash.value,
     });
-    if (data.requires2FA) {
+    if (data.needs2FA) {
       step.value = 3;
     } else {
       connected.value = true;
@@ -231,7 +234,7 @@ async function verifyCode() {
       showSuccess(t('telegram.connected'));
     }
   } catch (err: any) {
-    if (err.response?.data?.requires2FA) {
+    if (err.response?.data?.needs2FA) {
       step.value = 3;
     } else {
       showError(err.response?.data?.error || 'Error verifying code');
@@ -249,6 +252,7 @@ async function verifyWith2FA() {
     const { data } = await api.post('/telegram/auth/sign-in', {
       phone: fullPhone,
       code: otpCode.value.trim(),
+      phoneCodeHash: phoneCodeHash.value,
       password: password2FA.value,
     });
     connected.value = true;
