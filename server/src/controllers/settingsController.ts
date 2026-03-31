@@ -99,6 +99,10 @@ export async function updateSettings(req: AuthRequest, res: Response): Promise<v
       if (Array.isArray(o.enabledPlatforms)) update['osint.enabledPlatforms'] = o.enabledPlatforms.filter((p: any) => typeof p === 'string');
       if (typeof o.ytdlpPath === 'string') update['osint.ytdlpPath'] = o.ytdlpPath;
       if (typeof o.ffmpegPath === 'string') update['osint.ffmpegPath'] = o.ffmpegPath;
+      if (o.telegramConfig && typeof o.telegramConfig === 'object') {
+        if (o.telegramConfig.apiId !== undefined) update['osint.telegramConfig.apiId'] = Number(o.telegramConfig.apiId) || 0;
+        if (typeof o.telegramConfig.apiHash === 'string') update['osint.telegramConfig.apiHash'] = o.telegramConfig.apiHash;
+      }
     }
 
     const settings = await SiteSettings.findOneAndUpdate({}, update, { new: true, upsert: true });

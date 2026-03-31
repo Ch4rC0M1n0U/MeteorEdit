@@ -183,8 +183,7 @@
         <div class="config-field">
           <label class="config-label">API ID</label>
           <v-text-field
-            v-model.number="telegramConfig.apiId"
-            type="number"
+            v-model="telegramConfig.apiId"
             density="compact"
             hide-details
             :placeholder="$t('admin.osint.telegramApiIdPlaceholder')"
@@ -331,9 +330,8 @@ async function saveSettings() {
         ytdlpPath: osint.ytdlpPath,
         ffmpegPath: osint.ffmpegPath,
         telegramConfig: {
-          apiId: telegramConfig.apiId || 0,
+          apiId: Number(telegramConfig.apiId) || 0,
           apiHash: telegramConfig.apiHash || '',
-          session: telegramConfig.session || '',
         },
       },
     });
