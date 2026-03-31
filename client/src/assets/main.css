@@ -184,15 +184,48 @@ body {
 .editor-content .ProseMirror table {
   border-collapse: collapse;
   width: 100%;
+  table-layout: fixed;
+  overflow: hidden;
 }
 .editor-content .ProseMirror td,
 .editor-content .ProseMirror th {
   border: 1px solid var(--me-border);
   padding: 10px 14px;
+  position: relative;
+  vertical-align: top;
+  min-width: 50px;
 }
 .editor-content .ProseMirror th {
   background: var(--me-bg-elevated);
   font-weight: 600;
+}
+/* Table cell selection */
+.editor-content .ProseMirror .selectedCell::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(var(--me-accent-rgb, 66,133,244), 0.15);
+  pointer-events: none;
+  z-index: 2;
+}
+/* Table column resize handle */
+.editor-content .ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background: var(--me-accent);
+  cursor: col-resize;
+  z-index: 20;
+}
+.editor-content .ProseMirror.resize-cursor {
+  cursor: col-resize;
+}
+/* Table wrapper for horizontal scroll */
+.editor-content .ProseMirror .tableWrapper {
+  overflow-x: auto;
+  margin: 1em 0;
 }
 .editor-content .ProseMirror img {
   max-width: 100%;

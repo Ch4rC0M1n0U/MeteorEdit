@@ -292,8 +292,8 @@
           <div class="ne-ctx-separator" />
           <div class="ne-ctx-sublabel">{{ $t('editor.ctx.cellColor') }}</div>
           <div class="ne-ctx-colors">
-            <button v-for="c in contextColors" :key="c" class="ne-ctx-color-btn" :style="{ background: c }" @click="editor?.chain().focus().setCellAttribute('backgroundColor', c).run()" :title="c" />
-            <button class="ne-ctx-color-btn ne-ctx-color-reset" @click="editor?.chain().focus().setCellAttribute('backgroundColor', null).run()" title="Reset">
+            <button v-for="c in contextColors" :key="c" class="ne-ctx-color-btn" :style="{ background: c }" @click="setCellBgColor(c)" :title="c" />
+            <button class="ne-ctx-color-btn ne-ctx-color-reset" @click="setCellBgColor(null)" title="Reset">
               <v-icon size="10">mdi-close</v-icon>
             </button>
           </div>
@@ -430,6 +430,25 @@ const reformSelectionRange = ref<{ from: number; to: number } | null>(null);
 // Context menu
 const contextMenu = reactive({ show: false, x: 0, y: 0, context: 'text' as 'text' | 'table' | 'image' });
 const contextColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#000000', '#ffffff'];
+
+function setCellBgColor(color: string | null) {
+  if (!editor.value) return;
+  // Try TipTap command first
+  try {
+    editor.value.chain().focus().setCellAttribute('backgroundColor', color).run();
+  } catch {
+    // Fallback: set via DOM directly
+    const { state } = editor.value.view;
+    const { $from } = state.selection;
+    const cellNode = $from.node(-1);
+    if (cellNode) {
+      const pos = $from.before(-1);
+      editor.value.view.dispatch(
+        state.tr.setNodeMarkup(pos, undefined, { ...cellNode.attrs, backgroundColor: color })
+      );
+    }
+  }
+}
 
 function closeContextMenu() {
   contextMenu.show = false;
@@ -791,6 +810,13 @@ const editor = useEditor({
     },
     handleDOMEvents: {
       contextmenu: (_view, event) => {
+        // Don't show custom menu if LanguageTool decoration is active on target
+        const target = event.target as HTMLElement;
+        if (target.closest('.lt-decoration') || target.closest('[data-lt-active]') || target.classList.contains('lt-underline')) {
+          // Let LanguageTool handle its own context (correction popup)
+          return false;
+        }
+
         event.preventDefault();
         const { clientX, clientY } = event;
         let context: 'text' | 'table' | 'image' = 'text';
@@ -799,8 +825,6 @@ const editor = useEditor({
         } else if (editor.value?.isActive('image') || editor.value?.isActive('resizableImage')) {
           context = 'image';
         }
-        // Also detect image via DOM target
-        const target = event.target as HTMLElement;
         if (target.tagName === 'IMG') {
           context = 'image';
         }
