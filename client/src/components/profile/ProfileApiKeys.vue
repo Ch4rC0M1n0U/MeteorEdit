@@ -46,7 +46,12 @@
       </div>
       <div class="sec-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
         <p class="sec-label">{{ t('admin.googleApiKey') }}</p>
-        <p class="sec-desc">{{ t('admin.googleApiKeyDesc') }}</p>
+        <p class="sec-desc">
+          {{ t('admin.googleApiKeyDesc') }}
+          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" class="sec-link">
+            {{ t('admin.getGoogleApiKey') }} ↗
+          </a>
+        </p>
         <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
           <v-text-field
             v-model="googleApiKey"
@@ -441,6 +446,8 @@ onMounted(() => {
 .sec-label { font-size: 13px; font-weight: 600; color: var(--me-text-primary); }
 .sec-desc { font-size: 12px; color: var(--me-text-muted); margin-top: 2px; }
 .sec-saved { font-size: 12px; color: var(--me-success, #4ade80); display: flex; align-items: center; }
+.sec-link { color: var(--me-accent); text-decoration: none; margin-left: 4px; }
+.sec-link:hover { text-decoration: underline; }
 .sec-divider { height: 1px; background: var(--me-border); margin: 10px 0; opacity: 0.5; }
 
 .copy-field {

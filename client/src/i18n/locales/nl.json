@@ -880,6 +880,7 @@
     "externalApiKeys": "Externe API-sleutels",
     "googleApiKey": "Google API Key (Telegago)",
     "googleApiKeyDesc": "Maakt Telegram-zoekopdrachten mogelijk via Telegago (Google CSE). 100 gratis verzoeken per dag.",
+    "getGoogleApiKey": "Sleutel ophalen",
     "storageSubtitle": "Uploadbeheer en schijfruimte",
     "uploadLimits": "Uploadlimieten",
     "maxFileSizeMB": "Max bestandsgrootte (MB)",

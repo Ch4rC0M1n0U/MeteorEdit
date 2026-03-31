@@ -106,15 +106,8 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       publishedDate: r.publishedDate || null,
     }));
 
-    // Merge SearxNG + Telegago results, deduplicate by URL
-    const seenUrls = new Set<string>();
-    const results: typeof searxngResults = [];
-    for (const r of [...telegagoResults, ...searxngResults]) {
-      if (!seenUrls.has(r.url)) {
-        seenUrls.add(r.url);
-        results.push(r);
-      }
-    }
+    // Concat all results without deduplication (raw data, duplicates confirm findings)
+    const results = [...telegagoResults, ...searxngResults];
 
     const ip = (
       req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||

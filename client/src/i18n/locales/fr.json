@@ -893,6 +893,7 @@
     "externalApiKeys": "Clefs API externes",
     "googleApiKey": "Google API Key (Telegago)",
     "googleApiKeyDesc": "Permet la recherche Telegram via Telegago (Google CSE). 100 requêtes gratuites par jour.",
+    "getGoogleApiKey": "Obtenir une clef",
     "storageSubtitle": "Gestion des uploads et de l'espace disque",
     "uploadLimits": "Limites d'upload",
     "maxFileSizeMB": "Taille max par fichier (MB)",
