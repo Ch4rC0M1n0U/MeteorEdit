@@ -320,15 +320,12 @@ async function loadSettings() {
 async function testTools() {
   testing.value = true;
   try {
-    await api.post('/admin/settings/detect-osint');
-    const { data } = await api.get('/settings/branding');
-    if (data.osint) {
-      osint.ytdlpVersion = data.osint.ytdlpVersion ?? '';
-      osint.ffmpegVersion = data.osint.ffmpegVersion ?? '';
-      osint.pythonVersion = data.osint.pythonVersion ?? '';
-      osint.telethonVersion = data.osint.telethonVersion ?? '';
-      osint.exiftoolVersion = data.osint.exiftoolVersion ?? '';
-    }
+    const { data } = await api.post('/admin/settings/detect-osint');
+    osint.ytdlpVersion = data.ytdlpVersion ?? '';
+    osint.ffmpegVersion = data.ffmpegVersion ?? '';
+    osint.pythonVersion = data.pythonVersion ?? '';
+    osint.telethonVersion = data.telethonVersion ?? '';
+    osint.exiftoolVersion = data.exiftoolVersion ?? '';
   } finally {
     testing.value = false;
   }
