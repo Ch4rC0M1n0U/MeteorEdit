@@ -1050,18 +1050,22 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
         new TableCell({
           children: [new Paragraph({
             children: [new TextRun({ text: row.label, font, size: ptToHalfPt(10), bold: true, color: 'FFFFFF' })],
+            spacing: { before: 60, after: 60 },
           })],
           width: { size: 2800, type: WidthType.DXA },
           shading: { type: ShadingType.CLEAR, fill: BLUE },
           borders: { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder },
+          margins: { top: 40, bottom: 40, left: 120, right: 80 },
           verticalAlign: 'center' as any,
         }),
         new TableCell({
           children: [new Paragraph({
             children: [new TextRun({ text: row.value, font, size: ptToHalfPt(10), color: '333333', italics: true })],
+            spacing: { before: 60, after: 60 },
           })],
           width: { size: 6200, type: WidthType.DXA },
           borders: { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder },
+          margins: { top: 40, bottom: 40, left: 120, right: 80 },
           verticalAlign: 'center' as any,
         }),
       ],
