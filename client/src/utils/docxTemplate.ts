@@ -1033,15 +1033,14 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   }));
 
   // Info table — white text on blue background for labels, white bg for values
+  const generationDate = new Date().toLocaleDateString('fr-FR');
   const infoTableRows: { label: string; value: string }[] = [
     { label: 'Dossier', value: data.dossierTitle },
     { label: 'N\u00B0 de rapport', value: String(data.reportNumber || 1) },
+    { label: 'P\u00E9riode de recherche', value: data.attributionDate ? `du ${data.attributionDate} au ${generationDate}` : generationDate },
+    { label: 'Date de cl\u00F4ture', value: generationDate },
+    { label: 'Type de recherches', value: 'Sources ouvertes (OSINT) uniquement' },
   ];
-  if (data.attributionDate) {
-    infoTableRows.push({ label: 'P\u00E9riode de recherche', value: `du ${data.attributionDate} au ${data.closingDate}` });
-  }
-  infoTableRows.push({ label: 'Date de cl\u00F4ture', value: data.closingDate });
-  infoTableRows.push({ label: 'Type de recherches', value: 'Sources ouvertes (OSINT) uniquement' });
 
   const thinBorder = { style: BorderStyle.SINGLE as const, size: 4, color: BLUE };
   const infoTable = new Table({
