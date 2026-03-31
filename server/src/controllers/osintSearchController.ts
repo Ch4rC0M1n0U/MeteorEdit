@@ -2,17 +2,19 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
 import DossierNode from '../models/DossierNode';
+import User from '../models/User';
 
 const SEARXNG_URL = process.env.SEARXNG_URL || 'http://100.64.0.2:8091';
 const TELEGAGO_CSE_ID = '006368593537057042503:efxu7xprihg';
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
 
 /** Search Telegago (Google CSE for Telegram) directly */
-async function searchTelegago(query: string): Promise<Array<{ title: string; url: string; content: string; engine: string }>> {
-  if (!GOOGLE_API_KEY) return [];
+async function searchTelegago(query: string, apiKey?: string): Promise<Array<{ title: string; url: string; content: string; engine: string }>> {
+  const key = apiKey || GOOGLE_API_KEY;
+  if (!key) return [];
   try {
     const params = new URLSearchParams({
-      key: GOOGLE_API_KEY,
+      key,
       cx: TELEGAGO_CSE_ID,
       q: query,
       num: '10',
@@ -75,11 +77,20 @@ export async function osintSearch(req: AuthRequest, res: Response): Promise<void
       pageno: String(pageNum),
     });
 
+    // Get user's Google API key for Telegago
+    let userGoogleKey = GOOGLE_API_KEY;
+    if (!userGoogleKey) {
+      try {
+        const user = await User.findById(userId).select('preferences');
+        if (user?.preferences?.googleApiKey) userGoogleKey = user.preferences.googleApiKey;
+      } catch { /* */ }
+    }
+
     // Run SearxNG + Telegago in parallel for Telegram categories
     const isTelegramSearch = category && category.startsWith('telegram');
     const [searxngResponse, telegagoResults] = await Promise.all([
       fetch(`${SEARXNG_URL}/search?${params}`),
-      isTelegramSearch ? searchTelegago(query.trim()) : Promise.resolve([]),
+      isTelegramSearch && userGoogleKey ? searchTelegago(query.trim(), userGoogleKey) : Promise.resolve([]),
     ]);
 
     if (!searxngResponse.ok) throw new Error(`SearxNG status ${searxngResponse.status}`);

@@ -47,7 +47,7 @@
           :key="dork.key"
           class="osint-dork-btn"
           :class="{ active: activeCategory === dork.key }"
-          @click="setCategory(dork.key)"
+          @click="dork.key === 'telegago' ? searchTelegago() : setCategory(dork.key)"
         >
           <v-icon size="14">{{ dork.icon }}</v-icon>
           <span>{{ dork.label }}</span>
@@ -225,6 +225,7 @@ const categories = computed(() => [
 // Quick dork buttons
 const dorks = computed(() => [
   { key: 'telegram', icon: 'mdi-send', label: t('osint.dorkTelegram') },
+  { key: 'telegago', icon: 'mdi-google', label: 'Telegago', external: true },
   { key: 'email', icon: 'mdi-email-outline', label: t('osint.dorkEmail') },
   { key: 'phone', icon: 'mdi-phone-outline', label: t('osint.dorkPhone') },
   { key: 'username', icon: 'mdi-at', label: t('osint.dorkUsername') },
@@ -233,6 +234,13 @@ const dorks = computed(() => [
 
 function setCategory(key: string | null) {
   activeCategory.value = key;
+  if (query.value.trim()) {
+    doSearch(1);
+  }
+}
+
+function searchTelegago() {
+  activeCategory.value = 'telegram-channels';
   if (query.value.trim()) {
     doSearch(1);
   }

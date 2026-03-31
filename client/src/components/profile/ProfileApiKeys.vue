@@ -38,8 +38,41 @@
       </div>
     </div>
 
-    <!-- Generate key button -->
+    <!-- External API Keys -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
+      <div class="sec-card-header">
+        <v-icon size="18" color="var(--me-accent)">mdi-cloud-key-outline</v-icon>
+        <h3 class="sec-card-title mono">{{ t('admin.externalApiKeys') }}</h3>
+      </div>
+      <div class="sec-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+        <p class="sec-label">{{ t('admin.googleApiKey') }}</p>
+        <p class="sec-desc">{{ t('admin.googleApiKeyDesc') }}</p>
+        <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
+          <v-text-field
+            v-model="googleApiKey"
+            density="compact"
+            hide-details
+            :type="showGoogleKey ? 'text' : 'password'"
+            placeholder="AIza..."
+            style="flex: 1;"
+          />
+          <button class="me-btn-ghost" @click="showGoogleKey = !showGoogleKey">
+            <v-icon size="16">{{ showGoogleKey ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+          </button>
+          <button class="me-btn me-btn-sm" @click="saveGoogleApiKey" :disabled="savingGoogleKey">
+            <v-icon size="14" class="mr-1">mdi-content-save</v-icon>
+            {{ t('common.save') }}
+          </button>
+        </div>
+        <span v-if="googleKeySaved" class="sec-saved mono">
+          <v-icon size="12" color="success" class="mr-1">mdi-check</v-icon>
+          {{ t('admin.settingsSaved') }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Generate key button -->
+    <div class="sec-card glass-card fade-in fade-in-delay-3">
       <div class="sec-card-header">
         <v-icon size="18" color="var(--me-accent)">mdi-key-plus</v-icon>
         <h3 class="sec-card-title mono">{{ t('admin.generateKey') }}</h3>
@@ -251,6 +284,12 @@ const loading = ref(true);
 const keys = ref<ApiKey[]>([]);
 const newlyCreatedKey = ref<string | null>(null);
 
+// External API keys
+const googleApiKey = ref('');
+const showGoogleKey = ref(false);
+const savingGoogleKey = ref(false);
+const googleKeySaved = ref(false);
+
 const showCreateDialog = ref(false);
 const creating = ref(false);
 const createForm = ref({
@@ -357,7 +396,36 @@ function copyToClipboard(text: string) {
   });
 }
 
-onMounted(fetchKeys);
+async function loadExternalKeys() {
+  try {
+    const { data } = await api.get('/auth/me');
+    if (data.preferences?.googleApiKey) {
+      googleApiKey.value = '\u2022'.repeat(20);
+    }
+  } catch { /* */ }
+}
+
+async function saveGoogleApiKey() {
+  savingGoogleKey.value = true;
+  googleKeySaved.value = false;
+  try {
+    const payload: Record<string, string> = {};
+    if (googleApiKey.value && !googleApiKey.value.startsWith('\u2022')) {
+      payload.googleApiKey = googleApiKey.value;
+    }
+    await api.put('/auth/preferences', payload);
+    googleKeySaved.value = true;
+    googleApiKey.value = '\u2022'.repeat(20);
+    setTimeout(() => { googleKeySaved.value = false; }, 3000);
+  } catch { /* */ } finally {
+    savingGoogleKey.value = false;
+  }
+}
+
+onMounted(() => {
+  fetchKeys();
+  loadExternalKeys();
+});
 </script>
 
 <style scoped>
@@ -372,6 +440,7 @@ onMounted(fetchKeys);
 .sec-option { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 4px 0; }
 .sec-label { font-size: 13px; font-weight: 600; color: var(--me-text-primary); }
 .sec-desc { font-size: 12px; color: var(--me-text-muted); margin-top: 2px; }
+.sec-saved { font-size: 12px; color: var(--me-success, #4ade80); display: flex; align-items: center; }
 .sec-divider { height: 1px; background: var(--me-border); margin: 10px 0; opacity: 0.5; }
 
 .copy-field {
