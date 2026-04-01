@@ -221,6 +221,7 @@ function convertNode(node: TipTapNode): ContentBlock | null {
     }
 
     case 'image':
+    case 'resizableImage':
       return {
         type: 'image',
         src: String(node.attrs?.src ?? ''),
