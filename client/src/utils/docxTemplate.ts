@@ -101,7 +101,9 @@ async function fetchImageBuffer(url: string, serverUrl?: string, dossierId?: str
     // Check if this is an uploads URL that might be encrypted
     const isUploadsUrl = url.includes('/uploads/') || url.startsWith('uploads/');
     if (isUploadsUrl) {
-      const filename = url.split('/').pop()?.split('?')[0] || '';
+      let filename = url.split('/').pop()?.split('?')[0] || '';
+      // Strip .enc extension — the /files/ endpoint handles encrypted files transparently
+      filename = filename.replace(/\.enc$/, '');
       if (filename) {
         try {
           const response = await api.get(`/files/${filename}`, { responseType: 'arraybuffer' });
@@ -132,7 +134,8 @@ async function fetchImageBuffer(url: string, serverUrl?: string, dossierId?: str
 
           // Last resort: pass raw data through (may be unrecognized format like BMP/TIFF)
           return await bufferToImageData(imageData, 'image/png');
-        } catch {
+        } catch (fetchErr: any) {
+          console.warn(`[Export] Image fetch failed for ${filename}:`, fetchErr?.message || fetchErr);
           // Fall through to standard fetch (404 or other error)
         }
       }
