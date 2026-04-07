@@ -1795,6 +1795,27 @@
     "categoryTelegramDirect": "Telegram (direct)",
     "telegramNotConnected": "Verbind uw Telegram-account in Profiel > Telegram voor directe zoekopdrachten"
   },
+  "osintIndustries": {
+    "title": "Import OSINT Industries",
+    "description": "Importeer OSINT Industries-gegevens via een JSON-bestand of door JSON te plakken die van het platform is gekopieerd.",
+    "entityName": "Naam entiteit",
+    "entityPlaceholder": "Bijv. +32470123456, email{'@'}example.com",
+    "fileUpload": "JSON-bestand",
+    "pasteJson": "JSON plakken",
+    "dropOrClick": "Sleep een JSON-bestand of klik om te bladeren",
+    "pastePlaceholder": "Plak hier de JSON gekopieerd van OSINT Industries...",
+    "pasteClipboard": "Plakken vanuit klembord",
+    "parse": "Analyseren",
+    "platforms": "platformen",
+    "activities": "activiteiten",
+    "more": "meer",
+    "registered": "Geregistreerd",
+    "lastSeen": "Laatst gezien",
+    "parseError": "Ongeldige JSON. Controleer het gegevensformaat.",
+    "invalidFormat": "Niet-herkend formaat. JSON moet groups en group_items sleutels bevatten.",
+    "clipboardError": "Kan geen toegang krijgen tot het klembord",
+    "importError": "Import mislukt"
+  },
   "webcheck": {
     "title": "Import Web-Check",
     "description": "Importeer een JSON-bestand geexporteerd vanuit Web-Check om een webanalyse-notitie aan te maken.",

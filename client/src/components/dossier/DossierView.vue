@@ -121,6 +121,10 @@
                 <v-icon size="16">mdi-web-check</v-icon>
                 <span>{{ $t('webcheck.title') }}</span>
               </button>
+              <button class="dv-export-option" @click="osintIndustriesOpen = true">
+                <v-icon size="16">mdi-shield-search</v-icon>
+                <span>{{ $t('osintIndustries.title') }}</span>
+              </button>
               <button class="dv-export-option" disabled>
                 <v-icon size="16">mdi-graph-outline</v-icon>
                 <span>Import Tangles</span>
@@ -384,6 +388,14 @@
       v-if="elephantasticOpen && dossierStore.currentDossier"
       :dossier-id="dossierStore.currentDossier._id"
       @imported="handleElephantasticImport"
+    />
+
+    <!-- OSINT Industries Import -->
+    <OsintIndustriesImportDialog
+      v-model="osintIndustriesOpen"
+      v-if="osintIndustriesOpen && dossierStore.currentDossier"
+      :dossier-id="dossierStore.currentDossier._id"
+      @imported="handleOsintIndustriesImport"
     />
 
     <!-- Web-Check Import -->
@@ -651,6 +663,7 @@ const MediaEditor = defineAsyncComponent(() =>
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';
 import ElephantasticImportDialog from './ElephantasticImportDialog.vue';
+import OsintIndustriesImportDialog from './OsintIndustriesImportDialog.vue';
 import WebCheckImportDialog from './WebCheckImportDialog.vue';
 import AiDisclaimerModal from '../AiDisclaimerModal.vue';
 import type { MediaData } from '../../types';
@@ -676,6 +689,7 @@ function openLeaksSearch() {
 }
 const elephantasticOpen = ref(false);
 const webCheckOpen = ref(false);
+const osintIndustriesOpen = ref(false);
 const exportSelectOpen = ref(false);
 const showMediaCreateDialog = ref(false);
 const mediaCreateParentId = ref<string | null>(null);
@@ -1219,6 +1233,13 @@ function handleProfileNodeCreated(node: any) {
 
 function handleElephantasticImport(nodes: any[]) {
   elephantasticOpen.value = false;
+  if (nodes.length > 0) {
+    dossierStore.selectNode(nodes[0]);
+  }
+}
+
+function handleOsintIndustriesImport(nodes: any[]) {
+  osintIndustriesOpen.value = false;
   if (nodes.length > 0) {
     dossierStore.selectNode(nodes[0]);
   }

@@ -1796,6 +1796,27 @@
     "categoryTelegramDirect": "Telegram (direct)",
     "telegramNotConnected": "Connect your Telegram account in Profile > Telegram for direct searches"
   },
+  "osintIndustries": {
+    "title": "Import OSINT Industries",
+    "description": "Import OSINT Industries data via a JSON file or by pasting JSON copied from the platform.",
+    "entityName": "Entity name",
+    "entityPlaceholder": "E.g. +32470123456, email{'@'}example.com",
+    "fileUpload": "JSON File",
+    "pasteJson": "Paste JSON",
+    "dropOrClick": "Drop a JSON file or click to browse",
+    "pastePlaceholder": "Paste the JSON copied from OSINT Industries here...",
+    "pasteClipboard": "Paste from clipboard",
+    "parse": "Parse",
+    "platforms": "platforms",
+    "activities": "activities",
+    "more": "more",
+    "registered": "Registered",
+    "lastSeen": "Last seen",
+    "parseError": "Invalid JSON. Please check the data format.",
+    "invalidFormat": "Unrecognized format. JSON must contain groups and group_items keys.",
+    "clipboardError": "Cannot access clipboard",
+    "importError": "Import failed"
+  },
   "webcheck": {
     "title": "Import Web-Check",
     "description": "Import a JSON file exported from Web-Check to create a web analysis note.",

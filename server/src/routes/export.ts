@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { exportJSON, importJSON, importElephantastic } from '../controllers/exportController';
+import { exportJSON, importJSON, importElephantastic, importOsintIndustries } from '../controllers/exportController';
 
 const router = Router();
 
@@ -118,6 +118,7 @@ router.post('/dossiers/import/json', authenticate, importJSON);
  *         description: Donnees invalides
  */
 router.post('/dossiers/:id/import-elephantastic', authenticate, importElephantastic);
+router.post('/dossiers/:id/import-osint-industries', authenticate, importOsintIndustries);
 
 
 export default router;

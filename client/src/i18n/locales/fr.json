@@ -1808,6 +1808,27 @@
     "categoryTelegramDirect": "Telegram (direct)",
     "telegramNotConnected": "Connectez votre compte Telegram dans Profil > Telegram pour effectuer des recherches directes"
   },
+  "osintIndustries": {
+    "title": "Import OSINT Industries",
+    "description": "Importez les données OSINT Industries via un fichier JSON ou en collant le JSON copié depuis la plateforme.",
+    "entityName": "Nom de l'entité",
+    "entityPlaceholder": "Ex: +32470123456, email{'@'}example.com",
+    "fileUpload": "Fichier JSON",
+    "pasteJson": "Coller JSON",
+    "dropOrClick": "Glissez un fichier JSON ou cliquez pour parcourir",
+    "pastePlaceholder": "Collez ici le JSON copié depuis OSINT Industries...",
+    "pasteClipboard": "Coller depuis le presse-papier",
+    "parse": "Analyser",
+    "platforms": "plateformes",
+    "activities": "activités",
+    "more": "de plus",
+    "registered": "Enregistré",
+    "lastSeen": "Dernière activité",
+    "parseError": "JSON invalide. Vérifiez le format des données.",
+    "invalidFormat": "Format non reconnu. Le JSON doit contenir les clés groups et group_items.",
+    "clipboardError": "Impossible d'accéder au presse-papier",
+    "importError": "Erreur lors de l'import"
+  },
   "webcheck": {
     "title": "Import Web-Check",
     "description": "Importez un fichier JSON exporté depuis Web-Check pour créer une note d'analyse web.",

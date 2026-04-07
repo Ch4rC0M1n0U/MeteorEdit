@@ -485,3 +485,223 @@ export async function importElephantastic(req: AuthRequest, res: Response): Prom
   }
 }
 
+// ─── OSINT Industries platform icons ───
+const OI_ICONS: Record<string, string> = {
+  whatsapp: '\u{1F4AC}', telegram: '\u{2708}\u{FE0F}', signal: '\u{1F510}',
+  instagram: '\u{1F4F7}', facebook: '\u{1F465}', twitter: '\u{1F426}',
+  tiktok: '\u{1F3B5}', linkedin: '\u{1F4BC}', snapchat: '\u{1F47B}',
+  discord: '\u{1F3AE}', github: '\u{1F4BB}', google: '\u{1F50D}',
+  spotify: '\u{1F3B6}', skype: '\u{260E}\u{FE0F}', paypal: '\u{1F4B3}',
+  amazon: '\u{1F4E6}', apple: '\u{1F34E}', microsoft: '\u{1F4BB}',
+  viber: '\u{1F4DE}', line: '\u{1F4AC}', kakao: '\u{1F4AC}', wechat: '\u{1F4AC}',
+};
+
+/**
+ * Build a TipTap note from an OSINT Industries group (platform).
+ */
+async function buildOsintIndustriesNote(
+  groupName: string,
+  groupMeta: any,
+  items: any[],
+  years: Record<string, number>,
+  globalData: any,
+  serverUrl: string,
+): Promise<any> {
+  const content: any[] = [];
+  const icon = OI_ICONS[groupName.toLowerCase()] || '\u{1F310}';
+
+  // Title
+  content.push({
+    type: 'heading', attrs: { level: 2 },
+    content: [{ type: 'text', text: `${icon} ${groupName.charAt(0).toUpperCase() + groupName.slice(1)}` }],
+  });
+
+  // Status line
+  const statusParts: string[] = [];
+  if (globalData.registered) statusParts.push('Registered');
+  if (globalData.last_seen && globalData.last_seen_date) {
+    statusParts.push(`Last seen: ${new Date(globalData.last_seen_date).toLocaleDateString('fr-FR')}`);
+  }
+  if (globalData.registered_date) {
+    statusParts.push(`Registered: ${new Date(globalData.registered_date).toLocaleDateString('fr-FR')}`);
+  }
+  if (statusParts.length) {
+    content.push({
+      type: 'paragraph',
+      content: [{ type: 'text', marks: [{ type: 'italic' }], text: statusParts.join(' — ') }],
+    });
+  }
+
+  // Scan for images in items (profile pictures, avatars)
+  for (const item of items) {
+    const pv = item.platform_variables || {};
+    const imageFields = ['picture', 'photo_url', 'profile_picture', 'avatar_url', 'image', 'profile_image_url', 'photo', 'avatar'];
+    for (const field of imageFields) {
+      const url = pv[field] || item[field];
+      if (url && typeof url === 'string' && url.startsWith('http')) {
+        const localUrl = await downloadExternalImage(url, 'osint-industries');
+        const absUrl = localUrl.startsWith('/') ? `${serverUrl}${localUrl}` : localUrl;
+        content.push({
+          type: 'image',
+          attrs: { src: absUrl, alt: `${groupName} profile`, title: `${groupName} profile` },
+        });
+        break; // One image per group
+      }
+    }
+  }
+
+  // Year summary table
+  if (Object.keys(years).length) {
+    const headerRow = {
+      type: 'tableRow',
+      content: [
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Year' }] }] },
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Activities' }] }] },
+      ],
+    };
+    const rows = [headerRow];
+    for (const [year, count] of Object.entries(years).sort((a, b) => Number(b[0]) - Number(a[0]))) {
+      rows.push({
+        type: 'tableRow',
+        content: [
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: year }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: String(count) }] }] },
+        ],
+      });
+    }
+    content.push({ type: 'table', content: rows });
+  }
+
+  // Activity timeline
+  if (items.length) {
+    content.push({
+      type: 'heading', attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Activity Timeline' }],
+    });
+
+    const listItems = items.map((item: any) => {
+      const datePart = item.start ? new Date(item.start).toLocaleDateString('fr-FR') : '';
+      const text = datePart ? `${datePart} — ${item.content}` : item.content;
+      return {
+        type: 'listItem',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
+      };
+    });
+
+    content.push({ type: 'bulletList', content: listItems });
+  }
+
+  // Platform variables from items (extra data)
+  const extraData: Record<string, any> = {};
+  for (const item of items) {
+    if (item.platform_variables && Object.keys(item.platform_variables).length) {
+      for (const [k, v] of Object.entries(item.platform_variables)) {
+        if (v && !['picture', 'photo_url', 'profile_picture', 'avatar_url', 'image', 'profile_image_url', 'photo', 'avatar'].includes(k)) {
+          extraData[k] = v;
+        }
+      }
+    }
+  }
+
+  if (Object.keys(extraData).length) {
+    content.push({
+      type: 'heading', attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Platform Data' }],
+    });
+
+    const dataRows = [{
+      type: 'tableRow',
+      content: [
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Field' }] }] },
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Value' }] }] },
+      ],
+    }];
+
+    for (const [k, v] of Object.entries(extraData)) {
+      const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      dataRows.push({
+        type: 'tableRow',
+        content: [
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: k.replace(/_/g, ' ') }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: val }] }] },
+        ],
+      });
+    }
+
+    content.push({ type: 'table', content: dataRows });
+  }
+
+  return { type: 'doc', content };
+}
+
+/**
+ * Import OSINT Industries JSON data into a dossier.
+ * POST /api/dossiers/:id/import-osint-industries
+ * Body: { entityName, data, selectedGroups, parentId? }
+ */
+export async function importOsintIndustries(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossierId = req.params.id as string;
+    const { entityName, data, selectedGroups, parentId } = req.body;
+    const userId = req.user!.userId;
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+
+    if (!entityName || !data || !selectedGroups || !Array.isArray(selectedGroups) || selectedGroups.length === 0) {
+      res.status(400).json({ message: 'entityName, data et selectedGroups[] requis' });
+      return;
+    }
+
+    const dossier = await Dossier.findById(dossierId);
+    if (!dossier) { res.status(404).json({ message: 'Dossier non trouvé' }); return; }
+    if (dossier.owner.toString() !== userId && !dossier.collaborators.map(c => c.toString()).includes(userId)) {
+      res.status(403).json({ message: 'Accès refusé' }); return;
+    }
+
+    // Create parent folder
+    const maxOrder = await DossierNode.findOne({ dossierId, parentId: parentId || null })
+      .sort({ order: -1 }).select('order').lean();
+    const folderOrder = (maxOrder?.order ?? -1) + 1;
+
+    const folder = await DossierNode.create({
+      dossierId, parentId: parentId || null,
+      type: 'folder', title: `${entityName}`, order: folderOrder,
+    });
+
+    const createdNodes: any[] = [folder.toObject()];
+    const serverUrl = getBaseUrl(req);
+    const groupItems = data.group_items || {};
+    const groups = data.groups || {};
+    const groupYears = data.group_years || {};
+
+    let i = 0;
+    for (const groupName of selectedGroups) {
+      const items = groupItems[groupName] || [];
+      const meta = groups[groupName] || {};
+      const years = groupYears[groupName] || {};
+      const icon = OI_ICONS[groupName.toLowerCase()] || '\u{1F310}';
+      const noteTitle = `${icon} ${groupName.charAt(0).toUpperCase() + groupName.slice(1)}`;
+
+      const tiptapContent = await buildOsintIndustriesNote(groupName, meta, items, years, data, serverUrl);
+
+      const note = await DossierNode.create({
+        dossierId, parentId: folder._id,
+        type: 'note', title: noteTitle, content: tiptapContent, order: i++,
+      });
+
+      createdNodes.push(note.toObject());
+    }
+
+    await logActivity(userId, 'import.osint-industries', 'dossier', dossierId, {
+      entityName, groupCount: selectedGroups.length, folderId: folder._id.toString(),
+    }, ip, ua);
+
+    res.status(201).json({
+      message: `Import réussi : ${selectedGroups.length} notes créées`,
+      nodes: createdNodes,
+    });
+  } catch (error) {
+    console.error('OSINT Industries import failed:', error);
+    res.status(500).json({ message: 'Erreur lors de l\'import OSINT Industries' });
+  }
+}
