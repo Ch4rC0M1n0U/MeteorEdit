@@ -167,6 +167,7 @@ const statusLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 .dc-logo {
   width: 28px;
@@ -198,6 +199,10 @@ const statusLabel = computed(() => {
   font-weight: 600;
   color: var(--me-text-primary);
   line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .dc-desc {
   font-size: 13px;
