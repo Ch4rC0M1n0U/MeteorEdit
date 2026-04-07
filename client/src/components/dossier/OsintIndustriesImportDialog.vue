@@ -74,14 +74,13 @@
           <v-chip size="x-small" variant="tonal" color="primary">{{ platformEntries.length }} {{ $t('osintIndustries.platforms') }}</v-chip>
         </div>
 
-        <!-- Status -->
-        <div class="oi-status-row">
-          <span v-if="parsed.registered" class="oi-badge oi-badge--registered">
-            <v-icon size="12">mdi-check-circle</v-icon> {{ $t('osintIndustries.registered') }}
+        <!-- Query info -->
+        <div v-if="parsed.query" class="oi-status-row">
+          <span class="oi-badge oi-badge--seen">
+            <v-icon size="12">mdi-magnify</v-icon> {{ parsed.query }}
           </span>
-          <span v-if="parsed.last_seen" class="oi-badge oi-badge--seen">
-            <v-icon size="12">mdi-eye</v-icon> {{ $t('osintIndustries.lastSeen') }}:
-            {{ parsed.last_seen_date ? new Date(parsed.last_seen_date).toLocaleDateString() : '-' }}
+          <span class="oi-badge oi-badge--registered">
+            <v-icon size="12">mdi-check-circle</v-icon> {{ platformEntries.length }} {{ $t('osintIndustries.platforms') }}
           </span>
         </div>
 
@@ -285,123 +284,70 @@ async function pasteFromClipboard() {
 function parseJson() {
   parseError.value = '';
   try {
-    const raw = rawJson.value.trim();
-    let data: any;
+    const data = JSON.parse(rawJson.value.trim());
 
-    // Try parsing as single JSON object
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      // Try as NDJSON (one JSON per line)
-      const lines = raw.split('\n').filter(l => l.trim());
-      if (lines.length > 1) {
-        data = { _ndjson: lines.map(l => JSON.parse(l)) };
-      } else {
-        throw new Error('Invalid JSON');
-      }
-    }
+    // OSINT Industries full export: array of module objects
+    const modules: any[] = Array.isArray(data) ? data : (data.modules || data.results || [data]);
 
-    // Handle NDJSON array (multiple entities)
-    if (data._ndjson) {
-      const entries: PlatformEntry[] = [];
-      for (const item of data._ndjson) {
-        const name = item.module || item.source || item.platform || item.collection || 'Unknown';
-        entries.push({
-          name,
-          color: getGroupColor(name),
-          items: [{ group_name: name, start: item.created_at || item.date || null, end: null, content: item.description || item.content || JSON.stringify(item).substring(0, 100), platform_variables: item, year: 0 }],
-          selected: true,
-        });
-      }
-      parsed.value = data;
-      platformEntries.value = entries;
+    if (!modules.length || !modules[0].module) {
+      parseError.value = t('osintIndustries.invalidFormat');
       return;
     }
 
-    // Standard format with groups/group_items
-    if (data.groups || data.group_items) {
-      parsed.value = data;
-      const entries: PlatformEntry[] = [];
-      const groupItems = data.group_items || {};
-      const groups = data.groups || {};
-
-      for (const [groupName, items] of Object.entries(groupItems)) {
-        entries.push({
-          name: groupName,
-          color: (groups[groupName] as any)?.color || getGroupColor(groupName),
-          items: items as any[],
-          selected: true,
-        });
-      }
-
-      platformEntries.value = entries;
-      return;
+    // Extract query for entity label
+    if (!entityLabel.value && modules[0].query) {
+      entityLabel.value = modules[0].query;
     }
 
-    // Flat format: single entity result (no groups wrapper)
-    // Detect by presence of common OSINT Industries keys
-    if (data.last_seen !== undefined || data.registered !== undefined || data.modules || data.results || data.data) {
-      parsed.value = data;
-      const entries: PlatformEntry[] = [];
+    // Only keep modules with status "found"
+    const foundModules = modules.filter((m: any) => m.status === 'found');
 
-      // Try data.modules or data.results or data.data as array of platform results
-      const moduleList = data.modules || data.results || data.data;
-      if (Array.isArray(moduleList)) {
-        for (const mod of moduleList) {
-          const name = mod.module || mod.source || mod.platform || mod.name || 'Unknown';
-          const items = Array.isArray(mod.results || mod.items || mod.data) ? (mod.results || mod.items || mod.data) : [mod];
-          entries.push({
-            name,
-            color: getGroupColor(name),
-            items: items.map((it: any) => ({
-              group_name: name,
-              start: it.created_at || it.date || it.timestamp || null,
-              end: null,
-              content: it.description || it.content || it.title || it.value || JSON.stringify(it).substring(0, 120),
-              platform_variables: it,
-              year: 0,
-            })),
-            selected: true,
-          });
-        }
+    const entries: PlatformEntry[] = foundModules.map((mod: any) => {
+      const name = mod.pretty_name || mod.schemaModule || mod.module;
+      const spec = mod.spec_format?.[0] || {};
+      const schema = mod.front_schemas?.[0] || {};
+      const imageUrl = schema.image || spec.picture_url?.value || '';
+
+      // Build summary from spec_format fields
+      const highlights: string[] = [];
+      if (spec.name?.value) highlights.push(`Name: ${spec.name.value}`);
+      if (spec.location?.value) highlights.push(spec.location.value);
+      if (spec.registered?.value) highlights.push('Registered');
+      if (spec.verified?.value !== undefined) highlights.push(`Verified: ${spec.verified.value}`);
+
+      // Timeline items
+      const timelineItems = schema.timeline?.group_items || {};
+      const allItems: any[] = [];
+      for (const items of Object.values(timelineItems)) {
+        if (Array.isArray(items)) allItems.push(...items);
       }
 
-      // If no modules found, treat the whole object as a single entry
-      if (entries.length === 0) {
-        entries.push({
-          name: 'OSINT Industries Result',
-          color: 'var(--me-accent)',
-          items: [{
-            group_name: 'result',
-            start: data.last_seen_date || data.date || null,
-            end: null,
-            content: `Registered: ${data.registered ?? '-'}, Last seen: ${data.last_seen ?? '-'}`,
-            platform_variables: data,
-            year: 0,
-          }],
-          selected: true,
-        });
+      // Body data
+      const bodyEntries = schema.body ? Object.entries(schema.body) : [];
+      for (const [k, v] of bodyEntries) {
+        highlights.push(`${k}: ${v}`);
       }
 
-      platformEntries.value = entries;
-      return;
-    }
+      // Tags
+      const tags = (schema.tags || []).map((t: any) => t.tag).filter(Boolean);
 
-    // Unknown format - still accept it as generic import
-    parsed.value = data;
-    platformEntries.value = [{
-      name: 'OSINT Industries Data',
-      color: 'var(--me-accent)',
-      items: [{
-        group_name: 'data',
-        start: null,
-        end: null,
-        content: JSON.stringify(data).substring(0, 150),
-        platform_variables: data,
-        year: 0,
-      }],
-      selected: true,
-    }];
+      return {
+        name,
+        color: getGroupColor(mod.module),
+        items: [{
+          group_name: mod.module,
+          start: schema.timeline?.last_seen_date || null,
+          end: null,
+          content: [...highlights, ...tags].join(' — ') || mod.category?.name || 'Found',
+          platform_variables: { ...spec, imageUrl, body: schema.body, tags, timeline: schema.timeline },
+          year: 0,
+        }, ...allItems],
+        selected: true,
+      };
+    });
+
+    parsed.value = { _modules: foundModules, query: modules[0]?.query };
+    platformEntries.value = entries;
   } catch {
     parseError.value = t('osintIndustries.parseError');
   }
@@ -433,10 +379,15 @@ async function doImport() {
   importing.value = true;
   try {
     const selected = platformEntries.value.filter(e => e.selected);
+    const selectedNames = selected.map(s => s.name);
+    // Send only the selected modules from the original data
+    const allModules = parsed.value._modules || [];
+    const selectedModules = allModules.filter((m: any) =>
+      selectedNames.includes(m.pretty_name || m.schemaModule || m.module)
+    );
     const { data } = await api.post(`/dossiers/${props.dossierId}/import-osint-industries`, {
       entityName: entityLabel.value || 'OSINT Industries',
-      data: parsed.value,
-      selectedGroups: selected.map(s => s.name),
+      modules: selectedModules,
       parentId: selectedParentId.value || null,
     });
 

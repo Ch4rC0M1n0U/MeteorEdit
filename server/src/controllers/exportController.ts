@@ -497,89 +497,145 @@ const OI_ICONS: Record<string, string> = {
 };
 
 /**
- * Build a TipTap note from an OSINT Industries group (platform).
+ * Build a TipTap note from an OSINT Industries module.
  */
-async function buildOsintIndustriesNote(
-  groupName: string,
-  groupMeta: any,
-  items: any[],
-  years: Record<string, number>,
-  globalData: any,
-  serverUrl: string,
-): Promise<any> {
+async function buildOsintIndustriesNote(mod: any, serverUrl: string): Promise<any> {
   const content: any[] = [];
-  const icon = OI_ICONS[groupName.toLowerCase()] || '\u{1F310}';
+  const moduleName = mod.module || 'unknown';
+  const prettyName = mod.pretty_name || mod.schemaModule || moduleName;
+  const icon = OI_ICONS[moduleName.toLowerCase()] || '\u{1F310}';
+  const spec = mod.spec_format?.[0] || {};
+  const schema = mod.front_schemas?.[0] || {};
 
   // Title
   content.push({
     type: 'heading', attrs: { level: 2 },
-    content: [{ type: 'text', text: `${icon} ${groupName.charAt(0).toUpperCase() + groupName.slice(1)}` }],
+    content: [{ type: 'text', text: `${icon} ${prettyName}` }],
   });
 
-  // Status line
-  const statusParts: string[] = [];
-  if (globalData.registered) statusParts.push('Registered');
-  if (globalData.last_seen && globalData.last_seen_date) {
-    statusParts.push(`Last seen: ${new Date(globalData.last_seen_date).toLocaleDateString('fr-FR')}`);
-  }
-  if (globalData.registered_date) {
-    statusParts.push(`Registered: ${new Date(globalData.registered_date).toLocaleDateString('fr-FR')}`);
-  }
-  if (statusParts.length) {
+  // Category + query
+  const metaParts: string[] = [];
+  if (mod.category?.name) metaParts.push(mod.category.name);
+  if (mod.query) metaParts.push(`Query: ${mod.query}`);
+  if (metaParts.length) {
     content.push({
       type: 'paragraph',
-      content: [{ type: 'text', marks: [{ type: 'italic' }], text: statusParts.join(' — ') }],
+      content: [{ type: 'text', marks: [{ type: 'italic' }], text: metaParts.join(' — ') }],
     });
   }
 
-  // Scan for images in items (profile pictures, avatars)
-  for (const item of items) {
-    const pv = item.platform_variables || {};
-    const imageFields = ['picture', 'photo_url', 'profile_picture', 'avatar_url', 'image', 'profile_image_url', 'photo', 'avatar'];
-    for (const field of imageFields) {
-      const url = pv[field] || item[field];
-      if (url && typeof url === 'string' && url.startsWith('http')) {
-        const localUrl = await downloadExternalImage(url, 'osint-industries');
-        const absUrl = localUrl.startsWith('/') ? `${serverUrl}${localUrl}` : localUrl;
-        content.push({
-          type: 'image',
-          attrs: { src: absUrl, alt: `${groupName} profile`, title: `${groupName} profile` },
-        });
-        break; // One image per group
-      }
+  // Profile image from front_schemas or spec_format
+  const imageUrl = schema.image || spec.picture_url?.value || '';
+  if (imageUrl && imageUrl.startsWith('http')) {
+    const localUrl = await downloadExternalImage(imageUrl, 'osint-industries');
+    const absUrl = localUrl.startsWith('/') ? `${serverUrl}${localUrl}` : localUrl;
+    content.push({
+      type: 'image',
+      attrs: { src: absUrl, alt: `${prettyName} profile`, title: `${prettyName} profile` },
+    });
+  }
+
+  // Main data table from spec_format
+  const specEntries: Array<[string, string]> = [];
+  const skipKeys = ['platform_variables'];
+  for (const [key, val] of Object.entries(spec)) {
+    if (skipKeys.includes(key)) continue;
+    const v = val as any;
+    if (v && typeof v === 'object' && v.proper_key !== undefined) {
+      const display = typeof v.value === 'object' ? JSON.stringify(v.value) : String(v.value ?? '-');
+      specEntries.push([v.proper_key || key, display]);
     }
   }
 
-  // Year summary table
-  if (Object.keys(years).length) {
+  if (specEntries.length) {
     const headerRow = {
       type: 'tableRow',
       content: [
-        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Year' }] }] },
-        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Activities' }] }] },
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Field' }] }] },
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Value' }] }] },
       ],
     };
-    const rows = [headerRow];
-    for (const [year, count] of Object.entries(years).sort((a, b) => Number(b[0]) - Number(a[0]))) {
+    const rows: any[] = [headerRow];
+    for (const [label, value] of specEntries) {
       rows.push({
         type: 'tableRow',
         content: [
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: year }] }] },
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: String(count) }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: label }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: value }] }] },
         ],
       });
     }
     content.push({ type: 'table', content: rows });
   }
 
-  // Activity timeline
-  if (items.length) {
+  // Body data from front_schemas
+  if (schema.body && Object.keys(schema.body).length) {
     content.push({
       type: 'heading', attrs: { level: 3 },
-      content: [{ type: 'text', text: 'Activity Timeline' }],
+      content: [{ type: 'text', text: 'Details' }],
     });
+    const bodyItems = Object.entries(schema.body).map(([k, v]) => ({
+      type: 'listItem' as const,
+      content: [{ type: 'paragraph', content: [
+        { type: 'text', marks: [{ type: 'bold' }], text: `${k}: ` },
+        { type: 'text', marks: [] as any[], text: String(v) },
+      ] }],
+    }));
+    content.push({ type: 'bulletList', content: bodyItems });
+  }
 
-    const listItems = items.map((item: any) => {
+  // Tags
+  const tags = (schema.tags || []).map((t: any) => t.tag).filter(Boolean);
+  if (tags.length) {
+    content.push({
+      type: 'paragraph',
+      content: [{ type: 'text', marks: [{ type: 'italic' }], text: `Tags: ${tags.join(', ')}` }],
+    });
+  }
+
+  // Platform variables from spec_format
+  const pvars = Array.isArray(spec.platform_variables) ? spec.platform_variables : [];
+  if (pvars.length) {
+    content.push({
+      type: 'heading', attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Platform Variables' }],
+    });
+    const pvHeaderRow = {
+      type: 'tableRow',
+      content: [
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Variable' }] }] },
+        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Value' }] }] },
+      ],
+    };
+    const pvRows: any[] = [pvHeaderRow];
+    for (const pv of pvars) {
+      if (pv.key === 'timeline_data') continue; // Skip redundant timeline
+      const val = typeof pv.value === 'object' ? JSON.stringify(pv.value) : String(pv.value ?? '-');
+      pvRows.push({
+        type: 'tableRow',
+        content: [
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: pv.proper_key || pv.key }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: val }] }] },
+        ],
+      });
+    }
+    if (pvRows.length > 1) content.push({ type: 'table', content: pvRows });
+  }
+
+  // Timeline activities
+  const timeline = schema.timeline || {};
+  const allTimelineItems: any[] = [];
+  if (timeline.group_items) {
+    for (const items of Object.values(timeline.group_items)) {
+      if (Array.isArray(items)) allTimelineItems.push(...items);
+    }
+  }
+  if (allTimelineItems.length) {
+    content.push({
+      type: 'heading', attrs: { level: 3 },
+      content: [{ type: 'text', text: 'Timeline' }],
+    });
+    const tlItems = allTimelineItems.map((item: any) => {
       const datePart = item.start ? new Date(item.start).toLocaleDateString('fr-FR') : '';
       const text = datePart ? `${datePart} — ${item.content}` : item.content;
       return {
@@ -587,48 +643,7 @@ async function buildOsintIndustriesNote(
         content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
       };
     });
-
-    content.push({ type: 'bulletList', content: listItems });
-  }
-
-  // Platform variables from items (extra data)
-  const extraData: Record<string, any> = {};
-  for (const item of items) {
-    if (item.platform_variables && Object.keys(item.platform_variables).length) {
-      for (const [k, v] of Object.entries(item.platform_variables)) {
-        if (v && !['picture', 'photo_url', 'profile_picture', 'avatar_url', 'image', 'profile_image_url', 'photo', 'avatar'].includes(k)) {
-          extraData[k] = v;
-        }
-      }
-    }
-  }
-
-  if (Object.keys(extraData).length) {
-    content.push({
-      type: 'heading', attrs: { level: 3 },
-      content: [{ type: 'text', text: 'Platform Data' }],
-    });
-
-    const dataRows = [{
-      type: 'tableRow',
-      content: [
-        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Field' }] }] },
-        { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'bold' }], text: 'Value' }] }] },
-      ],
-    }];
-
-    for (const [k, v] of Object.entries(extraData)) {
-      const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
-      dataRows.push({
-        type: 'tableRow',
-        content: [
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: k.replace(/_/g, ' ') }] }] },
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: val }] }] },
-        ],
-      });
-    }
-
-    content.push({ type: 'table', content: dataRows });
+    content.push({ type: 'bulletList', content: tlItems });
   }
 
   return { type: 'doc', content };
@@ -637,18 +652,18 @@ async function buildOsintIndustriesNote(
 /**
  * Import OSINT Industries JSON data into a dossier.
  * POST /api/dossiers/:id/import-osint-industries
- * Body: { entityName, data, selectedGroups, parentId? }
+ * Body: { entityName, modules, parentId? }
  */
 export async function importOsintIndustries(req: AuthRequest, res: Response): Promise<void> {
   try {
     const dossierId = req.params.id as string;
-    const { entityName, data, selectedGroups, parentId } = req.body;
+    const { entityName, modules, parentId } = req.body;
     const userId = req.user!.userId;
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
 
-    if (!entityName || !data || !selectedGroups || !Array.isArray(selectedGroups) || selectedGroups.length === 0) {
-      res.status(400).json({ message: 'entityName, data et selectedGroups[] requis' });
+    if (!entityName || !modules || !Array.isArray(modules) || modules.length === 0) {
+      res.status(400).json({ message: 'entityName et modules[] requis' });
       return;
     }
 
@@ -665,39 +680,35 @@ export async function importOsintIndustries(req: AuthRequest, res: Response): Pr
 
     const folder = await DossierNode.create({
       dossierId, parentId: parentId || null,
-      type: 'folder', title: `${entityName}`, order: folderOrder,
+      type: 'folder', title: entityName, order: folderOrder,
     });
 
     const createdNodes: any[] = [folder.toObject()];
     const serverUrl = getBaseUrl(req);
-    const groupItems = data.group_items || {};
-    const groups = data.groups || {};
-    const groupYears = data.group_years || {};
 
-    let i = 0;
-    for (const groupName of selectedGroups) {
-      const items = groupItems[groupName] || [];
-      const meta = groups[groupName] || {};
-      const years = groupYears[groupName] || {};
-      const icon = OI_ICONS[groupName.toLowerCase()] || '\u{1F310}';
-      const noteTitle = `${icon} ${groupName.charAt(0).toUpperCase() + groupName.slice(1)}`;
+    for (let i = 0; i < modules.length; i++) {
+      const mod = modules[i];
+      const moduleName = mod.module || 'unknown';
+      const prettyName = mod.pretty_name || mod.schemaModule || moduleName;
+      const icon = OI_ICONS[moduleName.toLowerCase()] || '\u{1F310}';
+      const noteTitle = `${icon} ${prettyName}`;
 
-      const tiptapContent = await buildOsintIndustriesNote(groupName, meta, items, years, data, serverUrl);
+      const tiptapContent = await buildOsintIndustriesNote(mod, serverUrl);
 
       const note = await DossierNode.create({
         dossierId, parentId: folder._id,
-        type: 'note', title: noteTitle, content: tiptapContent, order: i++,
+        type: 'note', title: noteTitle, content: tiptapContent, order: i,
       });
 
       createdNodes.push(note.toObject());
     }
 
     await logActivity(userId, 'import.osint-industries', 'dossier', dossierId, {
-      entityName, groupCount: selectedGroups.length, folderId: folder._id.toString(),
+      entityName, moduleCount: modules.length, folderId: folder._id.toString(),
     }, ip, ua);
 
     res.status(201).json({
-      message: `Import réussi : ${selectedGroups.length} notes créées`,
+      message: `Import réussi : ${modules.length} notes créées`,
       nodes: createdNodes,
     });
   } catch (error) {
