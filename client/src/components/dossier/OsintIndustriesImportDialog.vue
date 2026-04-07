@@ -285,27 +285,123 @@ async function pasteFromClipboard() {
 function parseJson() {
   parseError.value = '';
   try {
-    const data = JSON.parse(rawJson.value.trim());
-    if (!data.groups && !data.group_items) {
-      parseError.value = t('osintIndustries.invalidFormat');
+    const raw = rawJson.value.trim();
+    let data: any;
+
+    // Try parsing as single JSON object
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      // Try as NDJSON (one JSON per line)
+      const lines = raw.split('\n').filter(l => l.trim());
+      if (lines.length > 1) {
+        data = { _ndjson: lines.map(l => JSON.parse(l)) };
+      } else {
+        throw new Error('Invalid JSON');
+      }
+    }
+
+    // Handle NDJSON array (multiple entities)
+    if (data._ndjson) {
+      const entries: PlatformEntry[] = [];
+      for (const item of data._ndjson) {
+        const name = item.module || item.source || item.platform || item.collection || 'Unknown';
+        entries.push({
+          name,
+          color: getGroupColor(name),
+          items: [{ group_name: name, start: item.created_at || item.date || null, end: null, content: item.description || item.content || JSON.stringify(item).substring(0, 100), platform_variables: item, year: 0 }],
+          selected: true,
+        });
+      }
+      parsed.value = data;
+      platformEntries.value = entries;
       return;
     }
-    parsed.value = data;
 
-    const entries: PlatformEntry[] = [];
-    const groupItems = data.group_items || {};
-    const groups = data.groups || {};
+    // Standard format with groups/group_items
+    if (data.groups || data.group_items) {
+      parsed.value = data;
+      const entries: PlatformEntry[] = [];
+      const groupItems = data.group_items || {};
+      const groups = data.groups || {};
 
-    for (const [groupName, items] of Object.entries(groupItems)) {
-      entries.push({
-        name: groupName,
-        color: (groups[groupName] as any)?.color || getGroupColor(groupName),
-        items: items as any[],
-        selected: true,
-      });
+      for (const [groupName, items] of Object.entries(groupItems)) {
+        entries.push({
+          name: groupName,
+          color: (groups[groupName] as any)?.color || getGroupColor(groupName),
+          items: items as any[],
+          selected: true,
+        });
+      }
+
+      platformEntries.value = entries;
+      return;
     }
 
-    platformEntries.value = entries;
+    // Flat format: single entity result (no groups wrapper)
+    // Detect by presence of common OSINT Industries keys
+    if (data.last_seen !== undefined || data.registered !== undefined || data.modules || data.results || data.data) {
+      parsed.value = data;
+      const entries: PlatformEntry[] = [];
+
+      // Try data.modules or data.results or data.data as array of platform results
+      const moduleList = data.modules || data.results || data.data;
+      if (Array.isArray(moduleList)) {
+        for (const mod of moduleList) {
+          const name = mod.module || mod.source || mod.platform || mod.name || 'Unknown';
+          const items = Array.isArray(mod.results || mod.items || mod.data) ? (mod.results || mod.items || mod.data) : [mod];
+          entries.push({
+            name,
+            color: getGroupColor(name),
+            items: items.map((it: any) => ({
+              group_name: name,
+              start: it.created_at || it.date || it.timestamp || null,
+              end: null,
+              content: it.description || it.content || it.title || it.value || JSON.stringify(it).substring(0, 120),
+              platform_variables: it,
+              year: 0,
+            })),
+            selected: true,
+          });
+        }
+      }
+
+      // If no modules found, treat the whole object as a single entry
+      if (entries.length === 0) {
+        entries.push({
+          name: 'OSINT Industries Result',
+          color: 'var(--me-accent)',
+          items: [{
+            group_name: 'result',
+            start: data.last_seen_date || data.date || null,
+            end: null,
+            content: `Registered: ${data.registered ?? '-'}, Last seen: ${data.last_seen ?? '-'}`,
+            platform_variables: data,
+            year: 0,
+          }],
+          selected: true,
+        });
+      }
+
+      platformEntries.value = entries;
+      return;
+    }
+
+    // Unknown format - still accept it as generic import
+    parsed.value = data;
+    platformEntries.value = [{
+      name: 'OSINT Industries Data',
+      color: 'var(--me-accent)',
+      items: [{
+        group_name: 'data',
+        start: null,
+        end: null,
+        content: JSON.stringify(data).substring(0, 150),
+        platform_variables: data,
+        year: 0,
+      }],
+      selected: true,
+    }];
   } catch {
     parseError.value = t('osintIndustries.parseError');
   }
