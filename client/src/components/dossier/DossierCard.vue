@@ -97,6 +97,8 @@ const statusLabel = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
+  min-width: 0;
 }
 .dossier-card:hover {
   transform: translateY(-2px);
