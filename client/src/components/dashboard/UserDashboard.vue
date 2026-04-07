@@ -71,7 +71,7 @@
             <div class="dash-card glass-card">
               <h3 class="dash-card-title mono">{{ $t('dashboard.recentlyModifiedDossiers') }}</h3>
               <div class="dash-recent-list">
-                <div v-for="d in stats.recentDossiers" :key="d._id" class="dash-recent-item" @click="$emit('openDossier', d._id)">
+                <div v-for="d in stats.recentDossiers.filter((r: any) => r.status !== 'closed')" :key="d._id" class="dash-recent-item" @click="$emit('openDossier', d._id)">
                   <span :class="['status-dot', `status-dot--${statusDot(d.status)}`]" />
                   <span class="dash-recent-title">{{ d.title }}</span>
                   <span class="dash-recent-date mono">{{ formatDate(d.updatedAt) }}</span>
