@@ -1,12 +1,14 @@
 import rateLimit from 'express-rate-limit';
 
-// Key generator: use real client IP behind proxy, fallback to req.ip
+// Disable the IPv6 keyGenerator validation — we handle proxied IPs via X-Forwarded-For
 const keyGenerator = (req: any) => {
   return req.headers['x-forwarded-for']?.toString().split(',')[0].trim()
     || req.headers['x-real-ip']?.toString()
     || req.ip
     || 'unknown';
 };
+
+const validate = { ipAddress: false, trustProxy: false, xForwardedForHeader: false, keyGeneratorIpFallback: false } as any;
 
 // Strict limit for auth endpoints (login, register)
 export const authLimiter = rateLimit({
@@ -16,6 +18,7 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,
+  validate,
 });
 
 // General API limit — generous for normal usage
@@ -26,6 +29,7 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,
+  validate,
 });
 
 // Limit for expensive operations (AI, clipper, export, search)
@@ -36,4 +40,5 @@ export const heavyLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,
+  validate,
 });
