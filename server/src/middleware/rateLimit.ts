@@ -8,7 +8,7 @@ const keyGenerator = (req: any) => {
     || 'unknown';
 };
 
-const validate = { ipAddress: false, trustProxy: false, xForwardedForHeader: false, keyGeneratorIpFallback: false } as any;
+const validate = { ip: false, trustProxy: false, xForwardedForHeader: false, keyGeneratorIpFallback: false };
 
 // Strict limit for auth endpoints (login, register)
 export const authLimiter = rateLimit({
