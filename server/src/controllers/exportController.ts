@@ -564,8 +564,8 @@ async function buildOsintIndustriesNote(
       rows.push({
         type: 'tableRow',
         content: [
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: year }] }] },
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: String(count) }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: year }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: String(count) }] }] },
         ],
       });
     }
@@ -622,8 +622,8 @@ async function buildOsintIndustriesNote(
       dataRows.push({
         type: 'tableRow',
         content: [
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: k.replace(/_/g, ' ') }] }] },
-          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: val }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: k.replace(/_/g, ' ') }] }] },
+          { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', marks: [], text: val }] }] },
         ],
       });
     }
