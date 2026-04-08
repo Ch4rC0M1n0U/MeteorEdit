@@ -1137,8 +1137,7 @@ export async function reverseImageUpload(req: AuthRequest, res: Response): Promi
       res.status(400).json({ error: 'No file uploaded' });
       return;
     }
-    const baseUrl = getBaseUrl(req);
-    const url = `${baseUrl}/uploads/${req.file.filename}`;
+    const url = `/uploads/${req.file.filename}`;
     res.json({ url });
   } catch (error: any) {
     console.error('reverseImageUpload error:', error?.message || error);

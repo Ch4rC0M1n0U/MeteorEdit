@@ -4,9 +4,9 @@ import { Request } from 'express';
  * Centralized image URL helpers.
  *
  * Convention:
- * - DB storage / fileUrl fields: relative with leading slash  →  /uploads/profiles/abc.jpg
- * - TipTap content (src attrs):  absolute with protocol+host  →  https://host/uploads/profiles/abc.jpg
- *   Why absolute? So images can be copy-pasted to OneNote, Word, etc.
+ * - ALL stored paths (DB, TipTap content, fileUrl): relative with leading slash  →  /uploads/profiles/abc.jpg
+ * - The client resolves relative paths to absolute URLs using window.location.origin at render time.
+ * - This ensures portability across domains (IP, hostname, deployment changes).
  *
  * ALL controllers MUST use these helpers instead of manual string concatenation.
  */
@@ -44,24 +44,34 @@ export function getBaseUrl(req: Request): string {
 }
 
 /**
- * Convert a relative upload path to an absolute URL for use in TipTap content.
- * This is the ONLY function that should create absolute image URLs for TipTap.
+ * Normalize a file path for storage in TipTap content or DB fields.
+ * Always returns a relative path — the client resolves to absolute at render time.
  */
-export function toAbsoluteUrl(filePath: string, req: Request): string {
+export function toAbsoluteUrl(filePath: string, _req: Request): string {
   if (!filePath) return '';
-  // Already absolute
-  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
-  const normalized = normalizeUploadPath(filePath);
-  return `${getBaseUrl(req)}${normalized}`;
+  return normalizeUploadPath(stripBaseUrl(filePath));
 }
 
 /**
- * Convert a relative upload path to an absolute URL using a pre-computed baseUrl.
- * Use when req is not available (e.g., inside helper functions called from controllers).
+ * Normalize a file path for storage. Returns relative path.
+ * Kept for backward compatibility — all callers already pass baseUrl but we ignore it.
  */
-export function toAbsoluteUrlFromBase(filePath: string, baseUrl: string): string {
+export function toAbsoluteUrlFromBase(filePath: string, _baseUrl: string): string {
   if (!filePath) return '';
-  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
-  const normalized = normalizeUploadPath(filePath);
-  return `${baseUrl}${normalized}`;
+  return normalizeUploadPath(stripBaseUrl(filePath));
+}
+
+/**
+ * Strip any absolute base URL prefix, returning just the /uploads/... path.
+ */
+function stripBaseUrl(url: string): string {
+  if (!url) return '';
+  // Already relative
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return url;
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname;
+  } catch {
+    return url;
+  }
 }

@@ -244,7 +244,7 @@ async function formatSocialTags(data: any, serverUrl?: string): Promise<any[]> {
   if (data.ogImage) {
     const localPath = await downloadImage(data.ogImage);
     if (localPath) {
-      const imgUrl = serverUrl ? `${serverUrl}/${localPath}` : `/${localPath}`;
+      const imgUrl = `/${localPath}`;
       result.push({ type: 'paragraph', content: [{ type: 'image', attrs: { src: imgUrl, alt: 'OG Image', title: 'Open Graph Image' } }] });
     } else {
       result.push(paragraph([textNode(`OG Image: ${data.ogImage}`)]));
@@ -254,7 +254,7 @@ async function formatSocialTags(data: any, serverUrl?: string): Promise<any[]> {
   if (data.favicon) {
     const localPath = await downloadImage(data.favicon);
     if (localPath) {
-      const imgUrl = serverUrl ? `${serverUrl}/${localPath}` : `/${localPath}`;
+      const imgUrl = `/${localPath}`;
       result.push({ type: 'paragraph', content: [{ type: 'image', attrs: { src: imgUrl, alt: 'Favicon', title: 'Favicon' } }] });
     } else {
       result.push(paragraph([textNode(`Favicon: ${data.favicon}`)]));

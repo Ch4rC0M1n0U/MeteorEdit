@@ -279,7 +279,7 @@ async function buildElephantasticNote(item: any, serverUrl: string): Promise<any
         type: 'paragraph',
         content: [{
           type: 'image',
-          attrs: { src: toAbsoluteUrlFromBase(localUrl, serverUrl), alt: img.label },
+          attrs: { src: localUrl, alt: img.label },
         }],
       });
     }
@@ -528,10 +528,9 @@ async function buildOsintIndustriesNote(mod: any, serverUrl: string): Promise<an
   const imageUrl = schema.image || spec.picture_url?.value || '';
   if (imageUrl && imageUrl.startsWith('http')) {
     const localUrl = await downloadExternalImage(imageUrl, 'osint-industries');
-    const absUrl = localUrl.startsWith('/') ? `${serverUrl}${localUrl}` : localUrl;
     content.push({
       type: 'image',
-      attrs: { src: absUrl, alt: `${prettyName} profile`, title: `${prettyName} profile` },
+      attrs: { src: localUrl, alt: `${prettyName} profile`, title: `${prettyName} profile` },
     });
   }
 
