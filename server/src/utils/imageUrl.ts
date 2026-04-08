@@ -75,3 +75,77 @@ function stripBaseUrl(url: string): string {
     return url;
   }
 }
+
+// ─── IMAGE URL GUARD ──────────────────────────────────────────────
+// Prevents absolute URLs, blob URLs, and data URIs from being stored
+// in TipTap content. This is the LAST LINE OF DEFENSE before DB write.
+// ───────────────────────────────────────────────────────────────────
+
+const DANGEROUS_SRC_PATTERNS = [
+  /^https?:\/\//,       // Absolute HTTP(S) URLs — must be relative
+  /^blob:/,             // Ephemeral blob URLs — unrecoverable after page close
+  /^data:image\/(?!gif;base64,R0lGODlhAQABA)/, // data URIs (except 1px transparent placeholder)
+];
+
+/**
+ * Sanitize a single image src for storage.
+ * - Absolute http(s) URLs → extract pathname (relative)
+ * - blob: URLs → replace with /uploads/missing.png (unrecoverable)
+ * - data: URIs (non-placeholder) → replace with /uploads/missing.png
+ * - Already relative → pass through
+ */
+export function sanitizeImageSrc(src: string): string {
+  if (!src) return '';
+  // blob: URLs are ephemeral and unrecoverable
+  if (src.startsWith('blob:')) return '/uploads/missing.png';
+  // data: URIs should never be stored (except transparent pixel placeholder used during loading)
+  if (src.startsWith('data:') && !src.startsWith('data:image/gif;base64,R0lGODlhAQABA')) {
+    return '/uploads/missing.png';
+  }
+  // Absolute URLs → strip to relative path
+  if (src.startsWith('http://') || src.startsWith('https://')) {
+    return normalizeUploadPath(stripBaseUrl(src));
+  }
+  return src;
+}
+
+/**
+ * Recursively walk TipTap JSON content and sanitize all image src attributes.
+ * Modifies the object IN PLACE for performance (called right before DB save).
+ * Returns the number of fixes applied.
+ */
+export function sanitizeTipTapImageUrls(node: any): number {
+  if (!node || typeof node !== 'object') return 0;
+  let fixes = 0;
+
+  // Check if this node is an image with a src attribute
+  if (node.type === 'image' && node.attrs?.src) {
+    const original = node.attrs.src;
+    const sanitized = sanitizeImageSrc(original);
+    if (sanitized !== original) {
+      node.attrs.src = sanitized;
+      fixes++;
+      console.warn(`[ImageGuard] Fixed image src: "${original.substring(0, 80)}…" → "${sanitized}"`);
+    }
+  }
+
+  // Also check resizableImage (custom TipTap extension)
+  if (node.type === 'resizableImage' && node.attrs?.src) {
+    const original = node.attrs.src;
+    const sanitized = sanitizeImageSrc(original);
+    if (sanitized !== original) {
+      node.attrs.src = sanitized;
+      fixes++;
+      console.warn(`[ImageGuard] Fixed resizableImage src: "${original.substring(0, 80)}…" → "${sanitized}"`);
+    }
+  }
+
+  // Recurse into content array
+  if (Array.isArray(node.content)) {
+    for (const child of node.content) {
+      fixes += sanitizeTipTapImageUrls(child);
+    }
+  }
+
+  return fixes;
+}

@@ -429,6 +429,7 @@ import api, { SERVER_URL } from '../../services/api';
 import { useTemplateStore } from '../../stores/template';
 import { useDossierStore } from '../../stores/dossier';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
+import { assertRelativeImageUrl } from '../../utils/imageGuard';
 import CommentSidebar from './CommentSidebar.vue';
 import { createMentionExtension } from './mentionExtension';
 import { Callout } from './calloutExtension';
@@ -677,16 +678,19 @@ async function insertLink() {
 
 async function uploadImageFile(file: File): Promise<string | null> {
   try {
+    let url: string;
     const dossierId = dossierStore.currentDossier?._id;
     if (dossierId) {
-      const url = await uploadEncryptedImage(dossierId, file);
-      return url;
+      url = await uploadEncryptedImage(dossierId, file);
+    } else {
+      // Fallback: no dossier context
+      const formData = new FormData();
+      formData.append('image', file);
+      const { data } = await api.post('/upload/image', formData);
+      url = data.url;
     }
-    // Fallback: no dossier context
-    const formData = new FormData();
-    formData.append('image', file);
-    const { data } = await api.post('/upload/image', formData);
-    return data.url;
+    // IMAGE GUARD: ensure only relative paths are stored in TipTap content
+    return assertRelativeImageUrl(url);
   } catch (err) {
     console.error('Image upload failed:', err);
     return null;

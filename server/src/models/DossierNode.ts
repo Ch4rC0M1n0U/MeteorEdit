@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { IDossierNode } from '../types';
+import { sanitizeTipTapImageUrls } from '../utils/imageUrl';
 
 const dossierNodeSchema = new Schema<IDossierNode>(
   {
@@ -22,6 +23,17 @@ const dossierNodeSchema = new Schema<IDossierNode>(
   },
   { timestamps: true }
 );
+
+// ─── IMAGE URL GUARD (pre-save) ───────────────────────────────────
+// Last line of defense: sanitize all image URLs in TipTap content
+// before ANY write to the database. Catches absolute URLs, blob:,
+// and data: URIs that should never be persisted.
+// ───────────────────────────────────────────────────────────────────
+dossierNodeSchema.pre('save', function () {
+  if (this.type === 'note' && this.content && typeof this.content === 'object') {
+    sanitizeTipTapImageUrls(this.content);
+  }
+});
 
 dossierNodeSchema.index({ dossierId: 1, parentId: 1 });
 dossierNodeSchema.index({ contentText: 'text', title: 'text' });

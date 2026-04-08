@@ -65,6 +65,7 @@ import api, { SERVER_URL } from '../../services/api';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
 import { useDossierStore } from '../../stores/dossier';
+import { assertRelativeImageUrl } from '../../utils/imageGuard';
 
 const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
@@ -365,6 +366,8 @@ async function onAnnotationSave(annotations: any[]) {
       api.delete(`/upload/${oldFilename}`).catch(() => {});
     }
 
+    // IMAGE GUARD: ensure only relative paths are stored
+    newUrl = assertRelativeImageUrl(newUrl);
     // Update TipTap node with new URL — triggers watch → decrypts → displays
     props.updateAttributes({ src: newUrl });
     // Update local decrypted src for immediate display
