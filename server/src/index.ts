@@ -12,7 +12,7 @@ import dotenv from 'dotenv';
 const execFileAsync = promisify(execFile);
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
-import { authLimiter, apiLimiter, heavyLimiter } from './middleware/rateLimit';
+import { authLimiter, refreshLimiter, apiLimiter, heavyLimiter } from './middleware/rateLimit';
 import { connectDB } from './config/database';
 import { setupSocket } from './socket';
 import authRoutes from './routes/auth';
@@ -115,7 +115,7 @@ app.get('/api/health', (_req, res) => {
 // Rate limiting (must be before routes)
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/refresh', authLimiter);
+app.use('/api/auth/refresh', refreshLimiter);
 app.use('/api/ai', heavyLimiter);
 app.use('/api/clip', heavyLimiter);
 app.use('/api/export', heavyLimiter);

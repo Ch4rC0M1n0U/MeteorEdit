@@ -13,8 +13,19 @@ const validate = { ip: false, trustProxy: false, xForwardedForHeader: false, key
 // Strict limit for auth endpoints (login, register)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  max: 50, // Increased: PWA reconnections burn through limit fast
   message: { error: 'Too many attempts, try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator,
+  validate,
+});
+
+// Separate lighter limit for token refresh (PWA needs frequent refreshes)
+export const refreshLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // 30 refreshes/min — generous for PWA reconnect loops
+  message: { error: 'Too many refresh attempts' },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator,
@@ -30,6 +41,7 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator,
   validate,
+  skip: (req: any) => req.path.startsWith('/socket.io'),
 });
 
 // Limit for expensive operations (AI, clipper, export, search)
