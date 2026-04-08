@@ -680,13 +680,13 @@ async function uploadImageFile(file: File): Promise<string | null> {
     const dossierId = dossierStore.currentDossier?._id;
     if (dossierId) {
       const url = await uploadEncryptedImage(dossierId, file);
-      return `${SERVER_URL}${url}`;
+      return url;
     }
     // Fallback: no dossier context
     const formData = new FormData();
     formData.append('image', file);
     const { data } = await api.post('/upload/image', formData);
-    return `${SERVER_URL}${data.url}`;
+    return data.url;
   } catch (err) {
     console.error('Image upload failed:', err);
     return null;

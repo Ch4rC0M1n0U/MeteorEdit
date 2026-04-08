@@ -350,12 +350,12 @@ async function onAnnotationSave(annotations: any[]) {
     if (dossierId) {
       const file = new File([blob], `annotated-${Date.now()}.png`, { type: 'image/png' });
       const url = await uploadEncryptedImage(dossierId, file);
-      newUrl = `${SERVER_URL}${url}`;
+      newUrl = url;
     } else {
       const formData = new FormData();
       formData.append('image', blob, 'annotated.png');
       const { data } = await api.post('/upload/image', formData);
-      newUrl = `${SERVER_URL}${data.url}`;
+      newUrl = data.url;
     }
 
     // Delete old file on server
