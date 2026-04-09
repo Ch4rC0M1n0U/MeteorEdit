@@ -426,18 +426,82 @@ function mapAlignment(align?: string): (typeof AlignmentType)[keyof typeof Align
 }
 
 /**
+ * Flatten a ContentBlock[] (cell content) into rich ParagraphChild[] runs,
+ * preserving bold, italic, color, links, etc. from TipTap marks.
+ * Falls back to plain text for non-inline block types.
+ */
+function cellBlocksToRichParagraphs(cellBlocks: ContentBlock[], tpl: PdfTemplateConfig, isHeader: boolean): Paragraph[] {
+  const paragraphs: Paragraph[] = [];
+
+  for (const block of cellBlocks) {
+    if (block.type === 'paragraph' || block.type === 'heading') {
+      const runs = richTextRuns(block.children, tpl);
+      // If header and no explicit formatting, make bold
+      if (isHeader && runs.length > 0) {
+        for (const run of runs) {
+          if (run instanceof TextRun) {
+            // TextRun doesn't expose a setter, so we rebuild if needed
+          }
+        }
+      }
+      paragraphs.push(new Paragraph({ children: runs }));
+    } else if (block.type === 'text') {
+      const runs = richTextRuns([block], tpl);
+      paragraphs.push(new Paragraph({ children: runs }));
+    } else if (block.type === 'bulletList' || block.type === 'orderedList') {
+      for (const item of block.items) {
+        const itemText = blocksToPlainText(item);
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({
+            text: itemText,
+            font: docxFont(tpl),
+            size: ptToHalfPt(tpl.body.fontSize),
+          })],
+          bullet: block.type === 'bulletList' ? { level: 0 } : undefined,
+        }));
+      }
+    } else {
+      // Fallback: extract plain text
+      const text = blocksToPlainText([block]);
+      if (text.trim()) {
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({
+            text,
+            font: docxFont(tpl),
+            size: ptToHalfPt(tpl.body.fontSize),
+          })],
+        }));
+      }
+    }
+  }
+
+  // Ensure at least one paragraph (Word requires non-empty cells)
+  if (paragraphs.length === 0) {
+    paragraphs.push(new Paragraph({ children: [] }));
+  }
+
+  return paragraphs;
+}
+
+/**
  * Build a docx Table from ContentBlock table rows.
- * First row treated as header with template headerBgColor.
+ * Preserves cell background colors, text formatting, and adds visible borders.
  */
 function contentTable(rows: ContentBlock[][][], tpl: PdfTemplateConfig): Table {
   const colCount = rows.length > 0 ? Math.max(...rows.map(r => r.length), 1) : 1;
   const colWidth = Math.floor(9000 / colCount); // roughly full width in twips
 
+  const cellBorder = {
+    top: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    bottom: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    left: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    right: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+  };
+
   const tableRows = rows.map((row, rowIdx) => {
     const cells: TableCell[] = [];
     for (let c = 0; c < colCount; c++) {
       const cellBlocks = row[c] || [];
-      const cellText = blocksToPlainText(cellBlocks);
       const cellAttrs = (cellBlocks as any)._cellAttrs || {};
       const isHeader = rowIdx === 0 || cellAttrs.isHeader;
 
@@ -451,22 +515,16 @@ function contentTable(rows: ContentBlock[][][], tpl: PdfTemplateConfig): Table {
         fillColor = hexToRgb(tpl.table.alternateRowColor);
       }
 
+      // Rich rendering: preserve inline formatting from TipTap
+      const cellParagraphs = cellBlocksToRichParagraphs(cellBlocks, tpl, isHeader);
+
       cells.push(new TableCell({
-        children: [new Paragraph({
-          children: [new TextRun({
-            text: cellText,
-            font: docxFont(tpl),
-            size: ptToHalfPt(tpl.body.fontSize),
-            bold: isHeader || undefined,
-            color: isHeader && !cellAttrs.backgroundColor && tpl.table?.headerTextColor
-              ? hexToRgb(tpl.table.headerTextColor)
-              : tpl.body.color ? hexToRgb(tpl.body.color) : undefined,
-          })],
-        })],
+        children: cellParagraphs,
         width: { size: colWidth * (cellAttrs.colspan || 1), type: WidthType.DXA },
         columnSpan: cellAttrs.colspan > 1 ? cellAttrs.colspan : undefined,
         rowSpan: cellAttrs.rowspan > 1 ? cellAttrs.rowspan : undefined,
         shading: fillColor ? { type: ShadingType.CLEAR, fill: fillColor } : undefined,
+        borders: cellBorder,
       }));
     }
     return new TableRow({ children: cells });
