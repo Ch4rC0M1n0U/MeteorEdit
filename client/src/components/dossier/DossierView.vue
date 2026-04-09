@@ -1444,8 +1444,8 @@ function walkTreeDocx(
   // Heading level: clamp to h1/h2/h3 for Word styling
   const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
 
-  // Max numbering depth: 3 levels (e.g. "3.1.2"). Beyond that, no number prefix.
-  const MAX_NUM_DEPTH = 3;
+  // Max numbering depth: 4 levels (e.g. "3.1.2.1"). Beyond that, no number prefix.
+  const MAX_NUM_DEPTH = 4;
 
   let localIndex = 0;
   for (const node of children) {
