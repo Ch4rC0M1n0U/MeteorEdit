@@ -426,27 +426,73 @@ function mapAlignment(align?: string): (typeof AlignmentType)[keyof typeof Align
 }
 
 /**
- * Flatten a ContentBlock[] (cell content) into rich ParagraphChild[] runs,
- * preserving bold, italic, color, links, etc. from TipTap marks.
- * Falls back to plain text for non-inline block types.
+ * Build rich TextRun[] for a table cell, preserving TipTap marks.
+ * For header cells: applies bold + header text color as defaults (can be overridden by marks).
  */
-function cellBlocksToRichParagraphs(cellBlocks: ContentBlock[], tpl: PdfTemplateConfig, isHeader: boolean): Paragraph[] {
+function cellRichTextRuns(children: ContentBlock[], tpl: PdfTemplateConfig, isHeader: boolean, headerTextColor?: string): ParagraphChild[] {
+  const runs: ParagraphChild[] = [];
+  for (const child of children) {
+    if (child.type === 'hardBreak') {
+      runs.push(new TextRun({ break: 1 }));
+      continue;
+    }
+    if (child.type !== 'text') continue;
+    if (!child.text && child.text !== '') continue;
+
+    const m = child.marks || {};
+    const baseOpts: Record<string, unknown> = {
+      text: child.text || '',
+      font: m.code ? 'Courier New' : docxFont(tpl),
+      size: m.code ? ptToHalfPt(tpl.body.fontSize - 1) : ptToHalfPt(tpl.body.fontSize),
+      bold: m.bold || isHeader || undefined,
+      italics: m.italic || undefined,
+      strike: m.strike || undefined,
+    };
+    if (m.underline) {
+      baseOpts.underline = { type: UnderlineType.SINGLE };
+    }
+    // Color priority: explicit mark color > header default > body default
+    if (m.color) {
+      baseOpts.color = hexToRgb(m.color);
+    } else if (isHeader && headerTextColor) {
+      baseOpts.color = headerTextColor;
+    } else if (tpl.body.color) {
+      baseOpts.color = hexToRgb(tpl.body.color);
+    }
+    if (m.highlight) {
+      baseOpts.highlight = 'yellow';
+    }
+    if (m.code) {
+      baseOpts.shading = { type: ShadingType.CLEAR, fill: 'F0F0F0' };
+    }
+
+    if (m.link && typeof m.link === 'string') {
+      const linkRun = new TextRun({
+        ...baseOpts,
+        color: '0563C1',
+        underline: { type: UnderlineType.SINGLE },
+        style: 'Hyperlink',
+      } as Record<string, unknown>);
+      runs.push(new ExternalHyperlink({ children: [linkRun], link: m.link }));
+    } else {
+      runs.push(new TextRun(baseOpts as Record<string, unknown>));
+    }
+  }
+  return runs;
+}
+
+/**
+ * Flatten a ContentBlock[] (cell content) into Paragraphs with rich formatting.
+ */
+function cellBlocksToRichParagraphs(cellBlocks: ContentBlock[], tpl: PdfTemplateConfig, isHeader: boolean, headerTextColor?: string): Paragraph[] {
   const paragraphs: Paragraph[] = [];
 
   for (const block of cellBlocks) {
     if (block.type === 'paragraph' || block.type === 'heading') {
-      const runs = richTextRuns(block.children, tpl);
-      // If header and no explicit formatting, make bold
-      if (isHeader && runs.length > 0) {
-        for (const run of runs) {
-          if (run instanceof TextRun) {
-            // TextRun doesn't expose a setter, so we rebuild if needed
-          }
-        }
-      }
+      const runs = cellRichTextRuns(block.children, tpl, isHeader, headerTextColor);
       paragraphs.push(new Paragraph({ children: runs }));
     } else if (block.type === 'text') {
-      const runs = richTextRuns([block], tpl);
+      const runs = cellRichTextRuns([block], tpl, isHeader, headerTextColor);
       paragraphs.push(new Paragraph({ children: runs }));
     } else if (block.type === 'bulletList' || block.type === 'orderedList') {
       for (const item of block.items) {
@@ -456,12 +502,13 @@ function cellBlocksToRichParagraphs(cellBlocks: ContentBlock[], tpl: PdfTemplate
             text: itemText,
             font: docxFont(tpl),
             size: ptToHalfPt(tpl.body.fontSize),
+            bold: isHeader || undefined,
+            color: isHeader && headerTextColor ? headerTextColor : tpl.body.color ? hexToRgb(tpl.body.color) : undefined,
           })],
           bullet: block.type === 'bulletList' ? { level: 0 } : undefined,
         }));
       }
     } else {
-      // Fallback: extract plain text
       const text = blocksToPlainText([block]);
       if (text.trim()) {
         paragraphs.push(new Paragraph({
@@ -469,27 +516,28 @@ function cellBlocksToRichParagraphs(cellBlocks: ContentBlock[], tpl: PdfTemplate
             text,
             font: docxFont(tpl),
             size: ptToHalfPt(tpl.body.fontSize),
+            bold: isHeader || undefined,
+            color: isHeader && headerTextColor ? headerTextColor : tpl.body.color ? hexToRgb(tpl.body.color) : undefined,
           })],
         }));
       }
     }
   }
 
-  // Ensure at least one paragraph (Word requires non-empty cells)
   if (paragraphs.length === 0) {
     paragraphs.push(new Paragraph({ children: [] }));
   }
-
   return paragraphs;
 }
 
 /**
  * Build a docx Table from ContentBlock table rows.
- * Preserves cell background colors, text formatting, and adds visible borders.
+ * Preserves cell background colors, text formatting (bold/italic/color/links),
+ * and renders visible borders on all cells.
  */
 function contentTable(rows: ContentBlock[][][], tpl: PdfTemplateConfig): Table {
   const colCount = rows.length > 0 ? Math.max(...rows.map(r => r.length), 1) : 1;
-  const colWidth = Math.floor(9000 / colCount); // roughly full width in twips
+  const colWidth = Math.floor(9000 / colCount);
 
   const cellBorder = {
     top: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
@@ -505,7 +553,7 @@ function contentTable(rows: ContentBlock[][][], tpl: PdfTemplateConfig): Table {
       const cellAttrs = (cellBlocks as any)._cellAttrs || {};
       const isHeader = rowIdx === 0 || cellAttrs.isHeader;
 
-      // Priority: cell custom color > template defaults
+      // Background: cell custom color > header template default > alternate row
       let fillColor: string | undefined;
       if (cellAttrs.backgroundColor) {
         fillColor = hexToRgb(cellAttrs.backgroundColor);
@@ -515,8 +563,12 @@ function contentTable(rows: ContentBlock[][][], tpl: PdfTemplateConfig): Table {
         fillColor = hexToRgb(tpl.table.alternateRowColor);
       }
 
-      // Rich rendering: preserve inline formatting from TipTap
-      const cellParagraphs = cellBlocksToRichParagraphs(cellBlocks, tpl, isHeader);
+      // Header text color (white on dark bg by default)
+      const headerTextColor = isHeader && !cellAttrs.backgroundColor && tpl.table?.headerTextColor
+        ? hexToRgb(tpl.table.headerTextColor)
+        : isHeader ? 'FFFFFF' : undefined;
+
+      const cellParagraphs = cellBlocksToRichParagraphs(cellBlocks, tpl, isHeader, headerTextColor);
 
       cells.push(new TableCell({
         children: cellParagraphs,

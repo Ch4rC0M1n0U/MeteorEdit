@@ -1394,23 +1394,13 @@ function getSignatureData(): { city?: string; image?: Promise<string | undefined
 }
 
 // ── Section numbering ──────────────────────────────────────────────
-type SectionCounter = [number, number, number];
-
-function nextSectionNumber(counter: SectionCounter, level: 'h1' | 'h2' | 'h3'): string {
-  if (level === 'h1') {
-    counter[0]++;
-    counter[1] = 0;
-    counter[2] = 0;
-    return `${counter[0]}.`;
-  } else if (level === 'h2') {
-    counter[1]++;
-    counter[2] = 0;
-    return `${counter[0]}.${counter[1]}`;
-  } else {
-    counter[2]++;
-    return `${counter[0]}.${counter[1]}.${counter[2]}`;
-  }
-}
+// Hierarchical numbering that follows the tree structure exactly.
+// depth 1 → "1." / "2." / "3."          (h1)
+// depth 2 → "3.1" / "3.2"               (h2)
+// depth 3 → "3.1.1" / "3.1.2"           (h3)
+// depth 4+ → keeps h3 styling, numbering stays at 3 levels max
+//            e.g. children of "3.1.2" are "3.1.2" prefix with local a), b), c)
+// ───────────────────────────────────────────────────────────────────
 
 function handleSelectiveExport(_format: string, selectedIds: string[], includeToc: boolean, mediaFormat?: 'table' | 'sequential', includeRawMetadata?: boolean) {
   exportDOCX(selectedIds, includeToc, mediaFormat, includeRawMetadata);
@@ -1436,67 +1426,75 @@ function buildDossierInfoLines(dossier: any): string[] {
 }
 
 
-// Walk node tree recursively for DOCX sections
+// Walk node tree recursively for DOCX sections.
+// parentPrefix: the numeric prefix of the parent (e.g. "3.1")
+// Each level of children gets a sequential counter (1, 2, 3...)
 function walkTreeDocx(
   allNodes: any[],
   parentId: string | null,
   depth: number,
   sections: DocxExportData['sections'],
-  counter: SectionCounter,
+  parentPrefix: string,
   mediaFormat: 'table' | 'sequential' = 'sequential',
 ) {
   const children = allNodes
     .filter((n: any) => n.parentId === parentId && !n.deletedAt)
     .sort((a: any, b: any) => a.order - b.order);
 
+  // Heading level: clamp to h1/h2/h3 for Word styling
   const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
 
+  let localIndex = 0;
   for (const node of children) {
+    localIndex++;
+
+    // Build hierarchical number: "3." at depth 1, "3.1" at depth 2, "3.1.1" at depth 3
+    let sectionNum: string;
+    if (depth === 1) {
+      sectionNum = parentPrefix ? `${parentPrefix}${localIndex}.` : `${localIndex}.`;
+    } else {
+      sectionNum = parentPrefix ? `${parentPrefix}.${localIndex}` : `${localIndex}`;
+    }
+
     if (node.type === 'folder') {
-      const num = nextSectionNumber(counter, hl);
-      sections.push({ title: `${num} ${node.title}`, level: hl, paragraphs: [] });
-      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter, mediaFormat);
+      sections.push({ title: `${sectionNum} ${node.title}`, level: hl, paragraphs: [] });
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, sectionNum, mediaFormat);
     } else if (node.type === 'note') {
-      const num = nextSectionNumber(counter, hl);
       const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
-      sections.push({ title: `${num} ${node.title}`, level: hl, paragraphs: [], blocks });
-      // Recurse into children of notes (e.g. article linked to an audio file)
-      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter, mediaFormat);
+      sections.push({ title: `${sectionNum} ${node.title}`, level: hl, paragraphs: [], blocks });
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, sectionNum, mediaFormat);
     } else if (node.type === 'media' && node.mediaData) {
-      const num = nextSectionNumber(counter, hl);
       sections.push({
-        title: `${num} ${node.title}`,
+        title: `${sectionNum} ${node.title}`,
         level: hl,
         paragraphs: [],
         mediaData: node.mediaData,
         mediaFormat,
       });
-      // Recurse into children of media nodes (e.g. press article under audio)
-      walkTreeDocx(allNodes, node._id, depth + 1, sections, counter, mediaFormat);
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, sectionNum, mediaFormat);
     }
   }
 }
 
 function buildDocxSections(_dossier: any, nodes: any[], mediaFormat: 'table' | 'sequential' = 'sequential'): DocxExportData['sections'] {
   const sections: DocxExportData['sections'] = [];
-  const counter: SectionCounter = [0, 0, 0];
 
-  // Walk tree from root
-  walkTreeDocx(nodes, null, 1, sections, counter, mediaFormat);
+  // Walk tree from root — parentPrefix is empty, depth starts at 1
+  walkTreeDocx(nodes, null, 1, sections, '', mediaFormat);
 
-  // Orphan nodes (parent not in selection)
+  // Orphan nodes (parent not in selection) — append at top level
   const nodeIds = new Set(nodes.map((n: any) => n._id));
   const orphans = nodes.filter((n: any) => n.parentId && !nodeIds.has(n.parentId) && !n.deletedAt);
+  let orphanIdx = sections.filter(s => s.level === 'h1').length;
   for (const node of orphans.sort((a: any, b: any) => a.order - b.order)) {
+    orphanIdx++;
+    const num = `${orphanIdx}.`;
     if (node.type === 'folder') {
-      const num = nextSectionNumber(counter, 'h1');
       sections.push({ title: `${num} ${node.title}`, level: 'h1', paragraphs: [] });
     } else if (node.type === 'note') {
-      const num = nextSectionNumber(counter, 'h1');
       const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
       sections.push({ title: `${num} ${node.title}`, level: 'h1', paragraphs: [], blocks });
     } else if (node.type === 'media' && node.mediaData) {
-      const num = nextSectionNumber(counter, 'h1');
       sections.push({
         title: `${num} ${node.title}`,
         level: 'h1',
