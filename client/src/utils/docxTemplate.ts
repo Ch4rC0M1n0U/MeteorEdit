@@ -1086,6 +1086,8 @@ export interface DocxExportData {
   requester?: string; // magistrate / demandeur
   classification?: string;
   isEmbargo?: boolean;
+  objectives?: string;
+  description?: string;
   sections: Array<{
     title: string;
     level: 'h1' | 'h2' | 'h3';
@@ -1206,6 +1208,44 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       },
       shading: { type: ShadingType.CLEAR, fill: 'FEF2F2' },
     }));
+  }
+
+  // ─── OBJECTIVES & DESCRIPTION (before TOC) ───
+
+  if (data.objectives?.trim()) {
+    docChildren.push(new Paragraph({ children: [], spacing: { before: 160, after: 0 } }));
+    docChildren.push(new Paragraph({
+      children: [new TextRun({ text: 'Objectif de la recherche', font, size: ptToHalfPt(11), bold: true, color: BLUE })],
+      spacing: { before: 80, after: 60 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: BLUE } },
+    }));
+    for (const line of data.objectives.trim().split(/\n/)) {
+      if (line.trim()) {
+        docChildren.push(new Paragraph({
+          children: [new TextRun({ text: line.trim(), font, size: ptToHalfPt(10), color: '333333' })],
+          spacing: { after: 40 },
+          alignment: AlignmentType.JUSTIFIED,
+        }));
+      }
+    }
+  }
+
+  if (data.description?.trim()) {
+    docChildren.push(new Paragraph({ children: [], spacing: { before: 120, after: 0 } }));
+    docChildren.push(new Paragraph({
+      children: [new TextRun({ text: 'Description / Synthèse', font, size: ptToHalfPt(11), bold: true, color: BLUE })],
+      spacing: { before: 80, after: 60 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: BLUE } },
+    }));
+    for (const line of data.description.trim().split(/\n/)) {
+      if (line.trim()) {
+        docChildren.push(new Paragraph({
+          children: [new TextRun({ text: line.trim(), font, size: ptToHalfPt(10), color: '333333' })],
+          spacing: { after: 40 },
+          alignment: AlignmentType.JUSTIFIED,
+        }));
+      }
+    }
   }
 
   // Spacer

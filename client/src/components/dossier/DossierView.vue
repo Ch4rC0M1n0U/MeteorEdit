@@ -1589,6 +1589,8 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaF
       requester: (dossier as any).investigator?.name || (typeof (dossier as any).investigator === 'string' ? (dossier as any).investigator : undefined),
       classification: (dossier as any).classification || undefined,
       isEmbargo: (dossier as any).isEmbargo || false,
+      objectives: (dossier as any).objectives || '',
+      description: (dossier as any).description || '',
       sections,
       closingDate: new Date().toLocaleDateString('fr-FR'),
       closingCity: (authStore.user as any)?.signature?.city || 'Bruxelles',
