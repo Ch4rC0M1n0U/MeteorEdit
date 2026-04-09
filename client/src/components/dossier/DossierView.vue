@@ -1444,28 +1444,40 @@ function walkTreeDocx(
   // Heading level: clamp to h1/h2/h3 for Word styling
   const hl: 'h1' | 'h2' | 'h3' = depth <= 1 ? 'h1' : depth === 2 ? 'h2' : 'h3';
 
+  // Max numbering depth: 3 levels (e.g. "3.1.2"). Beyond that, no number prefix.
+  const MAX_NUM_DEPTH = 3;
+
   let localIndex = 0;
   for (const node of children) {
     localIndex++;
 
-    // Build hierarchical number: "3." at depth 1, "3.1" at depth 2, "3.1.1" at depth 3
+    // Build hierarchical number: "1" at depth 1, "1.1" at depth 2, "1.1.1" at depth 3
+    // Beyond MAX_NUM_DEPTH, no number prefix — just the title with indent
     let sectionNum: string;
-    if (depth === 1) {
-      sectionNum = parentPrefix ? `${parentPrefix}${localIndex}.` : `${localIndex}.`;
+    if (depth > MAX_NUM_DEPTH) {
+      sectionNum = '';
+    } else if (!parentPrefix) {
+      sectionNum = `${localIndex}`;
     } else {
-      sectionNum = parentPrefix ? `${parentPrefix}.${localIndex}` : `${localIndex}`;
+      sectionNum = `${parentPrefix}.${localIndex}`;
     }
 
+    // Format title: "1. Title" for h1, "1.1 Title" for deeper, or just "— Title" if beyond max depth
+    const displayNum = sectionNum
+      ? (depth === 1 ? `${sectionNum}.` : sectionNum)
+      : '\u2014';
+    const sectionTitle = `${displayNum} ${node.title}`;
+
     if (node.type === 'folder') {
-      sections.push({ title: `${sectionNum} ${node.title}`, level: hl, paragraphs: [] });
+      sections.push({ title: sectionTitle, level: hl, paragraphs: [] });
       walkTreeDocx(allNodes, node._id, depth + 1, sections, sectionNum, mediaFormat);
     } else if (node.type === 'note') {
       const blocks = node.content ? convertTipTapToBlocks(node.content) : [];
-      sections.push({ title: `${sectionNum} ${node.title}`, level: hl, paragraphs: [], blocks });
+      sections.push({ title: sectionTitle, level: hl, paragraphs: [], blocks });
       walkTreeDocx(allNodes, node._id, depth + 1, sections, sectionNum, mediaFormat);
     } else if (node.type === 'media' && node.mediaData) {
       sections.push({
-        title: `${sectionNum} ${node.title}`,
+        title: sectionTitle,
         level: hl,
         paragraphs: [],
         mediaData: node.mediaData,

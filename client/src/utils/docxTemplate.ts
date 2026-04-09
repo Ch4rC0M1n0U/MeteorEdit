@@ -190,6 +190,96 @@ function makeImageRun(imgData: { buffer: ArrayBuffer; w: number; h: number; mime
   } as IImageOptions);
 }
 
+// ── HTML to DOCX runs ───────────────────────────────────────────────
+
+/**
+ * Parse simple HTML (from objectives/description fields) into Paragraph[].
+ * Handles: <p>, <strong>/<b>, <em>/<i>, <u>, <br>, nested tags.
+ * Falls back to stripped text if parsing fails.
+ */
+function htmlToParagraphs(html: string, font: string, fontSize: number, color: string): Paragraph[] {
+  const paragraphs: Paragraph[] = [];
+
+  // Split by <p>...</p> blocks (or treat whole string as one block)
+  const pBlocks = html.split(/<\/p>\s*/i).map(b => b.replace(/<p[^>]*>/gi, '').trim()).filter(Boolean);
+  if (pBlocks.length === 0) {
+    // No <p> tags — treat as single block
+    pBlocks.push(html);
+  }
+
+  for (const block of pBlocks) {
+    const runs = htmlInlineToRuns(block, font, fontSize, color);
+    if (runs.length > 0) {
+      paragraphs.push(new Paragraph({
+        children: runs,
+        spacing: { after: 60 },
+        alignment: AlignmentType.JUSTIFIED,
+      }));
+    }
+  }
+
+  return paragraphs;
+}
+
+/**
+ * Convert inline HTML to TextRun[], handling <strong>, <b>, <em>, <i>, <u>, <br>.
+ */
+function htmlInlineToRuns(html: string, font: string, fontSize: number, defaultColor: string): TextRun[] {
+  const runs: TextRun[] = [];
+  // State stack for nested tags
+  let bold = false;
+  let italic = false;
+  let underline = false;
+
+  // Tokenize: split on HTML tags, keeping them as tokens
+  const tokens = html.split(/(<[^>]+>)/g);
+
+  for (const token of tokens) {
+    if (!token) continue;
+
+    // Opening tags
+    if (/^<(strong|b)(\s|>)/i.test(token)) { bold = true; continue; }
+    if (/^<(em|i)(\s|>)/i.test(token)) { italic = true; continue; }
+    if (/^<u(\s|>)/i.test(token)) { underline = true; continue; }
+
+    // Closing tags
+    if (/^<\/(strong|b)>/i.test(token)) { bold = false; continue; }
+    if (/^<\/(em|i)>/i.test(token)) { italic = false; continue; }
+    if (/^<\/u>/i.test(token)) { underline = false; continue; }
+
+    // Line break
+    if (/^<br\s*\/?>/i.test(token)) { runs.push(new TextRun({ break: 1 })); continue; }
+
+    // Skip other tags
+    if (/^<\/?[a-z]/i.test(token)) continue;
+
+    // Text content — decode HTML entities
+    const text = token
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+
+    if (!text) continue;
+
+    const opts: Record<string, unknown> = {
+      text,
+      font,
+      size: fontSize,
+      color: defaultColor,
+    };
+    if (bold) opts.bold = true;
+    if (italic) opts.italics = true;
+    if (underline) opts.underline = { type: UnderlineType.SINGLE };
+
+    runs.push(new TextRun(opts));
+  }
+
+  return runs;
+}
+
 // ── Header & Footer ─────────────────────────────────────────────────
 
 function createHeaderSection(tpl: PdfTemplateConfig, logos: DocxLogos): Header {
@@ -1123,8 +1213,11 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   // ─── PROFESSIONAL OSINT REPORT TITLE BLOCK ───
 
   const BLUE = '2E5A88';
-  const BLUE_LIGHT = 'D6E4F0';
   const font = docxFont(tpl);
+
+  // A4 width = 11906 DXA; compute usable width from margins
+  const marginH = Math.round((tpl.page?.marginH || 20) * 56.7);
+  const PAGE_CONTENT_WIDTH = 11906 - marginH * 2; // ~9638 DXA
 
   // Title banner — dark blue background with white text
   docChildren.push(new Paragraph({
@@ -1163,7 +1256,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
     { label: 'Type de recherches', value: 'Sources ouvertes (OSINT) uniquement' },
   ];
 
-  const thinBorder = { style: BorderStyle.SINGLE as const, size: 4, color: BLUE };
+  const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: BLUE };
   const infoTable = new Table({
     rows: infoTableRows.map(row => new TableRow({
       children: [
@@ -1172,7 +1265,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
             children: [new TextRun({ text: row.label, font, size: ptToHalfPt(10), bold: true, color: 'FFFFFF' })],
             spacing: { before: 60, after: 60 },
           })],
-          width: { size: 2800, type: WidthType.DXA },
+          width: { size: Math.round(PAGE_CONTENT_WIDTH * 0.30), type: WidthType.DXA },
           shading: { type: ShadingType.CLEAR, fill: BLUE },
           borders: { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder },
           margins: { top: 40, bottom: 40, left: 120, right: 80 },
@@ -1183,14 +1276,14 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
             children: [new TextRun({ text: row.value, font, size: ptToHalfPt(10), color: '333333', italics: true })],
             spacing: { before: 60, after: 60 },
           })],
-          width: { size: 6200, type: WidthType.DXA },
+          width: { size: Math.round(PAGE_CONTENT_WIDTH * 0.70), type: WidthType.DXA },
           borders: { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder },
           margins: { top: 40, bottom: 40, left: 120, right: 80 },
           verticalAlign: 'center' as any,
         }),
       ],
     })),
-    width: { size: 9000, type: WidthType.DXA },
+    width: { size: PAGE_CONTENT_WIDTH, type: WidthType.DXA },
   });
   docChildren.push(infoTable);
 
@@ -1219,15 +1312,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       spacing: { before: 80, after: 60 },
       border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: BLUE } },
     }));
-    for (const line of data.objectives.trim().split(/\n/)) {
-      if (line.trim()) {
-        docChildren.push(new Paragraph({
-          children: [new TextRun({ text: line.trim(), font, size: ptToHalfPt(10), color: '333333' })],
-          spacing: { after: 40 },
-          alignment: AlignmentType.JUSTIFIED,
-        }));
-      }
-    }
+    docChildren.push(...htmlToParagraphs(data.objectives.trim(), font, ptToHalfPt(10), '333333'));
   }
 
   if (data.description?.trim()) {
@@ -1237,15 +1322,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
       spacing: { before: 80, after: 60 },
       border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: BLUE } },
     }));
-    for (const line of data.description.trim().split(/\n/)) {
-      if (line.trim()) {
-        docChildren.push(new Paragraph({
-          children: [new TextRun({ text: line.trim(), font, size: ptToHalfPt(10), color: '333333' })],
-          spacing: { after: 40 },
-          alignment: AlignmentType.JUSTIFIED,
-        }));
-      }
-    }
+    docChildren.push(...htmlToParagraphs(data.description.trim(), font, ptToHalfPt(10), '333333'));
   }
 
   // Spacer
@@ -1437,7 +1514,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
             font: font,
             size: ptToHalfPt(tpl.headings.h1.fontSize),
             bold: tpl.headings.h1.bold,
-            italic: tpl.headings.h1.italic,
+            italics: tpl.headings.h1.italic,
             color: hexToRgb(tpl.headings.h1.color),
           },
           paragraph: {
@@ -1449,7 +1526,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
             font: font,
             size: ptToHalfPt(tpl.headings.h2.fontSize),
             bold: tpl.headings.h2.bold,
-            italic: tpl.headings.h2.italic,
+            italics: tpl.headings.h2.italic,
             color: hexToRgb(tpl.headings.h2.color),
           },
           paragraph: {
@@ -1461,7 +1538,7 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
             font: font,
             size: ptToHalfPt(tpl.headings.h3.fontSize),
             bold: tpl.headings.h3.bold,
-            italic: tpl.headings.h3.italic,
+            italics: tpl.headings.h3.italic,
             color: hexToRgb(tpl.headings.h3.color),
           },
           paragraph: {
