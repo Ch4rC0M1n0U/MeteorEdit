@@ -1,7 +1,7 @@
 <template>
   <div class="dash-card glass-card dash-heatmap-card">
     <h3 class="dash-card-title mono">
-      <v-icon size="16" class="mr-1">mdi-calendar-blank-outline</v-icon>
+      <i class="pi pi-calendar" style="font-size: 16px; margin-right: 4px;" />
       {{ $t('dashboard.contribution6months') }}
     </h3>
     <div class="heatmap-container">

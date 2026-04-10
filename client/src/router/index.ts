@@ -12,8 +12,6 @@ const routes = [
   { path: '/help', name: 'help', component: () => import('../views/HelpView.vue'), meta: { requiresAuth: true } },
   { path: '/osint-search', name: 'osint-search', component: () => import('../views/OsintSearchView.vue'), meta: { requiresAuth: true } },
   { path: '/maintenance', name: 'maintenance', component: () => import('../views/MaintenanceView.vue') },
-  { path: '/login-prime', name: 'login-prime', component: () => import('../views/LoginViewPrime.vue'), meta: { guest: true } },
-  { path: '/dashboard-prime', name: 'dashboard-prime', component: () => import('../views/DashboardPrime.vue'), meta: { requiresAuth: true } },
 ];
 
 const router = createRouter({

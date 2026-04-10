@@ -2,39 +2,39 @@
   <div class="user-dashboard">
     <div class="dash-header">
       <h2 class="dash-title mono">
-        <v-icon size="20" class="mr-2">mdi-view-dashboard-outline</v-icon>
+        <i class="pi pi-objects-column" style="font-size: 20px; margin-right: 8px;" />
         {{ $t('dashboard.title') }}
       </h2>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" style="border-radius: 4px;" />
+    <ProgressBar v-if="loading" mode="indeterminate" class="mb-4" style="border-radius: 4px; height: 4px;" />
 
     <template v-if="!loading">
       <!-- KPI Cards (always visible) -->
       <div class="dash-kpi-row fade-in">
         <div class="dash-kpi glass-card">
-          <div class="dash-kpi-icon"><v-icon size="22">mdi-folder-multiple-outline</v-icon></div>
+          <div class="dash-kpi-icon"><i class="pi pi-folder" style="font-size: 22px;" /></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.totalDossiers }}</span>
             <span class="dash-kpi-label">{{ $t('dashboard.dossiers') }}</span>
           </div>
         </div>
         <div class="dash-kpi glass-card">
-          <div class="dash-kpi-icon"><v-icon size="22">mdi-folder-account-outline</v-icon></div>
+          <div class="dash-kpi-icon"><i class="pi pi-user" style="font-size: 22px;" /></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.ownedDossiers }}</span>
             <span class="dash-kpi-label">{{ $t('dashboard.owner') }}</span>
           </div>
         </div>
         <div class="dash-kpi glass-card">
-          <div class="dash-kpi-icon"><v-icon size="22">mdi-account-group-outline</v-icon></div>
+          <div class="dash-kpi-icon"><i class="pi pi-users" style="font-size: 22px;" /></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.collabDossiers }}</span>
             <span class="dash-kpi-label">{{ $t('dashboard.collaborations') }}</span>
           </div>
         </div>
         <div class="dash-kpi glass-card">
-          <div class="dash-kpi-icon"><v-icon size="22">mdi-file-tree-outline</v-icon></div>
+          <div class="dash-kpi-icon"><i class="pi pi-sitemap" style="font-size: 22px;" /></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.totalNodes }}</span>
             <span class="dash-kpi-label">{{ $t('dashboard.elements') }}</span>
@@ -43,134 +43,136 @@
       </div>
 
       <!-- Tabs -->
-      <v-tabs v-model="activeTab" color="primary" density="compact" class="dash-tabs mb-4">
-        <v-tab value="overview">
-          <v-icon size="16" start>mdi-home-outline</v-icon>
-          {{ $t('dashboard.overview') }}
-        </v-tab>
-        <v-tab value="stats">
-          <v-icon size="16" start>mdi-chart-bar</v-icon>
-          {{ $t('dashboard.statistics') }}
-        </v-tab>
-        <v-tab value="activity">
-          <v-icon size="16" start>mdi-history</v-icon>
-          {{ $t('dashboard.activityTab') }}
-        </v-tab>
-      </v-tabs>
+      <Tabs v-model:value="activeTab" class="dash-tabs mb-4">
+        <TabList>
+          <Tab value="overview">
+            <i class="pi pi-home" style="font-size: 14px; margin-right: 6px;" />
+            {{ $t('dashboard.overview') }}
+          </Tab>
+          <Tab value="stats">
+            <i class="pi pi-chart-bar" style="font-size: 14px; margin-right: 6px;" />
+            {{ $t('dashboard.statistics') }}
+          </Tab>
+          <Tab value="activity">
+            <i class="pi pi-history" style="font-size: 14px; margin-right: 6px;" />
+            {{ $t('dashboard.activityTab') }}
+          </Tab>
+        </TabList>
 
-      <v-tabs-window v-model="activeTab">
-        <!-- Tab: Overview -->
-        <v-tabs-window-item value="overview">
-          <DashboardQuickAccess
-            :last-accessed="stats.lastAccessedNodes || []"
-            :assigned-tasks="stats.assignedTasks || []"
-            @open-node="handleOpenNode"
-          />
+        <TabPanels>
+          <!-- Tab: Overview -->
+          <TabPanel value="overview">
+            <DashboardQuickAccess
+              :last-accessed="stats.lastAccessedNodes || []"
+              :assigned-tasks="stats.assignedTasks || []"
+              @open-node="handleOpenNode"
+            />
 
-          <div v-if="stats.recentDossiers?.length" class="dash-recent fade-in">
-            <div class="dash-card glass-card">
-              <h3 class="dash-card-title mono">{{ $t('dashboard.recentlyModifiedDossiers') }}</h3>
-              <div class="dash-recent-list">
-                <div v-for="d in stats.recentDossiers.filter((r: any) => r.status !== 'closed')" :key="d._id" class="dash-recent-item" @click="$emit('openDossier', d._id)">
-                  <span :class="['status-dot', `status-dot--${statusDot(d.status)}`]" />
-                  <span class="dash-recent-title">{{ d.title }}</span>
-                  <span class="dash-recent-date mono">{{ formatDate(d.updatedAt) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </v-tabs-window-item>
-
-        <!-- Tab: Statistics -->
-        <v-tabs-window-item value="stats">
-          <!-- Processing Stats + Dossier Statuses FIRST -->
-          <div v-if="processingStats" class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
-            <h3 class="dash-card-title mono" style="display: flex; align-items: center; gap: 6px;">
-              <v-icon size="16">mdi-timer-outline</v-icon>
-              {{ $t('dashboard.processingStats') }}
-            </h3>
-            <div class="processing-chips">
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-chart-timeline-variant</v-icon>
-                {{ $t('dashboard.avgProcessing') }}: {{ processingStats.avgDays }} {{ $t('dashboard.days') }}
-              </span>
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-arrow-up</v-icon>
-                {{ $t('dashboard.maxProcessing') }}: {{ processingStats.maxDays }} {{ $t('dashboard.days') }}
-              </span>
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-arrow-down</v-icon>
-                {{ $t('dashboard.minProcessing') }}: {{ processingStats.minDays }} {{ $t('dashboard.days') }}
-              </span>
-              <span class="processing-chip mono">
-                <v-icon size="12">mdi-archive-check-outline</v-icon>
-                {{ $t('dashboard.closedDossiers') }}: {{ processingStats.totalClosed }}
-              </span>
-            </div>
-            <div v-if="openDurationsChartData" style="margin-top: 16px;">
-              <Bar :data="openDurationsChartData" :options="openDurationsOptions" />
-            </div>
-          </div>
-
-          <div class="dash-content-row fade-in">
-            <div class="dash-card glass-card dash-card--chart">
-              <h3 class="dash-card-title mono">{{ $t('dashboard.dossierStatuses') }}</h3>
-              <div class="dash-status-bars">
-                <div v-for="s in statusItems" :key="s.key" class="dash-status-item">
-                  <div class="dash-status-head">
-                    <span :class="['status-dot', `status-dot--${s.dot}`]" />
-                    <span class="dash-status-name">{{ s.label }}</span>
-                    <span class="dash-status-count mono">{{ s.count }}</span>
-                  </div>
-                  <div class="dash-status-bar-bg">
-                    <div class="dash-status-bar-fill" :style="{ width: s.pct + '%', background: s.color }" />
+            <div v-if="stats.recentDossiers?.length" class="dash-recent fade-in">
+              <div class="dash-card glass-card">
+                <h3 class="dash-card-title mono">{{ $t('dashboard.recentlyModifiedDossiers') }}</h3>
+                <div class="dash-recent-list">
+                  <div v-for="d in stats.recentDossiers.filter((r: any) => r.status !== 'closed')" :key="d._id" class="dash-recent-item" @click="$emit('openDossier', d._id)">
+                    <span :class="['status-dot', `status-dot--${statusDot(d.status)}`]" />
+                    <span class="dash-recent-title">{{ d.title }}</span>
+                    <span class="dash-recent-date mono">{{ formatDate(d.updatedAt) }}</span>
                   </div>
                 </div>
               </div>
+            </div>
+          </TabPanel>
 
-              <h3 class="dash-card-title mono mt-16">{{ $t('dashboard.elementTypes') }}</h3>
-              <div class="dash-node-types">
-                <div v-for="n in nodeTypeItems" :key="n.type" class="dash-node-type">
-                  <v-icon size="16" class="dash-node-icon">{{ n.icon }}</v-icon>
-                  <span class="dash-node-label">{{ n.label }}</span>
-                  <span class="dash-node-count mono">{{ n.count }}</span>
+          <!-- Tab: Statistics -->
+          <TabPanel value="stats">
+            <!-- Processing Stats + Dossier Statuses FIRST -->
+            <div v-if="processingStats" class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
+              <h3 class="dash-card-title mono" style="display: flex; align-items: center; gap: 6px;">
+                <i class="pi pi-stopwatch" style="font-size: 16px;" />
+                {{ $t('dashboard.processingStats') }}
+              </h3>
+              <div class="processing-chips">
+                <span class="processing-chip mono">
+                  <i class="pi pi-chart-bar" style="font-size: 12px;" />
+                  {{ $t('dashboard.avgProcessing') }}: {{ processingStats.avgDays }} {{ $t('dashboard.days') }}
+                </span>
+                <span class="processing-chip mono">
+                  <i class="pi pi-arrow-up" style="font-size: 12px;" />
+                  {{ $t('dashboard.maxProcessing') }}: {{ processingStats.maxDays }} {{ $t('dashboard.days') }}
+                </span>
+                <span class="processing-chip mono">
+                  <i class="pi pi-arrow-down" style="font-size: 12px;" />
+                  {{ $t('dashboard.minProcessing') }}: {{ processingStats.minDays }} {{ $t('dashboard.days') }}
+                </span>
+                <span class="processing-chip mono">
+                  <i class="pi pi-check-circle" style="font-size: 12px;" />
+                  {{ $t('dashboard.closedDossiers') }}: {{ processingStats.totalClosed }}
+                </span>
+              </div>
+              <div v-if="openDurationsChartData" style="margin-top: 16px;">
+                <Bar :data="openDurationsChartData" :options="openDurationsOptions" />
+              </div>
+            </div>
+
+            <div class="dash-content-row fade-in">
+              <div class="dash-card glass-card dash-card--chart">
+                <h3 class="dash-card-title mono">{{ $t('dashboard.dossierStatuses') }}</h3>
+                <div class="dash-status-bars">
+                  <div v-for="s in statusItems" :key="s.key" class="dash-status-item">
+                    <div class="dash-status-head">
+                      <span :class="['status-dot', `status-dot--${s.dot}`]" />
+                      <span class="dash-status-name">{{ s.label }}</span>
+                      <span class="dash-status-count mono">{{ s.count }}</span>
+                    </div>
+                    <div class="dash-status-bar-bg">
+                      <div class="dash-status-bar-fill" :style="{ width: s.pct + '%', background: s.color }" />
+                    </div>
+                  </div>
+                </div>
+
+                <h3 class="dash-card-title mono mt-16">{{ $t('dashboard.elementTypes') }}</h3>
+                <div class="dash-node-types">
+                  <div v-for="n in nodeTypeItems" :key="n.type" class="dash-node-type">
+                    <i :class="n.icon" style="font-size: 16px;" class="dash-node-icon" />
+                    <span class="dash-node-label">{{ n.label }}</span>
+                    <span class="dash-node-count mono">{{ n.count }}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <DashboardStats
-            :node-counts-by-type="stats.nodeCountsByType || []"
-            :top-dossiers-this-week="stats.topDossiersThisWeek || []"
-            :streaks="stats.streaks || { current: 0, best: 0 }"
-            :weekly-trend="stats.weeklyTrend || { current: 0, previous: 0 }"
-          />
+            <DashboardStats
+              :node-counts-by-type="stats.nodeCountsByType || []"
+              :top-dossiers-this-week="stats.topDossiersThisWeek || []"
+              :streaks="stats.streaks || { current: 0, best: 0 }"
+              :weekly-trend="stats.weeklyTrend || { current: 0, previous: 0 }"
+            />
 
-          <DashboardHeatmap :heatmap="stats.heatmap || []" />
-        </v-tabs-window-item>
+            <DashboardHeatmap :heatmap="stats.heatmap || []" />
+          </TabPanel>
 
-        <!-- Tab: Activity -->
-        <v-tabs-window-item value="activity">
-          <div class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
-            <h3 class="dash-card-title mono">{{ $t('dashboard.activity7days') }}</h3>
-            <Line v-if="activityChartData" :data="activityChartData" :options="lineOptions" />
-            <p v-else class="dash-empty-text">{{ $t('dashboard.noRecentActivity') }}</p>
-          </div>
-
-          <div class="dash-card glass-card fade-in">
-            <h3 class="dash-card-title mono">{{ $t('dashboard.recentActivity') }}</h3>
-            <div v-if="stats.recentActivity?.length" class="dash-activity-list">
-              <div v-for="act in stats.recentActivity" :key="act._id" class="dash-activity-item">
-                <v-icon size="14" class="dash-act-icon">{{ actionIcon(act.action) }}</v-icon>
-                <span class="dash-act-label">{{ actionLabel(act.action) }}</span>
-                <span v-if="act.metadata?.title" class="dash-act-target mono">{{ act.metadata.title }}</span>
-                <span class="dash-act-time mono">{{ formatTime(act.timestamp) }}</span>
-              </div>
+          <!-- Tab: Activity -->
+          <TabPanel value="activity">
+            <div class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
+              <h3 class="dash-card-title mono">{{ $t('dashboard.activity7days') }}</h3>
+              <Line v-if="activityChartData" :data="activityChartData" :options="lineOptions" />
+              <p v-else class="dash-empty-text">{{ $t('dashboard.noRecentActivity') }}</p>
             </div>
-            <p v-else class="dash-empty-text">{{ $t('dashboard.noActivityThisWeek') }}</p>
-          </div>
-        </v-tabs-window-item>
-      </v-tabs-window>
+
+            <div class="dash-card glass-card fade-in">
+              <h3 class="dash-card-title mono">{{ $t('dashboard.recentActivity') }}</h3>
+              <div v-if="stats.recentActivity?.length" class="dash-activity-list">
+                <div v-for="act in stats.recentActivity" :key="act._id" class="dash-activity-item">
+                  <i :class="actionIcon(act.action)" style="font-size: 14px;" class="dash-act-icon" />
+                  <span class="dash-act-label">{{ actionLabel(act.action) }}</span>
+                  <span v-if="act.metadata?.title" class="dash-act-target mono">{{ act.metadata.title }}</span>
+                  <span class="dash-act-time mono">{{ formatTime(act.timestamp) }}</span>
+                </div>
+              </div>
+              <p v-else class="dash-empty-text">{{ $t('dashboard.noActivityThisWeek') }}</p>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </template>
   </div>
 </template>
@@ -187,6 +189,13 @@ import api from '../../services/api';
 import DashboardQuickAccess from './DashboardQuickAccess.vue';
 import DashboardHeatmap from './DashboardHeatmap.vue';
 import DashboardStats from './DashboardStats.vue';
+
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
+import TabPanel from 'primevue/tabpanel';
+import ProgressBar from 'primevue/progressbar';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Filler);
 
@@ -229,11 +238,11 @@ const statusItems = computed(() => {
 });
 
 const nodeTypeMap = computed<Record<string, { label: string; icon: string }>>(() => ({
-  folder: { label: t('dashboard.nodeTypes.folders'), icon: 'mdi-folder-outline' },
-  note: { label: t('dashboard.nodeTypes.notes'), icon: 'mdi-note-text-outline' },
-  mindmap: { label: t('dashboard.nodeTypes.mindmaps'), icon: 'mdi-graph-outline' },
-  document: { label: t('dashboard.nodeTypes.documents'), icon: 'mdi-file-document-outline' },
-  map: { label: t('dashboard.nodeTypes.maps'), icon: 'mdi-map-outline' },
+  folder: { label: t('dashboard.nodeTypes.folders'), icon: 'pi pi-folder' },
+  note: { label: t('dashboard.nodeTypes.notes'), icon: 'pi pi-file-edit' },
+  mindmap: { label: t('dashboard.nodeTypes.mindmaps'), icon: 'pi pi-share-alt' },
+  document: { label: t('dashboard.nodeTypes.documents'), icon: 'pi pi-file' },
+  map: { label: t('dashboard.nodeTypes.maps'), icon: 'pi pi-map' },
 }));
 
 const nodeTypeItems = computed(() => {
@@ -337,27 +346,27 @@ const actionLabelKeys: Record<string, string> = {
 };
 
 const actionIcons: Record<string, string> = {
-  'login': 'mdi-login-variant',
-  'dossier.create': 'mdi-folder-plus-outline',
-  'dossier.update': 'mdi-folder-edit-outline',
-  'dossier.delete': 'mdi-folder-remove-outline',
-  'node.create': 'mdi-file-plus-outline',
-  'node.delete': 'mdi-file-remove-outline',
-  'node.restore': 'mdi-file-restore-outline',
-  'node.purge': 'mdi-delete-forever-outline',
-  'node.empty_trash': 'mdi-trash-can-outline',
-  'collaborator.add': 'mdi-account-plus-outline',
-  'collaborator.remove': 'mdi-account-minus-outline',
-  'comment.create': 'mdi-comment-plus-outline',
-  'comment.delete': 'mdi-comment-remove-outline',
-  'snapshot.create': 'mdi-history',
-  'snapshot.restore': 'mdi-backup-restore',
-  'snapshot.delete': 'mdi-delete-clock-outline',
-  'profile.update': 'mdi-account-edit-outline',
-  'profile.avatar_upload': 'mdi-camera-outline',
-  'profile.password_change': 'mdi-lock-reset',
-  '2fa.enable': 'mdi-shield-check-outline',
-  '2fa.disable': 'mdi-shield-off-outline',
+  'login': 'pi pi-sign-in',
+  'dossier.create': 'pi pi-folder-plus',
+  'dossier.update': 'pi pi-folder',
+  'dossier.delete': 'pi pi-folder',
+  'node.create': 'pi pi-file-plus',
+  'node.delete': 'pi pi-file',
+  'node.restore': 'pi pi-file',
+  'node.purge': 'pi pi-trash',
+  'node.empty_trash': 'pi pi-trash',
+  'collaborator.add': 'pi pi-user-plus',
+  'collaborator.remove': 'pi pi-user-minus',
+  'comment.create': 'pi pi-comment',
+  'comment.delete': 'pi pi-comment',
+  'snapshot.create': 'pi pi-history',
+  'snapshot.restore': 'pi pi-history',
+  'snapshot.delete': 'pi pi-history',
+  'profile.update': 'pi pi-user-edit',
+  'profile.avatar_upload': 'pi pi-camera',
+  'profile.password_change': 'pi pi-lock',
+  '2fa.enable': 'pi pi-shield',
+  '2fa.disable': 'pi pi-shield',
 };
 
 function actionLabel(action: string): string {
@@ -366,7 +375,7 @@ function actionLabel(action: string): string {
 }
 
 function actionIcon(action: string): string {
-  return actionIcons[action] || 'mdi-circle-small';
+  return actionIcons[action] || 'pi pi-circle';
 }
 
 function statusDot(status: string): string {

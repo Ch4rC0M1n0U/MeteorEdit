@@ -2,7 +2,7 @@
   <div class="dossier-card glass-card" @click="$emit('open', dossier._id)">
     <div class="dc-header">
       <div class="dc-status" v-if="dossier.isContinuous">
-        <v-icon size="14" style="color: #818cf8;">mdi-infinity</v-icon>
+        <i class="pi pi-replay" style="color: #818cf8; font-size: 12px;" />
         <span class="dc-status-label dc-status-label--continuous mono">{{ t('dossier.statusContinuous') }}</span>
       </div>
       <div class="dc-status" v-else>
@@ -11,20 +11,20 @@
       </div>
       <div class="dc-actions">
         <button class="dc-fav" :class="{ 'dc-fav--active': isFav }" @click.stop="$emit('toggle-favorite', dossier._id)" :title="isFav ? $t('home.removeFromFavorites') : $t('home.addToFavorites')">
-          <v-icon size="16">{{ isFav ? 'mdi-star' : 'mdi-star-outline' }}</v-icon>
+          <i :class="isFav ? 'pi pi-star-fill' : 'pi pi-star'" />
         </button>
         <button class="dc-delete" @click.stop="$emit('delete', dossier._id)" :title="$t('common.delete')">
-          <v-icon size="16">mdi-trash-can-outline</v-icon>
+          <i class="pi pi-trash" />
         </button>
       </div>
     </div>
     <div class="dc-title-row">
       <img v-if="logoUrl" :src="logoUrl" alt="" class="dc-logo" />
-      <v-icon v-else-if="dossier.icon" size="22" class="dc-icon">{{ dossier.icon }}</v-icon>
-      <v-icon v-else size="22" class="dc-icon dc-icon-default">mdi-folder-outline</v-icon>
+      <i v-else-if="dossier.icon" :class="dossier.icon" class="dc-icon" style="font-size: 20px;" />
+      <i v-else class="pi pi-folder dc-icon dc-icon-default" style="font-size: 20px;" />
       <h3 class="dc-title">{{ dossier.title }}</h3>
-      <v-icon v-if="dossier.isEmbargo" size="16" class="dc-embargo" :title="$t('dossier.isEmbargo')">mdi-shield-lock</v-icon>
-      <v-icon v-else size="16" class="dc-lock" :title="$t('home.e2eActive')">mdi-lock-outline</v-icon>
+      <i v-if="dossier.isEmbargo" class="pi pi-shield dc-embargo" :title="$t('dossier.isEmbargo')" />
+      <i v-else class="pi pi-lock dc-lock" :title="$t('home.e2eActive')" />
     </div>
     <div v-if="dossier.tags?.length" class="dc-tags">
       <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>
@@ -61,7 +61,6 @@ watch(() => props.dossier.logoPath, async (logoPath) => {
   try {
     decryptedLogo.value = await getDecryptedUrl(props.dossier._id, logoPath, 'image/png');
   } catch {
-    // Only fall back to direct URL for non-encrypted files
     if (logoPath && !logoPath.includes('.enc')) {
       decryptedLogo.value = `${SERVER_URL}/${logoPath}`;
     }
@@ -99,6 +98,7 @@ const statusLabel = computed(() => {
   gap: 12px;
   overflow: hidden;
   min-width: 0;
+  border-radius: 10px;
 }
 .dossier-card:hover {
   transform: translateY(-2px);
@@ -127,7 +127,7 @@ const statusLabel = computed(() => {
   align-items: center;
   gap: 2px;
 }
-.dc-fav {
+.dc-fav, .dc-delete {
   background: none;
   border: none;
   color: var(--me-text-muted);
@@ -136,30 +136,19 @@ const statusLabel = computed(() => {
   border-radius: 4px;
   opacity: 0;
   transition: all 0.15s;
+  font-size: 14px;
 }
 .dc-fav--active {
   opacity: 1 !important;
   color: var(--me-accent);
 }
-.dossier-card:hover .dc-fav {
+.dossier-card:hover .dc-fav,
+.dossier-card:hover .dc-delete {
   opacity: 1;
 }
 .dc-fav:hover {
   color: var(--me-accent);
-  background: rgba(var(--me-accent-rgb, 59, 130, 246), 0.1);
-}
-.dc-delete {
-  background: none;
-  border: none;
-  color: var(--me-text-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: all 0.15s;
-}
-.dossier-card:hover .dc-delete {
-  opacity: 1;
+  background: var(--me-accent-glow);
 }
 .dc-delete:hover {
   color: var(--me-error);
@@ -190,11 +179,13 @@ const statusLabel = computed(() => {
   margin-left: auto;
   flex-shrink: 0;
   opacity: 0.7;
+  font-size: 14px;
 }
 .dc-embargo {
   color: #f59e0b;
   margin-left: auto;
   flex-shrink: 0;
+  font-size: 14px;
 }
 .dc-title {
   font-size: 17px;
@@ -234,7 +225,8 @@ const statusLabel = computed(() => {
   margin-top: auto;
 }
 /* Status dot colors */
-.status-dot--open { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
-.status-dot--in-progress { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
-.status-dot--closed { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot--open { background: #81b29a; box-shadow: 0 0 6px rgba(129, 178, 154, 0.5); }
+.status-dot--in-progress { background: #6391d6; box-shadow: 0 0 6px rgba(99, 145, 214, 0.5); }
+.status-dot--closed { background: #c97b7b; box-shadow: 0 0 6px rgba(201, 123, 123, 0.5); }
 </style>

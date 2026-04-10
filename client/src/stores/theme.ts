@@ -21,6 +21,14 @@ export const useThemeStore = defineStore('theme', () => {
     applyDataTheme(isDark.value);
   }
 
+  /** Apply theme without Vuetify (for new PrimeVue layout) */
+  function applyTheme() {
+    applyDataTheme(isDark.value);
+    if (vuetifyTheme) {
+      vuetifyTheme.global.name.value = isDark.value ? 'meteorDark' : 'meteorLight';
+    }
+  }
+
   function toggle() {
     isDark.value = !isDark.value;
     if (vuetifyTheme) {
@@ -30,5 +38,5 @@ export const useThemeStore = defineStore('theme', () => {
     localStorage.setItem('me-theme', isDark.value ? 'dark' : 'light');
   }
 
-  return { isDark, toggle, init };
+  return { isDark, toggle, init, applyTheme };
 });

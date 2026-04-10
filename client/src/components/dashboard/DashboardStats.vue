@@ -4,9 +4,10 @@
     <div class="dash-kpi-row fade-in">
       <div class="dash-kpi glass-card">
         <div class="dash-kpi-icon">
-          <v-icon size="22" :color="streaks.current >= 7 ? '#f59e0b' : undefined">
-            {{ streaks.current >= 7 ? 'mdi-fire' : 'mdi-lightning-bolt-outline' }}
-          </v-icon>
+          <i
+            :class="streaks.current >= 7 ? 'pi pi-bolt' : 'pi pi-bolt'"
+            :style="{ fontSize: '22px', color: streaks.current >= 7 ? '#f59e0b' : undefined }"
+          />
         </div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono">{{ streaks.current }}</span>
@@ -14,14 +15,14 @@
         </div>
       </div>
       <div class="dash-kpi glass-card">
-        <div class="dash-kpi-icon"><v-icon size="22">mdi-trophy-outline</v-icon></div>
+        <div class="dash-kpi-icon"><i class="pi pi-trophy" style="font-size: 22px;" /></div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono">{{ streaks.best }}</span>
           <span class="dash-kpi-label">{{ $t('dashboard.bestStreak') }}</span>
         </div>
       </div>
       <div class="dash-kpi glass-card">
-        <div class="dash-kpi-icon"><v-icon size="22">mdi-folder-star-outline</v-icon></div>
+        <div class="dash-kpi-icon"><i class="pi pi-star" style="font-size: 22px;" /></div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono dash-kpi-value--small">{{ topDossierTitle }}</span>
           <span class="dash-kpi-label">{{ $t('dashboard.topDossier') }}</span>
@@ -29,7 +30,10 @@
       </div>
       <div class="dash-kpi glass-card">
         <div class="dash-kpi-icon">
-          <v-icon size="22">{{ weeklyTrend.current >= weeklyTrend.previous ? 'mdi-trending-up' : 'mdi-trending-down' }}</v-icon>
+          <i
+            :class="weeklyTrend.current >= weeklyTrend.previous ? 'pi pi-arrow-up-right' : 'pi pi-arrow-down-right'"
+            style="font-size: 22px;"
+          />
         </div>
         <div class="dash-kpi-data">
           <span class="dash-kpi-value mono">{{ weeklyTrend.current }}</span>

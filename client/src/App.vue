@@ -1,55 +1,122 @@
 <template>
-  <v-app>
-    <AppBar v-if="authStore.isAuthenticated" />
-    <v-main>
+  <div v-if="authStore.isAuthenticated" class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <AppSidebar
+      :collapsed="sidebarCollapsed"
+      @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
+      @logout="handleLogout"
+    />
+    <div class="main-area">
+      <AppTopbar
+        :title="pageTitle"
+        :subtitle="pageSubtitle"
+        @toggle-sidebar="sidebarCollapsed = !sidebarCollapsed"
+      />
       <div
         v-if="brandingStore.announcementEnabled && brandingStore.announcementMessage"
         class="announcement-banner"
         :class="`announcement-${brandingStore.announcementVariant}`"
       >
-        <v-icon size="18" class="mr-2">{{ announcementIcon }}</v-icon>
+        <i :class="announcementIcon" style="margin-right: 8px;" />
         {{ brandingStore.announcementMessage }}
       </div>
-      <router-view />
-    </v-main>
+      <main class="main-content">
+        <router-view />
+      </main>
+    </div>
     <ConfirmDialog />
-    <CommandPalette v-if="authStore.isAuthenticated" />
+    <CommandPalette />
     <PwaUpdatePrompt />
-  </v-app>
+  </div>
+
+  <!-- Non-authenticated views (login, register, setup, maintenance) -->
+  <template v-else>
+    <router-view />
+    <PwaUpdatePrompt />
+  </template>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
-import { useTheme } from 'vuetify';
+import { computed, ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from './stores/auth';
 import { useThemeStore } from './stores/theme';
 import { useBrandingStore } from './stores/branding';
-import AppBar from './components/common/AppBar.vue';
+import { useDossierStore } from './stores/dossier';
+import AppSidebar from './components/common/AppSidebar.vue';
+import AppTopbar from './components/common/AppTopbar.vue';
 import ConfirmDialog from './components/common/ConfirmDialog.vue';
 import CommandPalette from './components/common/CommandPalette.vue';
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue';
 
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const brandingStore = useBrandingStore();
-const vuetifyTheme = useTheme();
+const dossierStore = useDossierStore();
+
+const sidebarCollapsed = ref(false);
 
 const announcementIcon = computed(() => {
   const icons: Record<string, string> = {
-    info: 'mdi-information-outline',
-    warning: 'mdi-alert-outline',
-    error: 'mdi-alert-circle-outline',
+    info: 'pi pi-info-circle',
+    warning: 'pi pi-exclamation-triangle',
+    error: 'pi pi-times-circle',
   };
-  return icons[brandingStore.announcementVariant] || 'mdi-information-outline';
+  return icons[brandingStore.announcementVariant] || 'pi pi-info-circle';
 });
 
+const pageTitle = computed(() => {
+  if (route.path === '/' || route.path === '/home') {
+    return dossierStore.currentDossier ? dossierStore.currentDossier.title : t('home.myDossiers');
+  }
+  const titles: Record<string, string> = {
+    '/admin': t('nav.admin'),
+    '/profile': t('nav.profile') || 'Profil',
+    '/templates': t('nav.templates'),
+    '/help': t('nav.help'),
+    '/osint-search': t('nav.osintSearch') || 'OSINT Search',
+  };
+  return titles[route.path] || '';
+});
+
+const pageSubtitle = computed(() => {
+  if ((route.path === '/' || route.path === '/home') && !dossierStore.currentDossier) {
+    const count = dossierStore.dossiers.length;
+    return `${count} dossier${count > 1 ? 's' : ''}`;
+  }
+  return '';
+});
+
+function handleLogout() {
+  authStore.logout();
+  router.push('/login');
+}
+
 onMounted(() => {
-  themeStore.init(vuetifyTheme);
+  themeStore.applyTheme();
   brandingStore.fetchBranding();
 });
 </script>
 
 <style scoped>
+.app-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+}
 .announcement-banner {
   display: flex;
   align-items: center;
@@ -59,13 +126,7 @@ onMounted(() => {
   font-weight: 500;
   color: #fff;
 }
-.announcement-info {
-  background: #1976d2;
-}
-.announcement-warning {
-  background: #f57c00;
-}
-.announcement-error {
-  background: #d32f2f;
-}
+.announcement-info { background: #1976d2; }
+.announcement-warning { background: #f57c00; }
+.announcement-error { background: #d32f2f; }
 </style>

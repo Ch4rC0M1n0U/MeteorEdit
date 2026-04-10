@@ -3,7 +3,7 @@
     <!-- Last accessed nodes -->
     <div class="dash-card glass-card">
       <h3 class="dash-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-history</v-icon>
+        <i class="pi pi-history" style="font-size: 16px; margin-right: 4px;" />
         {{ $t('dashboard.lastOpened') }}
       </h3>
       <div v-if="lastAccessed.length" class="dash-quick-list">
@@ -13,7 +13,7 @@
           class="dash-quick-item"
           @click="$emit('openNode', node)"
         >
-          <v-icon size="16" class="dash-quick-icon">{{ nodeIcon(node.type) }}</v-icon>
+          <i :class="nodeIcon(node.type)" style="font-size: 16px;" class="dash-quick-icon" />
           <div class="dash-quick-info">
             <span class="dash-quick-name">{{ node.title }}</span>
             <span class="dash-quick-dossier mono">{{ node.dossierId?.title || '' }}</span>
@@ -26,7 +26,7 @@
     <!-- Assigned tasks -->
     <div class="dash-card glass-card">
       <h3 class="dash-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-checkbox-marked-circle-outline</v-icon>
+        <i class="pi pi-check-circle" style="font-size: 16px; margin-right: 4px;" />
         {{ $t('dashboard.assignedTasks') }}
       </h3>
       <div v-if="assignedTasks.length" class="dash-quick-list">
@@ -61,14 +61,14 @@ const { locale } = useI18n();
 
 function nodeIcon(type: string): string {
   const icons: Record<string, string> = {
-    note: 'mdi-note-text-outline',
-    mindmap: 'mdi-graph-outline',
-    document: 'mdi-file-document-outline',
-    map: 'mdi-map-outline',
-    dataset: 'mdi-table',
-    folder: 'mdi-folder-outline',
+    note: 'pi pi-file-edit',
+    mindmap: 'pi pi-share-alt',
+    document: 'pi pi-file',
+    map: 'pi pi-map',
+    dataset: 'pi pi-table',
+    folder: 'pi pi-folder',
   };
-  return icons[type] || 'mdi-file-outline';
+  return icons[type] || 'pi pi-file';
 }
 
 function formatDate(d: string): string {
