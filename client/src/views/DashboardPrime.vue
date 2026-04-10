@@ -28,7 +28,7 @@
             <DossierCard v-for="dossier in favoriteDossiers" :key="'fav-' + dossier._id" :dossier="dossier" :is-fav="true" @open="handleOpen" @delete="handleDelete" @toggle-favorite="handleToggleFavorite" />
           </div>
           <div v-else class="dp-empty dp-fade-in">
-            <i class="pi pi-star" style="font-size: 2.5rem; color: var(--dp-accent)" />
+            <i class="pi pi-star" style="font-size: 2.5rem; color: var(--me-accent)" />
             <h3 class="mono">{{ $t('home.tabs.noFavorites') }}</h3>
             <p class="dp-text-muted">{{ $t('home.tabs.noFavoritesHint') }}</p>
           </div>
@@ -38,7 +38,7 @@
             <DossierCard v-for="(dossier, i) in activeDossiers" :key="dossier._id" :dossier="dossier" :is-fav="dossierStore.isFavorite(dossier._id)" :class="['dp-fade-in', `dp-fade-delay-${Math.min(i + 1, 4)}`]" @open="handleOpen" @delete="handleDelete" @toggle-favorite="handleToggleFavorite" />
           </div>
           <div v-else class="dp-empty dp-fade-in">
-            <i class="pi pi-folder-open" style="font-size: 2.5rem; color: var(--dp-accent)" />
+            <i class="pi pi-folder-open" style="font-size: 2.5rem; color: var(--me-accent)" />
             <h3 class="mono">{{ $t('home.noDossiers') }}</h3>
             <p class="dp-text-muted">{{ $t('home.noDossiersHint') }}</p>
           </div>
@@ -54,7 +54,7 @@
             </div>
           </div>
           <div v-else class="dp-empty dp-fade-in">
-            <i class="pi pi-inbox" style="font-size: 2.5rem; color: var(--dp-accent)" />
+            <i class="pi pi-inbox" style="font-size: 2.5rem; color: var(--me-accent)" />
             <h3 class="mono">{{ $t('home.tabs.noClosed') }}</h3>
           </div>
         </TabPanel>
@@ -576,52 +576,61 @@ function actionLabel(action: string): string { const key = actionLabelKeys[actio
 </script>
 
 <style scoped>
-/* ─── Tokens ─── */
-:root {
-  --dp-accent: #3b82f6;
-  --dp-accent-glow: rgba(59, 130, 246, 0.1);
-  --dp-bg: var(--me-bg-deep, #0a0e1a);
-  --dp-surface: var(--me-bg-elevated, #111827);
-  --dp-text: var(--me-text-primary, #f1f5f9);
-  --dp-text-secondary: var(--me-text-secondary, #94a3b8);
-  --dp-text-muted: var(--me-text-muted, #64748b);
-  --dp-border: var(--me-border, rgba(255,255,255,0.08));
-  --dp-radius: 12px;
-}
+/* ─── Inherit the app's design tokens ─── */
 
 .dp-page {
   max-width: 1800px;
   margin: 0 auto;
   padding: 32px 48px;
-  color: var(--dp-text);
+  color: var(--me-text-primary);
 }
 
 /* Header */
 .dp-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 32px; }
 .dp-title { font-size: 24px; font-weight: 700; }
-.dp-subtitle { font-size: 13px; color: var(--dp-text-muted); margin-top: 4px; font-family: var(--me-font-mono); }
+.dp-subtitle { font-size: 13px; color: var(--me-text-muted); margin-top: 4px; font-family: var(--me-font-mono); }
 .dp-header-actions { display: flex; align-items: center; gap: 8px; }
 
 /* Progress */
 .dp-progress { border-radius: 4px; margin-bottom: 16px; height: 3px; }
-:deep(.dp-progress .p-progressbar-value) { background: var(--dp-accent) !important; }
+:deep(.dp-progress .p-progressbar-value) { background: var(--me-accent) !important; }
 
-/* Tabs override */
-:deep(.p-tabs) { margin-bottom: 16px; }
-:deep(.p-tablist) { border-bottom: 1px solid var(--dp-border); }
+/* Tabs override — deep integration with app design system */
+:deep(.p-tabs) { margin-bottom: 16px; background: transparent !important; }
+:deep(.p-tablist) { border-bottom: 1px solid var(--me-border); background: transparent !important; }
+:deep(.p-tablist-tab-list) { background: transparent !important; }
 :deep(.p-tab) {
-  color: var(--dp-text-muted) !important;
+  color: var(--me-text-muted) !important;
   font-size: 13px;
+  font-family: var(--me-font-body);
   gap: 6px;
   padding: 10px 16px;
   border: none !important;
-  background: none !important;
+  background: transparent !important;
+  transition: color 0.2s;
 }
-:deep(.p-tab:hover) { color: var(--dp-text) !important; }
+:deep(.p-tab:hover) { color: var(--me-text-primary) !important; }
 :deep(.p-tab-active),
-:deep(.p-tab[data-p-active="true"]) { color: var(--dp-accent) !important; }
-:deep(.p-tablist-active-bar) { background: var(--dp-accent) !important; }
-:deep(.p-tabpanel) { padding: 0 !important; }
+:deep(.p-tab[data-p-active="true"]) { color: var(--me-accent) !important; font-weight: 600; }
+:deep(.p-tablist-active-bar) { background: var(--me-accent) !important; height: 2px; }
+:deep(.p-tabpanels) { background: transparent !important; }
+:deep(.p-tabpanel) { padding: 0 !important; background: transparent !important; }
+
+/* Button overrides */
+:deep(.p-button.p-button-outlined) {
+  border-color: var(--me-border) !important;
+  color: var(--me-text-secondary) !important;
+  background: transparent !important;
+}
+:deep(.p-button.p-button-outlined:hover) {
+  border-color: var(--me-accent) !important;
+  color: var(--me-accent) !important;
+  background: var(--me-accent-glow) !important;
+}
+
+/* Badge & Tag overrides */
+:deep(.p-badge) { font-size: 11px !important; min-width: 1.5rem; height: 1.5rem; line-height: 1.5rem; font-family: var(--me-font-mono); }
+:deep(.p-tag) { font-family: var(--me-font-mono); border-radius: 6px !important; }
 
 /* Dossier grid */
 .dp-dossier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
@@ -630,22 +639,22 @@ function actionLabel(action: string): string { const key = actionLabelKeys[actio
 /* Empty state */
 .dp-empty { text-align: center; padding: 80px 20px; }
 .dp-empty h3 { margin-top: 16px; }
-.dp-text-muted { color: var(--dp-text-muted); font-size: 14px; }
+.dp-text-muted { color: var(--me-text-muted); font-size: 14px; }
 
 /* Closed cards */
 .dp-closed-card {
-  padding: 14px 16px; cursor: pointer; border-radius: var(--dp-radius);
-  background: var(--dp-surface); border: 1px solid var(--dp-border);
+  padding: 14px 16px; cursor: pointer; border-radius: var(--me-radius);
+  background: var(--me-bg-elevated); border: 1px solid var(--me-border);
   transition: all 0.2s ease; opacity: 0.7;
 }
-.dp-closed-card:hover { opacity: 1; transform: translateY(-1px); border-color: var(--dp-accent); }
+.dp-closed-card:hover { opacity: 1; transform: translateY(-1px); border-color: var(--me-accent); }
 .dp-closed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.dp-closed-date { font-size: 11px; color: var(--dp-text-muted); }
-.dp-closed-title { font-size: 14px; font-weight: 600; color: var(--dp-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dp-closed-date { font-size: 11px; color: var(--me-text-muted); }
+.dp-closed-title { font-size: 14px; font-weight: 600; color: var(--me-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 :deep(.dp-closed-ref) { font-size: 10px !important; padding: 2px 8px !important; }
 
 /* Dashboard section */
-.dp-dashboard { margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--dp-border); }
+.dp-dashboard { margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--me-border); }
 .dp-dash-header { margin-bottom: 20px; }
 .dp-dash-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
@@ -653,20 +662,22 @@ function actionLabel(action: string): string { const key = actionLabelKeys[actio
 .dp-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
 .dp-kpi {
   padding: 18px; display: flex; align-items: center; gap: 14px;
-  background: var(--dp-surface); border: 1px solid var(--dp-border);
-  border-radius: var(--dp-radius); transition: all 0.2s ease;
+  background: var(--me-bg-glass); border: 1px solid var(--me-border);
+  border-radius: var(--me-radius); transition: all 0.25s ease;
+  backdrop-filter: blur(12px);
 }
-.dp-kpi:hover { border-color: rgba(59, 130, 246, 0.2); transform: translateY(-1px); }
-.dp-kpi-icon { color: var(--dp-accent); font-size: 1.2rem; }
+.dp-kpi:hover { border-color: var(--me-border-hover); transform: translateY(-2px); box-shadow: var(--me-shadow-glow); }
+.dp-kpi-icon { color: var(--me-accent); font-size: 1.2rem; }
 .dp-kpi-data { display: flex; flex-direction: column; min-width: 0; }
 .dp-kpi-value { font-size: 26px; font-weight: 700; line-height: 1; }
 .dp-kpi-value--small { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dp-kpi-label { font-size: 12px; color: var(--dp-text-muted); margin-top: 3px; }
+.dp-kpi-label { font-size: 12px; color: var(--me-text-muted); margin-top: 3px; }
 
 /* Cards */
 .dp-card {
-  padding: 20px; background: var(--dp-surface); border: 1px solid var(--dp-border);
-  border-radius: var(--dp-radius); margin-bottom: 16px;
+  padding: 20px; background: var(--me-bg-glass); border: 1px solid var(--me-border);
+  border-radius: var(--me-radius); margin-bottom: 16px;
+  backdrop-filter: blur(12px);
 }
 .dp-card-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
 
@@ -679,11 +690,11 @@ function actionLabel(action: string): string { const key = actionLabelKeys[actio
   display: flex; align-items: center; gap: 10px; padding: 8px 10px;
   border-radius: 8px; cursor: pointer; transition: background 0.15s;
 }
-.dp-list-item:hover { background: var(--dp-accent-glow); }
-.dp-list-icon { color: var(--dp-accent); flex-shrink: 0; font-size: 0.9rem; }
+.dp-list-item:hover { background: var(--me-accent-glow); }
+.dp-list-icon { color: var(--me-accent); flex-shrink: 0; font-size: 0.9rem; }
 .dp-list-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .dp-list-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dp-list-meta { font-size: 11px; color: var(--dp-text-muted); }
+.dp-list-meta { font-size: 11px; color: var(--me-text-muted); }
 
 /* Status dots */
 .dp-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -703,15 +714,15 @@ function actionLabel(action: string): string { const key = actionLabelKeys[actio
 .dp-status-bars { display: flex; flex-direction: column; gap: 12px; }
 .dp-status-item { }
 .dp-status-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-.dp-status-name { font-size: 12px; color: var(--dp-text-secondary); flex: 1; }
+.dp-status-name { font-size: 12px; color: var(--me-text-secondary); flex: 1; }
 :deep(.dp-status-progress) { height: 6px; border-radius: 3px; }
 :deep(.dp-status-progress .p-progressbar-value) { border-radius: 3px; }
 
 /* Node types */
 .dp-node-types { display: flex; flex-direction: column; gap: 8px; }
 .dp-node-type { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
-.dp-node-icon { color: var(--dp-accent); flex-shrink: 0; }
-.dp-node-label { font-size: 12px; color: var(--dp-text-secondary); flex: 1; }
+.dp-node-icon { color: var(--me-accent); flex-shrink: 0; }
+.dp-node-label { font-size: 12px; color: var(--me-text-secondary); flex: 1; }
 
 /* Chips */
 .dp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -726,24 +737,24 @@ function actionLabel(action: string): string { const key = actionLabelKeys[actio
 .dp-heatmap-grid { display: flex; gap: 3px; }
 .dp-heatmap-week { display: flex; flex-direction: column; gap: 3px; }
 .dp-heatmap-cell { width: 12px; height: 12px; border-radius: 2px; }
-.dp-heat-0 { background: var(--dp-surface); }
-.dp-heat-1 { background: color-mix(in srgb, var(--dp-accent) 25%, var(--dp-surface)); }
-.dp-heat-2 { background: color-mix(in srgb, var(--dp-accent) 50%, var(--dp-surface)); }
-.dp-heat-3 { background: color-mix(in srgb, var(--dp-accent) 75%, var(--dp-surface)); }
-.dp-heat-4 { background: var(--dp-accent); }
+.dp-heat-0 { background: var(--me-bg-elevated); }
+.dp-heat-1 { background: color-mix(in srgb, var(--me-accent) 25%, var(--me-bg-elevated)); }
+.dp-heat-2 { background: color-mix(in srgb, var(--me-accent) 50%, var(--me-bg-elevated)); }
+.dp-heat-3 { background: color-mix(in srgb, var(--me-accent) 75%, var(--me-bg-elevated)); }
+.dp-heat-4 { background: var(--me-accent); }
 .dp-heatmap-legend { display: flex; align-items: center; gap: 4px; margin-top: 8px; justify-content: flex-end; }
-.dp-heatmap-legend-label { font-size: 10px; color: var(--dp-text-muted); }
+.dp-heatmap-legend-label { font-size: 10px; color: var(--me-text-muted); }
 
 /* Activity */
 .dp-activity-list { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; }
 .dp-activity-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; transition: background 0.15s; }
-.dp-activity-item:hover { background: var(--dp-accent-glow); }
-.dp-act-icon { color: var(--dp-accent); flex-shrink: 0; font-size: 0.85rem; }
-.dp-act-label { font-size: 12px; color: var(--dp-text-secondary); white-space: nowrap; }
-.dp-act-target { font-size: 11px; color: var(--dp-text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dp-act-time { font-size: 11px; color: var(--dp-text-muted); flex-shrink: 0; }
+.dp-activity-item:hover { background: var(--me-accent-glow); }
+.dp-act-icon { color: var(--me-accent); flex-shrink: 0; font-size: 0.85rem; }
+.dp-act-label { font-size: 12px; color: var(--me-text-secondary); white-space: nowrap; }
+.dp-act-target { font-size: 11px; color: var(--me-text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dp-act-time { font-size: 11px; color: var(--me-text-muted); flex-shrink: 0; }
 
-.dp-empty-text { font-size: 12px; color: var(--dp-text-muted); text-align: center; padding: 16px 0; }
+.dp-empty-text { font-size: 12px; color: var(--me-text-muted); text-align: center; padding: 16px 0; }
 
 /* Proto badge */
 .dp-proto-badge {
