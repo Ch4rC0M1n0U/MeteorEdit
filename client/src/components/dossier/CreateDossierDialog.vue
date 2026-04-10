@@ -1,48 +1,48 @@
 <template>
-  <v-dialog v-model="dialog" max-width="500">
-    <template #activator="{ props }">
-      <button v-bind="props" class="me-btn-primary">
-        <v-icon size="18" class="mr-1">mdi-plus</v-icon>
-        {{ $t('dossier.newDossier') }}
-      </button>
-    </template>
+  <Button icon="pi pi-plus" :label="$t('dossier.newDossier')" @click="dialog = true" />
 
-    <div class="glass-card dialog-card">
-      <div class="dialog-header">
-        <h3 class="mono">{{ $t('dossier.newDossier') }}</h3>
-        <button class="me-close-btn" @click="dialog = false">
-          <v-icon size="18">mdi-close</v-icon>
-        </button>
-      </div>
-      <div class="dialog-body">
-        <!-- Icon picker -->
-        <div class="icon-picker-section">
-          <span class="icon-picker-label mono">{{ $t('dossier.dossierIcon') }}</span>
-          <div class="icon-picker-grid">
-            <button
-              v-for="ic in dossierIcons"
-              :key="ic"
-              :class="['icon-picker-item', { 'icon-picker-item--active': selectedIcon === ic }]"
-              @click="selectedIcon = selectedIcon === ic ? null : ic"
-              type="button"
-            >
-              <v-icon size="20">{{ ic }}</v-icon>
-            </button>
-          </div>
+  <Dialog v-model:visible="dialog" :header="$t('dossier.newDossier')" modal :style="{ width: '500px' }" class="create-dossier-dialog">
+    <div class="dialog-body">
+      <!-- Icon picker (keeps MDI icons for specialized police/OSINT icons) -->
+      <div class="icon-picker-section">
+        <span class="icon-picker-label mono">{{ $t('dossier.dossierIcon') }}</span>
+        <div class="icon-picker-grid">
+          <button
+            v-for="ic in dossierIcons"
+            :key="ic"
+            :class="['icon-picker-item', { 'icon-picker-item--active': selectedIcon === ic }]"
+            @click="selectedIcon = selectedIcon === ic ? null : ic"
+            type="button"
+          >
+            <span class="mdi" :class="ic" style="font-size: 20px;" />
+          </button>
         </div>
-        <v-text-field v-model="title" :label="$t('dossier.dossierTitle')" autofocus class="mb-2" />
-        <v-textarea v-model="description" :label="$t('common.description')" rows="3" />
       </div>
-      <div class="dialog-footer">
-        <button class="me-btn-ghost" @click="dialog = false">{{ $t('common.cancel') }}</button>
-        <button class="me-btn-primary" @click="handleCreate" :disabled="!title.trim()">{{ $t('common.create') }}</button>
+
+      <div class="field">
+        <label for="dossier-title" class="field-label">{{ $t('dossier.dossierTitle') }}</label>
+        <InputText id="dossier-title" v-model="title" :placeholder="$t('dossier.dossierTitle')" autofocus class="w-full" />
+      </div>
+
+      <div class="field">
+        <label for="dossier-desc" class="field-label">{{ $t('common.description') }}</label>
+        <Textarea id="dossier-desc" v-model="description" :placeholder="$t('common.description')" rows="3" class="w-full" />
       </div>
     </div>
-  </v-dialog>
+
+    <template #footer>
+      <Button :label="$t('common.cancel')" text severity="secondary" @click="dialog = false" />
+      <Button :label="$t('common.create')" icon="pi pi-check" @click="handleCreate" :disabled="!title.trim()" />
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
 import { useDossierStore } from '../../stores/dossier';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 
@@ -67,118 +67,32 @@ async function handleCreate() {
 </script>
 
 <style scoped>
-.dialog-card {
-  overflow: hidden;
-}
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--me-border);
-}
-.dialog-header h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-}
-.me-close-btn {
-  background: none;
-  border: none;
-  color: var(--me-text-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-}
-.me-close-btn:hover {
-  color: var(--me-text-primary);
-  background: var(--me-accent-glow);
-}
 .dialog-body {
-  padding: 20px 24px;
-}
-.dialog-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 24px;
-  border-top: 1px solid var(--me-border);
+  flex-direction: column;
+  gap: 16px;
 }
-.me-btn-ghost {
-  padding: 8px 16px;
-  border-radius: var(--me-radius-xs);
-  background: none;
-  border: 1px solid var(--me-border);
-  color: var(--me-text-secondary);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s;
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-size: 12px; font-weight: 600; color: var(--me-text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
 }
-.me-btn-ghost:hover {
-  border-color: var(--me-border-hover);
-  color: var(--me-text-primary);
-}
-.me-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 18px;
-  border-radius: var(--me-radius-sm);
-  background: var(--me-accent);
-  border: none;
-  color: var(--me-bg-deep);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-.me-btn-primary:hover {
-  box-shadow: 0 0 20px var(--me-accent-glow), 0 4px 12px rgba(0,0,0,0.3);
-  transform: translateY(-1px);
-}
-.me-btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
+.w-full { width: 100%; }
+
 /* Icon picker */
-.icon-picker-section {
-  margin-bottom: 16px;
-}
+.icon-picker-section { margin-bottom: 4px; }
 .icon-picker-label {
-  display: block;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--me-text-muted);
-  margin-bottom: 8px;
+  display: block; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--me-text-muted); margin-bottom: 8px;
 }
-.icon-picker-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
+.icon-picker-grid { display: flex; flex-wrap: wrap; gap: 4px; }
 .icon-picker-item {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--me-radius-xs);
-  background: none;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; background: none;
   border: 1px solid transparent;
-  color: var(--me-text-muted);
-  cursor: pointer;
-  transition: all 0.15s;
+  color: var(--me-text-muted); cursor: pointer; transition: all 0.15s;
 }
-.icon-picker-item:hover {
-  background: var(--me-accent-glow);
-  color: var(--me-text-primary);
-}
-.icon-picker-item--active {
-  background: var(--me-accent-glow);
-  border-color: var(--me-accent);
-  color: var(--me-accent);
-}
+.icon-picker-item:hover { background: var(--me-accent-glow); color: var(--me-text-primary); }
+.icon-picker-item--active { background: var(--me-accent-glow); border-color: var(--me-accent); color: var(--me-accent); }
 </style>

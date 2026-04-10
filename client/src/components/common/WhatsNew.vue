@@ -1,12 +1,25 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="520">
+  <Dialog
+    :visible="modelValue"
+    @update:visible="$emit('update:modelValue', $event)"
+    :style="{ width: '520px' }"
+    modal
+    :closable="false"
+    :draggable="false"
+    :pt="{
+      root: { class: 'whatsnew-dialog-root' },
+      mask: { class: 'whatsnew-dialog-mask' },
+      content: { class: 'whatsnew-dialog-content' },
+      header: { style: 'display: none' },
+    }"
+  >
     <div class="glass-card whatsnew-dialog">
       <div class="whatsnew-header">
         <div>
           <h2 class="whatsnew-title mono">{{ t('changelog.title') }}</h2>
         </div>
         <button class="me-icon-btn" @click="$emit('update:modelValue', false)">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 16px"></i>
         </button>
       </div>
 
@@ -18,9 +31,11 @@
           </div>
           <div class="whatsnew-entries">
             <div v-for="(entry, idx) in log.entries" :key="idx" class="whatsnew-entry">
-              <v-icon size="16" :color="iconColor(entry.type)" class="whatsnew-entry-icon">
-                {{ iconName(entry.type) }}
-              </v-icon>
+              <i
+                :class="iconName(entry.type)"
+                :style="{ fontSize: '14px', color: iconColor(entry.type) }"
+                class="whatsnew-entry-icon"
+              ></i>
               <div class="whatsnew-entry-content">
                 <span class="whatsnew-entry-badge" :class="'badge--' + entry.type">
                   {{ t('changelog.' + entry.type) }}
@@ -37,17 +52,17 @@
       </div>
 
       <div class="whatsnew-footer" v-if="unreadCount > 0">
-        <button class="me-btn me-btn--accent" @click="handleMarkAsRead">
-          {{ t('changelog.markAsRead') }}
-        </button>
+        <Button :label="t('changelog.markAsRead')" class="me-btn me-btn--accent" @click="handleMarkAsRead" />
       </div>
     </div>
-  </v-dialog>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 import api from '../../services/api';
 
 interface ChangelogEntry {
@@ -77,18 +92,18 @@ const unreadCount = ref(0);
 
 function iconName(type: string): string {
   switch (type) {
-    case 'feature': return 'mdi-star-outline';
-    case 'fix': return 'mdi-wrench-outline';
-    case 'improvement': return 'mdi-arrow-up-circle-outline';
-    default: return 'mdi-information-outline';
+    case 'feature': return 'pi pi-star';
+    case 'fix': return 'pi pi-wrench';
+    case 'improvement': return 'pi pi-arrow-up';
+    default: return 'pi pi-info-circle';
   }
 }
 
 function iconColor(type: string): string {
   switch (type) {
-    case 'feature': return '#4caf50';
-    case 'fix': return '#ff9800';
-    case 'improvement': return '#2196f3';
+    case 'feature': return '#81b29a';
+    case 'fix': return '#e0af68';
+    case 'improvement': return '#6391d6';
     default: return 'grey';
   }
 }
@@ -198,13 +213,13 @@ onMounted(loadChangelog);
   font-family: var(--me-font-mono);
 }
 .badge--feature {
-  color: #4caf50;
+  color: #81b29a;
 }
 .badge--fix {
-  color: #ff9800;
+  color: #e0af68;
 }
 .badge--improvement {
-  color: #2196f3;
+  color: #6391d6;
 }
 .whatsnew-entry-message {
   font-size: 13px;
@@ -223,18 +238,36 @@ onMounted(loadChangelog);
   display: flex;
   justify-content: flex-end;
 }
-.me-btn--accent {
+.me-btn--accent.p-button {
   background: var(--me-accent);
   color: var(--me-bg-deep);
   border: none;
   padding: 8px 16px;
-  border-radius: var(--me-radius-sm);
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
 }
-.me-btn--accent:hover {
+.me-btn--accent.p-button:hover {
   opacity: 0.85;
+}
+</style>
+
+<style>
+/* Dialog root overrides — unscoped so PrimeVue passthrough classes apply */
+.whatsnew-dialog-root.p-dialog {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+.whatsnew-dialog-content.p-dialog-content {
+  background: transparent;
+  padding: 0;
+}
+.whatsnew-dialog-mask {
+  backdrop-filter: blur(4px);
 }
 </style>

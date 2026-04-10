@@ -4,7 +4,7 @@
       <div v-if="visible" class="cmd-overlay" @click.self="close">
         <div class="cmd-modal glass-card">
           <div class="cmd-input-wrap">
-            <v-icon size="18" class="cmd-search-icon">mdi-magnify</v-icon>
+            <i class="pi pi-search cmd-search-icon" style="font-size: 16px"></i>
             <input
               ref="inputRef"
               v-model="query"
@@ -29,7 +29,7 @@
                 @click="execute(cmd)"
                 @mouseenter="selectedIndex = cmd._globalIndex"
               >
-                <v-icon size="16" class="cmd-item-icon">{{ cmd.icon }}</v-icon>
+                <i :class="cmd.icon" class="cmd-item-icon" style="font-size: 14px"></i>
                 <span class="cmd-item-label">{{ cmd.label }}</span>
                 <span v-if="cmd.shortcut" class="cmd-item-shortcut mono">{{ cmd.shortcut }}</span>
               </button>
@@ -78,36 +78,36 @@ interface Command {
 const staticCommands = computed<Omit<Command, '_globalIndex'>[]>(() => {
   const cmds: Omit<Command, '_globalIndex'>[] = [
     // Navigation
-    { id: 'nav-home', label: t('commandPalette.home'), icon: 'mdi-home-outline', group: t('commandPalette.navigation'), shortcut: '', action: () => { dossierStore.closeDossier(); router.push('/'); } },
-    { id: 'nav-profile', label: t('commandPalette.myProfile'), icon: 'mdi-account-outline', group: t('commandPalette.navigation'), action: () => router.push('/profile') },
-    { id: 'nav-templates', label: t('nav.templates'), icon: 'mdi-file-document-check-outline', group: t('commandPalette.navigation'), action: () => router.push('/templates') },
-    { id: 'nav-prefs', label: t('nav.preferences'), icon: 'mdi-cog-outline', group: t('commandPalette.navigation'), action: () => router.push('/profile?section=preferences') },
-    { id: 'nav-security', label: t('commandPalette.security'), icon: 'mdi-shield-lock-outline', group: t('commandPalette.navigation'), action: () => router.push('/profile?section=security') },
-    { id: 'nav-template', label: t('commandPalette.templatePdf'), icon: 'mdi-file-document-edit-outline', group: t('commandPalette.navigation'), action: () => router.push('/profile?section=template') },
+    { id: 'nav-home', label: t('commandPalette.home'), icon: 'pi pi-home', group: t('commandPalette.navigation'), shortcut: '', action: () => { dossierStore.closeDossier(); router.push('/'); } },
+    { id: 'nav-profile', label: t('commandPalette.myProfile'), icon: 'pi pi-user', group: t('commandPalette.navigation'), action: () => router.push('/profile') },
+    { id: 'nav-templates', label: t('nav.templates'), icon: 'pi pi-file-check', group: t('commandPalette.navigation'), action: () => router.push('/templates') },
+    { id: 'nav-prefs', label: t('nav.preferences'), icon: 'pi pi-cog', group: t('commandPalette.navigation'), action: () => router.push('/profile?section=preferences') },
+    { id: 'nav-security', label: t('commandPalette.security'), icon: 'pi pi-lock', group: t('commandPalette.navigation'), action: () => router.push('/profile?section=security') },
+    { id: 'nav-template', label: t('commandPalette.templatePdf'), icon: 'pi pi-file-edit', group: t('commandPalette.navigation'), action: () => router.push('/profile?section=template') },
     // Actions
-    { id: 'act-theme', label: themeStore.isDark ? t('commandPalette.switchToLight') : t('commandPalette.switchToDark'), icon: themeStore.isDark ? 'mdi-weather-sunny' : 'mdi-weather-night', group: t('commandPalette.actions'), action: () => themeStore.toggle() },
-    { id: 'act-new-dossier', label: t('commandPalette.createDossier'), icon: 'mdi-folder-plus-outline', group: t('commandPalette.actions'), action: () => { router.push('/'); nextTick(() => document.dispatchEvent(new CustomEvent('me:create-dossier'))); } },
-    { id: 'act-logout', label: t('auth.logout'), icon: 'mdi-logout', group: t('commandPalette.actions'), action: () => { authStore.logout(); router.push('/login'); } },
+    { id: 'act-theme', label: themeStore.isDark ? t('commandPalette.switchToLight') : t('commandPalette.switchToDark'), icon: themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon', group: t('commandPalette.actions'), action: () => themeStore.toggle() },
+    { id: 'act-new-dossier', label: t('commandPalette.createDossier'), icon: 'pi pi-folder-plus', group: t('commandPalette.actions'), action: () => { router.push('/'); nextTick(() => document.dispatchEvent(new CustomEvent('me:create-dossier'))); } },
+    { id: 'act-logout', label: t('auth.logout'), icon: 'pi pi-sign-out', group: t('commandPalette.actions'), action: () => { authStore.logout(); router.push('/login'); } },
   ];
 
   if (authStore.isAdmin) {
     cmds.push(
-      { id: 'nav-admin', label: t('nav.admin'), icon: 'mdi-shield-account', group: t('commandPalette.navigation'), action: () => router.push('/admin') },
-      { id: 'nav-admin-users', label: t('commandPalette.adminUsers'), icon: 'mdi-account-group-outline', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=users') },
-      { id: 'nav-admin-branding', label: t('commandPalette.adminAppearance'), icon: 'mdi-palette-outline', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=branding') },
-      { id: 'nav-admin-security', label: t('commandPalette.adminSecurity'), icon: 'mdi-shield-lock-outline', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=security') },
-      { id: 'nav-admin-ai', label: t('commandPalette.adminAi'), icon: 'mdi-robot-outline', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=ai') },
+      { id: 'nav-admin', label: t('nav.admin'), icon: 'pi pi-shield', group: t('commandPalette.navigation'), action: () => router.push('/admin') },
+      { id: 'nav-admin-users', label: t('commandPalette.adminUsers'), icon: 'pi pi-users', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=users') },
+      { id: 'nav-admin-branding', label: t('commandPalette.adminAppearance'), icon: 'pi pi-palette', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=branding') },
+      { id: 'nav-admin-security', label: t('commandPalette.adminSecurity'), icon: 'pi pi-lock', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=security') },
+      { id: 'nav-admin-ai', label: t('commandPalette.adminAi'), icon: 'pi pi-microchip-ai', group: t('commandPalette.navigation'), action: () => router.push('/admin?section=ai') },
     );
   }
 
   // Current dossier actions
   if (dossierStore.currentDossier) {
     cmds.push(
-      { id: 'act-close-dossier', label: t('commandPalette.closeDossier'), icon: 'mdi-close', group: t('commandPalette.dossier'), action: () => { dossierStore.closeDossier(); router.push('/'); } },
-      { id: 'act-new-note', label: t('commandPalette.createNote'), icon: 'mdi-note-plus-outline', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newNote'), type: 'note' }); } },
-      { id: 'act-new-folder', label: t('commandPalette.createFolder'), icon: 'mdi-folder-plus-outline', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newFolder'), type: 'folder' }); } },
-      { id: 'act-new-mindmap', label: t('commandPalette.createMindmap'), icon: 'mdi-vector-polyline', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newMindmap'), type: 'mindmap' }); } },
-      { id: 'act-new-map', label: t('commandPalette.createMap'), icon: 'mdi-map-outline', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newMap'), type: 'map' }); } },
+      { id: 'act-close-dossier', label: t('commandPalette.closeDossier'), icon: 'pi pi-times', group: t('commandPalette.dossier'), action: () => { dossierStore.closeDossier(); router.push('/'); } },
+      { id: 'act-new-note', label: t('commandPalette.createNote'), icon: 'pi pi-file-plus', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newNote'), type: 'note' }); } },
+      { id: 'act-new-folder', label: t('commandPalette.createFolder'), icon: 'pi pi-folder-plus', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newFolder'), type: 'folder' }); } },
+      { id: 'act-new-mindmap', label: t('commandPalette.createMindmap'), icon: 'pi pi-share-alt', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newMindmap'), type: 'mindmap' }); } },
+      { id: 'act-new-map', label: t('commandPalette.createMap'), icon: 'pi pi-map', group: t('commandPalette.dossier'), action: () => { dossierStore.createNode({ title: t('commandPalette.newMap'), type: 'map' }); } },
     );
   }
 
@@ -122,7 +122,7 @@ const dossierCommands = computed<Omit<Command, '_globalIndex'>[]>(() => {
     .map(d => ({
       id: `dossier-${d._id}`,
       label: d.title,
-      icon: 'mdi-folder-outline',
+      icon: 'pi pi-folder',
       group: t('commandPalette.dossiers'),
       action: () => dossierStore.openDossier(d._id),
     }));
@@ -137,7 +137,7 @@ const nodeCommands = computed<Omit<Command, '_globalIndex'>[]>(() => {
     .map(n => ({
       id: `node-${n._id}`,
       label: n.title,
-      icon: n.type === 'folder' ? 'mdi-folder-outline' : n.type === 'note' ? 'mdi-note-text-outline' : n.type === 'mindmap' ? 'mdi-vector-polyline' : n.type === 'map' ? 'mdi-map-outline' : 'mdi-file-outline',
+      icon: n.type === 'folder' ? 'pi pi-folder' : n.type === 'note' ? 'pi pi-file-edit' : n.type === 'mindmap' ? 'pi pi-share-alt' : n.type === 'map' ? 'pi pi-map' : 'pi pi-file',
       group: t('commandPalette.nodes'),
       action: () => dossierStore.selectNode(n),
     }));

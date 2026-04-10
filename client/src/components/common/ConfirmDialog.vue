@@ -1,13 +1,25 @@
 <template>
-  <v-dialog v-model="confirmState.visible" max-width="420" persistent>
+  <Dialog
+    v-model:visible="confirmState.visible"
+    :style="{ width: '420px' }"
+    modal
+    :closable="false"
+    :draggable="false"
+    :pt="{
+      root: { class: 'confirm-dialog-root' },
+      mask: { class: 'confirm-dialog-mask' },
+      content: { class: 'confirm-dialog-content' },
+      header: { style: 'display: none' },
+    }"
+  >
     <div class="glass-card confirm-dialog" :class="'confirm-' + confirmState.variant">
       <div class="cd-header">
         <div class="cd-icon-wrap" :class="'cd-icon-' + confirmState.variant">
-          <v-icon size="22">{{ variantIcon }}</v-icon>
+          <i :class="variantIcon" style="font-size: 20px"></i>
         </div>
         <h3 class="cd-title mono">{{ confirmState.title }}</h3>
         <button class="cd-close" @click="handleCancel">
-          <v-icon size="16">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 14px"></i>
         </button>
       </div>
 
@@ -27,24 +39,29 @@
       </div>
 
       <div class="cd-footer">
-        <button v-if="confirmState.cancelText" class="cd-btn cd-btn-cancel" @click="handleCancel">
-          {{ confirmState.cancelText }}
-        </button>
-        <button
-          class="cd-btn"
-          :class="confirmBtnClass"
-          @click="handleConfirm"
+        <Button
+          v-if="confirmState.cancelText"
+          :label="confirmState.cancelText"
+          severity="secondary"
+          outlined
+          class="cd-btn cd-btn-cancel"
+          @click="handleCancel"
+        />
+        <Button
+          :label="confirmState.confirmText"
+          :class="['cd-btn', confirmBtnClass]"
           :disabled="confirmState.prompt && !confirmState.promptValue.trim()"
-        >
-          {{ confirmState.confirmText }}
-        </button>
+          @click="handleConfirm"
+        />
       </div>
     </div>
-  </v-dialog>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { computed, watch, ref, nextTick } from 'vue';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 import { useConfirm } from '../../composables/useConfirm';
 
 const { state: confirmState, handleConfirm, handleCancel } = useConfirm();
@@ -52,9 +69,9 @@ const promptInput = ref<HTMLInputElement | null>(null);
 
 const variantIcon = computed(() => {
   switch (confirmState.variant) {
-    case 'danger': return 'mdi-alert-circle-outline';
-    case 'warning': return 'mdi-alert-outline';
-    default: return 'mdi-help-circle-outline';
+    case 'danger': return 'pi pi-exclamation-circle';
+    case 'warning': return 'pi pi-exclamation-triangle';
+    default: return 'pi pi-question-circle';
   }
 });
 
@@ -74,6 +91,22 @@ watch(() => confirmState.visible, (val) => {
 </script>
 
 <style>
+/* Dialog root overrides — unscoped so PrimeVue passthrough classes apply */
+.confirm-dialog-root.p-dialog {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+.confirm-dialog-content.p-dialog-content {
+  background: transparent;
+  padding: 0;
+}
+.confirm-dialog-mask {
+  backdrop-filter: blur(4px);
+}
+
 .confirm-dialog {
   overflow: hidden;
 }
@@ -170,7 +203,7 @@ watch(() => confirmState.visible, (val) => {
 }
 .cd-btn {
   padding: 8px 20px;
-  border-radius: var(--me-radius-xs);
+  border-radius: 8px;
   border: none;
   font-size: 13px;
   font-weight: 600;
@@ -181,35 +214,38 @@ watch(() => confirmState.visible, (val) => {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.cd-btn-cancel {
+.cd-btn-cancel.p-button {
   background: none;
   border: 1px solid var(--me-border);
   color: var(--me-text-secondary);
 }
-.cd-btn-cancel:hover {
+.cd-btn-cancel.p-button:hover {
   border-color: var(--me-border-hover);
   color: var(--me-text-primary);
 }
-.cd-btn-primary {
+.cd-btn-primary.p-button {
   background: var(--me-accent);
   color: var(--me-bg-deep);
+  border: none;
 }
-.cd-btn-primary:hover:not(:disabled) {
+.cd-btn-primary.p-button:hover:not(:disabled) {
   box-shadow: 0 0 16px var(--me-accent-glow);
 }
-.cd-btn-danger {
+.cd-btn-danger.p-button {
   background: #ef4444;
   color: #fff;
+  border: none;
 }
-.cd-btn-danger:hover:not(:disabled) {
+.cd-btn-danger.p-button:hover:not(:disabled) {
   background: #dc2626;
   box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
 }
-.cd-btn-warning {
+.cd-btn-warning.p-button {
   background: #f59e0b;
   color: #fff;
+  border: none;
 }
-.cd-btn-warning:hover:not(:disabled) {
+.cd-btn-warning.p-button:hover:not(:disabled) {
   background: #d97706;
   box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
 }

@@ -2,7 +2,7 @@
   <div class="me-search" ref="searchRef">
     <div class="me-search-bar">
       <div class="me-search-input-wrap" :class="{ focused: isFocused }">
-        <v-icon size="16" class="me-search-icon">mdi-magnify</v-icon>
+        <i class="pi pi-search me-search-icon" style="font-size: 14px"></i>
         <input
           v-model="query"
           type="text"
@@ -19,7 +19,7 @@
         @click="filtersOpen = !filtersOpen"
         :title="$t('search.filters')"
       >
-        <v-icon size="16">mdi-filter-variant</v-icon>
+        <i class="pi pi-filter" style="font-size: 14px"></i>
         <span class="mono">{{ $t('search.filters') }}</span>
         <span v-if="activeFilterCount > 0" class="me-filter-badge">{{ activeFilterCount }}</span>
       </button>
@@ -30,7 +30,7 @@
       <div class="me-filter-panel-header">
         <span class="me-filter-panel-title mono">{{ $t('search.filters') }}</span>
         <button class="me-filter-close" @click="filtersOpen = false">
-          <v-icon size="16">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 14px"></i>
         </button>
       </div>
       <div class="me-filter-grid">
@@ -60,17 +60,13 @@
 
         <div class="me-filter-group">
           <div class="me-filter-label mono">{{ $t('dossier.tags') }}</div>
-          <v-combobox
+          <AutoComplete
             v-model="filters.tags"
-            :items="availableTags"
+            :suggestions="filteredTags"
             multiple
-            chips
-            closable-chips
-            density="compact"
-            variant="outlined"
             :placeholder="$t('search.addTag')"
-            hide-details
-            class="me-filter-combobox"
+            @complete="searchTags"
+            class="me-filter-autocomplete"
           />
         </div>
 
@@ -83,7 +79,7 @@
               class="me-date-input mono"
               :placeholder="$t('search.from')"
             />
-            <span class="me-date-sep">—</span>
+            <span class="me-date-sep">&mdash;</span>
             <input
               v-model="filters.dateTo"
               type="date"
@@ -95,7 +91,7 @@
       </div>
 
       <button class="me-filter-reset" @click="resetFilters">
-        <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
+        <i class="pi pi-refresh" style="font-size: 12px; margin-right: 4px"></i>
         {{ $t('search.reset') }}
       </button>
     </div>
@@ -109,7 +105,7 @@
       >
         {{ chip.label }}
         <button class="me-chip-remove" @click="removeFilter(chip.key)">
-          <v-icon size="12">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 10px"></i>
         </button>
       </span>
     </div>
@@ -130,7 +126,7 @@
           class="me-search-result"
           @mousedown="openDossier(d._id)"
         >
-          <v-icon size="16" class="mr-2">mdi-folder-outline</v-icon>
+          <i class="pi pi-folder" style="font-size: 14px; margin-right: 8px"></i>
           <div>
             <div class="me-search-result-title" v-html="highlight(d.title, query)"></div>
             <div class="me-search-result-sub" v-if="d.description">{{ d.description }}</div>
@@ -149,7 +145,7 @@
           class="me-search-result"
           @mousedown="openNode(n)"
         >
-          <v-icon size="16" class="mr-2">{{ nodeIcon(n.type) }}</v-icon>
+          <i :class="nodeIcon(n.type)" style="font-size: 14px; margin-right: 8px"></i>
           <div class="me-search-result-title" v-html="highlight(n.title, query)"></div>
         </button>
       </div>
@@ -159,7 +155,7 @@
         class="me-load-more"
         @mousedown.prevent="loadMore"
       >
-        <v-icon size="14" class="mr-1">mdi-chevron-down</v-icon>
+        <i class="pi pi-chevron-down" style="font-size: 12px; margin-right: 4px"></i>
         {{ $t('search.loadMore') }}
       </button>
     </div>
@@ -169,6 +165,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AutoComplete from 'primevue/autocomplete';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 
@@ -182,6 +179,7 @@ const showResults = ref(false);
 const filtersOpen = ref(false);
 const page = ref(1);
 const availableTags = ref<string[]>([]);
+const filteredTags = ref<string[]>([]);
 
 const filters = reactive({
   status: '',
@@ -254,6 +252,13 @@ const activeFilterChips = computed(() => {
   }
   return chips;
 });
+
+function searchTags(event: { query: string }) {
+  const q = event.query.toLowerCase();
+  filteredTags.value = q
+    ? availableTags.value.filter(tag => tag.toLowerCase().includes(q))
+    : [...availableTags.value];
+}
 
 function highlight(text: string, q: string): string {
   if (!q || q.length < 2) return text;
@@ -350,13 +355,13 @@ function openNode(node: any) {
   showResults.value = false;
 }
 
-function nodeIcon(type: string) {
+function nodeIcon(type: string): string {
   switch (type) {
-    case 'folder': return 'mdi-folder-outline';
-    case 'note': return 'mdi-note-text-outline';
-    case 'mindmap': return 'mdi-vector-polyline';
-    case 'document': return 'mdi-file-document-outline';
-    default: return 'mdi-file-outline';
+    case 'folder': return 'pi pi-folder';
+    case 'note': return 'pi pi-file-edit';
+    case 'mindmap': return 'pi pi-share-alt';
+    case 'document': return 'pi pi-file';
+    default: return 'pi pi-file';
   }
 }
 
@@ -611,9 +616,28 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* Combobox override */
-.me-filter-combobox {
+/* AutoComplete override */
+.me-filter-autocomplete {
   font-size: 13px;
+  width: 100%;
+}
+.me-filter-autocomplete :deep(.p-autocomplete-input) {
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  border-radius: 8px;
+  color: var(--me-text-primary);
+  font-size: 13px;
+  padding: 6px 10px;
+}
+.me-filter-autocomplete :deep(.p-autocomplete-input:focus) {
+  border-color: var(--me-accent);
+  box-shadow: 0 0 0 2px var(--me-accent-glow);
+}
+.me-filter-autocomplete :deep(.p-autocomplete-chip) {
+  background: var(--me-accent-glow);
+  color: var(--me-accent);
+  border-radius: 999px;
+  font-size: 12px;
 }
 
 /* Reset button */

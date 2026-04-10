@@ -1,7 +1,7 @@
 <template>
   <div class="notif-bell-wrapper" ref="wrapperRef">
     <button class="notif-bell-btn" @click="toggleDropdown" :title="$t('notificationBell.title')">
-      <v-icon size="20">mdi-bell-outline</v-icon>
+      <i class="pi pi-bell" style="font-size: 18px"></i>
       <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
 
@@ -32,7 +32,10 @@
           @click="handleClick(notif)"
         >
           <div class="notif-item-icon">
-            <v-icon size="18" :color="notif.read ? undefined : 'var(--me-accent)'">{{ iconFor(notif.type) }}</v-icon>
+            <i
+              :class="iconFor(notif.type)"
+              :style="{ fontSize: '16px', color: notif.read ? undefined : 'var(--me-accent)' }"
+            ></i>
           </div>
           <div class="notif-item-content">
             <span class="notif-item-message">{{ notif.message }}</span>
@@ -88,11 +91,11 @@ function toggleDropdown() {
 
 function iconFor(type: string): string {
   switch (type) {
-    case 'collaborator.added': return 'mdi-account-plus';
-    case 'collaborator.removed': return 'mdi-account-minus';
-    case 'dossier.updated': return 'mdi-folder-edit';
-    case 'node.updated': return 'mdi-note-edit';
-    default: return 'mdi-bell-outline';
+    case 'collaborator.added': return 'pi pi-user-plus';
+    case 'collaborator.removed': return 'pi pi-user-minus';
+    case 'dossier.updated': return 'pi pi-folder';
+    case 'node.updated': return 'pi pi-file-edit';
+    default: return 'pi pi-bell';
   }
 }
 
