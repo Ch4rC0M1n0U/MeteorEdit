@@ -72,7 +72,7 @@
                 <span class="mdi mdi-radar" style="font-size: 16px;"></span>
                 <span>{{ $t('dossier.scanTitle') }}</span>
               </button>
-              <button class="dv-export-option" @click="openLeaksSearch; toolsMenuRef?.hide()">
+              <button class="dv-export-option" @click="openLeaksSearch(); toolsMenuRef?.hide()">
                 <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
                 <span>{{ $t('osint.leaksSearch') }}</span>
               </button>
