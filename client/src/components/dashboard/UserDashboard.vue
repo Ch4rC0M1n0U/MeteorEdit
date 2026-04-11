@@ -84,7 +84,14 @@
 
           <!-- Tab: Statistics -->
           <TabPanel value="stats">
-            <!-- Processing Stats + Dossier Statuses FIRST -->
+            <DashboardStats
+              :node-counts-by-type="stats.nodeCountsByType || []"
+              :top-dossiers-this-week="stats.topDossiersThisWeek || []"
+              :streaks="stats.streaks || { current: 0, best: 0 }"
+              :weekly-trend="stats.weeklyTrend || { current: 0, previous: 0 }"
+            />
+
+            <!-- Processing Stats -->
             <div v-if="processingStats" class="dash-card glass-card fade-in" style="margin-bottom: 16px;">
               <h3 class="dash-card-title mono" style="display: flex; align-items: center; gap: 6px;">
                 <i class="pi pi-stopwatch" style="font-size: 16px;" />
@@ -128,16 +135,8 @@
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
-
-            <DashboardStats
-              :node-counts-by-type="stats.nodeCountsByType || []"
-              :top-dossiers-this-week="stats.topDossiersThisWeek || []"
-              :streaks="stats.streaks || { current: 0, best: 0 }"
-              :weekly-trend="stats.weeklyTrend || { current: 0, previous: 0 }"
-            />
 
             <DashboardHeatmap :heatmap="stats.heatmap || []" />
           </TabPanel>
