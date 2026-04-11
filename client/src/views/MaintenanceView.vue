@@ -1,11 +1,11 @@
 <template>
   <div class="maintenance-page">
     <div class="maintenance-card glass-card">
-      <v-icon size="64" color="var(--me-accent)" class="mb-4">mdi-wrench-clock</v-icon>
+      <span class="mdi mdi-wrench-clock" style="font-size: 64px; color: var(--me-accent); margin-bottom: 16px;"></span>
       <h1 class="maintenance-title mono">Maintenance</h1>
       <p class="maintenance-msg">{{ message }}</p>
       <button class="maintenance-retry" @click="retry">
-        <v-icon size="16" class="mr-1">mdi-refresh</v-icon>
+        <i class="pi pi-refresh" style="font-size: 16px; margin-right: 4px;"></i>
         Reessayer
       </button>
     </div>

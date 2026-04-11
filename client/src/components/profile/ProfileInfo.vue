@@ -2,7 +2,7 @@
   <div class="profile-info">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-account-outline</v-icon>
+        <span class="mdi mdi-account-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('profile.myProfile') }}
       </h2>
     </div>
@@ -17,11 +17,11 @@
         </div>
         <div class="avatar-actions">
           <button class="me-btn-primary" @click="triggerAvatarInput">
-            <v-icon size="14" class="mr-1">mdi-camera-outline</v-icon>
+            <span class="mdi mdi-camera-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('profile.change') }}
           </button>
           <button v-if="avatarUrl" class="me-btn-ghost" @click="removeAvatar">
-            <v-icon size="14" class="mr-1">mdi-delete-outline</v-icon>
+            <i class="pi pi-trash" style="font-size: 14px; margin-right: 4px;"></i>
             {{ $t('common.delete') }}
           </button>
         </div>
@@ -33,10 +33,10 @@
     <div class="branding-card glass-card fade-in fade-in-delay-2">
       <h3 class="branding-card-title mono">{{ $t('profile.personalInfo') }}</h3>
       <div class="form-grid">
-        <v-text-field v-model="form.firstName" :label="$t('profile.firstName')" density="compact" hide-details />
-        <v-text-field v-model="form.lastName" :label="$t('profile.lastName')" density="compact" hide-details />
+        <div><label class="form-label-sm">{{ $t('profile.firstName') }}</label><InputText v-model="form.firstName" class="w-full" /></div>
+        <div><label class="form-label-sm">{{ $t('profile.lastName') }}</label><InputText v-model="form.lastName" class="w-full" /></div>
       </div>
-      <v-text-field v-model="form.email" :label="$t('common.email')" type="email" density="compact" hide-details class="mt-4" />
+      <div class="mt-4"><label class="form-label-sm">{{ $t('common.email') }}</label><InputText v-model="form.email" type="email" class="w-full" /></div>
       <div class="branding-actions mt-4">
         <button class="me-btn-primary" @click="saveProfile" :disabled="saving">
           {{ saving ? $t('profile.saving') : $t('common.save') }}
@@ -47,18 +47,18 @@
     <!-- Signature textuelle -->
     <div class="branding-card glass-card fade-in fade-in-delay-3">
       <h3 class="branding-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-pen</v-icon>
+        <i class="pi pi-pencil" style="font-size: 16px; margin-right: 4px;"></i>
         {{ $t('profile.reportSignature') }}
       </h3>
       <p class="sig-desc">{{ $t('profile.reportSignatureDesc') }}</p>
 
       <div class="sig-form">
-        <v-text-field v-model="sigForm.title" :label="$t('profile.signatureTitle')" density="compact" hide-details placeholder="ex: 1INP/APJ" />
-        <v-text-field v-model="sigForm.name" :label="$t('profile.signatureFullName')" density="compact" hide-details placeholder="ex: DUPONT Jean" />
-        <v-text-field v-model="sigForm.service" :label="$t('profile.signatureService')" density="compact" hide-details placeholder="ex: PJF - DJF/Bru" />
-        <v-text-field v-model="sigForm.unit" :label="$t('profile.signatureUnit')" density="compact" hide-details placeholder="ex: OA-DR5" />
-        <v-text-field v-model="sigForm.email" :label="$t('profile.signatureProfEmail')" density="compact" hide-details placeholder="ex: service@police.belgium.eu" />
-        <v-text-field v-model="sigForm.city" :label="$t('profile.signatureCity')" density="compact" hide-details placeholder="ex: Bruxelles" />
+        <div><label class="form-label-sm">{{ $t('profile.signatureTitle') }}</label><InputText v-model="sigForm.title" placeholder="ex: 1INP/APJ" class="w-full" /></div>
+        <div><label class="form-label-sm">{{ $t('profile.signatureFullName') }}</label><InputText v-model="sigForm.name" placeholder="ex: DUPONT Jean" class="w-full" /></div>
+        <div><label class="form-label-sm">{{ $t('profile.signatureService') }}</label><InputText v-model="sigForm.service" placeholder="ex: PJF - DJF/Bru" class="w-full" /></div>
+        <div><label class="form-label-sm">{{ $t('profile.signatureUnit') }}</label><InputText v-model="sigForm.unit" placeholder="ex: OA-DR5" class="w-full" /></div>
+        <div><label class="form-label-sm">{{ $t('profile.signatureProfEmail') }}</label><InputText v-model="sigForm.email" placeholder="ex: service{'@'}police.belgium.eu" class="w-full" /></div>
+        <div><label class="form-label-sm">{{ $t('profile.signatureCity') }}</label><InputText v-model="sigForm.city" placeholder="ex: Bruxelles" class="w-full" /></div>
       </div>
 
       <div class="branding-actions mt-4">
@@ -71,7 +71,7 @@
     <!-- Signature manuscrite -->
     <div class="branding-card glass-card fade-in fade-in-delay-4">
       <h3 class="branding-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-draw</v-icon>
+        <span class="mdi mdi-draw" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('profile.handwrittenSignature') }}
       </h3>
       <p class="sig-desc">{{ $t('profile.handwrittenSignatureDesc') }}</p>
@@ -82,14 +82,14 @@
           :class="['sig-tab', sigMode === 'draw' && 'sig-tab--active']"
           @click="sigMode = 'draw'"
         >
-          <v-icon size="14" class="mr-1">mdi-draw</v-icon>
+          <span class="mdi mdi-draw" style="font-size: 14px; margin-right: 4px;"></span>
           {{ $t('profile.drawTab') }}
         </button>
         <button
           :class="['sig-tab', sigMode === 'upload' && 'sig-tab--active']"
           @click="sigMode = 'upload'"
         >
-          <v-icon size="14" class="mr-1">mdi-image-outline</v-icon>
+          <span class="mdi mdi-image-outline" style="font-size: 14px; margin-right: 4px;"></span>
           {{ $t('profile.uploadTab') }}
         </button>
       </div>
@@ -108,11 +108,11 @@
         </div>
         <div class="sig-draw-actions">
           <button class="me-btn-ghost" @click="clearDrawCanvas">
-            <v-icon size="14" class="mr-1">mdi-eraser</v-icon>
+            <span class="mdi mdi-eraser" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('profile.erase') }}
           </button>
           <button class="me-btn-primary" @click="saveDrawnSignature" :disabled="savingSigImg">
-            <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+            <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
             {{ savingSigImg ? $t('profile.saving') : $t('common.save') }}
           </button>
         </div>
@@ -121,7 +121,7 @@
       <!-- Upload mode -->
       <div v-if="sigMode === 'upload'" class="sig-upload-section">
         <div class="sig-upload-zone" @click="triggerSigImageInput" @dragover.prevent @drop.prevent="handleSigImageDrop">
-          <v-icon size="32" color="var(--me-text-muted)">mdi-cloud-upload-outline</v-icon>
+          <i class="pi pi-upload" style="font-size: 32px; color: var(--me-text-muted);"></i>
           <p>{{ $t('profile.clickOrDrop') }}</p>
           <p class="sig-upload-hint">{{ $t('profile.pngJpgRecommended') }}</p>
         </div>
@@ -139,12 +139,12 @@
         </div>
         <div class="sig-image-actions">
           <button class="me-btn-ghost-danger" @click="deleteSignatureImage">
-            <v-icon size="14" class="mr-1">mdi-delete-outline</v-icon>
+            <i class="pi pi-trash" style="font-size: 14px; margin-right: 4px;"></i>
             {{ $t('profile.deleteHandwrittenSignature') }}
           </button>
         </div>
         <p class="sig-protected-hint">
-          <v-icon size="12" class="mr-1">mdi-shield-lock-outline</v-icon>
+          <span class="mdi mdi-shield-lock-outline" style="font-size: 12px; margin-right: 4px;"></span>
           {{ $t('profile.signatureProtected') }}
         </p>
       </div>
@@ -157,6 +157,7 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
+import InputText from 'primevue/inputtext';
 
 const { t: _t } = useI18n();
 const authStore = useAuthStore();
@@ -395,6 +396,8 @@ async function saveSignature() {
 .me-btn-ghost-danger { padding: 8px 16px; border-radius: var(--me-radius-xs); background: none; border: 1px solid rgba(248, 113, 113, 0.4); color: #f87171; cursor: pointer; font-size: 12px; display: flex; align-items: center; }
 .me-btn-ghost-danger:hover { background: rgba(248, 113, 113, 0.1); border-color: #f87171; }
 .mr-1 { margin-right: 4px; }
+.form-label-sm { display: block; font-size: 12px; color: var(--me-text-muted); margin-bottom: 4px; }
+.w-full { width: 100%; }
 
 /* Signature text section */
 .sig-desc {

@@ -8,22 +8,22 @@
         <div class="login-brand">
           <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-brand-logo" />
           <div v-else class="login-brand-icon">
-            <v-icon size="48" color="white">mdi-shield-search</v-icon>
+            <span class="mdi mdi-shield-search" style="font-size: 48px; color: white;"></span>
           </div>
           <h1 class="login-brand-title mono">{{ brandingStore.appName }}</h1>
           <p class="login-brand-tagline">{{ brandingStore.loginMessage || $t('auth.osintPlatform') }}</p>
         </div>
         <div class="login-left-features">
           <div class="login-feature">
-            <v-icon size="20">mdi-folder-search-outline</v-icon>
+            <span class="mdi mdi-folder-search-outline" style="font-size: 20px;"></span>
             <span>{{ $t('auth.features.dossierManagement') }}</span>
           </div>
           <div class="login-feature">
-            <v-icon size="20">mdi-account-group-outline</v-icon>
+            <span class="mdi mdi-account-group-outline" style="font-size: 20px;"></span>
             <span>{{ $t('auth.features.realTimeCollab') }}</span>
           </div>
           <div class="login-feature">
-            <v-icon size="20">mdi-map-marker-radius-outline</v-icon>
+            <span class="mdi mdi-map-marker-radius-outline" style="font-size: 20px;"></span>
             <span>{{ $t('auth.features.mapping') }}</span>
           </div>
         </div>
@@ -36,7 +36,7 @@
       <div class="login-mobile-brand">
         <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-mobile-logo" />
         <div v-else class="login-mobile-icon">
-          <v-icon size="28" color="white">mdi-shield-search</v-icon>
+          <span class="mdi mdi-shield-search" style="font-size: 28px; color: white;"></span>
         </div>
         <span class="login-mobile-name mono">{{ brandingStore.appName }}</span>
       </div>
@@ -47,71 +47,66 @@
           <p class="login-form-subtitle">{{ $t('auth.registerSubtitle') }}</p>
         </div>
 
-        <v-alert v-if="success" type="success" variant="tonal" class="mb-4">
+        <Message v-if="success" severity="success" style="margin-bottom: 16px;">
           {{ $t('auth.accountCreated') }}
-        </v-alert>
+        </Message>
 
-        <v-alert v-if="error" type="error" variant="tonal" class="mb-4" closable @click:close="error = ''">
+        <Message v-if="error" severity="error" :closable="true" @close="error = ''" style="margin-bottom: 16px;">
           {{ error }}
-        </v-alert>
+        </Message>
 
-        <v-form v-if="!success" @submit.prevent="handleRegister" :disabled="authStore.loading">
-          <div class="d-flex ga-3 mb-3">
+        <form v-if="!success" @submit.prevent="handleRegister">
+          <div class="reg-row">
             <div style="flex: 1">
               <label class="login-field-label">{{ $t('auth.firstName') }}</label>
-              <v-text-field v-model="firstName" :placeholder="$t('auth.firstNamePlaceholder')" prepend-inner-icon="mdi-account-outline" variant="outlined" density="comfortable" required />
+              <InputText v-model="firstName" :placeholder="$t('auth.firstNamePlaceholder')" required style="width: 100%;" />
             </div>
             <div style="flex: 1">
               <label class="login-field-label">{{ $t('auth.lastName') }}</label>
-              <v-text-field v-model="lastName" :placeholder="$t('auth.lastNamePlaceholder')" variant="outlined" density="comfortable" required />
+              <InputText v-model="lastName" :placeholder="$t('auth.lastNamePlaceholder')" required style="width: 100%;" />
             </div>
           </div>
-          <div class="d-flex ga-3 mb-3">
+          <div class="reg-row">
             <div style="flex: 1">
               <label class="login-field-label">{{ $t('auth.grade') }}</label>
-              <v-text-field v-model="grade" :placeholder="$t('auth.gradePlaceholder')" prepend-inner-icon="mdi-star-outline" variant="outlined" density="comfortable" />
+              <InputText v-model="grade" :placeholder="$t('auth.gradePlaceholder')" style="width: 100%;" />
             </div>
             <div style="flex: 1">
               <label class="login-field-label">{{ $t('auth.matricule') }}</label>
-              <v-text-field v-model="matricule" :placeholder="$t('auth.matriculePlaceholder')" prepend-inner-icon="mdi-identifier" variant="outlined" density="comfortable" />
+              <InputText v-model="matricule" :placeholder="$t('auth.matriculePlaceholder')" style="width: 100%;" />
             </div>
           </div>
-          <div class="d-flex ga-3 mb-3">
+          <div class="reg-row">
             <div style="flex: 1">
               <label class="login-field-label">{{ $t('auth.service') }}</label>
-              <v-text-field v-model="service" :placeholder="$t('auth.servicePlaceholder')" prepend-inner-icon="mdi-domain" variant="outlined" density="comfortable" />
+              <InputText v-model="service" :placeholder="$t('auth.servicePlaceholder')" style="width: 100%;" />
             </div>
             <div style="flex: 1">
               <label class="login-field-label">{{ $t('auth.unit') }}</label>
-              <v-text-field v-model="unit" :placeholder="$t('auth.unitPlaceholder')" prepend-inner-icon="mdi-account-group-outline" variant="outlined" density="comfortable" />
+              <InputText v-model="unit" :placeholder="$t('auth.unitPlaceholder')" style="width: 100%;" />
             </div>
           </div>
           <label class="login-field-label">{{ $t('auth.email') }}</label>
-          <v-text-field v-model="email" type="email" :placeholder="$t('auth.emailPlaceholder')" prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable" required class="mb-3" />
+          <InputText v-model="email" type="email" :placeholder="$t('auth.emailPlaceholder')" required style="width: 100%; margin-bottom: 12px;" />
           <label class="login-field-label">{{ $t('auth.password') }}</label>
-          <v-text-field
+          <Password
             v-model="password"
             :placeholder="$t('auth.passwordMin')"
-            :type="showPassword ? 'text' : 'password'"
-            prepend-inner-icon="mdi-lock-outline"
-            :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
-            @click:append-inner="showPassword = !showPassword"
-            variant="outlined"
-            density="comfortable"
-            required
-            class="mb-5"
+            :feedback="false"
+            toggleMask
+            :inputStyle="{ width: '100%' }"
+            style="width: 100%; margin-bottom: 20px;"
           />
-          <v-btn
+          <button
             type="submit"
-            block
-            size="large"
-            :loading="authStore.loading"
             class="btn-accent login-submit-btn"
+            :disabled="authStore.loading"
+            style="width: 100%; padding: 12px; border: none; border-radius: var(--me-radius-xs, 8px); font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;"
           >
-            <v-icon start size="18">mdi-account-plus-outline</v-icon>
+            <span class="mdi mdi-account-plus-outline" style="font-size: 18px;"></span>
             {{ $t('auth.register') }}
-          </v-btn>
-        </v-form>
+          </button>
+        </form>
 
         <div class="login-footer">
           <span class="text-muted">{{ $t('auth.hasAccount') }}</span>
@@ -128,6 +123,9 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../stores/auth';
 import { useBrandingStore } from '../stores/branding';
+import Message from 'primevue/message';
+import InputText from 'primevue/inputtext';
+import Password from 'primevue/password';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -431,4 +429,5 @@ async function handleRegister() {
     max-width: 100%;
   }
 }
+.reg-row { display: flex; gap: 12px; margin-bottom: 12px; }
 </style>

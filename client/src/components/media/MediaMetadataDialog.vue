@@ -1,11 +1,12 @@
 <template>
-  <v-dialog v-model="model" max-width="540" persistent>
+  <Dialog v-model:visible="model" modal :style="{ width: '540px' }" :closable="false">
+    <template #container>
     <div class="md-dialog glass-card">
       <div class="md-header">
-        <v-icon size="20" class="md-header-icon">mdi-text-box-edit-outline</v-icon>
+        <span class="mdi mdi-text-box-edit-outline md-header-icon" style="font-size: 20px"></span>
         <span>{{ $t('media.editMetadata') }}</span>
         <button class="md-close" @click="cancel">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px"></i>
         </button>
       </div>
 
@@ -21,10 +22,10 @@
               readonly
             />
             <button class="md-copy-btn" :title="$t('media.copyUrl')" @click="copyUrl">
-              <v-icon size="16">{{ copied ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
+              <span :class="['mdi', copied ? 'mdi-check' : 'mdi-content-copy']" style="font-size: 16px"></span>
             </button>
             <button class="md-fetch-btn" :title="$t('media.refetch')" :disabled="fetching" @click="refetchMetadata">
-              <v-icon size="16" :class="{ 'md-spin': fetching }">mdi-refresh</v-icon>
+              <span :class="['mdi', 'mdi-refresh', { 'md-spin': fetching }]" style="font-size: 16px"></span>
             </button>
           </div>
         </div>
@@ -66,7 +67,7 @@
               class="md-input"
             />
             <a v-if="local.sourceUrl" :href="local.sourceUrl" target="_blank" rel="noopener" class="md-copy-btn" :title="$t('media.openInBrowser')">
-              <v-icon size="16">mdi-open-in-new</v-icon>
+              <span class="mdi mdi-open-in-new" style="font-size: 16px"></span>
             </a>
           </div>
         </div>
@@ -119,15 +120,15 @@
         <!-- Engagement stats -->
         <div v-if="local.viewCount || local.likeCount || local.commentCount" class="md-stats-row">
           <div v-if="local.viewCount != null" class="md-stat">
-            <v-icon size="14">mdi-eye-outline</v-icon>
+            <span class="mdi mdi-eye-outline" style="font-size: 14px"></span>
             <span>{{ formatNumber(local.viewCount) }}</span>
           </div>
           <div v-if="local.likeCount != null" class="md-stat">
-            <v-icon size="14">mdi-heart-outline</v-icon>
+            <span class="mdi mdi-heart-outline" style="font-size: 14px"></span>
             <span>{{ formatNumber(local.likeCount) }}</span>
           </div>
           <div v-if="local.commentCount != null" class="md-stat">
-            <v-icon size="14">mdi-comment-outline</v-icon>
+            <span class="mdi mdi-comment-outline" style="font-size: 14px"></span>
             <span>{{ formatNumber(local.commentCount) }}</span>
           </div>
         </div>
@@ -150,7 +151,7 @@
               <span v-for="(tag, i) in local.tags" :key="i" class="md-tag">
                 {{ tag }}
                 <button class="md-tag-remove" @click="removeTag(i)">
-                  <v-icon size="12">mdi-close</v-icon>
+                  <i class="pi pi-times" style="font-size: 12px"></i>
                 </button>
               </span>
             </div>
@@ -182,16 +183,18 @@
       <div class="md-footer">
         <button class="md-btn md-btn--cancel" @click="cancel">{{ $t('media.cancel') }}</button>
         <button class="md-btn md-btn--confirm" :disabled="!local.title?.trim()" @click="save">
-          <v-icon size="14">mdi-check</v-icon>
+          <i class="pi pi-check" style="font-size: 14px"></i>
           {{ $t('media.save') }}
         </button>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, h, type FunctionalComponent } from 'vue';
+import Dialog from 'primevue/dialog';
 import type { MediaMetadata } from '../../types';
 import api from '../../services/api';
 

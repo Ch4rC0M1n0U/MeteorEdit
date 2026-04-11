@@ -1,11 +1,11 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="720" persistent>
+  <Dialog :visible="modelValue" @update:visible="$emit('update:modelValue', $event)" modal :style="{ width: '720px' }" :closable="false">
     <div class="wc-dialog glass-card">
       <div class="wc-header">
-        <v-icon size="20" class="wc-header-icon">mdi-web-check</v-icon>
+        <span class="mdi mdi-web-check wc-header-icon" style="font-size: 20px"></span>
         <span>{{ $t('webcheck.title') }}</span>
         <button class="wc-close" @click="close">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px"></i>
         </button>
       </div>
 
@@ -13,13 +13,13 @@
       <div v-if="!parsed" class="wc-body">
         <p class="wc-desc">{{ $t('webcheck.description') }}</p>
         <div class="wc-drop-zone" @dragover.prevent @drop.prevent="onDrop" @click="triggerFileInput">
-          <v-icon size="32" color="var(--me-text-muted)">mdi-file-upload-outline</v-icon>
+          <span class="mdi mdi-file-upload-outline" style="font-size: 32px; color: var(--me-text-muted)"></span>
           <span class="wc-drop-label">{{ $t('webcheck.dropOrClick') }}</span>
           <span class="wc-drop-hint">.json</span>
         </div>
         <input ref="fileInput" type="file" accept=".json" style="display:none" @change="onFileSelect" />
         <div v-if="parseError" class="wc-error">
-          <v-icon size="14">mdi-alert-circle-outline</v-icon>
+          <span class="mdi mdi-alert-circle-outline" style="font-size: 14px"></span>
           {{ parseError }}
         </div>
       </div>
@@ -28,9 +28,9 @@
       <div v-else class="wc-body">
         <div class="wc-domain-header">
           <div class="wc-domain-info">
-            <v-icon size="18" color="var(--me-accent)">mdi-web</v-icon>
+            <span class="mdi mdi-web" style="font-size: 18px; color: var(--me-accent)"></span>
             <span class="wc-domain-name">{{ domain }}</span>
-            <v-chip size="x-small" variant="tonal" color="primary">{{ $t('webcheck.domainDetected') }}</v-chip>
+            <Tag severity="info" style="font-size: 10px;">{{ $t('webcheck.domainDetected') }}</Tag>
           </div>
           <div class="wc-select-actions">
             <button class="wc-link-btn" @click="toggleAll(true)">{{ $t('webcheck.selectAll') }}</button>
@@ -61,14 +61,14 @@
         </div>
 
         <div v-if="parseError" class="wc-error" style="margin-top: 8px;">
-          <v-icon size="14">mdi-alert-circle-outline</v-icon>
+          <span class="mdi mdi-alert-circle-outline" style="font-size: 14px"></span>
           {{ parseError }}
         </div>
       </div>
 
       <div v-if="parsed" class="wc-footer">
         <button class="wc-btn wc-btn--back" @click="reset">
-          <v-icon size="14">mdi-arrow-left</v-icon>
+          <span class="mdi mdi-arrow-left" style="font-size: 14px"></span>
           {{ $t('common.back') }}
         </button>
         <div class="wc-footer-right">
@@ -79,19 +79,21 @@
             :disabled="!selectedCount || importing"
             @click="doImport"
           >
-            <v-icon v-if="importing" size="14" class="wc-spin">mdi-loading</v-icon>
-            <v-icon v-else size="14">mdi-import</v-icon>
+            <span class="mdi mdi-loading wc-spin" style="font-size: 14px" v-if="importing"></span>
+            <span class="mdi mdi-import" style="font-size: 14px" v-else></span>
             {{ importing ? $t('webcheck.importing') : $t('webcheck.import') }}
           </button>
         </div>
       </div>
     </div>
-  </v-dialog>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import Tag from 'primevue/tag';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import FolderPicker from '../common/FolderPicker.vue';

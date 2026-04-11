@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="osint-header">
       <div class="osint-header-title">
-        <v-icon size="28" color="var(--me-accent)">mdi-search-web</v-icon>
+        <span class="mdi mdi-search-web" style="font-size: 28px; color: var(--me-accent);"></span>
         <h1>{{ t('osint.searchTitle') }}</h1>
       </div>
     </div>
@@ -11,7 +11,7 @@
     <!-- Search bar -->
     <div class="osint-search-bar glass-card">
       <div class="osint-search-input-wrapper">
-        <v-icon size="20" class="osint-search-icon">mdi-magnify</v-icon>
+        <span class="mdi mdi-magnify osint-search-icon" style="font-size: 20px;"></span>
         <input
           v-model="query"
           type="text"
@@ -19,9 +19,9 @@
           class="osint-search-input"
           @keydown.enter="doSearch(1)"
         />
-        <v-progress-circular v-if="loading" indeterminate size="20" width="2" color="var(--me-accent)" class="osint-search-spinner" />
+        <ProgressSpinner v-if="loading" style="width: 20px; height: 20px;" strokeWidth="2" class="osint-search-spinner" />
         <button v-else class="me-btn me-btn-accent" :disabled="!query.trim()" @click="doSearch(1)">
-          <v-icon size="16" class="mr-1">mdi-magnify</v-icon>
+          <i class="pi pi-search" style="font-size: 16px; margin-right: 4px;"></i>
           {{ t('common.search') }}
         </button>
       </div>
@@ -35,7 +35,7 @@
           :class="{ active: activeCategory === cat.key }"
           @click="setCategory(cat.key)"
         >
-          <v-icon size="14" class="mr-1">{{ cat.icon }}</v-icon>
+          <span :class="['mdi', cat.icon]" style="font-size: 14px; margin-right: 4px;"></span>
           {{ cat.label }}
         </button>
       </div>
@@ -49,7 +49,7 @@
           :class="{ active: activeCategory === dork.key }"
           @click="setCategory(dork.key)"
         >
-          <v-icon size="14">{{ dork.icon }}</v-icon>
+          <span :class="['mdi', dork.icon]" style="font-size: 14px;"></span>
           <span>{{ dork.label }}</span>
         </button>
       </div>
@@ -59,19 +59,19 @@
     <div class="osint-results">
       <!-- Loading -->
       <div v-if="loading" class="osint-loading glass-card">
-        <v-progress-circular indeterminate size="32" width="3" color="var(--me-accent)" />
+        <ProgressSpinner style="width: 32px; height: 32px;" strokeWidth="3" />
         <span>{{ t('osint.searching') }}</span>
       </div>
 
       <!-- Telegram not connected notice -->
       <div v-if="telegramNotConnected && activeCategory === 'telegram-direct'" class="osint-telegram-notice glass-card">
-        <v-icon size="18" color="warning">mdi-alert</v-icon>
+        <span class="mdi mdi-alert" style="font-size: 18px; color: #f59e0b;"></span>
         <span>{{ t('osint.telegramNotConnected') }}</span>
       </div>
 
       <!-- No results -->
       <div v-else-if="searched && results.length === 0" class="osint-no-results glass-card">
-        <v-icon size="48" color="var(--me-text-muted)">mdi-magnify-close</v-icon>
+        <span class="mdi mdi-magnify-close" style="font-size: 48px; color: var(--me-text-muted);"></span>
         <span>{{ t('osint.noResults') }}</span>
       </div>
 
@@ -108,11 +108,11 @@
 
           <div class="osint-result-actions">
             <a :href="result.url" target="_blank" rel="noopener noreferrer" class="me-btn me-btn-ghost">
-              <v-icon size="14" class="mr-1">mdi-open-in-new</v-icon>
+              <span class="mdi mdi-open-in-new" style="font-size: 14px; margin-right: 4px;"></span>
               {{ t('osint.openLink') }}
             </a>
             <button class="me-btn me-btn-ghost" @click="openExportDialog(result)">
-              <v-icon size="14" class="mr-1">mdi-export-variant</v-icon>
+              <span class="mdi mdi-export-variant" style="font-size: 14px; margin-right: 4px;"></span>
               {{ t('osint.exportToNote') }}
             </button>
           </div>
@@ -121,67 +121,76 @@
         <!-- Pagination -->
         <div class="osint-pagination">
           <button class="me-btn me-btn-ghost" :disabled="currentPage <= 1" @click="doSearch(currentPage - 1)">
-            <v-icon size="14" class="mr-1">mdi-chevron-left</v-icon>
+            <span class="mdi mdi-chevron-left" style="font-size: 14px; margin-right: 4px;"></span>
             {{ t('osint.previousPage') }}
           </button>
           <span class="osint-pagination-page">{{ currentPage }}</span>
           <button class="me-btn me-btn-ghost" :disabled="results.length < 10" @click="doSearch(currentPage + 1)">
             {{ t('osint.nextPage') }}
-            <v-icon size="14" class="ml-1">mdi-chevron-right</v-icon>
+            <span class="mdi mdi-chevron-right" style="font-size: 14px; margin-left: 4px;"></span>
           </button>
         </div>
       </template>
     </div>
 
     <!-- Export dialog -->
-    <v-dialog v-model="exportDialogOpen" max-width="480" persistent>
+    <Dialog v-model:visible="exportDialogOpen" modal :style="{ width: '480px' }" :closable="false">
+      <template #container>
       <div class="glass-card osint-export-dialog">
         <div class="osint-export-header">
           <h3>{{ t('osint.exportToNote') }}</h3>
           <button class="me-btn-icon" @click="exportDialogOpen = false">
-            <v-icon size="18">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 18px;"></i>
           </button>
         </div>
 
         <p v-if="exportResult" class="osint-export-title">{{ exportResult.title }}</p>
 
-        <v-autocomplete
-          v-model="selectedDossierId"
-          :items="dossiers"
-          item-title="title"
-          item-value="_id"
-          :label="t('osint.selectDossier')"
-          variant="outlined"
-          density="compact"
-          hide-details
-          class="mb-4"
-        />
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 13px; font-weight: 500; color: var(--me-text-secondary); margin-bottom: 4px; display: block;">{{ t('osint.selectDossier') }}</label>
+          <Select
+            v-model="selectedDossierId"
+            :options="dossiers"
+            optionLabel="title"
+            optionValue="_id"
+            filter
+            :placeholder="t('osint.selectDossier')"
+            style="width: 100%;"
+          />
+        </div>
 
         <div class="osint-export-actions">
           <button class="me-btn me-btn-ghost" @click="exportDialogOpen = false">
             {{ t('common.cancel') }}
           </button>
           <button class="me-btn me-btn-accent" :disabled="!selectedDossierId || exporting" @click="doExport">
-            <v-progress-circular v-if="exporting" indeterminate size="14" width="2" class="mr-1" />
-            <v-icon v-else size="14" class="mr-1">mdi-export-variant</v-icon>
+            <ProgressSpinner v-if="exporting" style="width: 14px; height: 14px; margin-right: 4px;" strokeWidth="2" />
+            <span v-else class="mdi mdi-export-variant" style="font-size: 14px; margin-right: 4px;"></span>
             {{ t('common.confirm') }}
           </button>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
 
-    <!-- Snackbar -->
-    <v-snackbar v-model="snackbar" :timeout="3000" color="success" location="bottom right">
-      {{ snackbarText }}
-    </v-snackbar>
+    <!-- Notification -->
+    <Teleport to="body">
+      <div v-if="snackbar" class="osint-snackbar">
+        <i class="pi pi-check" style="font-size: 14px; margin-right: 6px;"></i>
+        {{ snackbarText }}
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import api from '../services/api';
+import Dialog from 'primevue/dialog';
+import Select from 'primevue/select';
+import ProgressSpinner from 'primevue/progressspinner';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -217,6 +226,10 @@ const dossiers = ref<Array<{ _id: string; title: string }>>([]);
 // Snackbar
 const snackbar = ref(false);
 const snackbarText = ref('');
+
+watch(snackbar, (val) => {
+  if (val) setTimeout(() => { snackbar.value = false; }, 3000);
+});
 
 // Categories
 const categories = computed(() => [
@@ -735,5 +748,25 @@ async function doExport() {
   .osint-result-actions {
     flex-direction: column;
   }
+}
+.osint-snackbar {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #22c55e;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  animation: osint-snack-in 0.2s ease;
+}
+@keyframes osint-snack-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

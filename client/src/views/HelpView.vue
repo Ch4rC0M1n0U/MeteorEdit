@@ -2,12 +2,12 @@
   <div class="help-root">
     <aside class="help-sidebar glass-card">
       <div class="help-sidebar-header">
-        <v-icon size="20" class="mr-2">mdi-help-circle-outline</v-icon>
+        <span class="mdi mdi-help-circle-outline" style="font-size: 20px; margin-right: 8px;"></span>
         <span>Aide</span>
       </div>
 
       <div class="help-search">
-        <v-icon size="16" class="help-search-icon">mdi-magnify</v-icon>
+        <span class="mdi mdi-magnify help-search-icon" style="font-size: 16px;"></span>
         <input
           v-model="searchQuery"
           type="text"
@@ -16,7 +16,7 @@
           @input="onSearch"
         />
         <button v-if="searchQuery" class="help-search-clear" @click="searchQuery = ''; searchResults = []">
-          <v-icon size="14">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 14px;"></i>
         </button>
       </div>
 
@@ -28,7 +28,7 @@
           :class="{ active: activeArticle === result.id }"
           @click="goToArticle(result.id)"
         >
-          <v-icon size="14" class="mr-2">{{ result.icon }}</v-icon>
+          <span :class="['mdi', result.icon]" style="font-size: 14px; margin-right: 8px;"></span>
           <div class="help-nav-text">
             <span class="help-nav-title">{{ result.title }}</span>
             <span class="help-nav-match">{{ result.match }}</span>
@@ -39,9 +39,9 @@
       <nav v-else class="help-nav">
         <div v-for="cat in categories" :key="cat.id" class="help-nav-group">
           <button class="help-nav-category" @click="toggleCategory(cat.id)">
-            <v-icon size="14" class="mr-2">{{ cat.icon }}</v-icon>
+            <span :class="['mdi', cat.icon]" style="font-size: 14px; margin-right: 8px;"></span>
             {{ cat.label }}
-            <v-icon size="12" class="help-nav-chevron">{{ expandedCategories.has(cat.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+            <span :class="['mdi', expandedCategories.has(cat.id) ? 'mdi-chevron-down' : 'mdi-chevron-right']" class="help-nav-chevron" style="font-size: 12px;"></span>
           </button>
           <div v-if="expandedCategories.has(cat.id)" class="help-nav-items">
             <button
@@ -60,12 +60,12 @@
 
     <main class="help-content">
       <div v-if="!activeArticle" class="help-welcome glass-card">
-        <v-icon size="48" color="var(--me-accent)">mdi-book-open-variant</v-icon>
+        <span class="mdi mdi-book-open-variant" style="font-size: 48px; color: var(--me-accent);"></span>
         <h1>Centre d'aide</h1>
         <p>Bienvenue dans l'aide de <strong>{{ brandingStore.appName }}</strong>. Sélectionnez une rubrique ou utilisez la recherche pour trouver rapidement ce dont vous avez besoin.</p>
         <div class="help-quick-cards">
           <button v-for="cat in categories" :key="cat.id" class="help-quick-card glass-card" @click="toggleCategory(cat.id); goToArticle(cat.articles[0]?.id ?? '')">
-            <v-icon size="24">{{ cat.icon }}</v-icon>
+            <span :class="['mdi', cat.icon]" style="font-size: 24px;"></span>
             <span>{{ cat.label }}</span>
           </button>
         </div>
@@ -73,7 +73,7 @@
 
       <article v-else class="help-article glass-card">
         <button class="help-back-btn" @click="activeArticle = null">
-          <v-icon size="16">mdi-arrow-left</v-icon> Retour
+          <span class="mdi mdi-arrow-left" style="font-size: 16px;"></span> Retour
         </button>
         <component :is="currentArticleComponent" />
       </article>

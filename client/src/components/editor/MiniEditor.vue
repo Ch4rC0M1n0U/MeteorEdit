@@ -3,20 +3,20 @@
     <span v-if="label" class="mini-editor-label mono">{{ label }}</span>
     <div class="mini-editor-toolbar">
       <button type="button" @click="editor?.chain().focus().toggleBold().run()" :class="{ active: editor?.isActive('bold') }" title="Gras">
-        <v-icon size="16">mdi-format-bold</v-icon>
+        <span class="mdi mdi-format-bold" style="font-size: 16px"></span>
       </button>
       <button type="button" @click="editor?.chain().focus().toggleItalic().run()" :class="{ active: editor?.isActive('italic') }" title="Italique">
-        <v-icon size="16">mdi-format-italic</v-icon>
+        <span class="mdi mdi-format-italic" style="font-size: 16px"></span>
       </button>
       <button type="button" @click="editor?.chain().focus().toggleUnderline().run()" :class="{ active: editor?.isActive('underline') }" title="Souligné">
-        <v-icon size="16">mdi-format-underline</v-icon>
+        <span class="mdi mdi-format-underline" style="font-size: 16px"></span>
       </button>
       <span class="mini-editor-sep" />
       <button type="button" @click="editor?.chain().focus().toggleBulletList().run()" :class="{ active: editor?.isActive('bulletList') }" title="Liste">
-        <v-icon size="16">mdi-format-list-bulleted</v-icon>
+        <span class="mdi mdi-format-list-bulleted" style="font-size: 16px"></span>
       </button>
       <button type="button" @click="editor?.chain().focus().toggleOrderedList().run()" :class="{ active: editor?.isActive('orderedList') }" title="Liste numérotée">
-        <v-icon size="16">mdi-format-list-numbered</v-icon>
+        <span class="mdi mdi-format-list-numbered" style="font-size: 16px"></span>
       </button>
     </div>
     <EditorContent :editor="editor" class="mini-editor-content" />

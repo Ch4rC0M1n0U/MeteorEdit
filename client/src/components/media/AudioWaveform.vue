@@ -13,12 +13,12 @@
     <div class="aw-controls">
       <!-- Play/Pause -->
       <button class="aw-btn aw-btn--play" @click="togglePlay" :title="isPlaying ? 'Pause' : 'Play'">
-        <v-icon size="22">{{ isPlaying ? 'mdi-pause' : 'mdi-play' }}</v-icon>
+        <span :class="['mdi', isPlaying ? 'mdi-pause' : 'mdi-play']" style="font-size: 22px"></span>
       </button>
 
       <!-- Stop -->
       <button class="aw-btn" @click="stop" title="Stop">
-        <v-icon size="18">mdi-stop</v-icon>
+        <i class="pi pi-stop" style="font-size: 18px"></i>
       </button>
 
       <!-- Time -->
@@ -39,28 +39,28 @@
 
       <!-- Loop toggle -->
       <button class="aw-btn" :class="{ 'aw-btn--active': loopEnabled }" @click="toggleLoop" :title="t('media.loop')">
-        <v-icon size="16">mdi-repeat</v-icon>
+        <span class="mdi mdi-repeat" style="font-size: 16px"></span>
       </button>
 
       <!-- Spectrogram toggle -->
       <button class="aw-btn" :class="{ 'aw-btn--active': showSpectrogram }" @click="showSpectrogram = !showSpectrogram" :title="t('media.spectrogram')">
-        <v-icon size="16">mdi-chart-bar</v-icon>
+        <span class="mdi mdi-chart-bar" style="font-size: 16px"></span>
       </button>
 
       <!-- Audio filters toggle -->
       <button class="aw-btn" :class="{ 'aw-btn--active': showFilters }" @click="showFilters = !showFilters" :title="t('media.audioFilters')">
-        <v-icon size="16">mdi-tune-variant</v-icon>
+        <span class="mdi mdi-tune-variant" style="font-size: 16px"></span>
       </button>
 
       <!-- Zoom -->
       <div class="aw-zoom">
-        <v-icon size="14" color="var(--me-text-muted)">mdi-magnify</v-icon>
+        <i class="pi pi-search" style="font-size: 14px; color: var(--me-text-muted)"></i>
         <input type="range" min="1" max="200" step="1" v-model.number="zoomLevel" class="aw-zoom-slider" :title="t('media.zoom')" />
       </div>
 
       <!-- Volume -->
       <div class="aw-volume">
-        <v-icon size="16" color="var(--me-text-muted)">{{ volume === 0 ? 'mdi-volume-off' : 'mdi-volume-high' }}</v-icon>
+        <span :class="['mdi', volume === 0 ? 'mdi-volume-off' : 'mdi-volume-high']" style="font-size: 16px; color: var(--me-text-muted)"></span>
         <input type="range" min="0" max="1" step="0.05" v-model.number="volume" class="aw-volume-slider" />
       </div>
     </div>
@@ -68,10 +68,10 @@
     <!-- Audio Filters Panel -->
     <div v-if="showFilters" class="aw-filters">
       <div class="aw-filters-header">
-        <v-icon size="16">mdi-tune-variant</v-icon>
+        <span class="mdi mdi-tune-variant" style="font-size: 16px"></span>
         <span>{{ t('media.audioFilters') }}</span>
         <button class="aw-filters-reset" @click="resetFilters">
-          <v-icon size="14">mdi-refresh</v-icon>
+          <i class="pi pi-refresh" style="font-size: 14px"></i>
           {{ t('media.resetFilters') }}
         </button>
       </div>
@@ -79,19 +79,19 @@
       <!-- Presets -->
       <div class="aw-presets">
         <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'voice' }" @click="applyPreset('voice')">
-          <v-icon size="14">mdi-account-voice</v-icon>
+          <span class="mdi mdi-account-voice" style="font-size: 14px"></span>
           {{ t('media.presetVoice') }}
         </button>
         <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'background' }" @click="applyPreset('background')">
-          <v-icon size="14">mdi-music-note</v-icon>
+          <span class="mdi mdi-music-note" style="font-size: 14px"></span>
           {{ t('media.presetBackground') }}
         </button>
         <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'clarity' }" @click="applyPreset('clarity')">
-          <v-icon size="14">mdi-ear-hearing</v-icon>
+          <span class="mdi mdi-ear-hearing" style="font-size: 14px"></span>
           {{ t('media.presetClarity') }}
         </button>
         <button class="aw-preset-btn" :class="{ 'aw-preset-btn--active': activePreset === 'bass' }" @click="applyPreset('bass')">
-          <v-icon size="14">mdi-speaker</v-icon>
+          <span class="mdi mdi-speaker" style="font-size: 14px"></span>
           {{ t('media.presetBass') }}
         </button>
       </div>

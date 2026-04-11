@@ -2,7 +2,7 @@
   <div class="mdl-downloader">
     <!-- Header -->
     <div class="mdl-header">
-      <v-icon size="16">mdi-download</v-icon>
+      <i class="pi pi-download" style="font-size: 16px"></i>
       <span class="mdl-title">{{ t('media.download.title') }}</span>
     </div>
 
@@ -20,7 +20,7 @@
         />
         <!-- Platform badge -->
         <div v-if="detectedPlatform" class="mdl-platform-badge" :class="`mdl-platform--${detectedPlatform.key}`">
-          <v-icon size="14">{{ detectedPlatform.icon }}</v-icon>
+          <span :class="['mdi', detectedPlatform.icon]" style="font-size: 14px"></span>
           <span>{{ detectedPlatform.label }}</span>
         </div>
       </div>
@@ -30,15 +30,15 @@
         :disabled="!canDownload"
         @click="startDownload"
       >
-        <v-icon v-if="downloading" size="14" class="mdl-spin">mdi-loading</v-icon>
-        <v-icon v-else size="14">mdi-download</v-icon>
+        <span class="mdi mdi-loading mdl-spin" style="font-size: 14px" v-if="downloading"></span>
+        <i class="pi pi-download" style="font-size: 14px" v-else></i>
         {{ t('media.download.button') }}
       </button>
     </div>
 
     <!-- Tracking params warning -->
     <div v-if="hasTrackingParams && !downloading" class="mdl-tracking-warning">
-      <v-icon size="14">mdi-link-variant-off</v-icon>
+      <span class="mdi mdi-link-variant-off" style="font-size: 14px"></span>
       <span>{{ t('media.download.trackingParams') }}</span>
       <button class="mdl-clean-btn" @click="autoCleanUrl">
         {{ t('media.download.cleanUrl') }}
@@ -47,7 +47,7 @@
 
     <!-- Cookie warning -->
     <div v-if="cookieWarning" class="mdl-cookie-warning">
-      <v-icon size="14">mdi-cookie-alert-outline</v-icon>
+      <span class="mdi mdi-cookie-alert-outline" style="font-size: 14px"></span>
       <span>{{ t('media.download.noCookies', { platform: detectedPlatform?.label || '' }) }}</span>
       <button class="mdl-cookie-link" @click="$emit('openSessionManager')">
         {{ t('media.download.sessionManager') }}
@@ -76,8 +76,8 @@
 
       <!-- Status message -->
       <div v-if="statusMessage" class="mdl-status-msg" :class="{ 'mdl-status-msg--error': downloadError }">
-        <v-icon v-if="downloadComplete" size="14" color="success">mdi-check-circle</v-icon>
-        <v-icon v-else-if="downloadError" size="14" color="error">mdi-alert-circle</v-icon>
+        <span class="mdi mdi-check-circle" style="font-size: 14px; color: success" v-if="downloadComplete"></span>
+        <span class="mdi mdi-alert-circle" style="font-size: 14px; color: error" v-else-if="downloadError"></span>
         <span>{{ statusMessage }}</span>
       </div>
 
@@ -87,7 +87,7 @@
         class="mdl-btn mdl-btn--cancel"
         @click="cancelDownload"
       >
-        <v-icon size="14">mdi-close</v-icon>
+        <i class="pi pi-times" style="font-size: 14px"></i>
         {{ t('media.download.cancel') }}
       </button>
     </div>

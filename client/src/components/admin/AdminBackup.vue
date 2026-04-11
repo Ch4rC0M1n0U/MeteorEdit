@@ -2,31 +2,31 @@
   <div class="admin-backup">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-backup-restore</v-icon>
+        <span class="mdi mdi-backup-restore" style="font-size: 20px; margin-right: 8px;"></span>
         Sauvegarde & Restauration
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.backupSubtitle') }}</p>
     </div>
 
-    <v-alert v-if="error" type="error" variant="tonal" closable class="mb-4" @click:close="error = ''">
+    <Message v-if="error" severity="error" closable @close="error = ''" style="margin-bottom: 16px;">
       {{ error }}
-    </v-alert>
+    </Message>
 
-    <v-alert v-if="success" type="success" variant="tonal" closable class="mb-4" @click:close="success = ''">
+    <Message v-if="success" severity="success" closable @close="success = ''" style="margin-bottom: 16px;">
       {{ success }}
-    </v-alert>
+    </Message>
 
     <!-- Export -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-cloud-download-outline</v-icon>
+        <i class="pi pi-cloud-download" style="font-size: 18px; color: var(--me-accent);"></i>
         <h3 class="sec-card-title mono">{{ $t('admin.exportBackup') }}</h3>
       </div>
       <p class="sec-desc mb-4">
         {{ $t('admin.exportBackupDesc') }}
       </p>
       <button class="me-btn-primary" @click="exportBackup" :disabled="exporting">
-        <v-icon size="14" class="mr-1">mdi-download</v-icon>
+        <i class="pi pi-download" style="font-size: 14px; margin-right: 4px;"></i>
         {{ exporting ? $t('admin.exportInProgress') : $t('admin.backupExport') }}
       </button>
     </div>
@@ -34,7 +34,7 @@
     <!-- Restore -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-cloud-upload-outline</v-icon>
+        <i class="pi pi-cloud-upload" style="font-size: 18px; color: var(--me-accent);"></i>
         <h3 class="sec-card-title mono">{{ $t('admin.restoreBackup') }}</h3>
       </div>
       <p class="sec-desc mb-2">
@@ -42,14 +42,14 @@
       </p>
       <div class="upload-zone" @dragover.prevent @drop.prevent="dropBackup">
         <div v-if="backupFile" class="upload-preview">
-          <v-icon size="24" color="var(--me-accent)">mdi-file-code-outline</v-icon>
+          <span class="mdi mdi-file-code-outline" style="font-size: 24px; color: var(--me-accent);"></span>
           <span class="upload-file-name">{{ backupFile.name }}</span>
           <button class="upload-remove-btn" @click="backupFile = null" :title="$t('admin.removeFile')">
-            <v-icon size="14">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 14px;"></i>
           </button>
         </div>
         <div v-else class="upload-placeholder" @click="triggerFileInput">
-          <v-icon size="28" color="var(--me-text-muted)">mdi-cloud-upload-outline</v-icon>
+          <i class="pi pi-cloud-upload" style="font-size: 28px; color: var(--me-text-muted);"></i>
           <span>{{ $t('admin.dragOrClickJson') }}</span>
         </div>
         <input ref="fileInput" type="file" accept=".json,application/json" hidden @change="handleFileSelect" />
@@ -60,7 +60,7 @@
           @click="restoreBackup"
           :disabled="!backupFile || restoring"
         >
-          <v-icon size="14" class="mr-1">mdi-upload</v-icon>
+          <i class="pi pi-upload" style="font-size: 14px; margin-right: 4px;"></i>
           {{ restoring ? $t('admin.restoreInProgress') : $t('admin.backupRestore') }}
         </button>
       </div>
@@ -73,6 +73,7 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useConfirm } from '../../composables/useConfirm';
+import Message from 'primevue/message';
 
 const { confirm } = useConfirm();
 const { t } = useI18n();

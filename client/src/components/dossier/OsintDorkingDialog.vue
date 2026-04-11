@@ -1,11 +1,12 @@
 <template>
-  <v-dialog v-model="model" max-width="680" persistent>
+  <Dialog v-model:visible="model" modal :style="{ width: '680px' }" :closable="false">
+    <template #container>
     <div class="od-dialog glass-card">
       <div class="od-header">
-        <v-icon size="20" class="od-header-icon">mdi-search-web</v-icon>
+        <span class="mdi mdi-search-web od-header-icon" style="font-size: 20px;"></span>
         <span class="mono">OSINT Dorking</span>
         <button class="od-close" @click="model = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
@@ -19,7 +20,7 @@
             class="od-type-card"
             @click="selectCategory(cat)"
           >
-            <v-icon size="24">{{ cat.icon }}</v-icon>
+            <span :class="'mdi ' + cat.icon" style="font-size: 24px;"></span>
             <span class="od-type-label">{{ cat.label }}</span>
             <span class="od-type-desc">{{ cat.desc }}</span>
           </button>
@@ -29,11 +30,11 @@
       <!-- Step 2: Input + context-aware dorks -->
       <div v-else-if="step === 'search'" class="od-body">
         <button class="od-back" @click="step = 'type'">
-          <v-icon size="14">mdi-arrow-left</v-icon> {{ t('common.back') }}
+          <i class="pi pi-arrow-left" style="font-size: 14px;"></i> {{ t('common.back') }}
         </button>
 
         <div class="od-search-header">
-          <v-icon size="20">{{ activeCategory!.icon }}</v-icon>
+          <span :class="'mdi ' + activeCategory!.icon" style="font-size: 20px;"></span>
           <span class="od-search-title">{{ activeCategory!.label }}</span>
         </div>
 
@@ -54,7 +55,7 @@
         <!-- Tips -->
         <div v-if="activeCategory!.tips.length" class="od-tips">
           <div class="od-tips-title">
-            <v-icon size="14">mdi-lightbulb-outline</v-icon>
+            <span class="mdi mdi-lightbulb-outline" style="font-size: 14px;"></span>
             {{ t('dossier.dorkTips') }}
           </div>
           <ul class="od-tips-list">
@@ -64,7 +65,7 @@
 
         <!-- Generate -->
         <button class="od-generate-btn" @click="generateDorks" :disabled="!hasInput">
-          <v-icon size="14">mdi-magnify</v-icon>
+          <i class="pi pi-search" style="font-size: 14px;"></i>
           {{ t('dossier.dorkGenerate') }}
         </button>
 
@@ -74,10 +75,10 @@
             <span class="od-section-title">{{ t('dossier.dorkResults') }} ({{ results.length }})</span>
             <div class="od-results-actions">
               <button class="od-action-btn" @click="copyAll" :title="t('dossier.copyAllDorks')">
-                <v-icon size="14">mdi-content-copy</v-icon>
+                <i class="pi pi-copy" style="font-size: 14px;"></i>
               </button>
               <button class="od-action-btn" @click="sendToNote" :title="t('dossier.dorksToNote')">
-                <v-icon size="14">mdi-note-plus-outline</v-icon>
+                <span class="mdi mdi-note-plus-outline" style="font-size: 14px;"></span>
               </button>
             </div>
           </div>
@@ -96,12 +97,14 @@
         </div>
       </div>
     </div>
-  </v-dialog>
+      </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
 import { useDossierStore } from '../../stores/dossier';
 import api from '../../services/api';
 

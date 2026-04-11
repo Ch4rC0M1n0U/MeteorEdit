@@ -1,22 +1,22 @@
 <template>
-  <v-dialog v-model="model" max-width="560" persistent>
+  <Dialog v-model:visible="model" modal :style="{ width: '560px' }" :closable="false">
     <div class="es-dialog glass-card">
       <div class="es-header">
-        <v-icon size="20" class="es-header-icon">mdi-download-outline</v-icon>
+        <span class="mdi mdi-download-outline es-header-icon" style="font-size: 20px;"></span>
         <span>{{ $t('dossier.exportDossier') }}</span>
         <button class="es-close" @click="model = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
       <div class="es-body">
         <div class="es-actions-top">
           <button class="es-link-btn" @click="selectAll">
-            <v-icon size="14">mdi-checkbox-multiple-marked-outline</v-icon>
+            <span class="mdi mdi-checkbox-multiple-marked-outline" style="font-size: 14px;"></span>
             {{ $t('dossier.selectAll') }}
           </button>
           <button class="es-link-btn" @click="deselectAll">
-            <v-icon size="14">mdi-checkbox-multiple-blank-outline</v-icon>
+            <span class="mdi mdi-checkbox-multiple-blank-outline" style="font-size: 14px;"></span>
             {{ $t('dossier.deselectAll') }}
           </button>
         </div>
@@ -56,17 +56,18 @@
         <div class="es-footer-btns">
           <button class="es-btn es-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
           <button class="es-btn es-btn--docx" @click="doExport('docx')" :disabled="selectedIds.size === 0">
-            <v-icon size="14">mdi-file-word-box</v-icon>
+            <span class="mdi mdi-file-word-box" style="font-size: 14px;"></span>
             DOCX
           </button>
         </div>
       </div>
     </div>
-  </v-dialog>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, defineComponent, h, resolveComponent } from 'vue';
+import { ref, computed, watch, defineComponent, h } from 'vue';
+import Dialog from 'primevue/dialog';
 import type { DossierNode } from '../../types';
 
 const model = defineModel<boolean>({ default: false });
@@ -193,16 +194,19 @@ const ExportNodeItem: any = defineComponent({
     const icon = computed(() => NODE_ICONS[props.node.type] || 'mdi-file');
 
     return () => {
-      const VIcon = resolveComponent('v-icon') as any;
       const nodeEl = h('div', {
         class: ['es-node', isSelected.value ? 'es-node--selected' : 'es-node--unselected'],
         style: { paddingLeft: `${props.depth * 20 + 8}px` },
         onClick: () => emit('toggle', props.node._id),
       }, [
-        h(VIcon, { size: 16, class: isSelected.value ? 'es-node-check es-node-check--active' : 'es-node-check' },
-          () => isSelected.value ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'
-        ),
-        h(VIcon, { size: 16, class: 'es-node-icon' }, () => icon.value),
+        h('span', {
+          class: ['mdi', isSelected.value ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline', isSelected.value ? 'es-node-check es-node-check--active' : 'es-node-check'],
+          style: { fontSize: '16px' },
+        }),
+        h('span', {
+          class: ['mdi', icon.value, 'es-node-icon'],
+          style: { fontSize: '16px' },
+        }),
         h('span', { class: 'es-node-title' }, props.node.title),
       ]);
 

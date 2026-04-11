@@ -2,30 +2,30 @@
   <div class="ds-editor">
     <div class="ds-toolbar">
       <div class="ds-toolbar-left">
-        <v-icon size="18" class="ds-toolbar-icon">mdi-table</v-icon>
+        <span class="mdi mdi-table ds-toolbar-icon" style="font-size: 18px"></span>
         <span class="ds-toolbar-title mono">{{ title }}</span>
         <span class="ds-toolbar-count mono">{{ filteredRows.length }}<template v-if="filteredRows.length !== rows.length"> / {{ rows.length }}</template> ligne{{ filteredRows.length > 1 ? 's' : '' }}</span>
       </div>
       <div class="ds-toolbar-actions">
         <div class="ds-search-wrap" v-if="showSearch">
-          <v-icon size="14" class="ds-search-icon">mdi-magnify</v-icon>
+          <i class="pi pi-search ds-search-icon" style="font-size: 14px"></i>
           <input v-model="searchQuery" class="ds-search-input" placeholder="Rechercher..." ref="searchInput" @keydown.escape="toggleSearch" />
-          <button class="ds-search-close" @click="toggleSearch"><v-icon size="14">mdi-close</v-icon></button>
+          <button class="ds-search-close" @click="toggleSearch"><i class="pi pi-times" style="font-size: 14px"></i></button>
         </div>
         <button class="ds-tb-btn" @click="toggleSearch" title="Rechercher (Ctrl+F)" v-if="!showSearch">
-          <v-icon size="14">mdi-magnify</v-icon>
+          <i class="pi pi-search" style="font-size: 14px"></i>
         </button>
         <button class="ds-tb-btn" @click="addColumn" title="Ajouter une colonne">
-          <v-icon size="14">mdi-table-column-plus-after</v-icon>
+          <span class="mdi mdi-table-column-plus-after" style="font-size: 14px"></span>
         </button>
         <button class="ds-tb-btn" @click="addRow" title="Ajouter une ligne">
-          <v-icon size="14">mdi-table-row-plus-after</v-icon>
+          <span class="mdi mdi-table-row-plus-after" style="font-size: 14px"></span>
         </button>
         <button class="ds-tb-btn" @click="exportCSV" title="Exporter CSV">
-          <v-icon size="14">mdi-download-outline</v-icon>
+          <i class="pi pi-download" style="font-size: 14px"></i>
         </button>
         <button class="ds-tb-btn" @click="importDialog = true" title="Importer CSV">
-          <v-icon size="14">mdi-upload-outline</v-icon>
+          <i class="pi pi-upload" style="font-size: 14px"></i>
         </button>
       </div>
     </div>
@@ -57,10 +57,10 @@
                   @click.stop
                 />
                 <button class="ds-th-sort" @click.stop="toggleSort(ci)" :title="sortCol === ci ? (sortDir === 'asc' ? 'Tri croissant' : 'Tri decroissant') : 'Trier'">
-                  <v-icon size="12">{{ sortCol === ci ? (sortDir === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending') : 'mdi-sort' }}</v-icon>
+                  <span :class="['mdi', sortCol === ci ? (sortDir === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending') : 'mdi-sort']" style="font-size: 12px"></span>
                 </button>
                 <button class="ds-col-remove" @click.stop="removeColumn(ci)" title="Supprimer la colonne" v-if="columns.length > 1">
-                  <v-icon size="12">mdi-close</v-icon>
+                  <i class="pi pi-times" style="font-size: 12px"></i>
                 </button>
               </div>
               <div class="ds-th-type" @click.stop>
@@ -138,7 +138,7 @@
             </td>
             <td class="ds-td-actions">
               <button class="ds-row-remove" @click="removeRow(row._idx)" title="Supprimer la ligne">
-                <v-icon size="12">mdi-close</v-icon>
+                <i class="pi pi-times" style="font-size: 12px"></i>
               </button>
             </td>
           </tr>
@@ -169,18 +169,19 @@
     </div>
 
     <!-- Import CSV dialog -->
-    <v-dialog v-model="importDialog" max-width="480">
+    <Dialog v-model:visible="importDialog" modal :style="{ width: '480px' }">
+      <template #container>
       <div class="glass-card ds-import-dialog">
         <div class="ds-import-header">
           <span>Importer CSV</span>
           <button class="ds-import-close" @click="importDialog = false">
-            <v-icon size="18">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 18px"></i>
           </button>
         </div>
         <div class="ds-import-body">
           <div class="ds-import-file">
             <label class="ds-file-label">
-              <v-icon size="16">mdi-file-upload</v-icon>
+              <span class="mdi mdi-file-upload" style="font-size: 16px"></span>
               {{ importFileName || 'Choisir un fichier CSV...' }}
               <input type="file" accept=".csv,.tsv,.txt" class="ds-file-input" @change="onFileImport" />
             </label>
@@ -206,12 +207,14 @@
           <button class="ds-btn-import" @click="doImport" :disabled="!importText.trim()">Importer</button>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
+import Dialog from 'primevue/dialog';
 import api from '../../services/api';
 
 type ColType = 'text' | 'number' | 'date' | 'boolean';

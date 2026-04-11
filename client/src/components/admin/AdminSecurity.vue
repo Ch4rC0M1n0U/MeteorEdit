@@ -2,18 +2,18 @@
   <div class="admin-security">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-shield-lock-outline</v-icon>
+        <span class="mdi mdi-shield-lock-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.security') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.securitySubtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- Maintenance -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-wrench-outline</v-icon>
+        <span class="mdi mdi-wrench-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.maintenanceMode') }}</h3>
       </div>
       <div class="sec-option">
@@ -21,23 +21,19 @@
           <p class="sec-label">{{ $t('admin.enableMaintenance') }}</p>
           <p class="sec-desc">{{ $t('admin.enableMaintenanceDesc') }}</p>
         </div>
-        <v-switch v-model="form.maintenanceMode" color="warning" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.maintenanceMode" @update:model-value="save" />
       </div>
-      <v-text-field
-        v-if="form.maintenanceMode"
+      <InputText v-if="form.maintenanceMode"
         v-model="form.maintenanceMessage"
         :label="$t('admin.maintenanceMessage')"
-        density="compact"
-        hide-details
         class="mt-3"
-        @blur="save"
-      />
+        @blur="save" />
     </div>
 
     <!-- Access Control -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-account-lock-outline</v-icon>
+        <span class="mdi mdi-account-lock-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.accessControl') }}</h3>
       </div>
       <div class="sec-option">
@@ -45,7 +41,7 @@
           <p class="sec-label">{{ $t('admin.openRegistration') }}</p>
           <p class="sec-desc">{{ $t('admin.openRegistrationDesc') }}</p>
         </div>
-        <v-switch v-model="form.registrationEnabled" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.registrationEnabled" @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -53,7 +49,7 @@
           <p class="sec-label">{{ $t('admin.require2FA') }}</p>
           <p class="sec-desc">{{ $t('admin.require2FADesc') }}</p>
         </div>
-        <v-switch v-model="form.require2FA" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.require2FA" @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -61,16 +57,12 @@
           <p class="sec-label">{{ $t('admin.sessionDuration') }}</p>
           <p class="sec-desc">{{ $t('admin.sessionDurationDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.sessionTimeoutMinutes"
+        <InputText v-model.number="form.sessionTimeoutMinutes"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="5"
           :max="43200"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div>
@@ -81,17 +73,12 @@
           </div>
         </div>
         <div class="sec-domain-row">
-          <v-text-field
-            v-model="newDomain"
+          <InputText v-model="newDomain"
             :placeholder="$t('admin.domainPlaceholder')"
-            density="compact"
-            hide-details
-            variant="outlined"
             style="max-width: 260px;"
-            @keyup.enter="addDomain"
-          />
+            @keyup.enter="addDomain" />
           <button class="sec-add-btn" @click="addDomain" :disabled="!newDomain.trim()">
-            <v-icon size="14">mdi-plus</v-icon>
+            <i class="pi pi-plus" style="font-size: 14px;"></i>
             {{ $t('common.add') }}
           </button>
         </div>
@@ -103,7 +90,7 @@
           >
             @{{ domain }}
             <button class="sec-domain-remove" @click="removeDomain(i)" :title="$t('common.delete')">
-              <v-icon size="12">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 12px;"></i>
             </button>
           </span>
         </div>
@@ -114,7 +101,7 @@
     <!-- Password Policy -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-form-textbox-password</v-icon>
+        <span class="mdi mdi-form-textbox-password" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.passwordPolicy') }}</h3>
       </div>
       <div class="sec-option">
@@ -122,16 +109,12 @@
           <p class="sec-label">{{ $t('admin.minLength') }}</p>
           <p class="sec-desc">{{ $t('admin.minLengthDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.passwordMinLength"
+        <InputText v-model.number="form.passwordMinLength"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="4"
           :max="128"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -139,7 +122,7 @@
           <p class="sec-label">{{ $t('admin.requireUppercase') }}</p>
           <p class="sec-desc">{{ $t('admin.requireUppercaseDesc') }}</p>
         </div>
-        <v-switch v-model="form.passwordRequireUppercase" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.passwordRequireUppercase" @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -147,7 +130,7 @@
           <p class="sec-label">{{ $t('admin.requireNumber') }}</p>
           <p class="sec-desc">{{ $t('admin.requireNumberDesc') }}</p>
         </div>
-        <v-switch v-model="form.passwordRequireNumber" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.passwordRequireNumber" @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -155,14 +138,14 @@
           <p class="sec-label">{{ $t('admin.requireSpecial') }}</p>
           <p class="sec-desc">{{ $t('admin.requireSpecialDesc') }}</p>
         </div>
-        <v-switch v-model="form.passwordRequireSpecial" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.passwordRequireSpecial" @update:model-value="save" />
       </div>
     </div>
 
     <!-- Brute Force Protection -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-lock-alert-outline</v-icon>
+        <span class="mdi mdi-lock-alert-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.bruteForceProtection') }}</h3>
       </div>
       <div class="sec-option">
@@ -170,16 +153,12 @@
           <p class="sec-label">{{ $t('admin.maxAttempts') }}</p>
           <p class="sec-desc">{{ $t('admin.maxAttemptsDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.maxLoginAttempts"
+        <InputText v-model.number="form.maxLoginAttempts"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="0"
           :max="100"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -187,22 +166,16 @@
           <p class="sec-label">{{ $t('admin.lockoutDuration') }}</p>
           <p class="sec-desc">{{ $t('admin.lockoutDurationDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.lockoutDurationMinutes"
+        <InputText v-model.number="form.lockoutDurationMinutes"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="1"
           :max="1440"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
     </div>
 
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      {{ $t('admin.settingsSaved') }}
-    </v-snackbar>
+    <!-- snackbar removed during migration -->
   </div>
 </template>
 
@@ -210,6 +183,9 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const { t } = useI18n();
 

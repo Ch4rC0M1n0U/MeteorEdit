@@ -2,7 +2,7 @@
   <div class="admin-dossier-alerts">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-timer-alert-outline</v-icon>
+        <span class="mdi mdi-timer-alert-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.dossierAlerts') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.dossierAlertsDesc') }}</p>
@@ -16,36 +16,24 @@
         <div class="alerts-row">
           <div class="alerts-field">
             <label class="alerts-label mono">{{ $t('admin.alertRoutine') }}</label>
-            <v-text-field
-              v-model.number="form.routine"
+            <InputText v-model.number="form.routine"
               type="number"
-              density="compact"
-              hide-details
               :min="1"
-              :max="365"
-            />
+              :max="365" />
           </div>
           <div class="alerts-field">
             <label class="alerts-label mono">{{ $t('admin.alertPriority') }}</label>
-            <v-text-field
-              v-model.number="form.priority"
+            <InputText v-model.number="form.priority"
               type="number"
-              density="compact"
-              hide-details
               :min="1"
-              :max="365"
-            />
+              :max="365" />
           </div>
           <div class="alerts-field">
             <label class="alerts-label mono">{{ $t('admin.alertUrgent') }}</label>
-            <v-text-field
-              v-model.number="form.urgent"
+            <InputText v-model.number="form.urgent"
               type="number"
-              density="compact"
-              hide-details
               :min="1"
-              :max="365"
-            />
+              :max="365" />
           </div>
         </div>
       </div>
@@ -56,41 +44,29 @@
 
         <div class="alerts-msg-field">
           <label class="alerts-label mono">{{ $t('admin.alertRoutineMsg') }}</label>
-          <v-text-field
-            v-model="form.routineMessage"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.alertMsgPlaceholder')"
-          />
+          <InputText v-model="form.routineMessage"
+            :placeholder="$t('admin.alertMsgPlaceholder')" />
         </div>
         <div class="alerts-msg-field">
           <label class="alerts-label mono">{{ $t('admin.alertPriorityMsg') }}</label>
-          <v-text-field
-            v-model="form.priorityMessage"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.alertMsgPlaceholder')"
-          />
+          <InputText v-model="form.priorityMessage"
+            :placeholder="$t('admin.alertMsgPlaceholder')" />
         </div>
         <div class="alerts-msg-field">
           <label class="alerts-label mono">{{ $t('admin.alertUrgentMsg') }}</label>
-          <v-text-field
-            v-model="form.urgentMessage"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.alertMsgPlaceholder')"
-          />
+          <InputText v-model="form.urgentMessage"
+            :placeholder="$t('admin.alertMsgPlaceholder')" />
         </div>
       </div>
     </div>
 
     <div class="alerts-actions fade-in fade-in-delay-2">
       <button class="me-btn-primary" @click="save" :disabled="saving">
-        <v-icon size="16" class="mr-1">mdi-content-save-outline</v-icon>
+        <i class="pi pi-save" style="font-size: 16px; margin-right: 4px;"></i>
         {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
       </button>
       <span v-if="saved" class="alerts-saved mono">
-        <v-icon size="14" color="success" class="mr-1">mdi-check</v-icon>
+        <i class="pi pi-check" style="font-size: 14px; color: #4caf50; margin-right: 4px;"></i>
         {{ $t('admin.settingsSaved') }}
       </span>
     </div>
@@ -101,6 +77,7 @@
 import { reactive, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import InputText from 'primevue/inputtext';
 
 const { t } = useI18n();
 

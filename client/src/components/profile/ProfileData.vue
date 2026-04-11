@@ -2,7 +2,7 @@
   <div class="profile-data">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-database-outline</v-icon>
+        <span class="mdi mdi-database-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('data.title') }}
       </h2>
     </div>
@@ -10,20 +10,16 @@
     <!-- Storage Usage -->
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <h3 class="branding-card-title mono">
-        <v-icon size="18" class="mr-2">mdi-harddisk</v-icon>
+        <span class="mdi mdi-harddisk" style="font-size: 18px; margin-right: 8px;"></span>
         {{ $t('data.storage') }}
       </h3>
       <div v-if="storageLoading" class="storage-loading">
-        <v-progress-circular indeterminate size="24" width="2" />
+        <ProgressSpinner style="width: 24px; height: 24px;" strokeWidth="2" />
       </div>
       <div v-else class="storage-info">
-        <v-progress-linear
-          :model-value="storagePercent"
-          :color="storagePercent > 80 ? 'error' : storagePercent > 50 ? 'warning' : 'primary'"
-          height="8"
-          rounded
-          class="mb-3"
-        />
+        <div class="storage-bar mb-3">
+          <div class="storage-bar-fill" :style="{ width: storagePercent + '%', background: storagePercent > 80 ? '#f87171' : storagePercent > 50 ? '#fb923c' : 'var(--me-accent)' }" />
+        </div>
         <p class="storage-text mono">
           {{ $t('data.used', { size: formatBytes(storage.used), files: storage.files }) }}
         </p>
@@ -34,7 +30,7 @@
     <!-- Export Data (RGPD) -->
     <div class="branding-card glass-card fade-in fade-in-delay-2">
       <h3 class="branding-card-title mono">
-        <v-icon size="18" class="mr-2">mdi-shield-account-outline</v-icon>
+        <span class="mdi mdi-shield-account-outline" style="font-size: 18px; margin-right: 8px;"></span>
         {{ $t('data.rgpdExport') }}
       </h3>
       <p class="branding-card-desc">
@@ -42,20 +38,20 @@
       </p>
       <div class="branding-actions mt-3">
         <button class="me-btn-primary" @click="exportData" :disabled="exporting">
-          <v-progress-circular v-if="exporting" indeterminate size="14" width="2" class="mr-2" />
-          <v-icon v-else size="16" class="mr-1">mdi-download</v-icon>
+          <ProgressSpinner v-if="exporting" style="width: 14px; height: 14px; margin-right: 8px;" strokeWidth="2" />
+          <i v-else class="pi pi-download" style="font-size: 16px; margin-right: 4px;"></i>
           {{ exporting ? $t('data.exporting') : $t('data.exportData') }}
         </button>
       </div>
-      <v-alert v-if="exportError" type="error" variant="tonal" class="mt-3" closable @click:close="exportError = ''">
+      <Message v-if="exportError" severity="error" :closable="true" @close="exportError = ''" class="mt-3">
         {{ exportError }}
-      </v-alert>
+      </Message>
     </div>
 
     <!-- Danger Zone -->
     <div class="branding-card glass-card fade-in fade-in-delay-3 danger-zone">
       <h3 class="branding-card-title mono danger-title">
-        <v-icon size="18" class="mr-2" color="error">mdi-alert-octagon-outline</v-icon>
+        <span class="mdi mdi-alert-octagon-outline" style="font-size: 18px; margin-right: 8px; color: #f87171;"></span>
         {{ $t('data.dangerZone') }}
       </h3>
       <p class="branding-card-desc">
@@ -63,46 +59,48 @@
       </p>
       <div class="branding-actions mt-3">
         <button class="me-btn-danger" @click="showDeleteDialog = true">
-          <v-icon size="16" class="mr-1">mdi-trash-can-outline</v-icon>
+          <i class="pi pi-trash" style="font-size: 16px; margin-right: 4px;"></i>
           {{ $t('data.deleteAccount') }}
         </button>
       </div>
     </div>
 
     <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="showDeleteDialog" max-width="480" persistent>
-      <div class="glass-card dialog-card">
-        <h3 class="dialog-title mono">
-          <v-icon size="20" class="mr-2" color="error">mdi-alert-outline</v-icon>
-          {{ $t('data.deleteConfirmTitle') }}
-        </h3>
-        <v-alert type="error" variant="tonal" class="mb-4">
-          {{ $t('data.deleteConfirmAlert') }}
-        </v-alert>
-        <p class="dialog-desc mb-3">
-          {{ $t('data.deleteConfirmPrompt') }}
-        </p>
-        <v-text-field
-          v-model="deletePassword"
-          :label="$t('auth.password')"
-          type="password"
-          density="compact"
-          hide-details
-          class="mb-4"
-          @keyup.enter="deleteAccount"
-        />
-        <v-alert v-if="deleteError" type="error" variant="tonal" class="mb-3" closable @click:close="deleteError = ''">
-          {{ deleteError }}
-        </v-alert>
-        <div class="dialog-actions">
-          <button class="me-btn-ghost" @click="cancelDelete" :disabled="deleting">{{ $t('common.cancel') }}</button>
-          <button class="me-btn-danger" @click="deleteAccount" :disabled="!deletePassword || deleting">
-            <v-progress-circular v-if="deleting" indeterminate size="14" width="2" class="mr-2" />
-            {{ deleting ? $t('data.deleting') : $t('data.deletePermanently') }}
-          </button>
+    <Dialog v-model:visible="showDeleteDialog" modal :style="{ width: '480px' }" :closable="false">
+      <template #container>
+        <div class="glass-card dialog-card">
+          <h3 class="dialog-title mono">
+            <span class="mdi mdi-alert-outline" style="font-size: 20px; margin-right: 8px; color: #f87171;"></span>
+            {{ $t('data.deleteConfirmTitle') }}
+          </h3>
+          <Message severity="error" class="mb-4">
+            {{ $t('data.deleteConfirmAlert') }}
+          </Message>
+          <p class="dialog-desc mb-3">
+            {{ $t('data.deleteConfirmPrompt') }}
+          </p>
+          <div class="mb-4">
+            <label class="form-label-sm">{{ $t('auth.password') }}</label>
+            <InputText
+              v-model="deletePassword"
+              type="password"
+              class="w-full"
+              @keyup.enter="deleteAccount"
+            />
+          </div>
+          <Message v-if="deleteError" severity="error" :closable="true" @close="deleteError = ''" class="mb-3">
+            {{ deleteError }}
+          </Message>
+          <div class="dialog-actions">
+            <button class="me-btn-ghost" @click="cancelDelete" :disabled="deleting">{{ $t('common.cancel') }}</button>
+            <button class="me-btn-danger" @click="deleteAccount" :disabled="!deletePassword || deleting">
+              <ProgressSpinner v-if="deleting" style="width: 14px; height: 14px; margin-right: 8px;" strokeWidth="2" />
+              {{ deleting ? $t('data.deleting') : $t('data.deletePermanently') }}
+            </button>
+          </div>
         </div>
-      </div>
-    </v-dialog>
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -110,6 +108,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import ProgressSpinner from 'primevue/progressspinner';
 
 const { t } = useI18n();
 
@@ -238,4 +240,8 @@ onMounted(() => {
 .dialog-title { font-size: 16px; font-weight: 700; color: var(--me-text-primary); margin-bottom: 16px; display: flex; align-items: center; }
 .dialog-desc { font-size: 13px; color: var(--me-text-secondary); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+.storage-bar { height: 8px; background: var(--me-bg-elevated); border-radius: 4px; overflow: hidden; border: 1px solid var(--me-border); }
+.storage-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+.form-label-sm { display: block; font-size: 12px; color: var(--me-text-muted); margin-bottom: 4px; }
+.w-full { width: 100%; }
 </style>

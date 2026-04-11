@@ -43,7 +43,7 @@
 
       <!-- Unsupported -->
       <div v-else class="me-player-empty">
-        <v-icon size="40" color="var(--me-text-muted)">mdi-play-circle-outline</v-icon>
+        <span class="mdi mdi-play-circle-outline" style="font-size: 40px; color: var(--me-text-muted)"></span>
         <span>{{ t('media.unsupportedFormat') }}</span>
       </div>
 
@@ -59,20 +59,20 @@
             :disabled="capturing"
             @click="captureFrame"
           >
-            <v-icon v-if="capturing" size="14" class="me-spin">mdi-loading</v-icon>
-            <v-icon v-else size="14">mdi-camera</v-icon>
+            <span class="mdi mdi-loading me-spin" style="font-size: 14px" v-if="capturing"></span>
+            <span class="mdi mdi-camera" style="font-size: 14px" v-else></span>
             {{ capturing ? t('media.capturing') : t('media.capture') }}
           </button>
           <button class="me-btn me-btn--note" @click="addNote">
-            <v-icon size="14">mdi-pencil</v-icon>
+            <i class="pi pi-pencil" style="font-size: 14px"></i>
             {{ t('media.note') }}
           </button>
           <button class="me-btn me-btn--observation" @click="editingObsIndex = null; observationText = ''; showObservation = true">
-            <v-icon size="14">mdi-comment-text-outline</v-icon>
+            <span class="mdi mdi-comment-text-outline" style="font-size: 14px"></span>
             {{ t('media.observation') }}
           </button>
           <button class="me-btn me-btn--meta" @click="showMetadata = true">
-            <v-icon size="14">mdi-information-outline</v-icon>
+            <span class="mdi mdi-information-outline" style="font-size: 14px"></span>
             {{ t('media.metadata') }}
           </button>
           <button
@@ -82,15 +82,15 @@
             :disabled="analyzing"
             :title="t('media.analyze')"
           >
-            <v-icon v-if="analyzing" size="14" class="me-spin">mdi-loading</v-icon>
-            <v-icon v-else size="14">mdi-magnify-scan</v-icon>
+            <span class="mdi mdi-loading me-spin" style="font-size: 14px" v-if="analyzing"></span>
+            <span class="mdi mdi-magnify-scan" style="font-size: 14px" v-else></span>
             {{ analyzing ? t('media.analyzing') : t('media.analyze') }}
           </button>
           <button class="me-btn me-btn--download" @click="showDownloader = !showDownloader" :title="t('media.download.title')">
-            <v-icon size="14">mdi-download</v-icon>
+            <i class="pi pi-download" style="font-size: 14px"></i>
           </button>
           <button class="me-btn me-btn--expand" @click="expanded = !expanded" :title="expanded ? t('media.shrinkPlayer') : t('media.expandPlayer')">
-            <v-icon size="14">{{ expanded ? 'mdi-arrow-collapse' : 'mdi-arrow-expand' }}</v-icon>
+            <span :class="['mdi', expanded ? 'mdi-arrow-collapse' : 'mdi-arrow-expand']" style="font-size: 14px"></span>
           </button>
         </div>
       </div>
@@ -99,17 +99,17 @@
     <!-- Observations list -->
     <div v-if="props.node.mediaData?.observations?.length" class="me-observations">
       <div class="me-obs-title">
-        <v-icon size="14">mdi-comment-text-outline</v-icon>
+        <span class="mdi mdi-comment-text-outline" style="font-size: 14px"></span>
         {{ t('media.observations') }} ({{ props.node.mediaData.observations.length }})
       </div>
       <div v-for="(obs, i) in props.node.mediaData.observations" :key="i" class="me-obs-item">
         <span class="me-obs-date mono">{{ new Date(obs.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</span>
         <span class="me-obs-text">{{ obs.text }}</span>
         <button class="me-obs-edit" @click="editObservation(i)" :title="t('common.edit')">
-          <v-icon size="12">mdi-pencil</v-icon>
+          <i class="pi pi-pencil" style="font-size: 12px"></i>
         </button>
         <button class="me-obs-del" @click="deleteObservation(i)" :title="t('common.delete')">
-          <v-icon size="12">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 12px"></i>
         </button>
       </div>
     </div>
@@ -125,15 +125,17 @@
     />
 
     <!-- Social Session Manager Dialog -->
-    <v-dialog v-model="sessionManagerOpen" max-width="560" persistent>
-      <SocialSessionManager v-if="sessionManagerOpen" @close="sessionManagerOpen = false" />
-    </v-dialog>
+    <Dialog v-model:visible="sessionManagerOpen" modal :style="{ width: '560px' }" :closable="false">
+      <template #container>
+        <SocialSessionManager v-if="sessionManagerOpen" @close="sessionManagerOpen = false" />
+      </template>
+    </Dialog>
 
     <!-- Annotations Section -->
     <div class="me-annotations-section">
       <div class="me-annotations-header">
         <div class="me-annotations-title">
-          <v-icon size="16">mdi-format-list-bulleted</v-icon>
+          <span class="mdi mdi-format-list-bulleted" style="font-size: 16px"></span>
           {{ t('media.annotations') }}
           <span class="me-ann-count">{{ filteredAnnotations.length }}</span>
         </div>
@@ -145,7 +147,7 @@
             :placeholder="t('media.filterAnnotations')"
           />
           <button class="me-sort-btn" :title="sortAsc ? t('media.sortChrono') : t('media.sortRecent')" @click="sortAsc = !sortAsc">
-            <v-icon size="16">{{ sortAsc ? 'mdi-sort-ascending' : 'mdi-sort-descending' }}</v-icon>
+            <span :class="['mdi', sortAsc ? 'mdi-sort-ascending' : 'mdi-sort-descending']" style="font-size: 16px"></span>
           </button>
         </div>
       </div>
@@ -160,9 +162,7 @@
             {{ formatTime(ann.timestamp) }}
           </button>
 
-          <v-icon size="16" class="me-ann-type-icon">
-            {{ ann.type === 'capture' ? 'mdi-camera' : 'mdi-pencil' }}
-          </v-icon>
+          <span :class="['mdi me-ann-type-icon', ann.type === 'capture' ? 'mdi-camera' : 'mdi-pencil']" style="font-size: 16px"></span>
 
           <img
             v-if="ann.screenshotUrl"
@@ -199,16 +199,16 @@
 
           <div class="me-ann-actions">
             <button class="me-ann-action" @click="startEdit(ann)" :title="t('common.edit')">
-              <v-icon size="14">mdi-pencil-outline</v-icon>
+              <i class="pi pi-pencil" style="font-size: 14px"></i>
             </button>
             <button class="me-ann-action me-ann-action--delete" @click="deleteAnnotation(ann.id)">
-              <v-icon size="14">mdi-trash-can-outline</v-icon>
+              <i class="pi pi-trash" style="font-size: 14px"></i>
             </button>
           </div>
         </div>
 
         <div v-if="!filteredAnnotations.length" class="me-empty">
-          <v-icon size="28" color="var(--me-text-muted)">mdi-message-text-outline</v-icon>
+          <span class="mdi mdi-message-text-outline" style="font-size: 28px; color: var(--me-text-muted)"></span>
           <span>{{ t('media.noAnnotations') }}</span>
         </div>
       </div>
@@ -218,13 +218,13 @@
     <canvas ref="canvasRef" class="me-canvas-hidden" />
 
     <!-- Observation Dialog -->
-    <v-dialog v-model="showObservation" max-width="560">
+    <Dialog v-model:visible="showObservation" modal :style="{ width: '560px' }">
       <div class="glass-card" style="padding: 0; border-radius: 12px; overflow: hidden;">
         <div style="display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--me-border); font-size: 14px; font-weight: 600; color: var(--me-text-primary);">
-          <v-icon size="18" color="var(--me-accent)">mdi-comment-text-outline</v-icon>
+          <span class="mdi mdi-comment-text-outline" style="font-size: 18px; color: var(--me-accent)"></span>
           {{ t('media.observationTitle') }}
           <button style="margin-left: auto; background: none; border: none; color: var(--me-text-muted); cursor: pointer; display: flex;" @click="showObservation = false">
-            <v-icon size="18">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 18px"></i>
           </button>
         </div>
         <div style="padding: 16px 18px;">
@@ -238,13 +238,13 @@
           <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
             <button class="me-btn-ghost me-btn-sm" @click="showObservation = false">{{ t('common.cancel') }}</button>
             <button class="me-btn me-btn--accent me-btn-sm" @click="saveObservation" :disabled="!observationText.trim()">
-              <v-icon size="14" class="mr-1">mdi-check</v-icon>
+              <i class="pi pi-check mr-1" style="font-size: 14px"></i>
               {{ t('common.save') }}
             </button>
           </div>
         </div>
       </div>
-    </v-dialog>
+    </Dialog>
 
     <!-- Metadata Dialog -->
     <MediaMetadataDialog
@@ -259,10 +259,10 @@
       <div v-if="viewerSrc && !annotatorOpen" class="me-viewer-overlay" @click="viewerSrc = ''">
         <div class="me-viewer-toolbar" @click.stop>
           <button class="me-viewer-btn" @click="openAnnotator" :title="t('media.editCapture')">
-            <v-icon size="20" color="#fff">mdi-pencil-outline</v-icon>
+            <i class="pi pi-pencil" style="font-size: 20px; color: #fff"></i>
           </button>
           <button class="me-viewer-btn" @click="viewerSrc = ''">
-            <v-icon size="20" color="#fff">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 20px; color: #fff"></i>
           </button>
         </div>
         <img :src="viewerSrc" class="me-viewer-img" @click.stop />
@@ -275,7 +275,7 @@
         <div class="me-annotator-header">
           <span class="me-annotator-title mono">{{ t('media.editCapture') }}</span>
           <button class="me-viewer-btn" @click="annotatorOpen = false">
-            <v-icon size="20" color="#fff">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 20px; color: #fff"></i>
           </button>
         </div>
         <div class="me-annotator-body">
@@ -300,6 +300,7 @@ import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import { generateUUID } from '../../utils/cryptoPolyfill';
 import { useEncryptionStore } from '../../stores/encryption';
 import { encryptFile } from '../../utils/encryption';
+import Dialog from 'primevue/dialog';
 import MediaMetadataDialog from './MediaMetadataDialog.vue';
 import MediaDownloader from './MediaDownloader.vue';
 import SocialSessionManager from './SocialSessionManager.vue';

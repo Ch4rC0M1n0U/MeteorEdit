@@ -2,7 +2,7 @@
   <header class="me-appbar">
     <div class="me-appbar-left">
       <button class="me-appbar-brand" @click="handleBack">
-        <v-icon v-if="dossierStore.currentDossier" size="18" class="mr-1">mdi-arrow-left</v-icon>
+        <i v-if="dossierStore.currentDossier" class="pi pi-arrow-left" style="font-size: 18px; margin-right: 4px;"></i>
         <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="me-appbar-logo" />
         <span v-else class="logo-icon">&#9670;</span>
         <span class="mono">{{ brandingStore.appName }}</span>
@@ -20,69 +20,65 @@
 
     <div class="me-appbar-right">
       <button class="me-icon-btn" @click="themeStore.toggle()" :title="themeStore.isDark ? t('nav.lightMode') : t('nav.darkMode')">
-        <v-icon size="20">{{ themeStore.isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+        <i :class="themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'" style="font-size: 20px;"></i>
       </button>
 
-      <button class="me-icon-btn" @click="whatsNewOpen = true" :title="t('nav.whatsNew')">
-        <v-badge v-if="whatsNewCount > 0" :content="whatsNewCount" color="error" floating>
-          <v-icon size="20">mdi-gift-outline</v-icon>
-        </v-badge>
-        <v-icon v-else size="20">mdi-gift-outline</v-icon>
+      <button class="me-icon-btn me-icon-btn--badge" @click="whatsNewOpen = true" :title="t('nav.whatsNew')">
+        <i class="pi pi-gift" style="font-size: 20px;"></i>
+        <span v-if="whatsNewCount > 0" class="me-notif-badge">{{ whatsNewCount }}</span>
       </button>
 
       <WhatsNew v-model="whatsNewOpen" @read="whatsNewCount = 0" />
 
       <NotificationBell />
 
-      <v-menu>
-        <template #activator="{ props }">
-          <button class="me-icon-btn me-avatar-btn" v-bind="props">
-            <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="me-avatar me-avatar-img" />
-            <span v-else class="me-avatar">{{ initials }}</span>
-          </button>
-        </template>
+      <button class="me-icon-btn me-avatar-btn" @click="userMenuRef?.toggle($event)">
+        <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="me-avatar me-avatar-img" />
+        <span v-else class="me-avatar">{{ initials }}</span>
+      </button>
+      <Popover ref="userMenuRef">
         <div class="me-dropdown glass-card">
-          <router-link to="/profile" class="me-dropdown-item me-dropdown-profile">
-            <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
+          <router-link to="/profile" class="me-dropdown-item me-dropdown-profile" @click="userMenuRef?.hide()">
+            <i class="pi pi-user" style="font-size: 16px; margin-right: 8px;"></i>
             <div class="me-dropdown-profile-text">
               <span class="me-dropdown-name">{{ authStore.user?.firstName }} {{ authStore.user?.lastName }}</span>
               <span class="me-dropdown-email">{{ authStore.user?.email }}</span>
             </div>
           </router-link>
           <div class="me-dropdown-divider" />
-          <router-link v-if="authStore.isAdmin" to="/admin" class="me-dropdown-item">
-            <v-icon size="16" class="mr-2">mdi-shield-account</v-icon>
+          <router-link v-if="authStore.isAdmin" to="/admin" class="me-dropdown-item" @click="userMenuRef?.hide()">
+            <i class="pi pi-shield" style="font-size: 16px; margin-right: 8px;"></i>
             {{ t('nav.admin') }}
           </router-link>
-          <router-link to="/profile?section=preferences" class="me-dropdown-item">
-            <v-icon size="16" class="mr-2">mdi-cog-outline</v-icon>
+          <router-link to="/profile?section=preferences" class="me-dropdown-item" @click="userMenuRef?.hide()">
+            <i class="pi pi-cog" style="font-size: 16px; margin-right: 8px;"></i>
             {{ t('nav.preferences') }}
           </router-link>
-          <router-link to="/templates" class="me-dropdown-item">
-            <v-icon size="16" class="mr-2">mdi-file-document-check-outline</v-icon>
+          <router-link to="/templates" class="me-dropdown-item" @click="userMenuRef?.hide()">
+            <i class="pi pi-file-edit" style="font-size: 16px; margin-right: 8px;"></i>
             {{ t('nav.templates') }}
           </router-link>
-          <button class="me-dropdown-item" @click="sessionManagerOpen = true">
-            <v-icon size="16" class="mr-2">mdi-shield-account-outline</v-icon>
+          <button class="me-dropdown-item" @click="userMenuRef?.hide(); sessionManagerOpen = true">
+            <i class="pi pi-shield" style="font-size: 16px; margin-right: 8px;"></i>
             {{ t('nav.sessions') }}
           </button>
-          <router-link to="/help" class="me-dropdown-item">
-            <v-icon size="16" class="mr-2">mdi-help-circle-outline</v-icon>
+          <router-link to="/help" class="me-dropdown-item" @click="userMenuRef?.hide()">
+            <i class="pi pi-question-circle" style="font-size: 16px; margin-right: 8px;"></i>
             {{ t('nav.help') }}
           </router-link>
           <div class="me-dropdown-divider" />
-          <button class="me-dropdown-item me-dropdown-item--danger" @click="handleLogout">
-            <v-icon size="16" class="mr-2">mdi-logout</v-icon>
+          <button class="me-dropdown-item me-dropdown-item--danger" @click="userMenuRef?.hide(); handleLogout()">
+            <i class="pi pi-sign-out" style="font-size: 16px; margin-right: 8px;"></i>
             {{ t('auth.logout') }}
           </button>
         </div>
-      </v-menu>
+      </Popover>
     </div>
 
     <!-- Social Session Manager Dialog -->
-    <v-dialog v-model="sessionManagerOpen" max-width="560" persistent>
+    <Dialog v-model:visible="sessionManagerOpen" modal :style="{ width: '560px' }" :closable="false">
       <SocialSessionManager v-if="sessionManagerOpen" @close="sessionManagerOpen = false" />
-    </v-dialog>
+    </Dialog>
   </header>
 </template>
 
@@ -90,6 +86,8 @@
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import Popover from 'primevue/popover';
+import Dialog from 'primevue/dialog';
 import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
@@ -100,7 +98,7 @@ import NotificationBell from './NotificationBell.vue';
 import WhatsNew from './WhatsNew.vue';
 import SocialSessionManager from '../media/SocialSessionManager.vue';
 
-
+const userMenuRef = ref();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const dossierStore = useDossierStore();
@@ -248,6 +246,26 @@ function handleLogout() {
 .me-icon-btn:hover {
   background: var(--me-accent-glow);
   color: var(--me-accent);
+}
+.me-icon-btn--badge {
+  position: relative;
+}
+.me-notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--me-error, #ef4444);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  line-height: 1;
 }
 .me-avatar-btn {
   width: auto;

@@ -6,19 +6,19 @@
     </div>
     <div class="pomo-controls">
       <button v-if="!running" class="pomo-btn pomo-btn-start" @click="start" title="Demarrer">
-        <v-icon size="16">mdi-play</v-icon>
+        <i class="pi pi-play" style="font-size: 16px;"></i>
       </button>
       <button v-else class="pomo-btn pomo-btn-pause" @click="pause" title="Pause">
-        <v-icon size="16">mdi-pause</v-icon>
+        <i class="pi pi-pause" style="font-size: 16px;"></i>
       </button>
       <button class="pomo-btn" @click="reset" title="Reinitialiser">
-        <v-icon size="14">mdi-refresh</v-icon>
+        <i class="pi pi-refresh" style="font-size: 14px;"></i>
       </button>
       <button class="pomo-btn" @click="skip" title="Passer" v-if="running">
-        <v-icon size="14">mdi-skip-next</v-icon>
+        <i class="pi pi-forward" style="font-size: 14px;"></i>
       </button>
       <button class="pomo-btn" @click="showSettings = true" title="Parametres">
-        <v-icon size="14">mdi-cog-outline</v-icon>
+        <i class="pi pi-cog" style="font-size: 14px;"></i>
       </button>
     </div>
     <div class="pomo-sessions mono">
@@ -26,13 +26,14 @@
     </div>
 
     <!-- Settings Modal -->
-    <v-dialog v-model="showSettings" max-width="380" persistent>
+    <Dialog v-model:visible="showSettings" modal :style="{ width: '380px' }" :closable="false">
+      <template #container>
       <div class="pomo-settings glass-card">
         <div class="pomo-settings-header">
-          <v-icon size="20" class="pomo-settings-icon">mdi-timer-cog-outline</v-icon>
+          <span class="mdi mdi-timer-cog-outline pomo-settings-icon" style="font-size: 20px;"></span>
           <span>Configuration Pomodoro</span>
           <button class="pomo-settings-close" @click="cancelSettings">
-            <v-icon size="18">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 18px;"></i>
           </button>
         </div>
 
@@ -41,11 +42,11 @@
             <label class="pomo-field-label">Focus (min)</label>
             <div class="pomo-stepper">
               <button class="pomo-stepper-btn" @click="tmpFocus = Math.max(1, tmpFocus - 5)">
-                <v-icon size="14">mdi-minus</v-icon>
+                <i class="pi pi-minus" style="font-size: 14px;"></i>
               </button>
               <input v-model.number="tmpFocus" type="number" min="1" max="120" class="pomo-stepper-input mono" />
               <button class="pomo-stepper-btn" @click="tmpFocus = Math.min(120, tmpFocus + 5)">
-                <v-icon size="14">mdi-plus</v-icon>
+                <i class="pi pi-plus" style="font-size: 14px;"></i>
               </button>
             </div>
           </div>
@@ -54,11 +55,11 @@
             <label class="pomo-field-label">Pause courte (min)</label>
             <div class="pomo-stepper">
               <button class="pomo-stepper-btn" @click="tmpShort = Math.max(1, tmpShort - 1)">
-                <v-icon size="14">mdi-minus</v-icon>
+                <i class="pi pi-minus" style="font-size: 14px;"></i>
               </button>
               <input v-model.number="tmpShort" type="number" min="1" max="60" class="pomo-stepper-input mono" />
               <button class="pomo-stepper-btn" @click="tmpShort = Math.min(60, tmpShort + 1)">
-                <v-icon size="14">mdi-plus</v-icon>
+                <i class="pi pi-plus" style="font-size: 14px;"></i>
               </button>
             </div>
           </div>
@@ -67,11 +68,11 @@
             <label class="pomo-field-label">Pause longue (min)</label>
             <div class="pomo-stepper">
               <button class="pomo-stepper-btn" @click="tmpLong = Math.max(1, tmpLong - 5)">
-                <v-icon size="14">mdi-minus</v-icon>
+                <i class="pi pi-minus" style="font-size: 14px;"></i>
               </button>
               <input v-model.number="tmpLong" type="number" min="1" max="60" class="pomo-stepper-input mono" />
               <button class="pomo-stepper-btn" @click="tmpLong = Math.min(60, tmpLong + 5)">
-                <v-icon size="14">mdi-plus</v-icon>
+                <i class="pi pi-plus" style="font-size: 14px;"></i>
               </button>
             </div>
           </div>
@@ -80,11 +81,11 @@
             <label class="pomo-field-label">Sessions avant pause longue</label>
             <div class="pomo-stepper">
               <button class="pomo-stepper-btn" @click="tmpSessions = Math.max(2, tmpSessions - 1)">
-                <v-icon size="14">mdi-minus</v-icon>
+                <i class="pi pi-minus" style="font-size: 14px;"></i>
               </button>
               <input v-model.number="tmpSessions" type="number" min="2" max="10" class="pomo-stepper-input mono" />
               <button class="pomo-stepper-btn" @click="tmpSessions = Math.min(10, tmpSessions + 1)">
-                <v-icon size="14">mdi-plus</v-icon>
+                <i class="pi pi-plus" style="font-size: 14px;"></i>
               </button>
             </div>
           </div>
@@ -109,12 +110,14 @@
           <button class="pomo-settings-btn pomo-settings-btn--save" @click="saveSettings">Appliquer</button>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import Dialog from 'primevue/dialog';
 import { usePomodoro } from '../../composables/usePomodoro';
 
 const {

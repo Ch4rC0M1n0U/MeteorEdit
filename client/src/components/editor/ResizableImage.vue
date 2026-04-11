@@ -13,19 +13,19 @@
       <!-- Toolbar on selection -->
       <div v-if="selected" class="ri-toolbar">
         <button class="ri-tb-btn" @click="copyImage" :title="copied ? 'Copie !' : 'Copier l\'image'">
-          <v-icon size="14">{{ copied ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
+          <span :class="['mdi', copied ? 'mdi-check' : 'mdi-content-copy']" style="font-size: 14px"></span>
         </button>
         <button class="ri-tb-btn" @click="openAnnotator" title="Annoter">
-          <v-icon size="14">mdi-draw</v-icon>
+          <span class="mdi mdi-draw" style="font-size: 14px"></span>
         </button>
         <button class="ri-tb-btn" @click="setSize(200)" title="Petit">S</button>
         <button class="ri-tb-btn" @click="setSize(400)" title="Moyen">M</button>
         <button class="ri-tb-btn" @click="setSize(700)" title="Grand">L</button>
         <button class="ri-tb-btn" @click="setSize(null)" title="Taille originale">
-          <v-icon size="14">mdi-arrow-expand</v-icon>
+          <span class="mdi mdi-arrow-expand" style="font-size: 14px"></span>
         </button>
         <button class="ri-tb-btn ri-tb-danger" @click="deleteNode" title="Supprimer">
-          <v-icon size="14">mdi-trash-can-outline</v-icon>
+          <i class="pi pi-trash" style="font-size: 14px"></i>
         </button>
       </div>
       <!-- Resize handle -->
@@ -43,7 +43,7 @@
           <div class="ri-annotator-header">
             <span class="ri-annotator-title">Annoter l'image</span>
             <button class="ri-annotator-close" @click="annotatorOpen = false">
-              <v-icon size="18">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 18px"></i>
             </button>
           </div>
           <ImageAnnotator

@@ -2,7 +2,7 @@
   <div class="profile-security">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-shield-lock-outline</v-icon>
+        <span class="mdi mdi-shield-lock-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('profile.security') }}
       </h2>
     </div>
@@ -10,12 +10,12 @@
     <!-- Password change -->
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <h3 class="branding-card-title mono">{{ $t('profile.changePassword') }}</h3>
-      <v-alert v-if="pwMessage" :type="pwSuccess ? 'success' : 'error'" variant="tonal" class="mb-4" closable @click:close="pwMessage = ''">
+      <Message v-if="pwMessage" :severity="pwSuccess ? 'success' : 'error'" :closable="true" @close="pwMessage = ''" class="mb-4">
         {{ pwMessage }}
-      </v-alert>
-      <v-text-field v-model="pwForm.currentPassword" :label="$t('profile.currentPassword')" type="password" density="compact" hide-details class="mb-3" />
-      <v-text-field v-model="pwForm.newPassword" :label="$t('profile.newPassword')" type="password" density="compact" hide-details class="mb-3" />
-      <v-text-field v-model="pwForm.confirmPassword" :label="$t('profile.confirmPassword')" type="password" density="compact" hide-details class="mb-4" />
+      </Message>
+      <div class="mb-3"><label class="form-label-sm">{{ $t('profile.currentPassword') }}</label><InputText v-model="pwForm.currentPassword" type="password" class="w-full" /></div>
+      <div class="mb-3"><label class="form-label-sm">{{ $t('profile.newPassword') }}</label><InputText v-model="pwForm.newPassword" type="password" class="w-full" /></div>
+      <div class="mb-4"><label class="form-label-sm">{{ $t('profile.confirmPassword') }}</label><InputText v-model="pwForm.confirmPassword" type="password" class="w-full" /></div>
       <div class="branding-actions">
         <button class="me-btn-primary" @click="changePassword" :disabled="pwSaving">{{ $t('profile.change') }}</button>
       </div>
@@ -30,7 +30,7 @@
             {{ authStore.user?.twoFactorEnabled ? $t('profile.twoFAActive') : $t('profile.twoFAInactive') }}
           </p>
           <p v-if="require2FAEnforced" class="tfa-enforced mono">
-            <v-icon size="14" class="mr-1">mdi-alert-outline</v-icon>
+            <span class="mdi mdi-alert-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('profile.twoFARequired') }}
           </p>
         </div>
@@ -40,7 +40,7 @@
       <!-- Setup flow -->
       <div v-if="!authStore.user?.twoFactorEnabled && !setupData">
         <button class="me-btn-primary" @click="startSetup">
-          <v-icon size="14" class="mr-1">mdi-qrcode</v-icon>
+          <span class="mdi mdi-qrcode" style="font-size: 14px; margin-right: 4px;"></span>
           {{ $t('profile.enable2FA') }}
         </button>
       </div>
@@ -53,17 +53,17 @@
         <code class="tfa-secret">{{ setupData.secret }}</code>
         <p class="tfa-step mono mt-4">2. {{ $t('profile.enter6Digits') }}</p>
         <div class="tfa-verify-row">
-          <v-text-field v-model="verifyCode" :label="$t('profile.code')" density="compact" hide-details maxlength="6" class="tfa-code-input" />
+          <InputText v-model="verifyCode" :placeholder="$t('profile.code')" maxlength="6" class="tfa-code-input" />
           <button class="me-btn-primary" @click="verifySetup" :disabled="verifyCode.length < 6">{{ $t('common.confirm') }}</button>
         </div>
-        <v-alert v-if="tfaError" type="error" variant="tonal" class="mt-3" closable @click:close="tfaError = ''">{{ tfaError }}</v-alert>
+        <Message v-if="tfaError" severity="error" :closable="true" @close="tfaError = ''" class="mt-3">{{ tfaError }}</Message>
       </div>
 
       <!-- Backup codes -->
       <div v-if="backupCodes.length" class="tfa-backup">
-        <v-alert type="warning" variant="tonal" class="mb-3">
+        <Message severity="warn" class="mb-3">
           {{ $t('profile.backupCodes') }}
-        </v-alert>
+        </Message>
         <div class="tfa-backup-grid">
           <code v-for="code in backupCodes" :key="code" class="tfa-backup-code">{{ code }}</code>
         </div>
@@ -74,17 +74,17 @@
       <div v-if="authStore.user?.twoFactorEnabled && !setupData && !backupCodes.length">
         <div v-if="!showDisable">
           <button class="me-btn-ghost" @click="showDisable = true" :disabled="require2FAEnforced">
-            <v-icon size="14" class="mr-1">mdi-shield-off-outline</v-icon>
+            <span class="mdi mdi-shield-off-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('profile.disable2FA') }}
           </button>
         </div>
         <div v-else class="tfa-disable">
-          <v-text-field v-model="disablePassword" :label="$t('profile.passwordToConfirm')" type="password" density="compact" hide-details class="mb-3" />
+          <div class="mb-3"><label class="form-label-sm">{{ $t('profile.passwordToConfirm') }}</label><InputText v-model="disablePassword" type="password" class="w-full" /></div>
           <div class="branding-actions">
             <button class="me-btn-ghost" @click="showDisable = false">{{ $t('common.cancel') }}</button>
             <button class="me-btn-primary" style="background: var(--me-error);" @click="disable2FA">{{ $t('profile.disable') }}</button>
           </div>
-          <v-alert v-if="tfaError" type="error" variant="tonal" class="mt-3" closable @click:close="tfaError = ''">{{ tfaError }}</v-alert>
+          <Message v-if="tfaError" severity="error" :closable="true" @close="tfaError = ''" class="mt-3">{{ tfaError }}</Message>
         </div>
       </div>
     </div>
@@ -97,6 +97,8 @@ import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import { useEncryptionStore } from '../../stores/encryption';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -227,4 +229,6 @@ async function disable2FA() {
 .me-btn-ghost { padding: 8px 16px; border-radius: var(--me-radius-xs); background: none; border: 1px solid var(--me-border); color: var(--me-text-secondary); cursor: pointer; font-size: 13px; display: flex; align-items: center; }
 .me-btn-ghost:hover { border-color: var(--me-border-hover); color: var(--me-text-primary); }
 .mr-1 { margin-right: 4px; }
+.form-label-sm { display: block; font-size: 12px; color: var(--me-text-muted); margin-bottom: 4px; }
+.w-full { width: 100%; }
 </style>

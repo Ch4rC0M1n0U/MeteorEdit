@@ -5,7 +5,7 @@
       :class="{ active: !dossierStore.selectedNode }"
       @click="dossierStore.selectNode(null)"
     >
-      <v-icon size="18">mdi-information-outline</v-icon>
+      <span class="mdi mdi-information-outline" style="font-size: 18px;"></span>
       <span>{{ $t('tree.dossierInfo') }}</span>
     </button>
 
@@ -16,7 +16,7 @@
         :title="allExpanded ? $t('tree.collapseAll') : $t('tree.expandAll')"
         @click="toggleAll"
       >
-        <v-icon size="14">{{ allExpanded ? 'mdi-unfold-less-horizontal' : 'mdi-unfold-more-horizontal' }}</v-icon>
+        <span :class="allExpanded ? 'mdi mdi-unfold-less-horizontal' : 'mdi mdi-unfold-more-horizontal'" style="font-size: 14px;"></span>
       </button>
     </div>
 
@@ -67,21 +67,21 @@
     </div>
 
     <button class="nt-trash-header" @click="trashOpen = !trashOpen">
-      <v-icon size="16">mdi-delete-outline</v-icon>
+      <span class="mdi mdi-delete-outline" style="font-size: 16px;"></span>
       <span>{{ $t('tree.trash') }}</span>
       <span v-if="trashRootNodes.length" class="nt-trash-badge">{{ trashRootNodes.length }}</span>
-      <v-icon size="14" class="nt-trash-chevron">{{ trashOpen ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+      <span :class="trashOpen ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="nt-trash-chevron" style="font-size: 14px;"></span>
     </button>
 
     <div v-if="trashOpen && trashRootNodes.length" class="nt-trash-list">
       <div v-for="node in trashRootNodes" :key="node._id" class="nt-trash-item">
-        <v-icon size="14" class="nt-trash-item-icon">{{ trashIcon(node.type) }}</v-icon>
+        <span :class="'mdi ' + trashIcon(node.type)" class="nt-trash-item-icon" style="font-size: 14px;"></span>
         <span class="nt-trash-item-title">{{ node.title }}</span>
         <button class="nt-trash-action" @click="handleRestore(node._id)" :title="$t('common.restore')">
-          <v-icon size="14">mdi-restore</v-icon>
+          <span class="mdi mdi-restore" style="font-size: 14px;"></span>
         </button>
         <button class="nt-trash-action nt-trash-action-danger" @click="handlePurge(node._id, node.title)" :title="$t('tree.deletePermanently')">
-          <v-icon size="14">mdi-delete-forever-outline</v-icon>
+          <span class="mdi mdi-delete-forever-outline" style="font-size: 14px;"></span>
         </button>
       </div>
     </div>
@@ -95,7 +95,7 @@
       class="nt-empty-trash-btn"
       @click="handleEmptyTrash"
     >
-      <v-icon size="14" class="mr-1">mdi-delete-sweep-outline</v-icon>
+      <span class="mdi mdi-delete-sweep-outline" style="font-size: 14px; margin-right: 4px;"></span>
       <span class="mono">{{ $t('tree.clearTrash') }}</span>
     </button>
   </div>

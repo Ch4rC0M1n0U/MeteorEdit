@@ -23,11 +23,11 @@
         class="nti-chevron"
         @click.stop="$emit('toggle-expand', node._id)"
       >
-        <v-icon size="14">{{ expanded ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+        <span :class="expanded ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" style="font-size: 14px;"></span>
       </button>
       <span v-else class="nti-chevron-spacer" />
 
-      <v-icon size="16" class="nti-icon">{{ icon }}</v-icon>
+      <span :class="'mdi ' + icon" class="nti-icon" style="font-size: 16px;"></span>
       <input
         v-if="renaming"
         ref="renameInputRef"
@@ -40,58 +40,54 @@
       />
       <span v-else class="nti-title" @dblclick.stop="startRename">{{ node.title }}</span>
 
-      <v-menu v-model="showMenu" location="end">
-        <template #activator="{ props }">
-          <button v-bind="props" class="nti-menu-btn" @click.stop>
-            <v-icon size="14">mdi-dots-horizontal</v-icon>
-          </button>
-        </template>
+      <button class="nti-menu-btn" @click.stop="toggleMenu($event)">
+        <span class="mdi mdi-dots-horizontal" style="font-size: 14px;"></span>
+      </button>
+      <Popover ref="menuRef">
         <div class="glass-card nti-context-menu">
           <!-- Nouveau → sous-menu en cascade -->
-          <v-menu location="end" open-on-hover :close-on-content-click="false">
-            <template #activator="{ props: subProps }">
-              <button v-bind="subProps" class="nti-ctx-item nti-ctx-sub">
-                <v-icon size="14">mdi-plus-circle-outline</v-icon>
-                <span class="nti-ctx-item-text">{{ $t('tree.newElement') }}</span>
-                <v-icon size="12" class="nti-ctx-chevron">mdi-chevron-right</v-icon>
-              </button>
-            </template>
+          <button class="nti-ctx-item nti-ctx-sub" @click.stop="toggleSubMenu($event)">
+            <span class="mdi mdi-plus-circle-outline" style="font-size: 14px;"></span>
+            <span class="nti-ctx-item-text">{{ $t('tree.newElement') }}</span>
+            <span class="mdi mdi-chevron-right nti-ctx-chevron" style="font-size: 12px;"></span>
+          </button>
+          <Popover ref="subMenuRef">
             <div class="glass-card nti-context-menu">
-              <button class="nti-ctx-item" @click="showMenu = false; $emit('create', 'folder', node._id)">
-                <v-icon size="14">mdi-folder-plus-outline</v-icon> {{ $t('tree.subfolder') }}
+              <button class="nti-ctx-item" @click="closeMenus(); $emit('create', 'folder', node._id)">
+                <span class="mdi mdi-folder-plus-outline" style="font-size: 14px;"></span> {{ $t('tree.subfolder') }}
               </button>
-              <button class="nti-ctx-item" @click="showMenu = false; $emit('create', 'note', node._id)">
-                <v-icon size="14">mdi-note-plus-outline</v-icon> {{ $t('tree.note') }}
+              <button class="nti-ctx-item" @click="closeMenus(); $emit('create', 'note', node._id)">
+                <span class="mdi mdi-note-plus-outline" style="font-size: 14px;"></span> {{ $t('tree.note') }}
               </button>
-              <button class="nti-ctx-item" @click="showMenu = false; $emit('create', 'mindmap', node._id)">
-                <v-icon size="14">mdi-vector-polyline</v-icon> {{ $t('tree.mindmap') }}
+              <button class="nti-ctx-item" @click="closeMenus(); $emit('create', 'mindmap', node._id)">
+                <span class="mdi mdi-vector-polyline" style="font-size: 14px;"></span> {{ $t('tree.mindmap') }}
               </button>
-              <button class="nti-ctx-item" @click="showMenu = false; $emit('create', 'map', node._id)">
-                <v-icon size="14">mdi-map-outline</v-icon> {{ $t('tree.map') }}
+              <button class="nti-ctx-item" @click="closeMenus(); $emit('create', 'map', node._id)">
+                <span class="mdi mdi-map-outline" style="font-size: 14px;"></span> {{ $t('tree.map') }}
               </button>
-              <button class="nti-ctx-item" @click="showMenu = false; $emit('create', 'dataset', node._id)">
-                <v-icon size="14">mdi-table</v-icon> {{ $t('tree.dataset') }}
+              <button class="nti-ctx-item" @click="closeMenus(); $emit('create', 'dataset', node._id)">
+                <span class="mdi mdi-table" style="font-size: 14px;"></span> {{ $t('tree.dataset') }}
               </button>
-              <button class="nti-ctx-item" @click="showMenu = false; $emit('create', 'media', node._id)">
-                <v-icon size="14">mdi-play-circle-outline</v-icon> {{ $t('tree.media') }}
+              <button class="nti-ctx-item" @click="closeMenus(); $emit('create', 'media', node._id)">
+                <span class="mdi mdi-play-circle-outline" style="font-size: 14px;"></span> {{ $t('tree.media') }}
               </button>
             </div>
-          </v-menu>
+          </Popover>
           <div class="nti-ctx-sep" />
           <!-- Actions -->
-          <button class="nti-ctx-item" @click="showMenu = false; startRename()">
-            <v-icon size="14">mdi-pencil-outline</v-icon> {{ $t('tree.rename') }}
+          <button class="nti-ctx-item" @click="closeMenus(); startRename()">
+            <span class="mdi mdi-pencil-outline" style="font-size: 14px;"></span> {{ $t('tree.rename') }}
           </button>
-          <button class="nti-ctx-item" @click="showMenu = false; $emit('duplicate', node._id)">
-            <v-icon size="14">mdi-content-copy</v-icon> {{ $t('tree.duplicate') }}
+          <button class="nti-ctx-item" @click="closeMenus(); $emit('duplicate', node._id)">
+            <span class="mdi mdi-content-copy" style="font-size: 14px;"></span> {{ $t('tree.duplicate') }}
           </button>
           <div class="nti-ctx-sep" />
           <!-- Zone dangereuse -->
           <button class="nti-ctx-item nti-ctx-danger" @click="handleDelete">
-            <v-icon size="14">mdi-trash-can-outline</v-icon> {{ $t('common.delete') }}
+            <span class="mdi mdi-trash-can-outline" style="font-size: 14px;"></span> {{ $t('common.delete') }}
           </button>
         </div>
-      </v-menu>
+      </Popover>
     </div>
 
   </div>
@@ -100,6 +96,7 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Popover from 'primevue/popover';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
@@ -111,12 +108,32 @@ const { t } = useI18n();
 const dossierStore = useDossierStore();
 const { confirm } = useConfirm();
 const showMenu = ref(false);
+const menuRef = ref();
+const subMenuRef = ref();
+
+function toggleMenu(event: Event) {
+  document.dispatchEvent(new CustomEvent('nti:close-menus', { detail: props.node._id }));
+  menuRef.value?.toggle(event);
+  showMenu.value = !showMenu.value;
+}
+
+function toggleSubMenu(event: Event) {
+  subMenuRef.value?.toggle(event);
+}
+
+function closeMenus() {
+  menuRef.value?.hide();
+  subMenuRef.value?.hide();
+  showMenu.value = false;
+}
 
 // Close this menu when another node opens its menu
 function onCloseAllMenus(e: Event) {
   const detail = (e as CustomEvent).detail;
   if (detail !== props.node._id) {
     showMenu.value = false;
+    menuRef.value?.hide();
+    subMenuRef.value?.hide();
   }
 }
 
@@ -130,8 +147,9 @@ onBeforeUnmount(() => {
 
 const dropPosition = ref<'before' | 'after' | 'inside' | null>(null);
 
-function openContextMenu() {
+function openContextMenu(e: MouseEvent) {
   document.dispatchEvent(new CustomEvent('nti:close-menus', { detail: props.node._id }));
+  menuRef.value?.toggle(e);
   showMenu.value = true;
 }
 

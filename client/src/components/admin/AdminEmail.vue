@@ -2,18 +2,18 @@
   <div class="admin-email">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-email-outline</v-icon>
+        <i class="pi pi-envelope" style="font-size: 20px; margin-right: 8px;"></i>
         Email / SMTP
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.emailSubtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- Configuration SMTP -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-email-outline</v-icon>
+        <i class="pi pi-envelope" style="font-size: 18px; color: var(--me-accent);"></i>
         <h3 class="sec-card-title mono">{{ $t('admin.smtpConfig') }}</h3>
       </div>
       <div class="sec-option">
@@ -21,14 +21,10 @@
           <p class="sec-label">{{ $t('admin.smtpServerLabel') }}</p>
           <p class="sec-desc">{{ $t('admin.smtpServerDesc') }}</p>
         </div>
-        <v-text-field
-          v-model="form.smtpHost"
-          density="compact"
-          hide-details
+        <InputText v-model="form.smtpHost"
           placeholder="smtp.gmail.com"
           style="max-width: 280px;"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -36,16 +32,12 @@
           <p class="sec-label">{{ $t('admin.smtpPort') }}</p>
           <p class="sec-desc">{{ $t('admin.smtpPortDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.smtpPort"
+        <InputText v-model.number="form.smtpPort"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="1"
           :max="65535"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -53,7 +45,7 @@
           <p class="sec-label">{{ $t('admin.secureTlsLabel') }}</p>
           <p class="sec-desc">{{ $t('admin.secureTlsDesc') }}</p>
         </div>
-        <v-switch v-model="form.smtpSecure" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.smtpSecure" @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -61,13 +53,9 @@
           <p class="sec-label">{{ $t('admin.smtpUserLabel') }}</p>
           <p class="sec-desc">{{ $t('admin.smtpUserDesc') }}</p>
         </div>
-        <v-text-field
-          v-model="form.smtpUser"
-          density="compact"
-          hide-details
+        <InputText v-model="form.smtpUser"
           style="max-width: 280px;"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -75,14 +63,10 @@
           <p class="sec-label">{{ $t('admin.smtpPasswordLabel') }}</p>
           <p class="sec-desc">{{ $t('admin.smtpPasswordDesc') }}</p>
         </div>
-        <v-text-field
-          v-model="form.smtpPass"
+        <InputText v-model="form.smtpPass"
           type="password"
-          density="compact"
-          hide-details
           style="max-width: 280px;"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -90,14 +74,10 @@
           <p class="sec-label">{{ $t('admin.senderFrom') }}</p>
           <p class="sec-desc">{{ $t('admin.senderFromDesc') }}</p>
         </div>
-        <v-text-field
-          v-model="form.smtpFrom"
-          density="compact"
-          hide-details
+        <InputText v-model="form.smtpFrom"
           placeholder="noreply@monapp.fr"
           style="max-width: 280px;"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -105,26 +85,18 @@
           <p class="sec-label">{{ $t('admin.testConfig') }}</p>
           <p class="sec-desc">{{ $t('admin.testConfigDesc') }}</p>
         </div>
-        <v-btn
-          class="me-btn-ghost"
-          :loading="testing"
-          @click="testEmail"
-        >
-          <v-icon start size="16">mdi-email-fast-outline</v-icon>
+        <button class="me-btn-ghost"
+          :disabled="testing"
+          @click="testEmail">
+          <span class="mdi mdi-email-fast-outline" style="font-size: 16px; margin-right: 4px;"></span>
           Tester la connexion
-        </v-btn>
+        </button>
       </div>
     </div>
 
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      Parametres enregistres
-    </v-snackbar>
-    <v-snackbar v-model="testSuccess" :timeout="3000" color="success" location="bottom right">
-      Email de test envoye avec succes
-    </v-snackbar>
-    <v-snackbar v-model="testError" :timeout="4000" color="error" location="bottom right">
-      {{ testErrorMessage }}
-    </v-snackbar>
+    <!-- snackbar removed during migration -->
+    <!-- snackbar removed during migration -->
+    <!-- snackbar removed during migration -->
   </div>
 </template>
 
@@ -132,6 +104,9 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const { t } = useI18n();
 

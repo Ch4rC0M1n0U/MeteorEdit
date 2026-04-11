@@ -4,10 +4,10 @@
       <!-- Undo / Redo -->
       <div class="ne-toolbar-group">
         <button class="ne-btn" @click="editor.chain().focus().undo().run()" :disabled="!editor.can().undo()" :title="$t('editor.undo')">
-          <v-icon size="18">mdi-undo</v-icon>
+          <i class="pi pi-undo" style="font-size: 18px"></i>
         </button>
         <button class="ne-btn" @click="editor.chain().focus().redo().run()" :disabled="!editor.can().redo()" :title="$t('editor.redo')">
-          <v-icon size="18">mdi-redo</v-icon>
+          <span class="mdi mdi-redo" style="font-size: 18px"></span>
         </button>
       </div>
 
@@ -16,19 +16,19 @@
       <!-- Text style -->
       <div class="ne-toolbar-group">
         <button class="ne-btn" :class="{ active: editor.isActive('bold') }" @click="editor.chain().focus().toggleBold().run()" :title="$t('editor.bold')">
-          <v-icon size="18">mdi-format-bold</v-icon>
+          <span class="mdi mdi-format-bold" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('italic') }" @click="editor.chain().focus().toggleItalic().run()" :title="$t('editor.italic')">
-          <v-icon size="18">mdi-format-italic</v-icon>
+          <span class="mdi mdi-format-italic" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('underline') }" @click="editor.chain().focus().toggleUnderline().run()" :title="$t('editor.underline')">
-          <v-icon size="18">mdi-format-underline</v-icon>
+          <span class="mdi mdi-format-underline" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('strike') }" @click="editor.chain().focus().toggleStrike().run()" :title="$t('editor.strike')">
-          <v-icon size="18">mdi-format-strikethrough</v-icon>
+          <span class="mdi mdi-format-strikethrough" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('code') }" @click="editor.chain().focus().toggleCode().run()" :title="$t('editor.inlineCode')">
-          <v-icon size="18">mdi-code-tags</v-icon>
+          <span class="mdi mdi-code-tags" style="font-size: 18px"></span>
         </button>
       </div>
 
@@ -37,10 +37,10 @@
       <!-- Subscript / Superscript -->
       <div class="ne-toolbar-group">
         <button class="ne-btn" :class="{ active: editor.isActive('subscript') }" @click="editor.chain().focus().toggleSubscript().run()" :title="$t('editor.subscript')">
-          <v-icon size="18">mdi-format-subscript</v-icon>
+          <span class="mdi mdi-format-subscript" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('superscript') }" @click="editor.chain().focus().toggleSuperscript().run()" :title="$t('editor.superscript')">
-          <v-icon size="18">mdi-format-superscript</v-icon>
+          <span class="mdi mdi-format-superscript" style="font-size: 18px"></span>
         </button>
       </div>
 
@@ -65,20 +65,20 @@
       <div class="ne-toolbar-group">
         <div class="ne-color-wrap">
           <button class="ne-btn" :class="{ active: editor.isActive('textStyle') }" :title="$t('editor.textColor')">
-            <v-icon size="18">mdi-format-color-text</v-icon>
+            <span class="mdi mdi-format-color-text" style="font-size: 18px"></span>
             <span class="ne-color-bar" :style="{ background: currentTextColor }" />
           </button>
           <input type="color" class="ne-color-input" :value="currentTextColor" @input="setTextColor($event)" :title="$t('editor.chooseColor')">
         </div>
         <div class="ne-color-wrap">
           <button class="ne-btn" :class="{ active: editor.isActive('highlight') }" :title="$t('editor.highlight')">
-            <v-icon size="18">mdi-marker</v-icon>
+            <span class="mdi mdi-marker" style="font-size: 18px"></span>
             <span class="ne-color-bar" :style="{ background: currentHighlight }" />
           </button>
           <input type="color" class="ne-color-input" :value="currentHighlight" @input="setHighlight($event)" :title="$t('editor.chooseHighlight')">
         </div>
         <button class="ne-btn" @click="editor.chain().focus().unsetAllMarks().run()" :title="$t('editor.clearFormatting')">
-          <v-icon size="18">mdi-format-clear</v-icon>
+          <span class="mdi mdi-format-clear" style="font-size: 18px"></span>
         </button>
       </div>
 
@@ -87,16 +87,16 @@
       <!-- Alignment -->
       <div class="ne-toolbar-group">
         <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'left' }) }" @click="editor.chain().focus().setTextAlign('left').run()" :title="$t('editor.alignLeft')">
-          <v-icon size="18">mdi-format-align-left</v-icon>
+          <span class="mdi mdi-format-align-left" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'center' }) }" @click="editor.chain().focus().setTextAlign('center').run()" :title="$t('editor.alignCenter')">
-          <v-icon size="18">mdi-format-align-center</v-icon>
+          <span class="mdi mdi-format-align-center" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'right' }) }" @click="editor.chain().focus().setTextAlign('right').run()" :title="$t('editor.alignRight')">
-          <v-icon size="18">mdi-format-align-right</v-icon>
+          <span class="mdi mdi-format-align-right" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive({ textAlign: 'justify' }) }" @click="editor.chain().focus().setTextAlign('justify').run()" :title="$t('editor.justify')">
-          <v-icon size="18">mdi-format-align-justify</v-icon>
+          <span class="mdi mdi-format-align-justify" style="font-size: 18px"></span>
         </button>
       </div>
 
@@ -105,16 +105,16 @@
       <!-- Lists -->
       <div class="ne-toolbar-group">
         <button class="ne-btn" :class="{ active: editor.isActive('bulletList') }" @click="editor.chain().focus().toggleBulletList().run()" :title="$t('editor.bulletList')">
-          <v-icon size="18">mdi-format-list-bulleted</v-icon>
+          <span class="mdi mdi-format-list-bulleted" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('orderedList') }" @click="editor.chain().focus().toggleOrderedList().run()" :title="$t('editor.orderedList')">
-          <v-icon size="18">mdi-format-list-numbered</v-icon>
+          <span class="mdi mdi-format-list-numbered" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('taskList') }" @click="editor.chain().focus().toggleTaskList().run()" :title="$t('editor.taskList')">
-          <v-icon size="18">mdi-checkbox-marked-outline</v-icon>
+          <span class="mdi mdi-checkbox-marked-outline" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" :class="{ active: editor.isActive('blockquote') }" @click="editor.chain().focus().toggleBlockquote().run()" :title="$t('editor.blockquote')">
-          <v-icon size="18">mdi-format-quote-close</v-icon>
+          <span class="mdi mdi-format-quote-close" style="font-size: 18px"></span>
         </button>
       </div>
 
@@ -123,45 +123,43 @@
       <!-- Insert -->
       <div class="ne-toolbar-group">
         <button class="ne-btn" @click="insertLink" :title="$t('editor.insertLink')">
-          <v-icon size="18">mdi-link-variant</v-icon>
+          <span class="mdi mdi-link-variant" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" @click="triggerImageUpload" :title="$t('editor.insertImage')">
-          <v-icon size="18">mdi-image-plus</v-icon>
+          <span class="mdi mdi-image-plus" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" @click="insertTable" :title="$t('editor.table')">
-          <v-icon size="18">mdi-table</v-icon>
+          <span class="mdi mdi-table" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" @click="editor.chain().focus().toggleCodeBlock().run()" :class="{ active: editor.isActive('codeBlock') }" :title="$t('editor.codeBlock')">
-          <v-icon size="18">mdi-code-braces</v-icon>
+          <span class="mdi mdi-code-braces" style="font-size: 18px"></span>
         </button>
         <button class="ne-btn" @click="editor.chain().focus().setHorizontalRule().run()" :title="$t('editor.separator')">
-          <v-icon size="18">mdi-minus</v-icon>
+          <i class="pi pi-minus" style="font-size: 18px"></i>
         </button>
-        <v-menu location="bottom">
-          <template #activator="{ props: menuProps }">
-            <button class="ne-btn" v-bind="menuProps" :title="$t('editor.callouts')">
-              <v-icon size="18">mdi-alert-box-outline</v-icon>
+        <button class="ne-btn" @click="calloutPopoverRef?.toggle($event)" :title="$t('editor.callouts')">
+              <span class="mdi mdi-alert-box-outline" style="font-size: 18px"></span>
             </button>
-          </template>
-          <v-list density="compact" class="ne-callout-menu">
-            <v-list-item @click="insertCallout('danger')">
-              <template #prepend><span class="ne-callout-icon ne-callout-icon--danger">&#x26D4;</span></template>
-              <v-list-item-title>{{ $t('editor.calloutDanger') }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="insertCallout('warning')">
-              <template #prepend><span class="ne-callout-icon ne-callout-icon--warning">&#x26A0;&#xFE0F;</span></template>
-              <v-list-item-title>{{ $t('editor.calloutWarning') }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="insertCallout('info')">
-              <template #prepend><span class="ne-callout-icon ne-callout-icon--info">&#x2139;&#xFE0F;</span></template>
-              <v-list-item-title>{{ $t('editor.calloutInfo') }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="insertCallout('success')">
-              <template #prepend><span class="ne-callout-icon ne-callout-icon--success">&#x2705;</span></template>
-              <v-list-item-title>{{ $t('editor.calloutSuccess') }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+            <Popover ref="calloutPopoverRef">
+              <div class="ne-callout-menu">
+                <button class="ne-callout-menu-item" @click="insertCallout('danger'); calloutPopoverRef?.hide()">
+                  <span class="ne-callout-icon ne-callout-icon--danger">&#x26D4;</span>
+                  <span>{{ $t('editor.calloutDanger') }}</span>
+                </button>
+                <button class="ne-callout-menu-item" @click="insertCallout('warning'); calloutPopoverRef?.hide()">
+                  <span class="ne-callout-icon ne-callout-icon--warning">&#x26A0;&#xFE0F;</span>
+                  <span>{{ $t('editor.calloutWarning') }}</span>
+                </button>
+                <button class="ne-callout-menu-item" @click="insertCallout('info'); calloutPopoverRef?.hide()">
+                  <span class="ne-callout-icon ne-callout-icon--info">&#x2139;&#xFE0F;</span>
+                  <span>{{ $t('editor.calloutInfo') }}</span>
+                </button>
+                <button class="ne-callout-menu-item" @click="insertCallout('success'); calloutPopoverRef?.hide()">
+                  <span class="ne-callout-icon ne-callout-icon--success">&#x2705;</span>
+                  <span>{{ $t('editor.calloutSuccess') }}</span>
+                </button>
+              </div>
+            </Popover>
       </div>
 
       <div class="ne-separator" />
@@ -169,54 +167,52 @@
       <!-- Comments & Templates -->
       <div class="ne-toolbar-group">
         <button class="ne-btn ne-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" :title="$t('editor.comments')">
-          <v-icon size="18">mdi-comment-text-outline</v-icon>
+          <span class="mdi mdi-comment-text-outline" style="font-size: 18px"></span>
           <span v-if="commentCount" class="ne-comment-badge">{{ commentCount }}</span>
         </button>
         <button class="ne-btn" @click="saveAsTemplate" :title="$t('editor.saveAsTemplate')">
-          <v-icon size="18">mdi-content-save-check-outline</v-icon>
+          <span class="mdi mdi-content-save-check-outline" style="font-size: 18px"></span>
         </button>
       </div>
 
       <!-- AI Reformulate -->
       <div class="ne-separator" />
       <div class="ne-toolbar-group">
-        <v-menu :close-on-content-click="true" location="bottom">
-          <template #activator="{ props: menuProps }">
-            <button
+        <button
               class="ne-btn"
-              v-bind="menuProps"
               :disabled="!hasSelection || reformulating"
               :title="$t('editor.reformulate')"
+              @click="reformPopoverRef?.toggle($event)"
             >
-              <v-icon size="18" :class="{ spin: reformulating }">{{ reformulating ? 'mdi-loading' : 'mdi-auto-fix' }}</v-icon>
+              <span :class="['mdi', reformulating ? 'mdi-loading spin' : 'mdi-auto-fix']" style="font-size: 18px"></span>
             </button>
-          </template>
-          <v-list density="compact" class="ne-reform-menu">
-            <v-list-item @click="reformulateSelection('formal')">
-              <template #prepend><v-icon size="16">mdi-briefcase-outline</v-icon></template>
-              <v-list-item-title>{{ $t('editor.toneFormal') }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="reformulateSelection('concise')">
-              <template #prepend><v-icon size="16">mdi-arrow-collapse-horizontal</v-icon></template>
-              <v-list-item-title>{{ $t('editor.toneConcise') }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="reformulateSelection('fluent')">
-              <template #prepend><v-icon size="16">mdi-water-outline</v-icon></template>
-              <v-list-item-title>{{ $t('editor.toneFluent') }}</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="reformulateSelection('simple')">
-              <template #prepend><v-icon size="16">mdi-text-short</v-icon></template>
-              <v-list-item-title>{{ $t('editor.toneSimple') }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+            <Popover ref="reformPopoverRef">
+              <div class="ne-reform-menu">
+                <button class="ne-reform-menu-item" @click="reformulateSelection('formal'); reformPopoverRef?.hide()">
+                  <span class="mdi mdi-briefcase-outline" style="font-size: 16px"></span>
+                  <span>{{ $t('editor.toneFormal') }}</span>
+                </button>
+                <button class="ne-reform-menu-item" @click="reformulateSelection('concise'); reformPopoverRef?.hide()">
+                  <span class="mdi mdi-arrow-collapse-horizontal" style="font-size: 16px"></span>
+                  <span>{{ $t('editor.toneConcise') }}</span>
+                </button>
+                <button class="ne-reform-menu-item" @click="reformulateSelection('fluent'); reformPopoverRef?.hide()">
+                  <span class="mdi mdi-water-outline" style="font-size: 16px"></span>
+                  <span>{{ $t('editor.toneFluent') }}</span>
+                </button>
+                <button class="ne-reform-menu-item" @click="reformulateSelection('simple'); reformPopoverRef?.hide()">
+                  <span class="mdi mdi-text-short" style="font-size: 16px"></span>
+                  <span>{{ $t('editor.toneSimple') }}</span>
+                </button>
+              </div>
+            </Popover>
       </div>
 
       <template v-if="ltAvailable">
         <div class="ne-separator" />
         <div class="ne-toolbar-group">
           <button class="ne-btn" :class="{ active: spellCheckEnabled }" @click="toggleSpellCheck" :title="$t('editor.spellCheck')">
-            <v-icon size="18">mdi-spellcheck</v-icon>
+            <span class="mdi mdi-spellcheck" style="font-size: 18px"></span>
           </button>
         </div>
       </template>
@@ -225,10 +221,10 @@
     <!-- Reformulation suggestions panel -->
     <div v-if="reformSuggestions.length > 0" class="ne-reform-panel glass-card">
       <div class="ne-reform-header">
-        <v-icon size="16" color="var(--me-accent)">mdi-auto-fix</v-icon>
+        <span class="mdi mdi-auto-fix" style="font-size: 16px; color: var(--me-accent)"></span>
         <span class="ne-reform-title mono">{{ $t('editor.reformSuggestions') }}</span>
         <button class="ne-reform-close" @click="reformSuggestions = []">
-          <v-icon size="14">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 14px"></i>
         </button>
       </div>
       <div
@@ -238,7 +234,7 @@
         @click="applyReformulation(suggestion)"
       >
         <span class="ne-reform-text">{{ suggestion }}</span>
-        <v-icon size="14" class="ne-reform-apply">mdi-check</v-icon>
+        <i class="pi pi-check ne-reform-apply" style="font-size: 14px"></i>
       </div>
     </div>
 
@@ -273,45 +269,45 @@
         <!-- Table context -->
         <template v-if="contextMenu.context === 'table'">
           <button class="ne-ctx-item" @click="editor?.chain().focus().addColumnBefore().run()">
-            <v-icon size="14">mdi-table-column-plus-before</v-icon>
+            <span class="mdi mdi-table-column-plus-before" style="font-size: 14px"></span>
             {{ $t('editor.ctx.insertColumnBefore') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().addColumnAfter().run()">
-            <v-icon size="14">mdi-table-column-plus-after</v-icon>
+            <span class="mdi mdi-table-column-plus-after" style="font-size: 14px"></span>
             {{ $t('editor.ctx.insertColumnAfter') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().addRowBefore().run()">
-            <v-icon size="14">mdi-table-row-plus-before</v-icon>
+            <span class="mdi mdi-table-row-plus-before" style="font-size: 14px"></span>
             {{ $t('editor.ctx.insertRowBefore') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().addRowAfter().run()">
-            <v-icon size="14">mdi-table-row-plus-after</v-icon>
+            <span class="mdi mdi-table-row-plus-after" style="font-size: 14px"></span>
             {{ $t('editor.ctx.insertRowAfter') }}
           </button>
           <div class="ne-ctx-separator" />
           <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteColumn().run()">
-            <v-icon size="14">mdi-table-column-remove</v-icon>
+            <span class="mdi mdi-table-column-remove" style="font-size: 14px"></span>
             {{ $t('editor.ctx.deleteColumn') }}
           </button>
           <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteRow().run()">
-            <v-icon size="14">mdi-table-row-remove</v-icon>
+            <span class="mdi mdi-table-row-remove" style="font-size: 14px"></span>
             {{ $t('editor.ctx.deleteRow') }}
           </button>
           <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteTable().run()">
-            <v-icon size="14">mdi-table-remove</v-icon>
+            <span class="mdi mdi-table-remove" style="font-size: 14px"></span>
             {{ $t('editor.ctx.deleteTable') }}
           </button>
           <div class="ne-ctx-separator" />
           <button class="ne-ctx-item" @click="editor?.chain().focus().mergeCells().run()">
-            <v-icon size="14">mdi-table-merge-cells</v-icon>
+            <span class="mdi mdi-table-merge-cells" style="font-size: 14px"></span>
             {{ $t('editor.ctx.mergeCells') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().splitCell().run()">
-            <v-icon size="14">mdi-table-split-cell</v-icon>
+            <span class="mdi mdi-table-split-cell" style="font-size: 14px"></span>
             {{ $t('editor.ctx.splitCell') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleHeaderCell().run()">
-            <v-icon size="14">mdi-table-headers-eye</v-icon>
+            <span class="mdi mdi-table-headers-eye" style="font-size: 14px"></span>
             {{ $t('editor.ctx.toggleHeader') }}
           </button>
           <div class="ne-ctx-separator" />
@@ -319,7 +315,7 @@
           <div class="ne-ctx-colors">
             <button v-for="c in contextColors" :key="c" class="ne-ctx-color-btn" :style="{ background: c }" @click="setCellBgColor(c)" :title="c" />
             <button class="ne-ctx-color-btn ne-ctx-color-reset" @click="setCellBgColor(null)" title="Reset">
-              <v-icon size="10">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 10px"></i>
             </button>
           </div>
         </template>
@@ -327,11 +323,11 @@
         <!-- Image context -->
         <template v-else-if="contextMenu.context === 'image'">
           <button class="ne-ctx-item" @click="copyContextImage()">
-            <v-icon size="14">mdi-content-copy</v-icon>
+            <i class="pi pi-copy" style="font-size: 14px"></i>
             {{ $t('editor.ctx.copyImage') }}
           </button>
           <button class="ne-ctx-item ne-ctx-item--danger" @click="editor?.chain().focus().deleteSelection().run()">
-            <v-icon size="14">mdi-delete-outline</v-icon>
+            <i class="pi pi-trash" style="font-size: 14px"></i>
             {{ $t('editor.ctx.deleteImage') }}
           </button>
         </template>
@@ -339,57 +335,57 @@
         <!-- Text context (default) -->
         <template v-else>
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleBold().run()">
-            <v-icon size="14">mdi-format-bold</v-icon>
+            <span class="mdi mdi-format-bold" style="font-size: 14px"></span>
             {{ $t('editor.ctx.bold') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleItalic().run()">
-            <v-icon size="14">mdi-format-italic</v-icon>
+            <span class="mdi mdi-format-italic" style="font-size: 14px"></span>
             {{ $t('editor.ctx.italic') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleUnderline().run()">
-            <v-icon size="14">mdi-format-underline</v-icon>
+            <span class="mdi mdi-format-underline" style="font-size: 14px"></span>
             {{ $t('editor.ctx.underline') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleStrike().run()">
-            <v-icon size="14">mdi-format-strikethrough</v-icon>
+            <span class="mdi mdi-format-strikethrough" style="font-size: 14px"></span>
             {{ $t('editor.ctx.strikethrough') }}
           </button>
           <div class="ne-ctx-separator" />
           <button class="ne-ctx-item" @click="insertLink()">
-            <v-icon size="14">mdi-link-variant</v-icon>
+            <span class="mdi mdi-link-variant" style="font-size: 14px"></span>
             {{ $t('editor.ctx.insertLink') }}
           </button>
           <button class="ne-ctx-item" @click="triggerImageUpload()">
-            <v-icon size="14">mdi-image-plus</v-icon>
+            <span class="mdi mdi-image-plus" style="font-size: 14px"></span>
             {{ $t('editor.ctx.insertImage') }}
           </button>
           <button class="ne-ctx-item" @click="insertTable()">
-            <v-icon size="14">mdi-table</v-icon>
+            <span class="mdi mdi-table" style="font-size: 14px"></span>
             {{ $t('editor.ctx.insertTable') }}
           </button>
           <div class="ne-ctx-separator" />
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleHighlight().run()">
-            <v-icon size="14">mdi-marker</v-icon>
+            <span class="mdi mdi-marker" style="font-size: 14px"></span>
             {{ $t('editor.ctx.highlight') }}
           </button>
           <div class="ne-ctx-colors">
             <button v-for="c in contextColors" :key="c" class="ne-ctx-color-btn" :style="{ background: c }" @click="editor?.chain().focus().setColor(c).run()" :title="c" />
             <button class="ne-ctx-color-btn ne-ctx-color-reset" @click="editor?.chain().focus().unsetColor().run()" title="Reset">
-              <v-icon size="10">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 10px"></i>
             </button>
           </div>
           <div class="ne-ctx-separator" />
           <button class="ne-ctx-item" :disabled="!hasSelection || reformulating" @click="contextMenu.show = false; reformulateSelection('fluent')">
-            <v-icon size="14">mdi-auto-fix</v-icon>
+            <span class="mdi mdi-auto-fix" style="font-size: 14px"></span>
             {{ $t('editor.ctx.reformulate') }}
           </button>
           <div class="ne-ctx-separator" />
           <button class="ne-ctx-item" @click="editor?.chain().focus().toggleCodeBlock().run()">
-            <v-icon size="14">mdi-code-braces</v-icon>
+            <span class="mdi mdi-code-braces" style="font-size: 14px"></span>
             {{ $t('editor.ctx.codeBlock') }}
           </button>
           <button class="ne-ctx-item" @click="editor?.chain().focus().setHorizontalRule().run()">
-            <v-icon size="14">mdi-minus</v-icon>
+            <i class="pi pi-minus" style="font-size: 14px"></i>
             {{ $t('editor.ctx.horizontalRule') }}
           </button>
         </template>
@@ -434,6 +430,7 @@ import CommentSidebar from './CommentSidebar.vue';
 import { createMentionExtension } from './mentionExtension';
 import { Callout } from './calloutExtension';
 import { createLanguageToolExtension, languageToolPluginKey } from './languageToolExtension';
+import Popover from 'primevue/popover';
 
 const { t } = useI18n();
 
@@ -448,6 +445,8 @@ const { prompt: promptDialog } = useConfirm();
 const fileInput = ref<HTMLInputElement | null>(null);
 const showComments = ref(false);
 const commentCount = ref(0);
+const calloutPopoverRef = ref();
+const reformPopoverRef = ref();
 const spellCheckEnabled = ref(false);
 const ltAvailable = ref(false);
 const ltLanguage = ref('auto');
@@ -1213,6 +1212,29 @@ onBeforeUnmount(() => {
 .ne-ctx-item:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+.ne-callout-menu, .ne-reform-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  min-width: 160px;
+}
+.ne-callout-menu-item, .ne-reform-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: var(--me-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.ne-callout-menu-item:hover, .ne-reform-menu-item:hover {
+  background: var(--me-bg-elevated);
 }
 </style>
 

@@ -2,18 +2,18 @@
   <div class="admin-defaults">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-folder-cog-outline</v-icon>
+        <span class="mdi mdi-folder-cog-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.dossierConfig') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.dossierConfigDesc') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- Retention des donnees -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-database-clock-outline</v-icon>
+        <span class="mdi mdi-database-clock-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.dataRetention') }}</h3>
       </div>
       <div class="sec-option">
@@ -21,23 +21,19 @@
           <p class="sec-label">{{ $t('admin.trashPurgeDays') }}</p>
           <p class="sec-desc">{{ $t('admin.trashPurgeDaysDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.trashAutoDeleteDays"
+        <InputText v-model.number="form.trashAutoDeleteDays"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="0"
           :max="365"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
     </div>
 
     <!-- Alertes de durée des dossiers -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-timer-alert-outline</v-icon>
+        <span class="mdi mdi-timer-alert-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.dossierAlerts') }}</h3>
       </div>
       <p class="sec-desc" style="margin-bottom: 16px;">{{ $t('admin.dossierAlertsDesc') }}</p>
@@ -45,36 +41,24 @@
       <div class="alerts-row">
         <div class="alerts-field">
           <label class="alerts-label mono">{{ $t('admin.alertRoutine') }}</label>
-          <v-text-field
-            v-model.number="alertsForm.routine"
+          <InputText v-model.number="alertsForm.routine"
             type="number"
-            density="compact"
-            hide-details
             :min="1"
-            :max="365"
-          />
+            :max="365" />
         </div>
         <div class="alerts-field">
           <label class="alerts-label mono">{{ $t('admin.alertPriority') }}</label>
-          <v-text-field
-            v-model.number="alertsForm.priority"
+          <InputText v-model.number="alertsForm.priority"
             type="number"
-            density="compact"
-            hide-details
             :min="1"
-            :max="365"
-          />
+            :max="365" />
         </div>
         <div class="alerts-field">
           <label class="alerts-label mono">{{ $t('admin.alertUrgent') }}</label>
-          <v-text-field
-            v-model.number="alertsForm.urgent"
+          <InputText v-model.number="alertsForm.urgent"
             type="number"
-            density="compact"
-            hide-details
             :min="1"
-            :max="365"
-          />
+            :max="365" />
         </div>
       </div>
 
@@ -82,48 +66,34 @@
         <h4 class="sec-card-title mono" style="font-size: 13px; margin-bottom: 12px;">Messages</h4>
         <div class="alerts-msg-field">
           <label class="alerts-label mono">{{ $t('admin.alertRoutineMsg') }}</label>
-          <v-text-field
-            v-model="alertsForm.routineMessage"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.alertMsgPlaceholder')"
-          />
+          <InputText v-model="alertsForm.routineMessage"
+            :placeholder="$t('admin.alertMsgPlaceholder')" />
         </div>
         <div class="alerts-msg-field">
           <label class="alerts-label mono">{{ $t('admin.alertPriorityMsg') }}</label>
-          <v-text-field
-            v-model="alertsForm.priorityMessage"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.alertMsgPlaceholder')"
-          />
+          <InputText v-model="alertsForm.priorityMessage"
+            :placeholder="$t('admin.alertMsgPlaceholder')" />
         </div>
         <div class="alerts-msg-field">
           <label class="alerts-label mono">{{ $t('admin.alertUrgentMsg') }}</label>
-          <v-text-field
-            v-model="alertsForm.urgentMessage"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.alertMsgPlaceholder')"
-          />
+          <InputText v-model="alertsForm.urgentMessage"
+            :placeholder="$t('admin.alertMsgPlaceholder')" />
         </div>
       </div>
 
       <div class="alerts-actions">
         <button class="alerts-save-btn" @click="saveAlerts" :disabled="savingAlerts">
-          <v-icon size="16" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 16px; margin-right: 4px;"></i>
           {{ savingAlerts ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
         <span v-if="alertsSaved" class="alerts-saved mono">
-          <v-icon size="14" color="success" class="mr-1">mdi-check</v-icon>
+          <i class="pi pi-check" style="font-size: 14px; color: #4caf50; margin-right: 4px;"></i>
           {{ $t('admin.settingsSaved') }}
         </span>
       </div>
     </div>
 
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      {{ $t('admin.settingsSaved') }}
-    </v-snackbar>
+    <!-- snackbar removed during migration -->
   </div>
 </template>
 
@@ -131,6 +101,8 @@
 import { reactive, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
 
 const { t } = useI18n();
 

@@ -3,7 +3,7 @@
     <aside class="admin-sidebar">
       <div class="admin-sidebar-header">
         <h2 class="admin-sidebar-title mono">
-          <v-icon size="18" class="mr-2">mdi-shield-account</v-icon>
+          <span class="mdi mdi-shield-account" style="font-size: 18px; margin-right: 8px;"></span>
           {{ $t('admin.title') }}
         </h2>
       </div>
@@ -18,7 +18,7 @@
             :class="['admin-nav-item', { 'admin-nav-item--active': activeSection === item.id }]"
             @click="activeSection = item.id || ''"
           >
-            <v-icon size="18">{{ item.icon }}</v-icon>
+            <span :class="['mdi', item.icon]" style="font-size: 18px;"></span>
             <span>{{ item.label }}</span>
           </button>
         </template>

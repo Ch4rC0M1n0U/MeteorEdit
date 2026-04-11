@@ -2,12 +2,12 @@
   <div class="notif-prefs">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-bell-cog-outline</v-icon>
+        <span class="mdi mdi-bell-cog-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('profile.notifications') }}
       </h2>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <div v-if="loading" style="margin-bottom: 16px;"><ProgressSpinner style="width: 24px; height: 24px;" strokeWidth="2" /></div>
 
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <!-- Global toggles -->
@@ -16,7 +16,7 @@
           <p class="sec-label">{{ $t('notifications.doNotDisturb') }}</p>
           <p class="sec-desc">{{ $t('notifications.doNotDisturbDesc') }}</p>
         </div>
-        <v-switch v-model="prefs.doNotDisturb" color="warning" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="prefs.doNotDisturb" @update:modelValue="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -24,7 +24,7 @@
           <p class="sec-label">{{ $t('notifications.soundLabel') }}</p>
           <p class="sec-desc">{{ $t('notifications.soundDesc') }}</p>
         </div>
-        <v-switch v-model="prefs.soundEnabled" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="prefs.soundEnabled" @update:modelValue="save" />
       </div>
 
       <div class="sec-divider" style="margin: 16px 0;" />
@@ -38,22 +38,21 @@
 
         <template v-for="nt in notifTypes" :key="nt.key">
           <div class="notif-type-label">
-            <v-icon size="16" class="mr-1">{{ nt.icon }}</v-icon>
+            <span :class="nt.icon" style="font-size: 16px; margin-right: 4px;"></span>
             {{ nt.label }}
           </div>
           <div class="notif-type-toggle">
-            <v-switch v-model="prefs.inApp[nt.key]" color="primary" density="compact" hide-details @update:model-value="save" />
+            <ToggleSwitch v-model="prefs.inApp[nt.key]" @update:modelValue="save" />
           </div>
           <div class="notif-type-toggle">
-            <v-switch v-model="prefs.email[nt.key]" color="primary" density="compact" hide-details @update:model-value="save" />
+            <ToggleSwitch v-model="prefs.email[nt.key]" @update:modelValue="save" />
           </div>
         </template>
       </div>
     </div>
 
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      {{ $t('notifications.preferencesSaved') }}
-    </v-snackbar>
+    <Toast ref="toastRef" />
+    <div v-if="saved" class="notif-saved-toast">{{ $t('notifications.preferencesSaved') }}</div>
   </div>
 </template>
 
@@ -61,6 +60,9 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ToggleSwitch from 'primevue/toggleswitch';
+import ProgressSpinner from 'primevue/progressspinner';
+import Toast from 'primevue/toast';
 
 const { t } = useI18n();
 const loading = ref(true);

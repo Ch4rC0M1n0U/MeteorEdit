@@ -2,7 +2,7 @@
   <div class="admin-branding">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-palette-outline</v-icon>
+        <span class="mdi mdi-palette-outline" style="font-size: 20px; margin-right: 8px;"></span>
         Parametres du site
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.appearanceCustomization') }}</p>
@@ -13,12 +13,8 @@
       <div class="branding-card glass-card">
         <h3 class="branding-card-title mono">{{ $t('admin.appName') }}</h3>
         <p class="branding-card-desc">{{ $t('admin.appNameDesc') }}</p>
-        <v-text-field
-          v-model="form.appName"
-          density="compact"
-          hide-details
-          placeholder="MeteorEdit"
-        />
+        <InputText v-model="form.appName"
+          placeholder="MeteorEdit" />
       </div>
 
       <!-- Accent Color -->
@@ -27,13 +23,9 @@
         <p class="branding-card-desc">{{ $t('admin.accentColorDesc') }}</p>
         <div class="color-picker-row">
           <input type="color" v-model="form.accentColor" class="color-input" />
-          <v-text-field
-            v-model="form.accentColor"
-            density="compact"
-            hide-details
+          <InputText v-model="form.accentColor"
             placeholder="#38bdf8"
-            class="color-hex-field"
-          />
+            class="color-hex-field" />
           <div class="color-preview" :style="{ background: form.accentColor }" />
         </div>
       </div>
@@ -42,12 +34,8 @@
       <div class="branding-card glass-card">
         <h3 class="branding-card-title mono">{{ $t('admin.loginMessage') }}</h3>
         <p class="branding-card-desc">{{ $t('admin.loginMessageDesc') }}</p>
-        <v-text-field
-          v-model="form.loginMessage"
-          density="compact"
-          hide-details
-          placeholder="Plateforme d'investigation OSINT"
-        />
+        <InputText v-model="form.loginMessage"
+          placeholder="Plateforme d'investigation OSINT" />
       </div>
 
       <!-- Logo Upload -->
@@ -58,11 +46,11 @@
           <div v-if="brandingStore.logoUrl" class="upload-preview">
             <img :src="brandingStore.logoUrl" alt="Logo" class="upload-preview-img" />
             <button class="upload-remove-btn" @click="removeLogo" :title="$t('common.delete')">
-              <v-icon size="14">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 14px;"></i>
             </button>
           </div>
           <div v-else class="upload-placeholder" @click="triggerLogoInput">
-            <v-icon size="28" color="var(--me-text-muted)">mdi-cloud-upload-outline</v-icon>
+            <i class="pi pi-cloud-upload" style="font-size: 28px; color: var(--me-text-muted);"></i>
             <span>{{ $t('admin.dragOrClick') }}</span>
           </div>
           <input ref="logoInput" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden @change="handleLogoSelect" />
@@ -77,11 +65,11 @@
           <div v-if="brandingStore.loginBackgroundUrl" class="upload-preview">
             <img :src="brandingStore.loginBackgroundUrl" alt="Login Background" class="upload-preview-img upload-preview-bg" />
             <button class="upload-remove-btn" @click="removeLoginBg" :title="$t('common.delete')">
-              <v-icon size="14">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 14px;"></i>
             </button>
           </div>
           <div v-else class="upload-placeholder" @click="triggerLoginBgInput">
-            <v-icon size="28" color="var(--me-text-muted)">mdi-image-outline</v-icon>
+            <span class="mdi mdi-image-outline" style="font-size: 28px; color: var(--me-text-muted);"></span>
             <span>{{ $t('admin.dragOrClick') }}</span>
           </div>
           <input ref="loginBgInput" type="file" accept="image/png,image/jpeg,image/webp" hidden @change="handleLoginBgSelect" />
@@ -96,11 +84,11 @@
           <div v-if="brandingStore.faviconUrl" class="upload-preview">
             <img :src="brandingStore.faviconUrl" alt="Favicon" class="upload-preview-img upload-preview-favicon" />
             <button class="upload-remove-btn" @click="removeFavicon" :title="$t('common.delete')">
-              <v-icon size="14">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 14px;"></i>
             </button>
           </div>
           <div v-else class="upload-placeholder" @click="triggerFaviconInput">
-            <v-icon size="28" color="var(--me-text-muted)">mdi-emoticon-outline</v-icon>
+            <span class="mdi mdi-emoticon-outline" style="font-size: 28px; color: var(--me-text-muted);"></span>
             <span>{{ $t('admin.dragOrClick') }}</span>
           </div>
           <input ref="faviconInput" type="file" accept="image/png,image/x-icon,image/svg+xml" hidden @change="handleFaviconSelect" />
@@ -111,11 +99,11 @@
     <!-- Actions -->
     <div class="branding-actions fade-in fade-in-delay-2">
       <button class="me-btn-ghost" @click="resetDefaults">
-        <v-icon size="14" class="mr-1">mdi-restore</v-icon>
+        <span class="mdi mdi-restore" style="font-size: 14px; margin-right: 4px;"></span>
         {{ $t('admin.resetToDefaults') }}
       </button>
       <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
-        <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+        <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
         {{ saving ? $t('admin.saving') : $t('common.save') }}
       </button>
     </div>
@@ -127,6 +115,7 @@ import { ref, onMounted, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useBrandingStore } from '../../stores/branding';
+import InputText from 'primevue/inputtext';
 
 const brandingStore = useBrandingStore();
 const { t } = useI18n();

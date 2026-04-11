@@ -2,7 +2,7 @@
   <div class="admin-ai">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-robot-outline</v-icon>
+        <span class="mdi mdi-robot-outline" style="font-size: 20px; margin-right: 8px;"></span>
         Intelligence Artificielle
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.aiSubtitle') }}</p>
@@ -12,7 +12,7 @@
     <div class="ai-card glass-card fade-in fade-in-delay-1">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-swap-horizontal</v-icon>
+          <span class="mdi mdi-swap-horizontal" style="font-size: 24px;"></span>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.aiProviderTitle') }}</h3>
@@ -25,7 +25,7 @@
           :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'ollama' }]"
           @click="form.aiProvider = 'ollama'"
         >
-          <v-icon size="20" class="mr-2">mdi-server-network</v-icon>
+          <i class="pi pi-server" style="font-size: 20px; margin-right: 8px;"></i>
           <div class="ai-provider-btn-content">
             <span class="ai-provider-btn-title">Ollama</span>
             <span class="ai-provider-btn-desc">{{ $t('admin.ollamaProviderDesc') }}</span>
@@ -35,7 +35,7 @@
           :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'claude' }]"
           @click="form.aiProvider = 'claude'"
         >
-          <v-icon size="20" class="mr-2">mdi-cloud-outline</v-icon>
+          <i class="pi pi-cloud" style="font-size: 20px; margin-right: 8px;"></i>
           <div class="ai-provider-btn-content">
             <span class="ai-provider-btn-title">Claude API</span>
             <span class="ai-provider-btn-desc">{{ $t('admin.claudeProviderDesc') }}</span>
@@ -45,7 +45,7 @@
           :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'openai' }]"
           @click="form.aiProvider = 'openai'"
         >
-          <v-icon size="20" class="mr-2">mdi-creation</v-icon>
+          <span class="mdi mdi-creation" style="font-size: 20px; margin-right: 8px;"></span>
           <div class="ai-provider-btn-content">
             <span class="ai-provider-btn-title">OpenAI / ChatGPT</span>
             <span class="ai-provider-btn-desc">{{ $t('admin.openaiProviderDesc') }}</span>
@@ -57,16 +57,16 @@
     <!-- Claude API Privacy Warning -->
     <div v-if="form.aiProvider === 'claude'" class="ai-card ai-privacy-card fade-in">
       <div class="ai-privacy-header">
-        <v-icon size="22" color="#f59e0b">mdi-shield-alert-outline</v-icon>
+        <span class="mdi mdi-shield-alert-outline" style="font-size: 22px; color: #f59e0b;"></span>
         <h3 class="ai-card-title mono">{{ $t('admin.claudePrivacyTitle') }}</h3>
       </div>
       <div class="ai-privacy-content">
         <p>{{ $t('admin.claudePrivacyText1') }}</p>
         <ul class="ai-privacy-list">
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.claudePrivacyItem1') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.claudePrivacyItem2') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.claudePrivacyItem3') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.claudePrivacyItem4') }}</li>
+          <li><i class="pi pi-exclamation-triangle" style="font-size: 14px; color: #f59e0b; margin-right: 4px;"></i>{{ $t('admin.claudePrivacyItem1') }}</li>
+          <li><i class="pi pi-exclamation-triangle" style="font-size: 14px; color: #f59e0b; margin-right: 4px;"></i>{{ $t('admin.claudePrivacyItem2') }}</li>
+          <li><i class="pi pi-check-circle" style="font-size: 14px; color: #34d399; margin-right: 4px;"></i>{{ $t('admin.claudePrivacyItem3') }}</li>
+          <li><i class="pi pi-check-circle" style="font-size: 14px; color: #34d399; margin-right: 4px;"></i>{{ $t('admin.claudePrivacyItem4') }}</li>
         </ul>
         <p class="ai-privacy-footer">{{ $t('admin.claudePrivacyFooter') }}</p>
       </div>
@@ -76,7 +76,7 @@
     <div v-if="form.aiProvider === 'ollama'" class="ai-card glass-card fade-in fade-in-delay-1">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-cog-outline</v-icon>
+          <i class="pi pi-cog" style="font-size: 24px;"></i>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.aiConfig') }}</h3>
@@ -91,14 +91,10 @@
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.ollamaUrl') }}</label>
           <div class="ai-field-row">
-            <v-text-field
-              v-model="form.baseUrl"
-              density="compact"
-              hide-details
-              placeholder="http://localhost:11434"
-            />
+            <InputText v-model="form.baseUrl"
+              placeholder="http://localhost:11434" />
             <button class="ai-test-btn" @click="testConnection" :disabled="testing">
-              <v-icon size="14" class="mr-1">mdi-connection</v-icon>
+              <i class="pi pi-link" style="font-size: 14px; margin-right: 4px;"></i>
               {{ testing ? $t('admin.testing') : $t('admin.test') }}
             </button>
           </div>
@@ -107,28 +103,24 @@
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.enableAI') }}</label>
           <div class="ai-toggle-row">
-            <v-switch v-model="form.enabled" hide-details color="var(--me-accent)" density="compact" />
+            <ToggleSwitch v-model="form.enabled" />
             <span class="ai-toggle-label">{{ form.enabled ? $t('admin.aiEnabled') : $t('admin.aiDisabled') }}</span>
           </div>
         </div>
 
         <div class="ai-field" v-if="installedModels.length > 0">
           <label class="ai-label mono">{{ $t('admin.selectedModel') }}</label>
-          <v-select
-            v-model="form.selectedModel"
-            :items="installedModels"
-            item-title="name"
-            item-value="name"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.selectModelPlaceholder')"
-          />
+          <Select v-model="form.selectedModel"
+            :options="installedModels"
+            optionLabel="name"
+            optionValue="name"
+            :placeholder="$t('admin.selectModelPlaceholder')" />
         </div>
       </div>
 
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
-          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
           {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
       </div>
@@ -138,7 +130,7 @@
     <div v-if="form.aiProvider === 'claude'" class="ai-card glass-card fade-in fade-in-delay-1">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-cloud-cog-outline</v-icon>
+          <i class="pi pi-cloud" style="font-size: 24px;"></i>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.claudeConfig') }}</h3>
@@ -153,53 +145,45 @@
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.claudeApiKey') }}</label>
           <div class="ai-field-row">
-            <v-text-field
-              v-model="form.claudeApiKey"
-              density="compact"
-              hide-details
+            <InputText v-model="form.claudeApiKey"
               :type="showClaudeKey ? 'text' : 'password'"
-              placeholder="sk-ant-api03-..."
-            />
+              placeholder="sk-ant-api03-..." />
             <button class="ai-test-btn" @click="showClaudeKey = !showClaudeKey">
-              <v-icon size="14">{{ showClaudeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+              <span :class="['mdi', showClaudeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 14px;"></span>
             </button>
             <button class="ai-test-btn" @click="testClaudeConnection" :disabled="testingClaude">
-              <v-icon size="14" class="mr-1">mdi-connection</v-icon>
+              <i class="pi pi-link" style="font-size: 14px; margin-right: 4px;"></i>
               {{ testingClaude ? $t('admin.testing') : $t('admin.test') }}
             </button>
           </div>
           <p v-if="claudeHasKey" class="ai-field-hint ai-field-hint--ok">
-            <v-icon size="12" class="mr-1" color="#34d399">mdi-key</v-icon>
+            <i class="pi pi-key" style="font-size: 12px; color: #34d399; margin-right: 4px;"></i>
             {{ $t('admin.claudeKeyConfigured') }}
           </p>
           <p class="ai-field-hint">
             <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" class="ai-link">
-              <v-icon size="12" class="mr-1">mdi-open-in-new</v-icon>
+              <i class="pi pi-external-link" style="font-size: 12px; margin-right: 4px;"></i>
               {{ $t('admin.claudeGetKey') }}
             </a>
           </p>
           <div v-if="claudeTestStatus" :class="['ai-status-msg', claudeTestStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-            <v-icon size="14" class="mr-1">{{ claudeTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+            <span class="mdi {{ claudeTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}" style="font-size: 14px; margin-right: 4px;"></span>
             {{ claudeTestStatus.message }}
           </div>
         </div>
 
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.claudeModel') }}</label>
-          <v-select
-            v-model="form.claudeModel"
-            :items="claudeModels"
-            item-title="label"
-            item-value="value"
-            density="compact"
-            hide-details
-          />
+          <Select v-model="form.claudeModel"
+            :options="claudeModels"
+            optionLabel="label"
+            optionValue="value" />
         </div>
 
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.enableAI') }}</label>
           <div class="ai-toggle-row">
-            <v-switch v-model="form.claudeEnabled" hide-details color="var(--me-accent)" density="compact" />
+            <ToggleSwitch v-model="form.claudeEnabled" />
             <span class="ai-toggle-label">{{ form.claudeEnabled ? $t('admin.aiEnabled') : $t('admin.aiDisabled') }}</span>
           </div>
         </div>
@@ -207,11 +191,11 @@
 
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
-          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
           {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
         <div v-if="saveStatus" :class="['ai-status-msg', saveStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-          <v-icon size="14" class="mr-1">{{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+          <span class="mdi {{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}" style="font-size: 14px; margin-right: 4px;"></span>
           {{ saveStatus.message }}
         </div>
       </div>
@@ -220,15 +204,15 @@
     <!-- OpenAI Privacy Warning -->
     <div v-if="form.aiProvider === 'openai'" class="ai-card ai-privacy-card fade-in">
       <div class="ai-privacy-header">
-        <v-icon size="22" color="#f59e0b">mdi-shield-alert-outline</v-icon>
+        <span class="mdi mdi-shield-alert-outline" style="font-size: 22px; color: #f59e0b;"></span>
         <h3 class="ai-card-title mono">{{ $t('admin.openaiPrivacyTitle') }}</h3>
       </div>
       <div class="ai-privacy-content">
         <p>{{ $t('admin.openaiPrivacyText1') }}</p>
         <ul class="ai-privacy-list">
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.openaiPrivacyItem1') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.openaiPrivacyItem2') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.openaiPrivacyItem3') }}</li>
+          <li><i class="pi pi-exclamation-triangle" style="font-size: 14px; color: #f59e0b; margin-right: 4px;"></i>{{ $t('admin.openaiPrivacyItem1') }}</li>
+          <li><i class="pi pi-exclamation-triangle" style="font-size: 14px; color: #f59e0b; margin-right: 4px;"></i>{{ $t('admin.openaiPrivacyItem2') }}</li>
+          <li><i class="pi pi-check-circle" style="font-size: 14px; color: #34d399; margin-right: 4px;"></i>{{ $t('admin.openaiPrivacyItem3') }}</li>
         </ul>
         <p class="ai-privacy-footer">{{ $t('admin.openaiPrivacyFooter') }}</p>
       </div>
@@ -237,32 +221,28 @@
     <!-- Individual Mode + Disclaimer -->
     <div class="ai-card ai-privacy-card fade-in fade-in-delay-1">
       <div class="ai-privacy-header">
-        <v-icon size="22" color="#f59e0b">mdi-account-key-outline</v-icon>
+        <span class="mdi mdi-account-key-outline" style="font-size: 22px; color: #f59e0b;"></span>
         <h3 class="ai-card-title mono">{{ $t('admin.aiIndividualModeTitle') }}</h3>
       </div>
       <div class="ai-privacy-content">
         <p>{{ $t('admin.aiIndividualModeDesc') }}</p>
         <ul class="ai-privacy-list">
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ $t('admin.aiIndividualModeItem1') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.aiIndividualModeItem2') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ $t('admin.aiIndividualModeItem3') }}</li>
+          <li><i class="pi pi-exclamation-triangle" style="font-size: 14px; color: #f59e0b; margin-right: 4px;"></i>{{ $t('admin.aiIndividualModeItem1') }}</li>
+          <li><i class="pi pi-check-circle" style="font-size: 14px; color: #34d399; margin-right: 4px;"></i>{{ $t('admin.aiIndividualModeItem2') }}</li>
+          <li><i class="pi pi-check-circle" style="font-size: 14px; color: #34d399; margin-right: 4px;"></i>{{ $t('admin.aiIndividualModeItem3') }}</li>
         </ul>
 
         <div class="ai-individual-toggle">
-          <v-switch v-model="form.aiIndividualMode" hide-details color="var(--me-accent)" density="compact" />
+          <ToggleSwitch v-model="form.aiIndividualMode" />
           <span class="ai-toggle-label">{{ form.aiIndividualMode ? $t('admin.aiIndividualModeOn') : $t('admin.aiIndividualModeOff') }}</span>
         </div>
 
         <div v-if="form.aiIndividualMode" class="ai-disclaimer-editor">
           <label class="ai-label mono">{{ $t('admin.aiDisclaimerLabel') }}</label>
-          <v-textarea
-            v-model="form.aiDisclaimerMessage"
-            density="compact"
-            hide-details
+          <Textarea v-model="form.aiDisclaimerMessage"
             rows="4"
             auto-grow
-            :placeholder="$t('admin.aiDisclaimerPlaceholder')"
-          />
+            :placeholder="$t('admin.aiDisclaimerPlaceholder')" />
           <p class="ai-privacy-footer">{{ $t('admin.aiDisclaimerHint') }}</p>
         </div>
       </div>
@@ -272,7 +252,7 @@
     <div v-if="form.aiProvider === 'openai'" class="ai-card glass-card fade-in fade-in-delay-1">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-cloud-cog-outline</v-icon>
+          <i class="pi pi-cloud" style="font-size: 24px;"></i>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.openaiConfig') }}</h3>
@@ -287,53 +267,45 @@
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.openaiApiKey') }}</label>
           <div class="ai-field-row">
-            <v-text-field
-              v-model="form.openaiApiKey"
-              density="compact"
-              hide-details
+            <InputText v-model="form.openaiApiKey"
               :type="showOpenaiKey ? 'text' : 'password'"
-              placeholder="sk-proj-..."
-            />
+              placeholder="sk-proj-..." />
             <button class="ai-test-btn" @click="showOpenaiKey = !showOpenaiKey">
-              <v-icon size="14">{{ showOpenaiKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+              <span :class="['mdi', showOpenaiKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 14px;"></span>
             </button>
             <button class="ai-test-btn" @click="testOpenAIConnection" :disabled="testingOpenai">
-              <v-icon size="14" class="mr-1">mdi-connection</v-icon>
+              <i class="pi pi-link" style="font-size: 14px; margin-right: 4px;"></i>
               {{ testingOpenai ? $t('admin.testing') : $t('admin.test') }}
             </button>
           </div>
           <p v-if="openaiHasKey" class="ai-field-hint ai-field-hint--ok">
-            <v-icon size="12" class="mr-1" color="#34d399">mdi-key</v-icon>
+            <i class="pi pi-key" style="font-size: 12px; color: #34d399; margin-right: 4px;"></i>
             {{ $t('admin.openaiKeyConfigured') }}
           </p>
           <p class="ai-field-hint">
             <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="ai-link">
-              <v-icon size="12" class="mr-1">mdi-open-in-new</v-icon>
+              <i class="pi pi-external-link" style="font-size: 12px; margin-right: 4px;"></i>
               {{ $t('admin.openaiGetKey') }}
             </a>
           </p>
           <div v-if="openaiTestStatus" :class="['ai-status-msg', openaiTestStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-            <v-icon size="14" class="mr-1">{{ openaiTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+            <span class="mdi {{ openaiTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}" style="font-size: 14px; margin-right: 4px;"></span>
             {{ openaiTestStatus.message }}
           </div>
         </div>
 
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.openaiModel') }}</label>
-          <v-select
-            v-model="form.openaiModel"
-            :items="openaiModels"
-            item-title="label"
-            item-value="value"
-            density="compact"
-            hide-details
-          />
+          <Select v-model="form.openaiModel"
+            :options="openaiModels"
+            optionLabel="label"
+            optionValue="value" />
         </div>
 
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.enableAI') }}</label>
           <div class="ai-toggle-row">
-            <v-switch v-model="form.openaiEnabled" hide-details color="var(--me-accent)" density="compact" />
+            <ToggleSwitch v-model="form.openaiEnabled" />
             <span class="ai-toggle-label">{{ form.openaiEnabled ? $t('admin.aiEnabled') : $t('admin.aiDisabled') }}</span>
           </div>
         </div>
@@ -341,11 +313,11 @@
 
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
-          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
           {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
         <div v-if="saveStatus" :class="['ai-status-msg', saveStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-          <v-icon size="14" class="mr-1">{{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+          <span class="mdi {{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}" style="font-size: 14px; margin-right: 4px;"></span>
           {{ saveStatus.message }}
         </div>
       </div>
@@ -355,7 +327,7 @@
     <div class="ai-card glass-card fade-in fade-in-delay-2">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-text-box-edit-outline</v-icon>
+          <span class="mdi mdi-text-box-edit-outline" style="font-size: 24px;"></span>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.generationPrompt') }}</h3>
@@ -387,7 +359,7 @@
 
         <div class="ai-field">
           <button class="ai-reset-btn" @click="resetPrompt">
-            <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
+            <i class="pi pi-refresh" style="font-size: 14px; margin-right: 4px;"></i>
             Reinitialiser le prompt par defaut
           </button>
         </div>
@@ -395,7 +367,7 @@
 
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
-          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
           {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
         </button>
       </div>
@@ -405,14 +377,14 @@
     <div class="ai-card glass-card fade-in fade-in-delay-2">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-file-document-multiple-outline</v-icon>
+          <span class="mdi mdi-file-document-multiple-outline" style="font-size: 24px;"></span>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.reportTemplates') }}</h3>
           <p class="ai-card-desc">{{ $t('admin.reportTemplatesDesc') }}</p>
         </div>
         <button class="ai-test-btn" @click="openCreateTemplate">
-          <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+          <i class="pi pi-plus" style="font-size: 14px; margin-right: 4px;"></i>
           Nouveau template
         </button>
       </div>
@@ -421,21 +393,13 @@
       <div v-if="tplFormOpen" class="ai-tpl-form">
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.templateTitleLabel') }}</label>
-          <v-text-field
-            v-model="tplForm.title"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.templateTitle')"
-          />
+          <InputText v-model="tplForm.title"
+            :placeholder="$t('admin.templateTitle')" />
         </div>
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.templateDescription') }}</label>
-          <v-text-field
-            v-model="tplForm.description"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.templateDescPlaceholder')"
-          />
+          <InputText v-model="tplForm.description"
+            :placeholder="$t('admin.templateDescPlaceholder')" />
         </div>
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.availableVariables') }}</label>
@@ -458,14 +422,14 @@
         <div class="ai-field">
           <label class="ai-label mono">{{ $t('admin.templateSharing') }}</label>
           <div class="ai-toggle-row">
-            <v-switch v-model="tplForm.isShared" hide-details color="var(--me-accent)" density="compact" />
+            <ToggleSwitch v-model="tplForm.isShared" />
             <span class="ai-toggle-label">{{ tplForm.isShared ? $t('admin.sharedAll') : $t('admin.privateOnly') }}</span>
           </div>
         </div>
         <div class="ai-tpl-form-actions">
           <button class="me-btn-ghost" @click="tplFormOpen = false">{{ $t('common.cancel') }}</button>
           <button class="me-btn-primary" @click="saveTemplate" :disabled="tplSaving || !tplForm.title.trim() || !tplForm.prompt.trim()">
-            <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+            <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
             {{ tplSaving ? $t('admin.savingSettings') : (tplEditingId ? $t('admin.update') : $t('common.create')) }}
           </button>
         </div>
@@ -484,23 +448,23 @@
           </div>
           <div class="ai-tpl-actions">
             <button class="ai-model-select-btn" @click="editTemplate(tpl)" :title="$t('common.edit')">
-              <v-icon size="14">mdi-pencil-outline</v-icon>
+              <i class="pi pi-pencil" style="font-size: 14px;"></i>
             </button>
             <button class="ai-model-delete-btn" @click="deleteTemplate(tpl._id)" :title="$t('common.delete')">
-              <v-icon size="14">mdi-delete-outline</v-icon>
+              <i class="pi pi-trash" style="font-size: 14px;"></i>
             </button>
           </div>
         </div>
       </div>
 
       <div v-else-if="!tplFormOpen && !loadingTemplates" class="ai-empty">
-        <v-icon size="32" class="mb-2" color="var(--me-text-muted)">mdi-file-document-outline</v-icon>
+        <span class="mdi mdi-file-document-outline" style="font-size: 32px; color: var(--me-text-muted); margin-bottom: 8px;"></span>
         <p>{{ $t('admin.noCustomTemplates') }}</p>
         <p class="ai-empty-hint">{{ $t('admin.defaultTemplateUsed') }}</p>
       </div>
 
       <div class="ai-loading" v-if="loadingTemplates">
-        <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
+        <ProgressSpinner style="width: 24px; height: 24px;" />
         <span>{{ $t('admin.loadingTemplates') }}</span>
       </div>
     </div>
@@ -509,7 +473,7 @@
     <div v-if="form.aiProvider === 'ollama'" class="ai-card glass-card fade-in fade-in-delay-2">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-brain</v-icon>
+          <span class="mdi mdi-brain" style="font-size: 24px;"></span>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.models') }}</h3>
@@ -521,15 +485,11 @@
       <div class="ai-pull-section">
         <label class="ai-label mono">{{ $t('admin.downloadModel') }}</label>
         <div class="ai-field-row">
-          <v-text-field
-            v-model="pullModelName"
-            density="compact"
-            hide-details
+          <InputText v-model="pullModelName"
             :placeholder="$t('admin.modelPlaceholder')"
-            :disabled="pulling"
-          />
+            :disabled="pulling" />
           <button class="me-btn-primary" @click="pullModel" :disabled="pulling || !pullModelName.trim()">
-            <v-icon size="14" class="mr-1">mdi-download</v-icon>
+            <i class="pi pi-download" style="font-size: 14px; margin-right: 4px;"></i>
             {{ $t('admin.download') }}
           </button>
         </div>
@@ -545,11 +505,11 @@
       <div v-if="pulling" class="ai-progress-section">
         <div class="ai-progress-header">
           <div class="ai-progress-info">
-            <v-icon size="16" class="mr-1 ai-progress-spin">mdi-loading</v-icon>
+            <span class="mdi mdi-loading ai-progress-spin" style="font-size: 16px; margin-right: 4px;"></span>
             <span class="ai-progress-label mono">{{ pullProgressLabel }}</span>
           </div>
           <button class="ai-cancel-btn" @click="cancelPull" :title="$t('admin.cancelDownload')">
-            <v-icon size="14" class="mr-1">mdi-close-circle-outline</v-icon>
+            <i class="pi pi-times-circle" style="font-size: 14px; margin-right: 4px;"></i>
             Annuler
           </button>
         </div>
@@ -565,7 +525,7 @@
 
       <!-- Pull result status -->
       <div class="ai-pull-status" v-if="!pulling && pullStatus">
-        <v-icon size="16" :color="pullStatusColor" class="mr-1">{{ pullStatusIcon }}</v-icon>
+        <span :class="['mdi', pullStatusIcon]" style="font-size: 16px; margin-right: 4px;"></span>
         {{ pullStatus }}
       </div>
 
@@ -583,27 +543,27 @@
               @click="form.selectedModel = model.name"
               :title="$t('admin.select')"
             >
-              <v-icon size="14">mdi-check-circle-outline</v-icon>
+              <i class="pi pi-check-circle" style="font-size: 14px;"></i>
             </button>
             <span v-else class="ai-model-selected">
-              <v-icon size="14" color="var(--me-accent)">mdi-check-circle</v-icon>
+              <i class="pi pi-check-circle" style="font-size: 14px; color: var(--me-accent);"></i>
               {{ $t('admin.activeModel') }}
             </span>
             <button class="ai-model-delete-btn" @click="removeModel(model.name)" :title="$t('common.delete')">
-              <v-icon size="14">mdi-delete-outline</v-icon>
+              <i class="pi pi-trash" style="font-size: 14px;"></i>
             </button>
           </div>
         </div>
       </div>
 
       <div class="ai-empty" v-else-if="!loadingModels && !pulling">
-        <v-icon size="32" class="mb-2" color="var(--me-text-muted)">mdi-brain</v-icon>
+        <span class="mdi mdi-brain" style="font-size: 32px; color: var(--me-text-muted); margin-bottom: 8px;"></span>
         <p>{{ $t('admin.noModelsInstalled') }}</p>
         <p class="ai-empty-hint">{{ $t('admin.downloadToStart') }}</p>
       </div>
 
       <div class="ai-loading" v-if="loadingModels">
-        <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
+        <ProgressSpinner style="width: 24px; height: 24px;" />
         <span>{{ $t('admin.loadingModels') }}</span>
       </div>
     </div>
@@ -612,7 +572,7 @@
     <div class="ai-card glass-card fade-in fade-in-delay-3">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-information-outline</v-icon>
+          <i class="pi pi-info-circle" style="font-size: 24px;"></i>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ $t('admin.recommendations') }}</h3>
@@ -641,6 +601,11 @@
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
+import ProgressSpinner from 'primevue/progressspinner';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const { t } = useI18n();
 

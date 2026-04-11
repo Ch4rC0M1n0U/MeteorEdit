@@ -2,19 +2,19 @@
   <div class="admin-osint">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-earth-arrow-right</v-icon>
+        <span class="mdi mdi-earth-arrow-right" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.osint.title') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.osint.subtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <div class="osint-grid fade-in fade-in-delay-1">
       <!-- Tool Detection -->
       <div class="branding-card glass-card">
         <h3 class="branding-card-title mono">
-          <v-icon size="16" class="mr-1">mdi-wrench-outline</v-icon>
+          <span class="mdi mdi-wrench-outline" style="font-size: 16px; margin-right: 4px;"></span>
           {{ $t('admin.osint.toolDetection') }}
         </h3>
         <p class="branding-card-desc">{{ $t('admin.osint.toolDetectionDesc') }}</p>
@@ -25,14 +25,8 @@
               <span class="tool-name mono">yt-dlp</span>
               <span :class="['status-dot', osint.ytdlpVersion ? 'status-dot--active' : 'status-dot--error']" />
             </div>
-            <v-chip
-              :color="osint.ytdlpVersion ? 'success' : 'error'"
-              size="small"
-              variant="tonal"
-              class="mono"
-            >
-              {{ osint.ytdlpVersion || $t('admin.osint.notDetected') }}
-            </v-chip>
+            <Tag :severity="osint.ytdlpVersion ? 'success' : 'error'"
+              class="mono">{{ osint.ytdlpVersion || $t('admin.osint.notDetected') }}</Tag>
           </div>
 
           <div class="tool-row">
@@ -40,14 +34,8 @@
               <span class="tool-name mono">ffmpeg</span>
               <span :class="['status-dot', osint.ffmpegVersion ? 'status-dot--active' : 'status-dot--error']" />
             </div>
-            <v-chip
-              :color="osint.ffmpegVersion ? 'success' : 'error'"
-              size="small"
-              variant="tonal"
-              class="mono"
-            >
-              {{ osint.ffmpegVersion || $t('admin.osint.notDetected') }}
-            </v-chip>
+            <Tag :severity="osint.ffmpegVersion ? 'success' : 'error'"
+              class="mono">{{ osint.ffmpegVersion || $t('admin.osint.notDetected') }}</Tag>
           </div>
 
           <div class="tool-row">
@@ -55,14 +43,8 @@
               <span class="tool-name mono">Python</span>
               <span :class="['status-dot', osint.pythonVersion ? 'status-dot--active' : 'status-dot--error']" />
             </div>
-            <v-chip
-              :color="osint.pythonVersion ? 'success' : 'error'"
-              size="small"
-              variant="tonal"
-              class="mono"
-            >
-              {{ osint.pythonVersion || $t('admin.osint.notDetected') }}
-            </v-chip>
+            <Tag :severity="osint.pythonVersion ? 'success' : 'error'"
+              class="mono">{{ osint.pythonVersion || $t('admin.osint.notDetected') }}</Tag>
           </div>
 
           <div class="tool-row">
@@ -70,14 +52,8 @@
               <span class="tool-name mono">Telethon</span>
               <span :class="['status-dot', osint.telethonVersion ? 'status-dot--active' : 'status-dot--error']" />
             </div>
-            <v-chip
-              :color="osint.telethonVersion ? 'success' : 'error'"
-              size="small"
-              variant="tonal"
-              class="mono"
-            >
-              {{ osint.telethonVersion || $t('admin.osint.notDetected') }}
-            </v-chip>
+            <Tag :severity="osint.telethonVersion ? 'success' : 'error'"
+              class="mono">{{ osint.telethonVersion || $t('admin.osint.notDetected') }}</Tag>
           </div>
 
           <div class="tool-row">
@@ -85,20 +61,14 @@
               <span class="tool-name mono">ExifTool</span>
               <span :class="['status-dot', osint.exiftoolVersion ? 'status-dot--active' : 'status-dot--error']" />
             </div>
-            <v-chip
-              :color="osint.exiftoolVersion ? 'success' : 'error'"
-              size="small"
-              variant="tonal"
-              class="mono"
-            >
-              {{ osint.exiftoolVersion || $t('admin.osint.notDetected') }}
-            </v-chip>
+            <Tag :severity="osint.exiftoolVersion ? 'success' : 'error'"
+              class="mono">{{ osint.exiftoolVersion || $t('admin.osint.notDetected') }}</Tag>
           </div>
         </div>
 
         <div class="tool-actions">
           <button class="me-btn-ghost" @click="testTools" :disabled="testing">
-            <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
+            <i class="pi pi-refresh" style="font-size: 14px; margin-right: 4px;"></i>
             {{ testing ? $t('admin.osint.testing') : $t('admin.osint.test') }}
           </button>
         </div>
@@ -107,7 +77,7 @@
       <!-- Download Configuration -->
       <div class="branding-card glass-card">
         <h3 class="branding-card-title mono">
-          <v-icon size="16" class="mr-1">mdi-download-outline</v-icon>
+          <span class="mdi mdi-download-outline" style="font-size: 16px; margin-right: 4px;"></span>
           {{ $t('admin.osint.downloadConfig') }}
         </h3>
         <p class="branding-card-desc">{{ $t('admin.osint.downloadConfigDesc') }}</p>
@@ -115,42 +85,29 @@
         <div class="config-field">
           <label class="config-label">{{ $t('admin.osint.maxVideoSize') }}</label>
           <div class="slider-row">
-            <v-slider
-              v-model="osint.maxVideoSize"
+            <Slider v-model="osint.maxVideoSize"
               :min="50"
               :max="500"
               :step="50"
-              color="primary"
-              thumb-label
-              hide-details
-              class="config-slider"
-            >
-              <template #thumb-label="{ modelValue }">
-                {{ modelValue }} MB
-              </template>
-            </v-slider>
+              class="config-slider" />
             <span class="slider-value mono">{{ osint.maxVideoSize }} MB</span>
           </div>
         </div>
 
         <div class="config-field mt-4">
           <label class="config-label">{{ $t('admin.osint.maxConcurrentDownloads') }}</label>
-          <v-text-field
-            v-model.number="osint.maxConcurrentDownloads"
+          <InputText v-model.number="osint.maxConcurrentDownloads"
             type="number"
             :min="1"
             :max="10"
-            density="compact"
-            hide-details
-            style="max-width: 120px;"
-          />
+            style="max-width: 120px;" />
         </div>
       </div>
 
       <!-- Enabled Platforms -->
       <div class="branding-card glass-card">
         <h3 class="branding-card-title mono">
-          <v-icon size="16" class="mr-1">mdi-apps</v-icon>
+          <span class="mdi mdi-apps" style="font-size: 16px; margin-right: 4px;"></span>
           {{ $t('admin.osint.enabledPlatforms') }}
         </h3>
         <p class="branding-card-desc">{{ $t('admin.osint.enabledPlatformsDesc') }}</p>
@@ -158,16 +115,11 @@
         <div class="platforms-list">
           <div v-for="platform in platforms" :key="platform.key" class="platform-row">
             <div class="platform-info">
-              <v-icon size="20" :color="isPlatformEnabled(platform.key) ? 'primary' : undefined">{{ platform.icon }}</v-icon>
+              <span class="mdi {{ platform.icon }}" :style="{ fontSize: '20px' }"></span>
               <span class="platform-name">{{ platform.name }}</span>
             </div>
-            <v-switch
-              :model-value="isPlatformEnabled(platform.key)"
-              @update:model-value="togglePlatform(platform.key, $event)"
-              color="primary"
-              hide-details
-              density="compact"
-            />
+            <ToggleSwitch :model-value="isPlatformEnabled(platform.key)"
+              @update:model-value="togglePlatform(platform.key, $event)" />
           </div>
         </div>
       </div>
@@ -175,34 +127,26 @@
       <!-- Telegram API Configuration -->
       <div class="branding-card glass-card">
         <h3 class="branding-card-title mono">
-          <v-icon size="16" class="mr-1">mdi-send</v-icon>
+          <span class="mdi mdi-send" style="font-size: 16px; margin-right: 4px;"></span>
           {{ $t('admin.osint.telegramConfig') }}
         </h3>
         <p class="branding-card-desc">{{ $t('admin.osint.telegramConfigDesc') }}</p>
 
         <div class="config-field">
           <label class="config-label">API ID</label>
-          <v-text-field
-            v-model="telegramConfig.apiId"
-            density="compact"
-            hide-details
+          <InputText v-model="telegramConfig.apiId"
             :placeholder="$t('admin.osint.telegramApiIdPlaceholder')"
-            style="max-width: 240px;"
-          />
+            style="max-width: 240px;" />
         </div>
 
         <div class="config-field mt-4">
           <label class="config-label">API Hash</label>
-          <v-text-field
-            v-model="telegramConfig.apiHash"
-            density="compact"
-            hide-details
-            :placeholder="$t('admin.osint.telegramApiHashPlaceholder')"
-          />
+          <InputText v-model="telegramConfig.apiHash"
+            :placeholder="$t('admin.osint.telegramApiHashPlaceholder')" />
         </div>
 
         <div class="telegram-help mt-4">
-          <v-icon size="14" class="mr-1" color="var(--me-text-muted)">mdi-information-outline</v-icon>
+          <i class="pi pi-info-circle" style="font-size: 14px; margin-right: 4px; color: var(--me-text-muted);"></i>
           <span>{{ $t('admin.osint.telegramHelp') }}</span>
         </div>
       </div>
@@ -211,7 +155,7 @@
     <!-- Actions -->
     <div class="branding-actions fade-in fade-in-delay-2">
       <button class="me-btn-primary" @click="saveSettings" :disabled="saving">
-        <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+        <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
         {{ saving ? $t('admin.saving') : $t('common.save') }}
       </button>
     </div>
@@ -222,6 +166,11 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
+import ToggleSwitch from 'primevue/toggleswitch';
+import Slider from 'primevue/slider';
+import Tag from 'primevue/tag';
 
 const { t } = useI18n();
 

@@ -2,7 +2,7 @@
   <div class="admin-encryption">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-shield-lock-outline</v-icon>
+        <span class="mdi mdi-shield-lock-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.encryption.title') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.encryption.subtitle') }}</p>
@@ -11,11 +11,11 @@
     <!-- Status Card -->
     <div class="enc-card glass-card fade-in fade-in-delay-1">
       <div class="enc-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-shield-check</v-icon>
+        <span class="mdi mdi-shield-check" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="enc-card-title mono">{{ $t('admin.encryption.statusTitle') }}</h3>
       </div>
       <div class="enc-status-row">
-        <v-icon color="success" size="28">mdi-check-circle</v-icon>
+        <i class="pi pi-check-circle" style="font-size: 28px; color: #4caf50;"></i>
         <div class="enc-status-info">
           <p class="enc-status-text">{{ $t('admin.encryption.allEncrypted') }}</p>
           <p class="enc-status-detail">{{ $t('admin.encryption.allEncryptedDetail') }}</p>
@@ -26,11 +26,11 @@
     <!-- Crypto Info Card -->
     <div class="enc-card glass-card fade-in fade-in-delay-1">
       <div class="enc-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-information-outline</v-icon>
+        <i class="pi pi-info-circle" style="font-size: 18px; color: var(--me-accent);"></i>
         <h3 class="enc-card-title mono">{{ $t('admin.encryption.cryptoInfoTitle') }}</h3>
       </div>
       <div class="enc-info-row">
-        <v-icon size="18" color="var(--me-text-muted)">mdi-key-variant</v-icon>
+        <i class="pi pi-key" style="font-size: 18px; color: var(--me-text-muted);"></i>
         <div>
           <p class="enc-info-label">{{ $t('admin.encryption.algorithm') }}</p>
           <p class="enc-info-value">RSA-OAEP 4096 + AES-256-GCM</p>
@@ -38,7 +38,7 @@
       </div>
       <div class="enc-divider" />
       <div class="enc-info-row">
-        <v-icon size="18" color="var(--me-text-muted)">mdi-lock-outline</v-icon>
+        <i class="pi pi-lock" style="font-size: 18px; color: var(--me-text-muted);"></i>
         <div>
           <p class="enc-info-label">{{ $t('admin.encryption.keyDerivation') }}</p>
           <p class="enc-info-value">PBKDF2 SHA-256 (600 000 iterations)</p>
@@ -46,7 +46,7 @@
       </div>
       <div class="enc-divider" />
       <div class="enc-info-row">
-        <v-icon size="18" color="var(--me-text-muted)">mdi-eye-off-outline</v-icon>
+        <i class="pi pi-eye-slash" style="font-size: 18px; color: var(--me-text-muted);"></i>
         <div>
           <p class="enc-info-label">{{ $t('admin.encryption.zeroKnowledge') }}</p>
           <p class="enc-info-value">{{ $t('admin.encryption.zeroKnowledgeDesc') }}</p>
@@ -57,17 +57,17 @@
     <!-- Scan & Branding Migration Card -->
     <div class="enc-card glass-card fade-in fade-in-delay-2">
       <div class="enc-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-magnify-scan</v-icon>
+        <span class="mdi mdi-magnify-scan" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="enc-card-title mono">{{ $t('admin.encryption.scanTitle') }}</h3>
       </div>
 
       <div class="enc-actions">
         <button class="me-btn-ghost" :disabled="scanning" @click="runScan">
-          <v-icon size="14" class="mr-1">mdi-radar</v-icon>
+          <span class="mdi mdi-radar" style="font-size: 14px; margin-right: 4px;"></span>
           {{ scanning ? $t('admin.encryption.scanning') : $t('admin.encryption.scanBtn') }}
         </button>
         <button class="me-btn-ghost" :disabled="migrating" @click="runBrandingMigration">
-          <v-icon size="14" class="mr-1">mdi-folder-move-outline</v-icon>
+          <span class="mdi mdi-folder-move-outline" style="font-size: 14px; margin-right: 4px;"></span>
           {{ migrating ? $t('admin.encryption.migrating') : $t('admin.encryption.migrateBrandingBtn') }}
         </button>
       </div>
@@ -104,9 +104,7 @@
       </div>
 
       <div v-if="migrateResult !== null" class="enc-migrate-result">
-        <v-icon size="16" :color="migrateResult > 0 ? 'success' : 'info'">
-          {{ migrateResult > 0 ? 'mdi-check-circle' : 'mdi-information-outline' }}
-        </v-icon>
+        <span class="mdi {{ migrateResult > 0 ? 'mdi-check-circle' : 'mdi-information-outline' }}" :style="{ fontSize: '16px' }"></span>
         <span>{{ $t('admin.encryption.migrateResult', { count: migrateResult }) }}</span>
       </div>
 
@@ -116,14 +114,14 @@
     <!-- File Migration Card -->
     <div class="enc-card glass-card fade-in fade-in-delay-2">
       <div class="enc-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-file-lock-outline</v-icon>
+        <span class="mdi mdi-file-lock-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="enc-card-title mono">{{ $t('admin.encryption.migrateFilesTitle') }}</h3>
       </div>
       <p class="enc-desc">{{ $t('admin.encryption.migrateFilesDesc') }}</p>
 
       <!-- Warning if keys not unlocked -->
       <div v-if="keysNotUnlocked" class="enc-warning">
-        <v-icon size="16" color="warning" class="mr-1">mdi-alert-outline</v-icon>
+        <i class="pi pi-exclamation-triangle" style="font-size: 16px; color: #ff9800; margin-right: 4px;"></i>
         <span>{{ $t('admin.encryption.keysNotUnlocked') }}</span>
       </div>
 
@@ -133,7 +131,7 @@
           :disabled="fileMigrationRunning"
           @click="runFileMigration"
         >
-          <v-icon size="14" class="mr-1">mdi-lock-plus-outline</v-icon>
+          <span class="mdi mdi-lock-plus-outline" style="font-size: 14px; margin-right: 4px;"></span>
           {{ fileMigrationRunning ? $t('admin.encryption.migrateFilesRunning') : $t('admin.encryption.migrateFilesBtn') }}
         </button>
       </div>
@@ -157,14 +155,14 @@
 
         <!-- Completion -->
         <div v-if="fileMigrationDone" class="enc-done">
-          <v-icon size="16" color="success" class="mr-1">mdi-check-circle</v-icon>
+          <i class="pi pi-check-circle" style="font-size: 16px; color: #4caf50; margin-right: 4px;"></i>
           <span>{{ $t('admin.encryption.migrateFilesDone', { files: fileMigrationStats.files, content: fileMigrationStats.content }) }}</span>
         </div>
 
         <!-- Errors -->
         <div v-if="fileMigrationErrors.length > 0" class="enc-errors">
           <div class="enc-errors-title">
-            <v-icon size="14" color="warning" class="mr-1">mdi-alert-outline</v-icon>
+            <i class="pi pi-exclamation-triangle" style="font-size: 14px; color: #ff9800; margin-right: 4px;"></i>
             {{ $t('admin.encryption.migrateFilesErrors', { count: fileMigrationErrors.length }) }}
           </div>
           <ul class="enc-errors-list">

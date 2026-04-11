@@ -2,7 +2,7 @@
   <div class="admin-audit">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-shield-check</v-icon>
+        <span class="mdi mdi-shield-check" style="font-size: 20px; margin-right: 8px;"></span>
         Journal d'audit
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.auditSubtitle') }}</p>
@@ -11,21 +11,21 @@
     <!-- KPI Cards -->
     <div class="audit-kpi-row fade-in fade-in-delay-1">
       <div class="kpi-card glass-card">
-        <div class="kpi-icon"><v-icon size="24">mdi-calendar-today</v-icon></div>
+        <div class="kpi-icon"><span class="mdi mdi-calendar-today" style="font-size: 24px;"></span></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.today }}</span>
           <span class="kpi-label">{{ $t('admin.actionsToday') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card">
-        <div class="kpi-icon"><v-icon size="24">mdi-calendar-week</v-icon></div>
+        <div class="kpi-icon"><span class="mdi mdi-calendar-week" style="font-size: 24px;"></span></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.week }}</span>
           <span class="kpi-label">{{ $t('admin.actionsThisWeek') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card">
-        <div class="kpi-icon"><v-icon size="24">mdi-account-star</v-icon></div>
+        <div class="kpi-icon"><span class="mdi mdi-account-star" style="font-size: 24px;"></span></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ topUserName }}</span>
           <span class="kpi-label">{{ $t('admin.mostActiveUser') }}</span>
@@ -39,36 +39,18 @@
       <input v-model="filterFrom" type="date" class="al-date-input mono" />
       <span class="al-date-sep">&mdash;</span>
       <input v-model="filterTo" type="date" class="al-date-input mono" />
-      <v-select
-        v-model="filterUser"
-        :items="userItems"
+      <Select v-model="filterUser"
+        :options="userItems"
         :label="$t('admin.user')"
-        density="compact"
-        clearable
-        hide-details
-        variant="outlined"
-        style="max-width: 200px;"
-      />
-      <v-select
-        v-model="filterAction"
-        :items="actionItems"
+        style="max-width: 200px;" />
+      <Select v-model="filterAction"
+        :options="actionItems"
         :label="$t('admin.action')"
-        density="compact"
-        clearable
-        hide-details
-        variant="outlined"
-        style="max-width: 220px;"
-      />
-      <v-select
-        v-model="filterTargetType"
-        :items="targetTypeItems"
+        style="max-width: 220px;" />
+      <Select v-model="filterTargetType"
+        :options="targetTypeItems"
         :label="$t('admin.targetType')"
-        density="compact"
-        clearable
-        hide-details
-        variant="outlined"
-        style="max-width: 160px;"
-      />
+        style="max-width: 160px;" />
       <input
         v-model="filterSearch"
         type="text"
@@ -77,14 +59,14 @@
         style="min-width: 160px;"
       />
       <button class="me-btn-ghost" @click="exportCSV" title="Exporter CSV">
-        <v-icon size="16" class="mr-1">mdi-download</v-icon>
+        <i class="pi pi-download" style="font-size: 16px; margin-right: 4px;"></i>
         CSV
       </button>
     </div>
 
     <!-- Table -->
     <div class="admin-table-wrap glass-card fade-in fade-in-delay-2">
-      <v-progress-linear v-if="loading" indeterminate color="primary" />
+      <ProgressBar v-if="loading" mode="indeterminate" />
       <table class="admin-table">
         <thead>
           <tr>
@@ -101,9 +83,7 @@
           <template v-for="log in logs" :key="log._id">
             <tr @click="toggleExpand(log._id)" class="audit-row">
               <td>
-                <v-icon size="14" class="expand-icon" :class="{ 'expand-icon--open': expandedId === log._id }">
-                  mdi-chevron-right
-                </v-icon>
+                <i class="pi pi-chevron-right expand-icon" :class="{ 'expand-icon--open': expandedId === log._id }" style="font-size: 14px; "></i>
               </td>
               <td class="mono at-date">{{ formatDate(log.timestamp) }}</td>
               <td class="at-user-cell">
@@ -114,7 +94,7 @@
               </td>
               <td>
                 <span :class="['at-badge', getBadgeClass(log.action)]">
-                  <v-icon size="12" class="mr-1">{{ getActionIcon(log.action) }}</v-icon>
+                  <span class="mdi {{ getActionIcon(log.action) }}" style="font-size: 12px; margin-right: 4px;"></span>
                   {{ getActionLabel(log.action) }}
                 </span>
               </td>
@@ -164,11 +144,11 @@
       <!-- Pagination -->
       <div class="audit-pagination" v-if="totalPages > 1">
         <button class="me-btn-ghost" :disabled="page <= 1" @click="goPage(page - 1)">
-          <v-icon size="16">mdi-chevron-left</v-icon>
+          <i class="pi pi-chevron-left" style="font-size: 16px;"></i>
         </button>
         <span class="mono audit-page-info">{{ page }} / {{ totalPages }}</span>
         <button class="me-btn-ghost" :disabled="page >= totalPages" @click="goPage(page + 1)">
-          <v-icon size="16">mdi-chevron-right</v-icon>
+          <i class="pi pi-chevron-right" style="font-size: 16px;"></i>
         </button>
         <span class="mono audit-total-info">{{ total }} {{ $t('admin.results') }}</span>
       </div>
@@ -180,6 +160,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import Select from 'primevue/select';
 
 interface LogUser {
   firstName: string;

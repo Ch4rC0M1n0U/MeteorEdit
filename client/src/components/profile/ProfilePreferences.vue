@@ -2,7 +2,7 @@
   <div class="profile-prefs">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-cog-outline</v-icon>
+        <i class="pi pi-cog" style="font-size: 20px; margin-right: 8px;"></i>
         {{ $t('preferences.title') }}
       </h2>
     </div>
@@ -10,28 +10,28 @@
     <!-- Apparence -->
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <h3 class="section-title mono">
-        <v-icon size="16" class="mr-1">mdi-palette-outline</v-icon>
+        <span class="mdi mdi-palette-outline" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('preferences.appearance') }}
       </h3>
 
       <div class="settings-group mt-3">
         <label class="settings-label mono">{{ $t('preferences.defaultTheme') }}</label>
-        <v-select v-model="prefs.defaultTheme" :items="themeOptions" density="compact" hide-details />
+        <Select v-model="prefs.defaultTheme" :options="themeOptions" optionLabel="title" optionValue="value" class="w-full" />
       </div>
 
       <div class="settings-group mt-4">
         <label class="settings-label mono">{{ $t('preferences.displayDensity') }}</label>
-        <v-btn-toggle v-model="prefs.displayDensity" mandatory density="compact" color="primary" class="density-toggle">
-          <v-btn value="compact" size="small">{{ $t('preferences.compact') }}</v-btn>
-          <v-btn value="comfortable" size="small">{{ $t('preferences.comfortable') }}</v-btn>
-          <v-btn value="spacious" size="small">{{ $t('preferences.spacious') }}</v-btn>
-        </v-btn-toggle>
+        <div class="density-toggle">
+          <button :class="['density-btn', { 'density-btn--active': prefs.displayDensity === 'compact' }]" @click="prefs.displayDensity = 'compact'">{{ $t('preferences.compact') }}</button>
+          <button :class="['density-btn', { 'density-btn--active': prefs.displayDensity === 'comfortable' }]" @click="prefs.displayDensity = 'comfortable'">{{ $t('preferences.comfortable') }}</button>
+          <button :class="['density-btn', { 'density-btn--active': prefs.displayDensity === 'spacious' }]" @click="prefs.displayDensity = 'spacious'">{{ $t('preferences.spacious') }}</button>
+        </div>
       </div>
 
       <div class="settings-group mt-4">
         <label class="settings-label mono">{{ $t('preferences.sidebarWidth') }}</label>
         <div class="settings-slider-row">
-          <v-slider v-model="prefs.sidebarWidth" :min="200" :max="500" :step="10" hide-details thumb-label color="primary" />
+          <Slider v-model="prefs.sidebarWidth" :min="200" :max="500" :step="10" class="w-full" />
           <span class="settings-value mono">{{ prefs.sidebarWidth }}px</span>
         </div>
       </div>
@@ -40,89 +40,88 @@
     <!-- Editeur -->
     <div class="branding-card glass-card fade-in fade-in-delay-2 mt-4">
       <h3 class="section-title mono">
-        <v-icon size="16" class="mr-1">mdi-file-edit-outline</v-icon>
+        <span class="mdi mdi-file-edit-outline" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('preferences.editorSection') }}
       </h3>
 
       <div class="settings-group mt-3">
         <label class="settings-label mono">{{ $t('preferences.editorFontSize') }}</label>
         <div class="settings-slider-row">
-          <v-slider v-model="prefs.editorFontSize" :min="12" :max="24" :step="1" hide-details thumb-label color="primary" />
+          <Slider v-model="prefs.editorFontSize" :min="12" :max="24" :step="1" class="w-full" />
           <span class="settings-value mono">{{ prefs.editorFontSize }}px</span>
         </div>
       </div>
 
       <div class="settings-group mt-4">
         <label class="settings-label mono">{{ $t('preferences.autoSaveInterval') }}</label>
-        <v-select v-model="prefs.autoSaveInterval" :items="autoSaveOptions" density="compact" hide-details />
+        <Select v-model="prefs.autoSaveInterval" :options="autoSaveOptions" optionLabel="title" optionValue="value" class="w-full" />
       </div>
 
       <div class="settings-group mt-4">
         <label class="settings-label mono">{{ $t('preferences.defaultNodeType') }}</label>
-        <v-select v-model="prefs.defaultNodeType" :items="nodeTypeOptions" density="compact" hide-details />
+        <Select v-model="prefs.defaultNodeType" :options="nodeTypeOptions" optionLabel="title" optionValue="value" class="w-full" />
       </div>
     </div>
 
     <!-- Correcteur orthographique -->
     <div class="branding-card glass-card fade-in fade-in-delay-3 mt-4">
       <h3 class="section-title mono">
-        <v-icon size="16" class="mr-1">mdi-spellcheck</v-icon>
+        <span class="mdi mdi-spellcheck" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('preferences.spellChecker') }}
       </h3>
 
       <div class="settings-group mt-3 switch-row">
         <label class="settings-label mono mb-0">{{ $t('preferences.spellCheckEnabled') }}</label>
-        <v-switch v-model="prefs.spellCheckEnabled" color="primary" density="compact" hide-details />
+        <ToggleSwitch v-model="prefs.spellCheckEnabled" />
       </div>
 
       <div class="settings-group mt-4">
         <label class="settings-label mono">{{ $t('preferences.spellCheckLanguage') }}</label>
-        <v-select v-model="prefs.spellCheckLanguage" :items="spellCheckLangOptions" density="compact" hide-details />
+        <Select v-model="prefs.spellCheckLanguage" :options="spellCheckLangOptions" optionLabel="title" optionValue="value" class="w-full" />
       </div>
     </div>
 
     <!-- Regional -->
     <div class="branding-card glass-card fade-in fade-in-delay-3 mt-4">
       <h3 class="section-title mono">
-        <v-icon size="16" class="mr-1">mdi-earth</v-icon>
+        <span class="mdi mdi-earth" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('preferences.regional') }}
       </h3>
 
       <div class="settings-group mt-3">
         <label class="settings-label mono">{{ $t('preferences.dateFormat') }}</label>
-        <v-select v-model="prefs.dateFormat" :items="dateFormatOptions" density="compact" hide-details />
+        <Select v-model="prefs.dateFormat" :options="dateFormatOptions" optionLabel="title" optionValue="value" class="w-full" />
       </div>
 
       <div class="settings-group mt-4">
         <label class="settings-label mono">{{ $t('preferences.language') }}</label>
-        <v-select v-model="prefs.language" :items="languageOptions" density="compact" hide-details>
-          <template #selection="{ item }">
-            <div class="lang-selection">
-              <span class="lang-flag" v-html="getLangFlag(item.value)"></span>
-              <span>{{ item.title }}</span>
+        <Select v-model="prefs.language" :options="languageOptions" optionLabel="title" optionValue="value" class="w-full">
+          <template #value="slotProps">
+            <div v-if="slotProps.value" class="lang-selection">
+              <span class="lang-flag" v-html="getLangFlag(slotProps.value)"></span>
+              <span>{{ languageOptions.find(o => o.value === slotProps.value)?.title }}</span>
             </div>
           </template>
-          <template #item="{ item, props: itemProps }">
-            <v-list-item v-bind="itemProps">
-              <template #prepend>
-                <span class="lang-flag mr-2" v-html="getLangFlag(item.value)"></span>
-              </template>
-            </v-list-item>
+          <template #option="slotProps">
+            <div class="lang-selection">
+              <span class="lang-flag" style="margin-right: 8px;" v-html="getLangFlag(slotProps.option.value)"></span>
+              <span>{{ slotProps.option.title }}</span>
+            </div>
           </template>
-        </v-select>
+        </Select>
       </div>
     </div>
 
     <!-- Comportement -->
     <div class="branding-card glass-card fade-in fade-in-delay-4 mt-4">
       <h3 class="section-title mono">
-        <v-icon size="16" class="mr-1">mdi-toggle-switch-outline</v-icon>
+        <span class="mdi mdi-toggle-switch-outline" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('preferences.behavior') }}
       </h3>
 
       <div class="settings-group mt-3 switch-row">
         <label class="settings-label mono mb-0">{{ $t('preferences.confirmBeforeDelete') }}</label>
-        <v-switch v-model="prefs.confirmBeforeDelete" color="primary" density="compact" hide-details />
+        <ToggleSwitch v-model="prefs.confirmBeforeDelete" />
       </div>
     </div>
 
@@ -138,6 +137,9 @@
 import { reactive, ref, watch, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import Select from 'primevue/select';
+import Slider from 'primevue/slider';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const { t, locale } = useI18n();
 
@@ -282,8 +284,12 @@ watch(() => prefs.language, (newLang) => {
 .mt-4 { margin-top: 16px; }
 .mb-0 { margin-bottom: 0 !important; }
 .switch-row { display: flex; align-items: center; justify-content: space-between; }
-.density-toggle { width: 100%; }
-.density-toggle .v-btn { flex: 1; font-size: 12px; letter-spacing: 0.5px; }
+.density-toggle { width: 100%; display: flex; border: 1px solid var(--me-border); border-radius: var(--me-radius-xs); overflow: hidden; }
+.density-btn { flex: 1; padding: 6px 12px; font-size: 12px; letter-spacing: 0.5px; background: none; border: none; color: var(--me-text-secondary); cursor: pointer; transition: all 0.15s; }
+.density-btn:not(:last-child) { border-right: 1px solid var(--me-border); }
+.density-btn:hover { background: var(--me-accent-glow); }
+.density-btn--active { background: var(--me-accent-glow); color: var(--me-accent); font-weight: 600; }
+.w-full { width: 100%; }
 .lang-selection { display: flex; align-items: center; gap: 8px; }
 .lang-flag { font-size: 18px; line-height: 1; }
 .save-status { text-align: right; }

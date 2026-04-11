@@ -2,14 +2,14 @@
   <div class="profile-encryption">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-shield-check-outline</v-icon>
+        <span class="mdi mdi-shield-check-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('profile.encryption.title') }}
       </h2>
     </div>
 
     <div class="enc-card glass-card fade-in fade-in-delay-1">
       <div class="enc-banner">
-        <v-icon color="success" size="28">mdi-shield-check</v-icon>
+        <span class="mdi mdi-shield-check" style="font-size: 28px; color: var(--me-success, #4ade80);"></span>
         <div class="enc-banner-text">
           <h3 class="enc-banner-title">{{ $t('profile.encryption.status') }}</h3>
           <p class="enc-banner-detail">{{ $t('profile.encryption.details') }}</p>

@@ -2,14 +2,14 @@
   <div class="admin-users">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-account-group-outline</v-icon>
+        <span class="mdi mdi-account-group-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.users') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.userCount', { count: users.length }) }}</p>
     </div>
 
     <div class="admin-table-wrap glass-card fade-in fade-in-delay-1">
-      <v-progress-linear v-if="loading" indeterminate color="primary" />
+      <ProgressBar v-if="loading" mode="indeterminate" />
       <table class="admin-table">
         <thead>
           <tr>
@@ -47,16 +47,16 @@
             <td>
               <div class="at-actions">
                 <button class="at-action-btn" @click="openEdit(user)" :title="$t('common.edit')">
-                  <v-icon size="16">mdi-pencil-outline</v-icon>
+                  <i class="pi pi-pencil" style="font-size: 16px;"></i>
                 </button>
                 <button class="at-action-btn" @click="toggleActive(user)" :title="user.isActive ? $t('admin.deactivate') : $t('admin.activate')">
-                  <v-icon size="16">{{ user.isActive ? 'mdi-account-off-outline' : 'mdi-account-check-outline' }}</v-icon>
+                  <span :class="['mdi', user.isActive ? 'mdi-account-off-outline' : 'mdi-account-check-outline']" style="font-size: 16px;"></span>
                 </button>
                 <button class="at-action-btn" @click="toggleRole(user)" :title="user.role === 'admin' ? $t('admin.demoteAdmin') : $t('admin.promoteAdmin')">
-                  <v-icon size="16">mdi-shield-account-outline</v-icon>
+                  <span class="mdi mdi-shield-account-outline" style="font-size: 16px;"></span>
                 </button>
                 <button class="at-action-btn at-action-danger" @click="handleDelete(user)" :title="$t('common.delete')">
-                  <v-icon size="16">mdi-trash-can-outline</v-icon>
+                  <i class="pi pi-trash" style="font-size: 16px;"></i>
                 </button>
               </div>
             </td>
@@ -66,26 +66,26 @@
     </div>
 
     <!-- Edit dialog -->
-    <v-dialog v-model="editDialog" max-width="520" persistent>
+    <Dialog v-model:visible="editDialog" modal :style="{ width: '520px' }" :closable="false"><template #container>
       <div class="edit-dialog glass-card">
         <div class="edit-dialog-header">
           <h3 class="mono">{{ $t('admin.editUser') }}</h3>
           <button class="at-action-btn" @click="editDialog = false">
-            <v-icon size="18">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 18px;"></i>
           </button>
         </div>
 
         <div class="edit-dialog-body">
           <div class="form-grid">
-            <v-text-field v-model="editForm.firstName" :label="$t('admin.firstName')" density="compact" hide-details />
-            <v-text-field v-model="editForm.lastName" :label="$t('admin.lastName')" density="compact" hide-details />
+            <InputText v-model="editForm.firstName" :label="$t('admin.firstName')" />
+            <InputText v-model="editForm.lastName" :label="$t('admin.lastName')" />
           </div>
-          <v-text-field v-model="editForm.email" :label="$t('common.email')" type="email" density="compact" hide-details class="mt-3" />
-          <v-select v-model="editForm.role" :items="roleOptions" :label="$t('admin.role')" density="compact" hide-details class="mt-3" />
-          <v-switch v-model="editForm.isActive" :label="$t('admin.activeAccount')" color="primary" hide-details class="mt-3" />
+          <InputText v-model="editForm.email" :label="$t('common.email')" type="email" class="mt-3" />
+          <Select v-model="editForm.role" :options="roleOptions" :label="$t('admin.role')" class="mt-3" />
+          <ToggleSwitch v-model="editForm.isActive" class="mt-3" />
 
-          <v-alert v-if="editError" type="error" variant="tonal" class="mt-3" closable @click:close="editError = ''">{{ editError }}</v-alert>
-          <v-alert v-if="editSuccess" type="success" variant="tonal" class="mt-3" closable @click:close="editSuccess = ''">{{ editSuccess }}</v-alert>
+          <Message v-if="editError" severity="error" closable @close="editError = ''" style="margin-top: 12px;">{{ editError }}</Message>
+          <Message v-if="editSuccess" severity="success" closable @close="editSuccess = ''" style="margin-top: 12px;">{{ editSuccess }}</Message>
 
           <!-- Admin actions -->
           <div class="edit-section mt-4">
@@ -97,7 +97,7 @@
                 <p class="admin-action-desc">{{ $t('admin.resetPasswordHint') }}</p>
               </div>
               <button class="me-btn-ghost" @click="handleResetPassword">
-                <v-icon size="14" class="mr-1">mdi-lock-reset</v-icon>
+                <span class="mdi mdi-lock-reset" style="font-size: 14px; margin-right: 4px;"></span>
                 {{ $t('admin.reset') }}
               </button>
             </div>
@@ -108,7 +108,7 @@
                 <p class="admin-action-desc">{{ $t('admin.reset2FAHint') }}</p>
               </div>
               <button class="me-btn-ghost" @click="handleReset2FA">
-                <v-icon size="14" class="mr-1">mdi-shield-off-outline</v-icon>
+                <span class="mdi mdi-shield-off-outline" style="font-size: 14px; margin-right: 4px;"></span>
                 {{ $t('admin.reset') }}
               </button>
             </div>
@@ -116,11 +116,11 @@
 
           <!-- Temp password display -->
           <div v-if="tempPassword" class="temp-password-box mt-3">
-            <v-alert type="info" variant="tonal">
+            <Message severity="info">
               <p class="mono" style="font-size: 13px;">{{ $t('admin.tempPassword') }}</p>
               <code class="temp-password-code">{{ tempPassword }}</code>
               <p style="font-size: 11px; margin-top: 4px; color: var(--me-text-muted);">{{ $t('admin.tempPasswordHint') }}</p>
-            </v-alert>
+            </Message>
           </div>
         </div>
 
@@ -131,7 +131,7 @@
           </button>
         </div>
       </div>
-    </v-dialog>
+    </template></Dialog>
   </div>
 </template>
 
@@ -140,6 +140,12 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useConfirm } from '../../composables/useConfirm';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
+import Message from 'primevue/message';
+import Dialog from 'primevue/dialog';
 
 const { confirm } = useConfirm();
 const { t } = useI18n();

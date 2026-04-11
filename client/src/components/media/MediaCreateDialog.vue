@@ -1,11 +1,12 @@
 <template>
-  <v-dialog v-model="model" max-width="560" persistent>
+  <Dialog v-model:visible="model" modal :style="{ width: '560px' }" :closable="false">
+    <template #container>
     <div class="es-dialog glass-card">
       <div class="es-header">
-        <v-icon size="20" class="es-header-icon">mdi-play-circle-outline</v-icon>
+        <span class="mdi mdi-play-circle-outline es-header-icon" style="font-size: 20px"></span>
         <span>{{ $t('media.createMedia') }}</span>
         <button class="es-close" @click="close">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px"></i>
         </button>
       </div>
 
@@ -17,7 +18,7 @@
             :class="{ 'es-tab--active': mode === 'url' }"
             @click="mode = 'url'"
           >
-            <v-icon size="16">mdi-link-variant</v-icon>
+            <span class="mdi mdi-link-variant" style="font-size: 16px"></span>
             {{ $t('media.addUrl') }}
           </button>
           <button
@@ -25,7 +26,7 @@
             :class="{ 'es-tab--active': mode === 'upload' }"
             @click="mode = 'upload'"
           >
-            <v-icon size="16">mdi-upload</v-icon>
+            <i class="pi pi-upload" style="font-size: 16px"></i>
             {{ $t('media.uploadFile') }}
           </button>
         </div>
@@ -47,8 +48,8 @@
                 :disabled="!urlInput || detecting"
                 @click="detectOembed"
               >
-                <v-icon v-if="detecting" size="14" class="es-spin">mdi-loading</v-icon>
-                <v-icon v-else size="14">mdi-magnify</v-icon>
+                <span class="mdi mdi-loading es-spin" style="font-size: 14px" v-if="detecting"></span>
+                <i class="pi pi-search" style="font-size: 14px" v-else></i>
                 {{ detecting ? $t('media.detecting') : $t('media.detect') }}
               </button>
             </div>
@@ -68,15 +69,15 @@
                 @change="onFileSelected"
               />
               <div v-if="!selectedFile" class="es-upload-placeholder">
-                <v-icon size="28" color="var(--me-text-muted)">mdi-cloud-upload-outline</v-icon>
+                <span class="mdi mdi-cloud-upload-outline" style="font-size: 28px; color: var(--me-text-muted)"></span>
                 <span>{{ $t('media.uploadFile') }}</span>
               </div>
               <div v-else class="es-upload-info">
-                <v-icon size="18">mdi-file-music-outline</v-icon>
+                <span class="mdi mdi-file-music-outline" style="font-size: 18px"></span>
                 <span class="es-upload-name">{{ selectedFile.name }}</span>
                 <span class="es-upload-size">{{ formatSize(selectedFile.size) }}</span>
                 <button class="es-upload-remove" @click.stop="removeFile">
-                  <v-icon size="14">mdi-close</v-icon>
+                  <i class="pi pi-times" style="font-size: 14px"></i>
                 </button>
               </div>
             </div>
@@ -97,7 +98,7 @@
         <!-- Metadata preview -->
         <div v-if="hasMetadata" class="es-meta-preview">
           <div class="es-meta-header">
-            <v-icon size="14">mdi-information-outline</v-icon>
+            <span class="mdi mdi-information-outline" style="font-size: 14px"></span>
             {{ $t('media.metadata') }}
           </div>
           <div class="es-meta-grid">
@@ -121,7 +122,7 @@
 
         <!-- Error -->
         <div v-if="errorMsg" class="es-error">
-          <v-icon size="14">mdi-alert-circle-outline</v-icon>
+          <span class="mdi mdi-alert-circle-outline" style="font-size: 14px"></span>
           {{ errorMsg }}
         </div>
       </div>
@@ -134,18 +135,20 @@
             :disabled="!canConfirm || uploading"
             @click="confirm"
           >
-            <v-icon v-if="uploading" size="14" class="es-spin">mdi-loading</v-icon>
-            <v-icon v-else size="14">mdi-check</v-icon>
+            <span class="mdi mdi-loading es-spin" style="font-size: 14px" v-if="uploading"></span>
+            <i class="pi pi-check" style="font-size: 14px" v-else></i>
             {{ $t('media.save') }}
           </button>
         </div>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import Dialog from 'primevue/dialog';
 import { useI18n } from 'vue-i18n';
 import type { MediaData, MediaSource, MediaMetadata } from '../../types';
 import api from '../../services/api';

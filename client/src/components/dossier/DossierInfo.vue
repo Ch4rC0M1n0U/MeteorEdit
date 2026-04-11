@@ -3,7 +3,7 @@
     <div class="di-header fade-in">
       <h2 class="di-title mono">{{ $t('dossier.info') }}</h2>
       <button v-if="!editing" class="me-btn-primary" @click="startEdit">
-        <v-icon size="16" class="mr-1">mdi-pencil-outline</v-icon>
+        <span class="mdi mdi-pencil-outline" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('common.edit') }}
       </button>
     </div>
@@ -16,22 +16,22 @@
           <div v-if="dossierLogoUrl" class="di-logo-wrap">
             <img :src="dossierLogoUrl" alt="Logo" class="di-logo-img" />
             <button v-if="isOwner" class="di-logo-remove" @click="removeLogo" :title="$t('dossier.deleteLogo')">
-              <v-icon size="12">mdi-close</v-icon>
+              <span class="mdi mdi-close" style="font-size: 12px;"></span>
             </button>
           </div>
-          <v-icon v-else-if="form.icon" size="32" class="di-icon-large">{{ form.icon }}</v-icon>
-          <v-icon v-else size="32" class="di-icon-large di-icon-default">mdi-folder-outline</v-icon>
+          <span v-else-if="form.icon" :class="'mdi ' + form.icon + ' di-icon-large'" style="font-size: 32px;"></span>
+          <span v-else class="mdi mdi-folder-outline di-icon-large di-icon-default" style="font-size: 32px;"></span>
           <div class="di-header-meta">
             <span class="di-header-title">{{ form.title || '—' }}</span>
             <span class="di-status-badge" :class="`di-status-${form.status}`">{{ statusLabel }}</span>
           </div>
           <div class="di-icon-actions" v-if="isOwner">
             <button class="me-btn-small" @click="showIconPicker = !showIconPicker">
-              <v-icon size="14" class="mr-1">mdi-palette-outline</v-icon>
+              <span class="mdi mdi-palette-outline" style="font-size: 14px; margin-right: 4px;"></span>
               {{ $t('dossier.icon') }}
             </button>
             <button class="me-btn-small" @click="triggerLogoInput">
-              <v-icon size="14" class="mr-1">mdi-image-outline</v-icon>
+              <span class="mdi mdi-image-outline" style="font-size: 14px; margin-right: 4px;"></span>
               {{ $t('dossier.logo') }}
             </button>
             <input ref="logoInput" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden @change="handleLogoUpload" />
@@ -46,11 +46,11 @@
               @click="selectIcon(ic)"
               type="button"
             >
-              <v-icon size="20">{{ ic }}</v-icon>
+              <span :class="'mdi ' + ic" style="font-size: 20px;"></span>
             </button>
           </div>
           <button v-if="form.icon" class="di-icon-clear" @click="selectIcon(null)">
-            <v-icon size="12" class="mr-1">mdi-close</v-icon>
+            <span class="mdi mdi-close" style="font-size: 12px; margin-right: 4px;"></span>
             {{ $t('dossier.removeIcon') }}
           </button>
         </div>
@@ -59,7 +59,7 @@
       <!-- FULL WIDTH: Dates & Tags -->
       <div class="di-section di-full-width-section">
         <h3 class="di-section-title mono">
-          <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
+          <span class="mdi mdi-calendar-clock" style="font-size: 16px; margin-right: 8px;"></span>
           {{ $t('dossier.datesReferenceTags') }}
         </h3>
         <div class="di-grid-3">
@@ -84,24 +84,21 @@
         <div class="di-field" style="margin-top: 12px;">
           <span class="di-label mono">{{ $t('dossier.tags') }}</span>
           <div v-if="localTags.length" class="di-tags-display">
-            <v-chip v-for="tag in localTags" :key="tag" size="small" variant="tonal" color="primary" class="di-tag-chip">
+            <Tag v-for="tag in localTags" :key="tag" class="di-tag-chip">
               {{ tag }}
-            </v-chip>
+            </Tag>
           </div>
           <span v-else class="di-value" style="opacity: 0.5;">—</span>
         </div>
 
         <!-- Duration warning alert -->
-        <v-alert
+        <div
           v-if="durationWarning"
-          type="warning"
-          variant="tonal"
-          density="compact"
-          class="mt-3 mb-2"
-          style="font-size: 13px;"
+          class="di-alert-warning"
+          style="font-size: 13px; padding: 8px 12px; border-radius: 6px; background: rgba(255, 152, 0, 0.1); color: #ff9800; margin-top: 12px; margin-bottom: 8px;"
         >
           {{ durationWarning }}
-        </v-alert>
+        </div>
       </div>
 
       <!-- FULL WIDTH: Facts, Objectives, Description -->
@@ -124,13 +121,13 @@
       <div class="di-section di-full-width-section">
         <!-- Classification & Magistrat -->
         <h3 class="di-section-title mono">
-          <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
+          <span class="mdi mdi-gavel" style="font-size: 16px; margin-right: 8px;"></span>
           {{ $t('dossier.classification') }} & {{ $t('dossier.magistrate') }}
         </h3>
         <div class="di-grid-5">
           <div class="di-field">
             <span class="di-label mono">
-              <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
+              <span class="mdi mdi-identifier" style="font-size: 14px; margin-right: 4px;"></span>
               {{ $t('dossier.referenceNumber') }}
             </span>
             <span class="di-value">{{ form.referenceNumber || '—' }}</span>
@@ -154,22 +151,22 @@
         </div>
         <div class="di-row di-flags-row" style="margin-top: 12px;">
           <span v-if="form.isUrgent" class="di-flag-badge di-flag-urgent">
-            <v-icon size="14" class="mr-1">mdi-alert-circle-outline</v-icon>
+            <span class="mdi mdi-alert-circle-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.isUrgent') }}
           </span>
           <span v-if="form.isEmbargo" class="di-flag-badge di-flag-embargo">
-            <v-icon size="14" class="mr-1">mdi-lock-clock</v-icon>
+            <span class="mdi mdi-lock-clock" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.isEmbargo') }}
           </span>
           <span v-if="form.isContinuous" class="di-flag-badge di-flag-continuous">
-            <v-icon size="14" class="mr-1">mdi-infinity</v-icon>
+            <span class="mdi mdi-infinity" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.isContinuous') }}
           </span>
         </div>
 
         <!-- Enquêteur -->
         <h3 class="di-section-title mono" style="margin-top: 16px;">
-          <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
+          <span class="mdi mdi-account-outline" style="font-size: 16px; margin-right: 8px;"></span>
           {{ $t('dossier.investigator') }}
         </h3>
         <div class="di-grid-4" style="align-items: start;">
@@ -187,23 +184,23 @@
       <div class="di-section di-full-width" v-if="!isEditing">
         <div class="di-section-header">
           <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-link-variant</v-icon>
+            <span class="mdi mdi-link-variant" style="font-size: 16px; margin-right: 8px;"></span>
             {{ $t('dossier.relatedDossiers') }}
             <span v-if="relatedDossierDetails.length" class="di-count">{{ relatedDossierDetails.length }}</span>
           </h3>
           <button class="me-btn-small" @click="showRelatedDialog = true">
-            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+            <span class="mdi mdi-plus" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('common.add') }}
           </button>
         </div>
         <div v-if="relatedDossierDetails.length" class="di-related-list">
           <div v-for="rd in relatedDossierDetails" :key="rd._id" class="di-related-item">
-            <v-icon size="14" class="mr-1" color="var(--me-accent)">mdi-folder-outline</v-icon>
+            <span class="mdi mdi-folder-outline" style="font-size: 14px; margin-right: 4px; color: var(--me-accent);"></span>
             <span class="di-related-title">{{ rd.title }}</span>
             <span v-if="rd.referenceNumber" class="di-related-ref mono">{{ rd.referenceNumber }}</span>
-            <v-chip size="x-small" variant="tonal" :color="rd.status === 'closed' ? 'success' : rd.status === 'in_progress' ? 'primary' : 'default'">{{ rd.status }}</v-chip>
+            <Tag :style="{ fontSize: '10px' }" :severity="rd.status === 'closed' ? 'success' : rd.status === 'in_progress' ? 'info' : 'secondary'">{{ rd.status }}</Tag>
             <button class="me-obs-del" @click="removeRelatedDossier(rd._id)" :title="$t('common.delete')">
-              <v-icon size="12">mdi-close</v-icon>
+              <span class="mdi mdi-close" style="font-size: 12px;"></span>
             </button>
           </div>
         </div>
@@ -211,48 +208,41 @@
       </div>
 
       <!-- Dialog: Add related dossier -->
-      <v-dialog v-model="showRelatedDialog" max-width="440">
+      <Dialog v-model:visible="showRelatedDialog" modal :style="{ width: '440px' }" :closable="false">
+        <template #container>
         <div class="glass-card" style="padding: 20px;">
           <h3 class="mono" style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">
-            <v-icon size="16" class="mr-1">mdi-link-variant</v-icon>
+            <span class="mdi mdi-link-variant" style="font-size: 16px; margin-right: 4px;"></span>
             {{ $t('dossier.addRelatedDossier') }}
           </h3>
-          <v-autocomplete
+          <Select
             v-model="selectedRelatedDossier"
-            :items="availableDossiersForRelation"
-            item-title="title"
-            item-value="_id"
-            density="compact"
-            hide-details
+            :options="availableDossiersForRelation"
+            optionLabel="title"
+            optionValue="_id"
             :placeholder="$t('dossier.searchDossier')"
-            clearable
-            :no-data-text="$t('common.noResults')"
-          >
-            <template #item="{ item, props: itemProps }">
-              <v-list-item v-bind="itemProps">
-                <template #append>
-                  <span class="mono" style="font-size: 11px; color: var(--me-text-muted);">{{ item.raw.referenceNumber }}</span>
-                </template>
-              </v-list-item>
-            </template>
-          </v-autocomplete>
+            filter
+            showClear
+            style="width: 100%;"
+          />
           <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
             <button class="me-btn-ghost" @click="showRelatedDialog = false">{{ $t('common.cancel') }}</button>
             <button class="di-btn-primary" :disabled="!selectedRelatedDossier" @click="addRelatedDossier">{{ $t('common.add') }}</button>
           </div>
         </div>
-      </v-dialog>
+        </template>
+      </Dialog>
 
       <!-- ENTITES (priorité haute) -->
       <div class="di-section di-full-width">
         <div class="di-section-header">
           <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-account-group-outline</v-icon>
+            <span class="mdi mdi-account-group-outline" style="font-size: 16px; margin-right: 8px;"></span>
             {{ $t('dossier.entities') }}
             <span v-if="form.entities.length" class="di-count">{{ form.entities.length }}</span>
           </h3>
           <button class="me-btn-small" @click="openEntityDialog()">
-            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+            <span class="mdi mdi-plus" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('common.add') }}
           </button>
         </div>
@@ -265,7 +255,7 @@
           </div>
           <div v-for="(entity, i) in form.entities" :key="i" class="di-entity-row">
             <span class="di-el-col-type">
-              <v-icon size="16" :title="entityTypeLabel(entity.type)" class="di-el-type-icon">{{ entityIcon(entity.type) }}</v-icon>
+              <span :class="'mdi ' + entityIcon(entity.type) + ' di-el-type-icon'" :title="entityTypeLabel(entity.type)" style="font-size: 16px;"></span>
               <span class="di-el-type-label mono">{{ entityTypeLabel(entity.type) }}</span>
             </span>
             <span class="di-el-col-name">
@@ -283,19 +273,19 @@
             <span class="di-el-col-desc" :title="entity.description">{{ entity.description || '—' }}</span>
             <span class="di-el-col-actions">
               <button class="di-el-btn" @click="copyEntity(entity.name, i)" :title="$t('dossier.copyEntity') + ' ' + entity.name">
-                <v-icon size="15">{{ copiedIndex === i ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
+                <span :class="'mdi ' + (copiedIndex === i ? 'mdi-check' : 'mdi-content-copy')" style="font-size: 15px;"></span>
               </button>
               <button class="di-el-btn" @click="sendEntityToNote(i)" :title="$t('dossier.entityToNote')">
-                <v-icon size="15">mdi-note-plus-outline</v-icon>
+                <span class="mdi mdi-note-plus-outline" style="font-size: 15px;"></span>
               </button>
               <button class="di-el-btn" @click="openDorkDialog(i)" :title="$t('dossier.googleDork')">
-                <v-icon size="15">mdi-search-web</v-icon>
+                <span class="mdi mdi-search-web" style="font-size: 15px;"></span>
               </button>
               <button class="di-el-btn" @click="openEditEntity(i)" :title="$t('common.edit')">
-                <v-icon size="15">mdi-pencil-outline</v-icon>
+                <span class="mdi mdi-pencil-outline" style="font-size: 15px;"></span>
               </button>
               <button class="di-el-btn di-el-btn-danger" @click="removeEntity(i)" :title="$t('common.delete')">
-                <v-icon size="15">mdi-trash-can-outline</v-icon>
+                <span class="mdi mdi-trash-can-outline" style="font-size: 15px;"></span>
               </button>
             </span>
           </div>
@@ -306,7 +296,7 @@
       <!-- COLLABORATEURS -->
       <div class="di-section di-full-width" v-if="dossierStore.currentDossier">
         <div class="di-section-title mono">
-          <v-icon size="16" class="mr-2">mdi-account-multiple-outline</v-icon>
+          <span class="mdi mdi-account-multiple-outline" style="font-size: 16px; margin-right: 8px;"></span>
           {{ $t('dossier.collaborators') }}
           <span v-if="collaboratorDetails.length" class="di-count">{{ collaboratorDetails.length }}</span>
         </div>
@@ -318,7 +308,7 @@
             <span class="collab-email mono">{{ collab.email }}</span>
           </div>
           <button v-if="isOwner" class="collab-remove" @click="removeCollaborator(collab._id)" :title="$t('dossier.remove')">
-            <v-icon size="14">mdi-close</v-icon>
+            <span class="mdi mdi-close" style="font-size: 14px;"></span>
           </button>
         </div>
 
@@ -326,16 +316,15 @@
 
         <div v-if="isOwner" class="collab-add">
           <div class="collab-search-wrapper">
-            <v-text-field
-              v-model="userSearchQuery"
-              :label="$t('dossier.addCollaborator')"
-              density="compact"
-              variant="outlined"
-              hide-details
-              prepend-inner-icon="mdi-magnify"
-              :loading="searchingUsers"
-              @input="onUserSearch(userSearchQuery)"
-            />
+            <div style="position: relative;">
+              <span class="mdi mdi-magnify" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--me-text-muted);"></span>
+              <InputText
+                v-model="userSearchQuery"
+                :placeholder="$t('dossier.addCollaborator')"
+                style="width: 100%; padding-left: 32px;"
+                @input="onUserSearch(userSearchQuery)"
+              />
+            </div>
             <div v-if="userSearchResults.length > 0" class="collab-search-results glass-card">
               <div
                 v-for="u in userSearchResults"
@@ -361,28 +350,28 @@
       <div class="di-section di-full-width">
         <div class="di-section-header">
           <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-paperclip</v-icon>
+            <span class="mdi mdi-paperclip" style="font-size: 16px; margin-right: 8px;"></span>
             {{ $t('dossier.linkedDocuments') }}
             <span v-if="form.linkedDocuments.length" class="di-count">{{ form.linkedDocuments.length }}</span>
           </h3>
           <button class="me-btn-small" @click="triggerDocInput">
-            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+            <span class="mdi mdi-plus" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.addDocument') }}
           </button>
           <input ref="docInput" type="file" hidden multiple @change="handleDocUpload" />
         </div>
         <div v-if="form.linkedDocuments.length" class="di-doc-list">
           <div v-for="doc in form.linkedDocuments" :key="doc._id" class="di-doc-row">
-            <v-icon size="16" class="di-doc-icon">{{ docIcon(doc.fileName) }}</v-icon>
+            <span :class="'mdi ' + docIcon(doc.fileName) + ' di-doc-icon'" style="font-size: 16px;"></span>
             <div class="di-doc-info">
               <a href="#" class="di-doc-name" @click.prevent="downloadDecryptedDoc(doc)">{{ doc.fileName.endsWith('.enc') ? doc.fileName.slice(0, -4) : doc.fileName }}</a>
               <span class="di-doc-meta mono">{{ formatFileSize(doc.fileSize) }}</span>
             </div>
             <button v-if="isPreviewable(doc.fileName, doc)" class="di-el-btn" @click="openDocViewer(doc)" :title="$t('dossier.preview')">
-              <v-icon size="14">{{ isAudioFile(doc) ? 'mdi-volume-high' : 'mdi-eye-outline' }}</v-icon>
+              <span :class="'mdi ' + (isAudioFile(doc) ? 'mdi-volume-high' : 'mdi-eye-outline')" style="font-size: 14px;"></span>
             </button>
             <button class="di-el-btn" @click="downloadDecryptedDoc(doc)" :title="$t('dossier.download')">
-              <v-icon size="14">mdi-download</v-icon>
+              <span class="mdi mdi-download" style="font-size: 14px;"></span>
             </button>
             <button
               v-if="!doc.filePath.endsWith('.enc')"
@@ -391,21 +380,21 @@
               :title="$t('media.analyze')"
               :disabled="analyzingDocId === doc._id"
             >
-              <v-icon v-if="analyzingDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
-              <v-icon v-else size="14">mdi-magnify-scan</v-icon>
+              <span v-if="analyzingDocId === doc._id" class="mdi mdi-loading spin" style="font-size: 14px;"></span>
+              <span v-else class="mdi mdi-magnify-scan" style="font-size: 14px;"></span>
             </button>
             <button class="di-el-btn" @click="transferDoc(doc)" :title="getTransferTooltip(doc)" :disabled="transferringDocId === doc._id">
-              <v-icon v-if="transferringDocId === doc._id" size="14" class="spin">mdi-loading</v-icon>
-              <v-icon v-else size="14">mdi-file-move-outline</v-icon>
+              <span v-if="transferringDocId === doc._id" class="mdi mdi-loading spin" style="font-size: 14px;"></span>
+              <span v-else class="mdi mdi-file-move-outline" style="font-size: 14px;"></span>
             </button>
             <button class="di-el-btn di-el-btn-danger" @click="handleDeleteDoc(doc)" :title="$t('common.delete')">
-              <v-icon size="14">mdi-trash-can-outline</v-icon>
+              <span class="mdi mdi-trash-can-outline" style="font-size: 14px;"></span>
             </button>
           </div>
         </div>
         <div v-else class="di-empty mono">{{ $t('dossier.noLinkedDocuments') }}</div>
         <div v-if="uploadingDoc" class="di-uploading mono">
-          <v-progress-circular indeterminate size="16" width="2" class="mr-2" />
+          <ProgressSpinner style="width: 16px; height: 16px; margin-right: 8px;" />
           {{ $t('dossier.uploading') }}
         </div>
       </div>
@@ -414,7 +403,7 @@
       <div class="di-section di-full-width" v-if="dossierStore.currentDossier">
         <div class="di-section-header">
           <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-file-check-outline</v-icon>
+            <span class="mdi mdi-file-check-outline" style="font-size: 16px; margin-right: 8px;"></span>
             {{ $t('dossier.closingReport') }}
           </h3>
         </div>
@@ -422,7 +411,7 @@
         <!-- Report exists -->
         <div v-if="dossierStore.currentDossier.finalReport?.filePath" class="di-report-card">
           <div class="di-report-info">
-            <v-icon size="20" class="mr-2" color="primary">mdi-file-document-check-outline</v-icon>
+            <span class="mdi mdi-file-document-check-outline" style="font-size: 20px; margin-right: 8px; color: var(--me-accent);"></span>
             <div class="di-report-meta">
               <span class="di-report-name">{{ dossierStore.currentDossier.finalReport.fileName }}</span>
               <span class="di-report-details mono">
@@ -435,15 +424,15 @@
           </div>
           <div class="di-report-actions">
             <button class="me-btn-small" @click="downloadFinalReport" :title="$t('dossier.downloadReport')">
-              <v-icon size="14" class="mr-1">mdi-download</v-icon>
+              <span class="mdi mdi-download" style="font-size: 14px; margin-right: 4px;"></span>
               {{ $t('dossier.downloadReport') }}
             </button>
             <button class="me-btn-small" @click="showCloseDialog = true" :title="$t('dossier.replaceReport')">
-              <v-icon size="14" class="mr-1">mdi-file-replace-outline</v-icon>
+              <span class="mdi mdi-file-replace-outline" style="font-size: 14px; margin-right: 4px;"></span>
               {{ $t('dossier.replaceReport') }}
             </button>
             <button class="me-btn-small di-btn-danger" @click="confirmDeleteReport" :title="$t('dossier.deleteReport')">
-              <v-icon size="14" class="mr-1">mdi-trash-can-outline</v-icon>
+              <span class="mdi mdi-trash-can-outline" style="font-size: 14px; margin-right: 4px;"></span>
               {{ $t('dossier.deleteReport') }}
             </button>
           </div>
@@ -453,87 +442,91 @@
         <div v-else class="di-report-empty">
           <p class="di-report-empty-text mono">{{ $t('dossier.closeDossierDesc') }}</p>
           <button class="me-btn-small" @click="showCloseDialog = true">
-            <v-icon size="14" class="mr-1">mdi-file-check-outline</v-icon>
+            <span class="mdi mdi-file-check-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.closeDossier') }}
           </button>
         </div>
       </div>
 
       <!-- Close dossier dialog -->
-      <v-dialog v-model="showCloseDialog" max-width="480" persistent>
-        <v-card class="glass-card">
-          <v-card-title class="mono">{{ $t('dossier.closingReport') }}</v-card-title>
-          <v-card-text>
-            <p class="mb-4" style="opacity: 0.7; font-size: 13px;">{{ $t('dossier.closeDossierDesc') }}</p>
+      <Dialog v-model:visible="showCloseDialog" modal :style="{ width: '480px' }" :closable="false">
+        <template #container>
+        <div class="glass-card dialog-card">
+          <div class="dialog-header"><h3 class="mono">{{ $t('dossier.closingReport') }}</h3></div>
+          <div class="dialog-body">
+            <p style="opacity: 0.7; font-size: 13px; margin-bottom: 16px;">{{ $t('dossier.closeDossierDesc') }}</p>
             <div class="di-report-upload-zone" @click="triggerReportInput" @dragover.prevent @drop.prevent="handleReportDrop">
               <input ref="reportInput" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden @change="handleReportSelect" />
-              <v-icon size="32" class="mb-2" style="opacity: 0.4;">mdi-file-upload-outline</v-icon>
+              <span class="mdi mdi-file-upload-outline" style="font-size: 32px; margin-bottom: 8px; opacity: 0.4;"></span>
               <span class="mono" style="font-size: 13px;">{{ $t('dossier.selectReport') }}</span>
               <span style="font-size: 11px; opacity: 0.5;">PDF, DOCX</span>
             </div>
             <div v-if="selectedReportFile" class="di-report-selected">
-              <v-icon size="16" class="mr-2">mdi-file-document-outline</v-icon>
+              <span class="mdi mdi-file-document-outline" style="font-size: 16px; margin-right: 8px;"></span>
               <span class="di-report-selected-name">{{ selectedReportFile.name }}</span>
               <span class="di-report-selected-size mono">{{ formatFileSize(selectedReportFile.size) }}</span>
             </div>
-            <v-alert v-if="reportError" type="error" variant="tonal" density="compact" class="mt-3" style="font-size: 13px;">
+            <div v-if="reportError" style="font-size: 13px; padding: 8px 12px; border-radius: 6px; background: rgba(239, 68, 68, 0.1); color: #ef4444; margin-top: 12px;">
               {{ reportError }}
-            </v-alert>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
+            </div>
+          </div>
+          <div class="dialog-footer">
             <button class="me-btn-small" @click="cancelCloseDialog">{{ $t('common.cancel') }}</button>
             <button class="me-btn-small me-btn-primary-sm" :disabled="!selectedReportFile || uploadingReport" @click="submitFinalReport">
-              <v-progress-circular v-if="uploadingReport" indeterminate size="14" width="2" class="mr-1" />
+              <ProgressSpinner v-if="uploadingReport" style="width: 14px; height: 14px; margin-right: 4px;" />
               {{ $t('dossier.closeDossier') }}
             </button>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+          </div>
+        </div>
+        </template>
+      </Dialog>
 
       <!-- Delete report confirmation dialog -->
-      <v-dialog v-model="showDeleteReportDialog" max-width="400">
-        <v-card class="glass-card">
-          <v-card-title class="mono">{{ $t('dossier.deleteReport') }}</v-card-title>
-          <v-card-text>{{ $t('dossier.deleteReportConfirm') }}</v-card-text>
-          <v-card-actions>
-            <v-spacer />
+      <Dialog v-model:visible="showDeleteReportDialog" modal :style="{ width: '400px' }" :closable="false">
+        <template #container>
+        <div class="glass-card dialog-card">
+          <div class="dialog-header"><h3 class="mono">{{ $t('dossier.deleteReport') }}</h3></div>
+          <div class="dialog-body">{{ $t('dossier.deleteReportConfirm') }}</div>
+          <div class="dialog-footer">
             <button class="me-btn-small" @click="showDeleteReportDialog = false">{{ $t('common.cancel') }}</button>
             <button class="me-btn-small di-btn-danger" @click="deleteFinalReport">{{ $t('common.confirm') }}</button>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+          </div>
+        </div>
+        </template>
+      </Dialog>
 
       <!-- Closing report snackbar -->
-      <v-snackbar v-model="reportSnackbar" :timeout="3000" color="success">{{ reportSnackbarText }}</v-snackbar>
+      <div v-if="reportSnackbar" class="di-toast" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; padding: 10px 20px; border-radius: 8px; background: #4caf50; color: #fff; font-size: 13px;">
+        {{ reportSnackbarText }}
+      </div>
 
       <!-- CHIFFREMENT E2E (toujours actif, en dernier) -->
       <div class="di-section di-full-width" v-if="dossierStore.currentDossier">
         <div class="di-section-header">
           <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-lock-outline</v-icon>
+            <span class="mdi mdi-lock-outline" style="font-size: 16px; margin-right: 8px;"></span>
             {{ $t('dossier.encryption') }}
           </h3>
         </div>
         <p class="di-encryption-info mono">
-          <v-icon size="14" class="mr-1" color="success">mdi-shield-check-outline</v-icon>
+          <span class="mdi mdi-shield-check-outline" style="font-size: 14px; margin-right: 4px; color: #4caf50;"></span>
           {{ $t('dossier.encryptionActive') }}
         </p>
       </div>
     </div>
 
     <!-- MODE EDITION -->
-    <v-form v-else @submit.prevent="handleSave" class="di-edit-form fade-in">
+    <form v-else @submit.prevent="handleSave" class="di-edit-form fade-in">
       <!-- Header : Titre + Statut + Flags -->
       <div class="di-section">
         <div class="di-edit-header">
-          <v-text-field v-model="form.title" :label="$t('dossier.dossierTitle')" density="compact" hide-details class="di-edit-title-field" />
+          <InputText v-model="form.title" :placeholder="$t('dossier.dossierTitle')" class="di-edit-title-field" style="width: 100%;" />
           <div class="di-edit-meta">
             <div class="di-status-select-wrap">
               <div class="di-status-select" @click="showStatusDropdown = !showStatusDropdown" tabindex="0" @blur="showStatusDropdown = false">
                 <span class="di-status-dot" :class="`di-dot-${form.status}`" />
                 <span>{{ statusLabel }}</span>
-                <v-icon size="14" class="di-status-chevron" :class="{ 'di-chevron-open': showStatusDropdown }">mdi-chevron-down</v-icon>
+                <span class="mdi mdi-chevron-down di-status-chevron" :class="{ 'di-chevron-open': showStatusDropdown }" style="font-size: 14px;"></span>
               </div>
               <div v-if="showStatusDropdown" class="di-status-dropdown">
                 <div v-for="opt in statusOptions" :key="opt.value" class="di-status-option" :class="{ 'di-status-option-active': form.status === opt.value }" @mousedown.prevent="form.status = opt.value; showStatusDropdown = false">
@@ -543,20 +536,20 @@
               </div>
             </div>
             <button type="button" class="di-flag-toggle" :class="{ 'di-flag-toggle-active di-flag-urgent-active': form.isUrgent }" @click="form.isUrgent = !form.isUrgent">
-              <v-icon size="14">mdi-alert-circle-outline</v-icon>
+              <span class="mdi mdi-alert-circle-outline" style="font-size: 14px;"></span>
               {{ $t('dossier.isUrgent') }}
             </button>
             <button type="button" class="di-flag-toggle" :class="{ 'di-flag-toggle-active di-flag-embargo-active': form.isEmbargo }" @click="toggleEmbargo(!form.isEmbargo)">
-              <v-icon size="14">mdi-lock-clock</v-icon>
+              <span class="mdi mdi-lock-clock" style="font-size: 14px;"></span>
               {{ $t('dossier.isEmbargo') }}
             </button>
             <button type="button" class="di-flag-toggle" :class="{ 'di-flag-toggle-active di-flag-continuous-active': form.isContinuous }" @click="form.isContinuous = !form.isContinuous">
-              <v-icon size="14">mdi-infinity</v-icon>
+              <span class="mdi mdi-infinity" style="font-size: 14px;"></span>
               {{ $t('dossier.isContinuous') }}
             </button>
           </div>
         </div>
-        <v-textarea v-model="form.judicialFacts" :label="$t('dossier.judicialFacts')" rows="2" density="compact" class="mt-3" hide-details />
+        <Textarea v-model="form.judicialFacts" :placeholder="$t('dossier.judicialFacts')" rows="2" style="width: 100%; margin-top: 12px;" />
       </div>
 
       <!-- Objectifs + Description côte à côte -->
@@ -568,7 +561,7 @@
       <!-- Dates, Référence & Tags (edit mode) -->
       <div class="di-section di-full-width">
         <h3 class="di-section-title mono">
-          <v-icon size="16" class="mr-2">mdi-calendar-clock</v-icon>
+          <span class="mdi mdi-calendar-clock" style="font-size: 16px; margin-right: 8px;"></span>
           {{ $t('dossier.datesReferenceTags') }}
         </h3>
         <div class="di-grid-3">
@@ -590,18 +583,15 @@
             <input type="number" v-model.number="form.reportNumber" class="di-date-input" min="1" max="99" style="max-width: 80px;" />
           </div>
         </div>
-        <v-combobox
+        <AutoComplete
           v-model="localTags"
-          :items="availableTags"
-          :label="$t('dossier.tags')"
+          :suggestions="availableTags"
+          :placeholder="$t('dossier.tags')"
           multiple
-          chips
-          closable-chips
-          density="compact"
-          hide-details
-          variant="outlined"
-          class="mt-3"
-          @update:model-value="saveTags"
+          style="width: 100%; margin-top: 12px;"
+          @complete="() => {}"
+          @item-select="saveTags"
+          @item-unselect="saveTags"
         />
       </div>
 
@@ -609,13 +599,13 @@
       <div class="di-edit-row">
         <div class="di-section">
           <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-gavel</v-icon>
+            <span class="mdi mdi-gavel" style="font-size: 16px; margin-right: 8px;"></span>
             {{ $t('dossier.classification') }}
           </h3>
           <div class="di-row" style="gap: 12px;">
-            <v-text-field v-model="form.referenceNumber" :label="$t('dossier.referenceNumber')" density="compact" prepend-inner-icon="mdi-identifier" hide-details />
-            <v-select v-model="form.classification" :items="classificationOptions" :label="$t('dossier.classification')" density="compact" hide-details />
-            <v-text-field v-model="form.magistrate" :label="$t('dossier.magistrate')" density="compact" hide-details />
+            <InputText v-model="form.referenceNumber" :placeholder="$t('dossier.referenceNumber')" style="flex: 1;" />
+            <Select v-model="form.classification" :options="classificationOptions" optionLabel="title" optionValue="value" :placeholder="$t('dossier.classification')" style="flex: 1;" />
+            <InputText v-model="form.magistrate" :placeholder="$t('dossier.magistrate')" style="flex: 1;" />
           </div>
           <div class="di-edit-bottom-row">
             <div class="di-lang-options">
@@ -628,24 +618,27 @@
                 NL
               </button>
             </div>
-            <v-switch v-model="form.isFirstRequest" :label="form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest')" color="primary" density="compact" hide-details />
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <ToggleSwitch v-model="form.isFirstRequest" />
+              <span style="font-size: 13px;">{{ form.isFirstRequest ? $t('dossier.firstRequest') : $t('dossier.subsequentRequest') }}</span>
+            </div>
           </div>
         </div>
 
         <div class="di-section">
           <h3 class="di-section-title mono">
-            <v-icon size="16" class="mr-2">mdi-account-outline</v-icon>
+            <span class="mdi mdi-account-outline" style="font-size: 16px; margin-right: 8px;"></span>
             {{ $t('dossier.investigator') }}
           </h3>
           <div class="di-row">
-            <v-text-field v-model="form.investigator.name" :label="$t('common.name')" density="compact" />
-            <v-text-field v-model="form.investigator.service" :label="$t('dossier.service')" density="compact" />
+            <InputText v-model="form.investigator.name" :placeholder="$t('common.name')" style="flex: 1;" />
+            <InputText v-model="form.investigator.service" :placeholder="$t('dossier.service')" style="flex: 1;" />
           </div>
           <div class="di-row">
-            <v-text-field v-model="form.investigator.unit" :label="$t('dossier.unit')" density="compact" />
-            <v-text-field v-model="form.investigator.phone" :label="$t('dossier.phone')" density="compact" />
+            <InputText v-model="form.investigator.unit" :placeholder="$t('dossier.unit')" style="flex: 1;" />
+            <InputText v-model="form.investigator.phone" :placeholder="$t('dossier.phone')" style="flex: 1;" />
           </div>
-          <v-text-field v-model="form.investigator.email" :label="$t('common.email')" density="compact" />
+          <InputText v-model="form.investigator.email" :placeholder="$t('common.email')" style="width: 100%;" />
         </div>
       </div>
 
@@ -653,38 +646,39 @@
       <div class="di-actions">
         <button type="button" class="me-btn-ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
         <button type="button" class="me-btn-primary" @click="handleSave">
-          <v-icon size="16" class="mr-1">mdi-content-save-outline</v-icon>
+          <span class="mdi mdi-content-save-outline" style="font-size: 16px; margin-right: 4px;"></span>
           {{ $t('common.save') }}
         </button>
       </div>
-    </v-form>
+    </form>
 
     <!-- DIALOG AJOUT / MODIFICATION ENTITE -->
-    <v-dialog v-model="entityDialog" max-width="440">
+    <Dialog v-model:visible="entityDialog" modal :style="{ width: '440px' }" :closable="false">
+      <template #container>
       <div class="glass-card dialog-card">
         <div class="dialog-header">
           <h3 class="mono">{{ editingEntityIndex !== null ? $t('dossier.editEntity') : $t('dossier.addEntity') }}</h3>
           <button class="me-close-btn" @click="entityDialog = false">
-            <v-icon size="18">mdi-close</v-icon>
+            <span class="mdi mdi-close" style="font-size: 18px;"></span>
           </button>
         </div>
         <div class="dialog-body">
-          <v-text-field v-model="newEntity.name" :label="$t('dossier.entityName')" autofocus class="mb-2" />
-          <v-select
+          <InputText v-model="newEntity.name" :placeholder="$t('dossier.entityName')" autofocus style="width: 100%; margin-bottom: 8px;" />
+          <Select
             v-model="newEntity.type"
-            :items="entityTypes"
-            item-value="value"
-            item-title="title"
-            :label="$t('common.type')"
-            class="mb-2"
+            :options="entityTypes"
+            optionValue="value"
+            optionLabel="title"
+            :placeholder="$t('common.type')"
+            style="width: 100%; margin-bottom: 8px;"
           />
-          <v-text-field v-model="newEntity.description" :label="$t('dossier.entityDescOptional')" />
+          <InputText v-model="newEntity.description" :placeholder="$t('dossier.entityDescOptional')" style="width: 100%;" />
 
           <!-- Photos d'identité (only when editing existing entity) -->
           <div v-if="editingEntityIndex !== null" class="di-entity-photos-section">
             <div class="di-entity-photos-header">
               <span class="mono" style="font-size: 12px; font-weight: 600;">
-                <v-icon size="14" class="mr-1">mdi-camera-outline</v-icon>
+                <span class="mdi mdi-camera-outline" style="font-size: 14px; margin-right: 4px;"></span>
                 {{ $t('dossier.entityPhotos') }}
               </span>
               <button
@@ -693,7 +687,7 @@
                 @click="entityPhotoInput?.click()"
                 :disabled="uploadingEntityPhoto"
               >
-                <v-icon size="14" class="mr-1">{{ uploadingEntityPhoto ? 'mdi-loading' : 'mdi-plus' }}</v-icon>
+                <span :class="'mdi ' + (uploadingEntityPhoto ? 'mdi-loading' : 'mdi-plus')" style="font-size: 14px; margin-right: 4px;"></span>
                 {{ $t('dossier.addPhoto') }}
               </button>
               <input
@@ -713,7 +707,7 @@
                   @click="deleteEntityPhoto(editingEntityIndex!, photo)"
                   :title="$t('dossier.deletePhoto')"
                 >
-                  <v-icon size="12">mdi-close</v-icon>
+                  <span class="mdi mdi-close" style="font-size: 12px;"></span>
                 </button>
               </div>
             </div>
@@ -726,18 +720,20 @@
           </button>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
 
     <!-- Google Dorking Dialog -->
-    <v-dialog v-model="dorkDialog" max-width="560">
+    <Dialog v-model:visible="dorkDialog" modal :style="{ width: '560px' }" :closable="false">
+      <template #container>
       <div class="glass-card dialog-card">
         <div class="dialog-header">
           <h3 class="mono">
-            <v-icon size="18" class="mr-2">mdi-search-web</v-icon>
+            <span class="mdi mdi-search-web" style="font-size: 18px; margin-right: 8px;"></span>
             {{ $t('dossier.dorkTitle') }}
           </h3>
           <button class="me-close-btn" @click="dorkDialog = false">
-            <v-icon size="18">mdi-close</v-icon>
+            <span class="mdi mdi-close" style="font-size: 18px;"></span>
           </button>
         </div>
         <p class="di-dork-sub mono">{{ dorkEntityName }}</p>
@@ -757,50 +753,52 @@
         </div>
         <div class="di-dork-footer">
           <button class="me-btn-ghost me-btn-sm" @click="copyAllDorks">
-            <v-icon size="14" class="mr-1">mdi-content-copy</v-icon>
+            <span class="mdi mdi-content-copy" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.copyAllDorks') }}
           </button>
           <button class="me-btn-ghost me-btn-sm" @click="sendDorksToNote">
-            <v-icon size="14" class="mr-1">mdi-note-plus-outline</v-icon>
+            <span class="mdi mdi-note-plus-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.dorksToNote') }}
           </button>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
 
     <!-- Document Viewer Dialog -->
-    <v-dialog v-model="docViewerOpen" max-width="900" content-class="di-viewer-dialog">
+    <Dialog v-model:visible="docViewerOpen" modal :style="{ width: '900px' }" :closable="false">
+      <template #container>
       <div class="glass-card di-viewer-card">
         <div class="di-viewer-header">
           <div class="di-viewer-title-row">
-            <v-icon size="18" class="mr-2">{{ docViewerDoc ? docIcon(docViewerDoc.fileName) : 'mdi-file' }}</v-icon>
+            <span :class="'mdi ' + (docViewerDoc ? docIcon(docViewerDoc.fileName) : 'mdi-file')" style="font-size: 18px; margin-right: 8px;"></span>
             <span class="di-viewer-title">{{ docViewerDoc?.fileName }}</span>
           </div>
           <div class="di-viewer-actions">
             <template v-if="docViewerType === 'image'">
               <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="zoomOut" :title="$t('dossier.zoomOut')" :disabled="viewerZoom <= 0.25">
-                <v-icon size="16">mdi-minus</v-icon>
+                <span class="mdi mdi-minus" style="font-size: 16px;"></span>
               </button>
               <span class="di-viewer-zoom-label mono">{{ Math.round(viewerZoom * 100) }}%</span>
               <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="zoomIn" :title="$t('dossier.zoomIn')" :disabled="viewerZoom >= 5">
-                <v-icon size="16">mdi-plus</v-icon>
+                <span class="mdi mdi-plus" style="font-size: 16px;"></span>
               </button>
               <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="zoomReset" :title="$t('dossier.zoomReset')">
-                <v-icon size="16">mdi-fit-to-screen-outline</v-icon>
+                <span class="mdi mdi-fit-to-screen-outline" style="font-size: 16px;"></span>
               </button>
             </template>
             <button class="me-btn-ghost me-btn-sm" @click="downloadDecryptedDoc(docViewerDoc!)" :title="$t('dossier.download')">
-              <v-icon size="16" class="mr-1">mdi-download</v-icon>
+              <span class="mdi mdi-download" style="font-size: 16px; margin-right: 4px;"></span>
               {{ $t('dossier.download') }}
             </button>
             <button class="me-btn-ghost me-btn-sm me-btn-icon" @click="docViewerOpen = false">
-              <v-icon size="16">mdi-close</v-icon>
+              <span class="mdi mdi-close" style="font-size: 16px;"></span>
             </button>
           </div>
         </div>
         <div class="di-viewer-body" ref="viewerBodyRef" @wheel.prevent="onViewerWheel">
           <div v-if="docViewerLoading" class="di-viewer-loading">
-            <v-progress-circular indeterminate size="40" width="3" />
+            <ProgressSpinner style="width: 40px; height: 40px;" />
           </div>
           <template v-else-if="docViewerUrl">
             <div
@@ -823,28 +821,30 @@
           </template>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
 
     <!-- AI Enrichment streaming dialog -->
-    <v-dialog v-model="enrichDialog" max-width="640" persistent>
+    <Dialog v-model:visible="enrichDialog" modal :style="{ width: '640px' }" :closable="false">
+      <template #container>
       <div class="glass-card dialog-card">
         <div class="dialog-header">
           <h3 class="mono">
-            <v-icon size="18" class="mr-1">mdi-robot-outline</v-icon>
+            <span class="mdi mdi-robot-outline" style="font-size: 18px; margin-right: 4px;"></span>
             {{ $t('dossier.enrichAITitle') }}
           </h3>
           <button class="me-close-btn" @click="closeEnrichDialog" :disabled="enrichStreaming">
-            <v-icon size="18">mdi-close</v-icon>
+            <span class="mdi mdi-close" style="font-size: 18px;"></span>
           </button>
         </div>
 
         <!-- Logs -->
         <div v-if="enrichLogs.length" class="enrich-logs-panel">
           <div class="enrich-logs-header" @click="enrichLogsExpanded = !enrichLogsExpanded">
-            <v-icon size="14" class="mr-1" :class="{ 'spin': enrichStreaming }">{{ enrichStreaming ? 'mdi-loading' : 'mdi-console' }}</v-icon>
+            <span :class="['mdi', enrichStreaming ? 'mdi-loading spin' : 'mdi-console']" style="font-size: 14px; margin-right: 4px;"></span>
             <span class="mono">Logs</span>
             <span class="enrich-log-count mono">{{ enrichLogs.length }}</span>
-            <v-icon size="14" class="ml-auto">{{ enrichLogsExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            <span :class="'mdi ' + (enrichLogsExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down')" style="font-size: 14px; margin-left: auto;"></span>
           </div>
           <div v-if="enrichLogsExpanded" class="enrich-logs-content" ref="enrichLogsRef">
             <div v-for="(log, i) in enrichLogs" :key="i" class="enrich-log-line mono">
@@ -857,7 +857,7 @@
         <!-- Streaming content -->
         <div class="dialog-body enrich-body" ref="enrichBodyRef">
           <div v-if="enrichStreaming && !enrichContent" class="enrich-generating">
-            <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
+            <ProgressSpinner style="width: 28px; height: 28px;" />
             <p>{{ $t('dossier.enrichPreparing') }}</p>
           </div>
 
@@ -870,26 +870,27 @@
           </div>
 
           <div v-if="enrichError" class="enrich-error">
-            <v-icon size="20" color="#f87171" class="mr-2">mdi-alert-circle-outline</v-icon>
+            <span class="mdi mdi-alert-circle-outline" style="font-size: 20px; color: #f87171; margin-right: 8px;"></span>
             {{ enrichError }}
           </div>
         </div>
 
         <div class="dialog-footer">
           <button v-if="enrichStreaming" class="enrich-cancel-btn" @click="cancelEnrich">
-            <v-icon size="14" class="mr-1">mdi-stop-circle-outline</v-icon>
+            <span class="mdi mdi-stop-circle-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.stopEnrichment') }}
           </button>
           <div v-else class="enrich-footer-actions">
             <button class="me-btn-ghost" @click="closeEnrichDialog">{{ $t('common.close') }}</button>
             <button v-if="enrichContent && !enrichError" class="me-btn-primary" @click="applyEnrichResult">
-              <v-icon size="14" class="mr-1">mdi-check</v-icon>
+              <span class="mdi mdi-check" style="font-size: 14px; margin-right: 4px;"></span>
               {{ $t('dossier.applyEnrichment') }}
             </button>
           </div>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
     <AiDisclaimerModal ref="disclaimerModal" />
   </div>
 </template>
@@ -897,6 +898,14 @@
 <script setup lang="ts">
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import Select from 'primevue/select';
+import Tag from 'primevue/tag';
+import ToggleSwitch from 'primevue/toggleswitch';
+import AutoComplete from 'primevue/autocomplete';
+import ProgressSpinner from 'primevue/progressspinner';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useEncryptionStore } from '../../stores/encryption';

@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <v-progress-linear v-if="templateStore.loading" indeterminate color="primary" class="mb-4" style="border-radius: 4px;" />
+    <ProgressBar v-if="templateStore.loading" mode="indeterminate" style="height: 4px; border-radius: 4px; margin-bottom: 16px;" />
 
     <div v-if="templateStore.templates.length" class="templates-grid">
       <div
@@ -16,14 +16,14 @@
         class="tpl-card glass-card"
       >
         <div class="tpl-card-header">
-          <v-icon size="20" color="primary" class="mr-2">mdi-file-document-check-outline</v-icon>
+          <span class="mdi mdi-file-document-check-outline" style="font-size: 20px; color: var(--me-accent); margin-right: 8px;"></span>
           <span class="tpl-card-title">{{ tpl.title }}</span>
           <div class="tpl-card-actions">
             <button class="tpl-action-btn" @click="openEdit(tpl)" title="Modifier">
-              <v-icon size="16">mdi-pencil-outline</v-icon>
+              <i class="pi pi-pencil" style="font-size: 16px;"></i>
             </button>
             <button class="tpl-action-btn tpl-action-danger" @click="handleDelete(tpl._id)" title="Supprimer">
-              <v-icon size="16">mdi-delete-outline</v-icon>
+              <i class="pi pi-trash" style="font-size: 16px;"></i>
             </button>
           </div>
         </div>
@@ -35,23 +35,30 @@
     </div>
 
     <div v-else-if="!templateStore.loading" class="templates-empty fade-in">
-      <v-icon size="48" color="primary" class="mb-4">mdi-file-document-check-outline</v-icon>
+      <span class="mdi mdi-file-document-check-outline" style="font-size: 48px; color: var(--me-accent); margin-bottom: 16px;"></span>
       <h3 class="mono">Aucun modele</h3>
       <p class="text-muted">Sauvegardez une note comme modele depuis l'editeur pour commencer.</p>
     </div>
 
     <!-- Edit template dialog -->
-    <v-dialog v-model="editDialog" max-width="700">
+    <Dialog v-model:visible="editDialog" modal :style="{ width: '700px' }">
+      <template #container>
       <div class="glass-card dialog-card">
         <div class="dialog-header">
           <h3 class="mono">Modifier le modele</h3>
           <button class="me-close-btn" @click="editDialog = false">
-            <v-icon size="18">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 18px;"></i>
           </button>
         </div>
         <div class="dialog-body">
-          <v-text-field v-model="editForm.title" label="Titre du modele" class="mb-2" />
-          <v-textarea v-model="editForm.description" label="Description" rows="2" class="mb-4" />
+          <div class="tpl-field" style="margin-bottom: 8px;">
+            <label class="tpl-field-label">Titre du modele</label>
+            <InputText v-model="editForm.title" style="width: 100%;" />
+          </div>
+          <div class="tpl-field" style="margin-bottom: 16px;">
+            <label class="tpl-field-label">Description</label>
+            <Textarea v-model="editForm.description" rows="2" style="width: 100%;" />
+          </div>
 
           <!-- Placeholder insertion -->
           <div class="placeholder-section">
@@ -74,13 +81,13 @@
           <div class="tpl-editor-wrap">
             <div class="tpl-editor-toolbar" v-if="templateEditor">
               <button class="ne-btn" :class="{ active: templateEditor.isActive('bold') }" @click="templateEditor.chain().focus().toggleBold().run()">
-                <v-icon size="16">mdi-format-bold</v-icon>
+                <span class="mdi mdi-format-bold" style="font-size: 16px;"></span>
               </button>
               <button class="ne-btn" :class="{ active: templateEditor.isActive('italic') }" @click="templateEditor.chain().focus().toggleItalic().run()">
-                <v-icon size="16">mdi-format-italic</v-icon>
+                <span class="mdi mdi-format-italic" style="font-size: 16px;"></span>
               </button>
               <button class="ne-btn" :class="{ active: templateEditor.isActive('underline') }" @click="templateEditor.chain().focus().toggleUnderline().run()">
-                <v-icon size="16">mdi-format-underline</v-icon>
+                <span class="mdi mdi-format-underline" style="font-size: 16px;"></span>
               </button>
               <div class="ne-separator" />
               <button class="ne-btn ne-btn-text" :class="{ active: templateEditor.isActive('heading', { level: 1 }) }" @click="templateEditor.chain().focus().toggleHeading({ level: 1 }).run()">
@@ -94,24 +101,24 @@
               </button>
               <div class="ne-separator" />
               <button class="ne-btn" :class="{ active: templateEditor.isActive('bulletList') }" @click="templateEditor.chain().focus().toggleBulletList().run()">
-                <v-icon size="16">mdi-format-list-bulleted</v-icon>
+                <span class="mdi mdi-format-list-bulleted" style="font-size: 16px;"></span>
               </button>
               <button class="ne-btn" :class="{ active: templateEditor.isActive('orderedList') }" @click="templateEditor.chain().focus().toggleOrderedList().run()">
-                <v-icon size="16">mdi-format-list-numbered</v-icon>
+                <span class="mdi mdi-format-list-numbered" style="font-size: 16px;"></span>
               </button>
               <button class="ne-btn" :class="{ active: templateEditor.isActive('taskList') }" @click="templateEditor.chain().focus().toggleTaskList().run()">
-                <v-icon size="16">mdi-checkbox-marked-outline</v-icon>
+                <span class="mdi mdi-checkbox-marked-outline" style="font-size: 16px;"></span>
               </button>
               <div class="ne-separator" />
               <button class="ne-btn" @click="templateEditor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">
-                <v-icon size="16">mdi-table</v-icon>
+                <span class="mdi mdi-table" style="font-size: 16px;"></span>
               </button>
               <button class="ne-btn" @click="templateEditor.chain().focus().setHorizontalRule().run()">
-                <v-icon size="16">mdi-minus</v-icon>
+                <span class="mdi mdi-minus" style="font-size: 16px;"></span>
               </button>
               <div class="ne-separator" />
               <button class="ne-btn" @click="editFullscreen = true" title="Plein ecran">
-                <v-icon size="16">mdi-fullscreen</v-icon>
+                <span class="mdi mdi-fullscreen" style="font-size: 16px;"></span>
               </button>
             </div>
             <editor-content :editor="templateEditor" class="tpl-editor-content" />
@@ -122,7 +129,8 @@
           <button class="me-btn-primary" @click="saveEdit" :disabled="!editForm.title.trim()">Sauvegarder</button>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
 
     <!-- Fullscreen editor overlay -->
     <Teleport to="body">
@@ -142,19 +150,19 @@
               </button>
             </div>
             <button class="me-close-btn" @click="editFullscreen = false" title="Quitter le plein ecran">
-              <v-icon size="18">mdi-fullscreen-exit</v-icon>
+              <span class="mdi mdi-fullscreen-exit" style="font-size: 18px;"></span>
             </button>
           </div>
         </div>
         <div class="fs-toolbar" v-if="templateEditor">
           <button class="ne-btn" :class="{ active: templateEditor.isActive('bold') }" @click="templateEditor.chain().focus().toggleBold().run()">
-            <v-icon size="16">mdi-format-bold</v-icon>
+            <span class="mdi mdi-format-bold" style="font-size: 16px;"></span>
           </button>
           <button class="ne-btn" :class="{ active: templateEditor.isActive('italic') }" @click="templateEditor.chain().focus().toggleItalic().run()">
-            <v-icon size="16">mdi-format-italic</v-icon>
+            <span class="mdi mdi-format-italic" style="font-size: 16px;"></span>
           </button>
           <button class="ne-btn" :class="{ active: templateEditor.isActive('underline') }" @click="templateEditor.chain().focus().toggleUnderline().run()">
-            <v-icon size="16">mdi-format-underline</v-icon>
+            <span class="mdi mdi-format-underline" style="font-size: 16px;"></span>
           </button>
           <div class="ne-separator" />
           <button class="ne-btn ne-btn-text" :class="{ active: templateEditor.isActive('heading', { level: 1 }) }" @click="templateEditor.chain().focus().toggleHeading({ level: 1 }).run()">
@@ -168,20 +176,20 @@
           </button>
           <div class="ne-separator" />
           <button class="ne-btn" :class="{ active: templateEditor.isActive('bulletList') }" @click="templateEditor.chain().focus().toggleBulletList().run()">
-            <v-icon size="16">mdi-format-list-bulleted</v-icon>
+            <span class="mdi mdi-format-list-bulleted" style="font-size: 16px;"></span>
           </button>
           <button class="ne-btn" :class="{ active: templateEditor.isActive('orderedList') }" @click="templateEditor.chain().focus().toggleOrderedList().run()">
-            <v-icon size="16">mdi-format-list-numbered</v-icon>
+            <span class="mdi mdi-format-list-numbered" style="font-size: 16px;"></span>
           </button>
           <button class="ne-btn" :class="{ active: templateEditor.isActive('taskList') }" @click="templateEditor.chain().focus().toggleTaskList().run()">
-            <v-icon size="16">mdi-checkbox-marked-outline</v-icon>
+            <span class="mdi mdi-checkbox-marked-outline" style="font-size: 16px;"></span>
           </button>
           <div class="ne-separator" />
           <button class="ne-btn" @click="templateEditor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">
-            <v-icon size="16">mdi-table</v-icon>
+            <span class="mdi mdi-table" style="font-size: 16px;"></span>
           </button>
           <button class="ne-btn" @click="templateEditor.chain().focus().setHorizontalRule().run()">
-            <v-icon size="16">mdi-minus</v-icon>
+            <span class="mdi mdi-minus" style="font-size: 16px;"></span>
           </button>
         </div>
         <div class="fs-editor">
@@ -194,6 +202,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import Dialog from 'primevue/dialog';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
 import { useTemplateStore } from '../stores/template';
 import { useConfirm } from '../composables/useConfirm';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
@@ -570,6 +582,8 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-y: auto;
 }
+.tpl-field { display: flex; flex-direction: column; gap: 4px; }
+.tpl-field-label { font-size: 13px; font-weight: 500; color: var(--me-text-secondary); }
 </style>
 
 <style>

@@ -1,9 +1,9 @@
 <template>
   <div class="fp-wrapper" ref="wrapperRef">
     <button type="button" class="fp-trigger" @click="toggle">
-      <v-icon size="14" class="fp-trigger-icon">mdi-folder-outline</v-icon>
+      <i class="pi pi-folder fp-trigger-icon" style="font-size: 14px;"></i>
       <span class="fp-trigger-text">{{ selectedLabel }}</span>
-      <v-icon size="14" class="fp-trigger-chevron">{{ open ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+      <i :class="open ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="fp-trigger-chevron" style="font-size: 14px;"></i>
     </button>
 
     <Teleport to="body">
@@ -19,7 +19,7 @@
           :class="{ 'fp-option--active': !modelValue }"
           @click="select('')"
         >
-          <v-icon size="14">mdi-folder-home-outline</v-icon>
+          <i class="pi pi-home" style="font-size: 14px;"></i>
           <span>{{ $t('common.rootFolder') }}</span>
         </button>
         <button
@@ -31,7 +31,7 @@
           :style="{ paddingLeft: (12 + item.depth * 16) + 'px' }"
           @click="select(item.id)"
         >
-          <v-icon size="14">mdi-folder-outline</v-icon>
+          <i class="pi pi-folder" style="font-size: 14px;"></i>
           <span>{{ item.title }}</span>
         </button>
       </div>

@@ -2,7 +2,7 @@
   <div class="profile-shortcuts">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-keyboard-outline</v-icon>
+        <span class="mdi mdi-keyboard-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('shortcuts.title') }}
       </h2>
     </div>
@@ -14,7 +14,7 @@
       :class="`fade-in-delay-${idx + 1}`"
     >
       <h3 class="branding-card-title mono">
-        <v-icon size="16" class="mr-1">{{ section.icon }}</v-icon>
+        <span :class="section.icon" style="font-size: 16px; margin-right: 4px;"></span>
         {{ section.title }}
       </h3>
 

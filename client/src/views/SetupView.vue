@@ -4,12 +4,12 @@
       <!-- Header -->
       <div class="setup-header">
         <div class="setup-logo">
-          <v-icon size="40" color="white">mdi-shield-search</v-icon>
+          <span class="mdi mdi-shield-search" style="font-size: 40px; color: white;"></span>
         </div>
         <h1 class="setup-title mono">MeteorEdit</h1>
         <p class="setup-subtitle">{{ $t('setup.subtitle') }}</p>
         <div v-if="devMode" class="dev-badge">
-          <v-icon size="14" class="mr-1">mdi-bug-outline</v-icon>
+          <span class="mdi mdi-bug-outline" style="font-size: 14px; margin-right: 4px;"></span>
           {{ $t('setup.devMode') }}
         </div>
         <div class="setup-version mono">v{{ version }}</div>
@@ -17,8 +17,8 @@
 
       <!-- Loading -->
       <div v-if="loading" class="setup-loading">
-        <v-progress-circular indeterminate color="var(--me-accent)" size="40" />
-        <p class="mt-3 text-muted">{{ $t('setup.checking') }}</p>
+        <ProgressSpinner style="width: 40px; height: 40px;" />
+        <p style="margin-top: 12px;" class="text-muted">{{ $t('setup.checking') }}</p>
       </div>
 
       <!-- Stepper -->
@@ -26,7 +26,7 @@
         <!-- Step indicators -->
         <div class="step-indicators">
           <div v-for="(_s, i) in steps" :key="i" class="step-dot" :class="{ active: currentStep === i, done: currentStep > i }" @click="currentStep > i ? currentStep = i : null">
-            <v-icon v-if="currentStep > i" size="14">mdi-check</v-icon>
+            <i v-if="currentStep > i" class="pi pi-check" style="font-size: 14px;"></i>
             <span v-else>{{ i + 1 }}</span>
           </div>
         </div>
@@ -34,7 +34,7 @@
         <!-- Step 1: Diagnostics -->
         <div v-if="currentStep === 0" class="setup-step fade-in">
           <h2 class="step-title">
-            <v-icon size="20" class="mr-2">mdi-stethoscope</v-icon>
+            <span class="mdi mdi-stethoscope" style="font-size: 20px; margin-right: 8px;"></span>
             {{ $t('setup.diagnostics') }}
           </h2>
           <p class="step-desc">{{ $t('setup.diagnosticsDesc') }}</p>
@@ -48,22 +48,20 @@
                 <span class="service-msg">{{ svc.message }}</span>
               </div>
               <span v-if="svc.version" class="service-version mono">v{{ svc.version }}</span>
-              <v-chip v-else :color="svc.status === 'ok' ? 'success' : svc.status === 'unconfigured' ? 'warning' : 'error'" size="x-small" variant="tonal">
-                {{ svc.status }}
-              </v-chip>
+              <Tag v-else :severity="svc.status === 'ok' ? 'success' : svc.status === 'unconfigured' ? 'warn' : 'danger'" :value="svc.status" />
             </div>
           </div>
 
           <!-- Env checks -->
           <div v-if="status?.env" class="env-section mt-4">
             <h3 class="env-title mono">
-              <v-icon size="16" class="mr-1">mdi-cog-outline</v-icon>
+              <i class="pi pi-cog" style="font-size: 16px; margin-right: 4px;"></i>
               {{ $t('setup.envCheck') }}
             </h3>
             <div class="env-grid">
               <div class="env-item" v-for="(val, key) in envDisplay" :key="key">
                 <span class="env-key mono">{{ key }}</span>
-                <v-icon :color="val?.ok ? '#22c55e' : '#f59e0b'" size="16">{{ val?.ok ? 'mdi-check-circle' : 'mdi-alert-circle' }}</v-icon>
+                <span :class="['mdi', val?.ok ? 'mdi-check-circle' : 'mdi-alert-circle']" :style="{ fontSize: '16px', color: val?.ok ? '#22c55e' : '#f59e0b' }"></span>
                 <span class="env-val">{{ val?.label }}</span>
               </div>
             </div>
@@ -72,101 +70,122 @@
           <!-- Stats -->
           <div v-if="status?.stats" class="stats-row mt-4">
             <div class="stat-chip">
-              <v-icon size="14" class="mr-1">mdi-account-outline</v-icon>
+              <span class="mdi mdi-account-outline" style="font-size: 14px; margin-right: 4px;"></span>
               {{ status.stats.userCount }} {{ $t('setup.users') }}
             </div>
             <div class="stat-chip">
-              <v-icon size="14" class="mr-1">mdi-shield-account</v-icon>
+              <span class="mdi mdi-shield-account" style="font-size: 14px; margin-right: 4px;"></span>
               {{ status.stats.adminCount }} {{ $t('setup.admins') }}
             </div>
             <div class="stat-chip" :class="{ ok: status.stats.hasSettings }">
-              <v-icon size="14" class="mr-1">mdi-database-check</v-icon>
+              <span class="mdi mdi-database-check" style="font-size: 14px; margin-right: 4px;"></span>
               {{ status.stats.hasSettings ? $t('setup.settingsOk') : $t('setup.noSettings') }}
             </div>
           </div>
 
           <div class="step-actions">
-            <v-btn v-if="!devMode && !status?.setupRequired" variant="outlined" @click="$router.push('/login')">
-              <v-icon start size="16">mdi-arrow-left</v-icon>
+            <button v-if="!devMode && !status?.setupRequired" class="setup-btn setup-btn--outlined" @click="$router.push('/login')">
+              <span class="mdi mdi-arrow-left" style="font-size: 16px; margin-right: 4px;"></span>
               {{ $t('setup.backToLogin') }}
-            </v-btn>
-            <v-btn color="primary" class="btn-accent" @click="currentStep = 1" :disabled="!mongoOk">
+            </button>
+            <button class="setup-btn btn-accent" @click="currentStep = 1" :disabled="!mongoOk">
               {{ $t('setup.next') }}
-              <v-icon end size="16">mdi-arrow-right</v-icon>
-            </v-btn>
+              <span class="mdi mdi-arrow-right" style="font-size: 16px; margin-left: 4px;"></span>
+            </button>
           </div>
         </div>
 
         <!-- Step 2: Admin account -->
         <div v-if="currentStep === 1" class="setup-step fade-in">
           <h2 class="step-title">
-            <v-icon size="20" class="mr-2">mdi-shield-account</v-icon>
+            <span class="mdi mdi-shield-account" style="font-size: 20px; margin-right: 8px;"></span>
             {{ $t('setup.adminAccount') }}
           </h2>
           <p class="step-desc">{{ devMode ? $t('setup.adminAccountDescDev') : $t('setup.adminAccountDesc') }}</p>
 
-          <v-form @submit.prevent="currentStep = 2">
+          <form @submit.prevent="currentStep = 2">
             <div class="form-grid">
-              <v-text-field v-model="adminForm.firstName" :label="$t('auth.firstName')" prepend-inner-icon="mdi-account-outline" variant="outlined" density="comfortable" required />
-              <v-text-field v-model="adminForm.lastName" :label="$t('auth.lastName')" prepend-inner-icon="mdi-account-outline" variant="outlined" density="comfortable" required />
+              <div class="setup-field">
+                <label class="setup-field-label">{{ $t('auth.firstName') }}</label>
+                <InputText v-model="adminForm.firstName" required />
+              </div>
+              <div class="setup-field">
+                <label class="setup-field-label">{{ $t('auth.lastName') }}</label>
+                <InputText v-model="adminForm.lastName" required />
+              </div>
             </div>
-            <v-text-field v-model="adminForm.email" :label="$t('auth.email')" type="email" prepend-inner-icon="mdi-email-outline" variant="outlined" density="comfortable" required class="mt-2" />
-            <v-text-field v-model="adminForm.password" :label="$t('auth.password')" :type="showPw ? 'text' : 'password'" prepend-inner-icon="mdi-lock-outline" :append-inner-icon="showPw ? 'mdi-eye-off' : 'mdi-eye'" @click:append-inner="showPw = !showPw" variant="outlined" density="comfortable" required :rules="[v => v.length >= 8 || $t('setup.passwordMin')]" class="mt-2" />
+            <div class="setup-field" style="margin-top: 8px;">
+              <label class="setup-field-label">{{ $t('auth.email') }}</label>
+              <InputText v-model="adminForm.email" type="email" required />
+            </div>
+            <div class="setup-field" style="margin-top: 8px;">
+              <label class="setup-field-label">{{ $t('auth.password') }}</label>
+              <Password v-model="adminForm.password" :feedback="false" toggleMask :inputStyle="{ width: '100%' }" />
+            </div>
 
             <div class="step-actions">
-              <v-btn variant="outlined" @click="currentStep = 0">
-                <v-icon start size="16">mdi-arrow-left</v-icon>
+              <button type="button" class="setup-btn setup-btn--outlined" @click="currentStep = 0">
+                <span class="mdi mdi-arrow-left" style="font-size: 16px; margin-right: 4px;"></span>
                 {{ $t('common.back') }}
-              </v-btn>
-              <v-btn color="primary" class="btn-accent" type="submit" :disabled="!adminValid">
+              </button>
+              <button type="submit" class="setup-btn btn-accent" :disabled="!adminValid">
                 {{ $t('setup.next') }}
-                <v-icon end size="16">mdi-arrow-right</v-icon>
-              </v-btn>
+                <span class="mdi mdi-arrow-right" style="font-size: 16px; margin-left: 4px;"></span>
+              </button>
             </div>
-          </v-form>
+          </form>
         </div>
 
         <!-- Step 3: App settings -->
         <div v-if="currentStep === 2" class="setup-step fade-in">
           <h2 class="step-title">
-            <v-icon size="20" class="mr-2">mdi-palette-outline</v-icon>
+            <span class="mdi mdi-palette-outline" style="font-size: 20px; margin-right: 8px;"></span>
             {{ $t('setup.appSettings') }}
           </h2>
           <p class="step-desc">{{ $t('setup.appSettingsDesc') }}</p>
 
-          <v-text-field v-model="settingsForm.appName" :label="$t('admin.appName')" prepend-inner-icon="mdi-rename-outline" variant="outlined" density="comfortable" class="mt-3" />
+          <div class="setup-field" style="margin-top: 12px;">
+            <label class="setup-field-label">{{ $t('admin.appName') }}</label>
+            <InputText v-model="settingsForm.appName" />
+          </div>
 
-          <div class="color-row mt-3">
+          <div class="color-row" style="margin-top: 12px;">
             <label class="settings-label mono">{{ $t('admin.accentColor') }}</label>
             <input type="color" v-model="settingsForm.accentColor" class="color-input" />
             <span class="color-hex mono">{{ settingsForm.accentColor }}</span>
           </div>
 
-          <v-text-field v-model="settingsForm.loginMessage" :label="$t('admin.loginMessage')" prepend-inner-icon="mdi-message-text-outline" variant="outlined" density="comfortable" class="mt-3" />
+          <div class="setup-field" style="margin-top: 12px;">
+            <label class="setup-field-label">{{ $t('admin.loginMessage') }}</label>
+            <InputText v-model="settingsForm.loginMessage" />
+          </div>
 
-          <v-select v-model="settingsForm.language" :items="languageOptions" :label="$t('setup.defaultLanguage')" prepend-inner-icon="mdi-translate" variant="outlined" density="comfortable" class="mt-3" />
+          <div class="setup-field" style="margin-top: 12px;">
+            <label class="setup-field-label">{{ $t('setup.defaultLanguage') }}</label>
+            <Select v-model="settingsForm.language" :options="languageOptions" optionLabel="title" optionValue="value" />
+          </div>
 
-          <div class="switch-row mt-3">
-            <label class="settings-label mono mb-0">{{ $t('setup.enableRegistration') }}</label>
-            <v-switch v-model="settingsForm.registrationEnabled" color="primary" density="compact" hide-details />
+          <div class="switch-row" style="margin-top: 12px;">
+            <label class="settings-label mono" style="margin-bottom: 0;">{{ $t('setup.enableRegistration') }}</label>
+            <ToggleSwitch v-model="settingsForm.registrationEnabled" />
           </div>
 
           <div class="step-actions">
-            <v-btn variant="outlined" @click="currentStep = 1">
-              <v-icon start size="16">mdi-arrow-left</v-icon>
+            <button class="setup-btn setup-btn--outlined" @click="currentStep = 1">
+              <span class="mdi mdi-arrow-left" style="font-size: 16px; margin-right: 4px;"></span>
               {{ $t('common.back') }}
-            </v-btn>
-            <v-btn color="primary" class="btn-accent" @click="currentStep = 3">
+            </button>
+            <button class="setup-btn btn-accent" @click="currentStep = 3">
               {{ $t('setup.next') }}
-              <v-icon end size="16">mdi-arrow-right</v-icon>
-            </v-btn>
+              <span class="mdi mdi-arrow-right" style="font-size: 16px; margin-left: 4px;"></span>
+            </button>
           </div>
         </div>
 
         <!-- Step 4: Summary & confirm -->
         <div v-if="currentStep === 3" class="setup-step fade-in">
           <h2 class="step-title">
-            <v-icon size="20" class="mr-2">mdi-check-decagram</v-icon>
+            <span class="mdi mdi-check-decagram" style="font-size: 20px; margin-right: 8px;"></span>
             {{ $t('setup.summary') }}
           </h2>
           <p class="step-desc">{{ devMode ? $t('setup.summaryDescDev') : $t('setup.summaryDesc') }}</p>
@@ -188,19 +207,19 @@
             </div>
           </div>
 
-          <v-alert v-if="devMode" type="info" variant="tonal" class="mt-3" density="compact">
-            <v-icon start size="16">mdi-bug-outline</v-icon>
+          <Message v-if="devMode" severity="info" style="margin-top: 12px;">
+            <span class="mdi mdi-bug-outline" style="font-size: 16px; margin-right: 4px;"></span>
             {{ $t('setup.devModeInfo') }}
-          </v-alert>
+          </Message>
 
-          <v-alert v-if="setupError" type="error" variant="tonal" class="mt-3" closable @click:close="setupError = ''">
+          <Message v-if="setupError" severity="error" :closable="true" @close="setupError = ''" style="margin-top: 12px;">
             {{ setupError }}
-          </v-alert>
+          </Message>
 
-          <v-alert v-if="setupSuccess" type="success" variant="tonal" class="mt-3">
-            <v-icon start size="16">mdi-check-circle</v-icon>
+          <Message v-if="setupSuccess" severity="success" style="margin-top: 12px;">
+            <i class="pi pi-check" style="font-size: 16px; margin-right: 4px;"></i>
             {{ setupSuccess }}
-          </v-alert>
+          </Message>
 
           <!-- Dev simulation result -->
           <div v-if="devResult" class="dev-result glass-card mt-3">
@@ -212,22 +231,22 @@
           </div>
 
           <div class="step-actions">
-            <v-btn variant="outlined" @click="currentStep = 2">
-              <v-icon start size="16">mdi-arrow-left</v-icon>
+            <button class="setup-btn setup-btn--outlined" @click="currentStep = 2">
+              <span class="mdi mdi-arrow-left" style="font-size: 16px; margin-right: 4px;"></span>
               {{ $t('common.back') }}
-            </v-btn>
-            <v-btn v-if="!setupSuccess" color="primary" class="btn-accent" :loading="submitting" @click="doSetup">
-              <v-icon start size="16">{{ devMode ? 'mdi-play-outline' : 'mdi-rocket-launch-outline' }}</v-icon>
+            </button>
+            <button v-if="!setupSuccess" class="setup-btn btn-accent" :disabled="submitting" @click="doSetup">
+              <span :class="['mdi', devMode ? 'mdi-play-outline' : 'mdi-rocket-launch-outline']" style="font-size: 16px; margin-right: 4px;"></span>
               {{ devMode ? $t('setup.simulate') : $t('setup.install') }}
-            </v-btn>
-            <v-btn v-if="setupSuccess && !devMode" color="primary" class="btn-accent" @click="$router.push('/login')">
-              <v-icon start size="16">mdi-login-variant</v-icon>
+            </button>
+            <button v-if="setupSuccess && !devMode" class="setup-btn btn-accent" @click="$router.push('/login')">
+              <span class="mdi mdi-login-variant" style="font-size: 16px; margin-right: 4px;"></span>
               {{ $t('setup.goToLogin') }}
-            </v-btn>
-            <v-btn v-if="devMode && devResult" variant="outlined" @click="resetDev">
-              <v-icon start size="16">mdi-refresh</v-icon>
+            </button>
+            <button v-if="devMode && devResult" class="setup-btn setup-btn--outlined" @click="resetDev">
+              <i class="pi pi-refresh" style="font-size: 16px; margin-right: 4px;"></i>
               {{ $t('setup.resetSimulation') }}
-            </v-btn>
+            </button>
           </div>
         </div>
       </div>
@@ -240,6 +259,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import api from '../services/api';
+import ProgressSpinner from 'primevue/progressspinner';
+import Tag from 'primevue/tag';
+import Message from 'primevue/message';
+import InputText from 'primevue/inputtext';
+import Password from 'primevue/password';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -737,4 +763,30 @@ onMounted(fetchStatus);
     min-width: 100px;
   }
 }
+.setup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: var(--me-radius-xs, 8px);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.setup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.setup-btn--outlined {
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-secondary);
+}
+.setup-btn--outlined:hover:not(:disabled) {
+  border-color: var(--me-border-hover);
+  color: var(--me-text-primary);
+  background: var(--me-bg-elevated);
+}
+.setup-field { display: flex; flex-direction: column; gap: 4px; }
+.setup-field-label { font-size: 13px; font-weight: 500; color: var(--me-text-secondary); }
 </style>

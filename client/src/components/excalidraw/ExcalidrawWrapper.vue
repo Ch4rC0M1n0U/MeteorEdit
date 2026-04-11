@@ -12,10 +12,10 @@
       <div class="ex-toolbar-spacer" />
       <slot name="toolbar-end" />
       <button class="ex-tb-btn" @click="copyAsImage" :disabled="!excalidrawApi" :title="copyMsg || 'Copier comme image'">
-        <v-icon size="16">{{ copyMsg ? 'mdi-check' : 'mdi-camera' }}</v-icon>
+        <span :class="['mdi', copyMsg ? 'mdi-check' : 'mdi-camera']" style="font-size: 16px"></span>
       </button>
       <button class="ex-tb-btn ex-tb-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" title="Commentaires">
-        <v-icon size="16">mdi-comment-text-outline</v-icon>
+        <span class="mdi mdi-comment-text-outline" style="font-size: 16px"></span>
         <span v-if="commentCount" class="ex-comment-badge">{{ commentCount }}</span>
       </button>
     </div>

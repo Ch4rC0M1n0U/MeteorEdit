@@ -6,8 +6,8 @@
         <div class="dv-sidebar-title-row">
           <div class="dv-sidebar-icon-wrap">
             <img v-if="dossierLogoUrl" :src="dossierLogoUrl" class="dv-sidebar-logo" />
-            <v-icon v-else-if="dossierStore.currentDossier?.icon" size="20">{{ dossierStore.currentDossier.icon }}</v-icon>
-            <v-icon v-else size="20" class="dv-sidebar-icon-default">mdi-folder-outline</v-icon>
+            <span v-else-if="dossierStore.currentDossier?.icon" :class="'mdi ' + dossierStore.currentDossier.icon" style="font-size: 20px;"></span>
+            <span v-else class="mdi mdi-folder-outline dv-sidebar-icon-default" style="font-size: 20px;"></span>
           </div>
           <h3 class="dv-sidebar-title" :title="dossierStore.currentDossier?.title">
             {{ dossierStore.currentDossier?.title }}
@@ -15,123 +15,115 @@
         </div>
         <div class="dv-sidebar-actions">
           <!-- Nouveau -->
-          <v-menu>
-            <template #activator="{ props: menuProps }">
-              <button v-bind="menuProps" class="dv-action-btn" :title="$t('tree.newElement')">
-                <v-icon size="16">mdi-plus</v-icon>
-              </button>
-            </template>
+          <button class="dv-action-btn" :title="$t('tree.newElement')" @click="newMenuRef?.toggle($event)">
+            <span class="mdi mdi-plus" style="font-size: 16px;"></span>
+          </button>
+          <Popover ref="newMenuRef">
             <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="handleCreateNode('folder', null)">
-                <v-icon size="16">mdi-folder-plus-outline</v-icon>
+              <button class="dv-export-option" @click="handleCreateNode('folder', null); newMenuRef?.hide()">
+                <span class="mdi mdi-folder-plus-outline" style="font-size: 16px;"></span>
                 <span>{{ $t('tree.folder') }}</span>
               </button>
-              <button class="dv-export-option" @click="handleCreateNode('note', null)">
-                <v-icon size="16">mdi-note-plus-outline</v-icon>
+              <button class="dv-export-option" @click="handleCreateNode('note', null); newMenuRef?.hide()">
+                <span class="mdi mdi-note-plus-outline" style="font-size: 16px;"></span>
                 <span>{{ $t('tree.note') }}</span>
               </button>
-              <button class="dv-export-option" @click="handleCreateNode('mindmap', null)">
-                <v-icon size="16">mdi-vector-polyline</v-icon>
+              <button class="dv-export-option" @click="handleCreateNode('mindmap', null); newMenuRef?.hide()">
+                <span class="mdi mdi-vector-polyline" style="font-size: 16px;"></span>
                 <span>{{ $t('tree.mindmap') }}</span>
               </button>
-              <button class="dv-export-option" @click="handleCreateNode('map', null)">
-                <v-icon size="16">mdi-map-outline</v-icon>
+              <button class="dv-export-option" @click="handleCreateNode('map', null); newMenuRef?.hide()">
+                <span class="mdi mdi-map-outline" style="font-size: 16px;"></span>
                 <span>{{ $t('tree.map') }}</span>
               </button>
-              <button class="dv-export-option" @click="handleCreateNode('dataset', null)">
-                <v-icon size="16">mdi-table</v-icon>
+              <button class="dv-export-option" @click="handleCreateNode('dataset', null); newMenuRef?.hide()">
+                <span class="mdi mdi-table" style="font-size: 16px;"></span>
                 <span>{{ $t('tree.dataset') }}</span>
               </button>
-              <button class="dv-export-option" @click="handleCreateNode('media', null)">
-                <v-icon size="16">mdi-play-circle-outline</v-icon>
+              <button class="dv-export-option" @click="handleCreateNode('media', null); newMenuRef?.hide()">
+                <span class="mdi mdi-play-circle-outline" style="font-size: 16px;"></span>
                 <span>{{ $t('tree.media') }}</span>
               </button>
             </div>
-          </v-menu>
+          </Popover>
           <!-- Outils -->
-          <v-menu>
-            <template #activator="{ props: menuProps }">
-              <button v-bind="menuProps" class="dv-action-btn" :title="$t('tree.tools')">
-                <v-icon size="16">mdi-toolbox-outline</v-icon>
-              </button>
-            </template>
+          <button class="dv-action-btn" :title="$t('tree.tools')" @click="toolsMenuRef?.toggle($event)">
+            <span class="mdi mdi-toolbox-outline" style="font-size: 16px;"></span>
+          </button>
+          <Popover ref="toolsMenuRef">
             <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="webClipperOpen = true">
-                <v-icon size="16">mdi-web</v-icon>
+              <button class="dv-export-option" @click="webClipperOpen = true; toolsMenuRef?.hide()">
+                <span class="mdi mdi-web" style="font-size: 16px;"></span>
                 <span>Web Clipper</span>
               </button>
-              <button class="dv-export-option" @click="profileAnalyzerOpen = true">
-                <v-icon size="16">mdi-account-search-outline</v-icon>
+              <button class="dv-export-option" @click="profileAnalyzerOpen = true; toolsMenuRef?.hide()">
+                <span class="mdi mdi-account-search-outline" style="font-size: 16px;"></span>
                 <span>{{ $t('social.profile.title') }}</span>
               </button>
-              <button class="dv-export-option" @click="osintDorkingOpen = true">
-                <v-icon size="16">mdi-search-web</v-icon>
+              <button class="dv-export-option" @click="osintDorkingOpen = true; toolsMenuRef?.hide()">
+                <span class="mdi mdi-search-web" style="font-size: 16px;"></span>
                 <span>OSINT Dorking</span>
               </button>
-              <button class="dv-export-option" @click="reverseImageOpen = true">
-                <v-icon size="16">mdi-image-search-outline</v-icon>
+              <button class="dv-export-option" @click="reverseImageOpen = true; toolsMenuRef?.hide()">
+                <span class="mdi mdi-image-search-outline" style="font-size: 16px;"></span>
                 <span>{{ $t('dossier.reverseImageTitle') }}</span>
               </button>
-              <button class="dv-export-option" @click="usernameScanOpen = true">
-                <v-icon size="16">mdi-radar</v-icon>
+              <button class="dv-export-option" @click="usernameScanOpen = true; toolsMenuRef?.hide()">
+                <span class="mdi mdi-radar" style="font-size: 16px;"></span>
                 <span>{{ $t('dossier.scanTitle') }}</span>
               </button>
-              <button class="dv-export-option" @click="openLeaksSearch">
-                <v-icon size="16">mdi-shield-search</v-icon>
+              <button class="dv-export-option" @click="openLeaksSearch; toolsMenuRef?.hide()">
+                <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
                 <span>{{ $t('osint.leaksSearch') }}</span>
               </button>
             </div>
-          </v-menu>
+          </Popover>
           <!-- Export -->
-          <v-menu>
-            <template #activator="{ props: menuProps }">
-              <button v-bind="menuProps" class="dv-action-btn" :title="$t('dossier.export')">
-                <v-icon size="16">mdi-download-outline</v-icon>
-              </button>
-            </template>
+          <button class="dv-action-btn" :title="$t('dossier.export')" @click="exportMenuRef?.toggle($event)">
+            <span class="mdi mdi-download-outline" style="font-size: 16px;"></span>
+          </button>
+          <Popover ref="exportMenuRef">
             <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="exportJSON">
-                <v-icon size="16">mdi-code-json</v-icon>
+              <button class="dv-export-option" @click="exportJSON(); exportMenuRef?.hide()">
+                <span class="mdi mdi-code-json" style="font-size: 16px;"></span>
                 <span>Export JSON</span>
               </button>
-              <button class="dv-export-option" @click="exportSelectOpen = true">
-                <v-icon size="16">mdi-file-word-box</v-icon>
+              <button class="dv-export-option" @click="exportSelectOpen = true; exportMenuRef?.hide()">
+                <span class="mdi mdi-file-word-box" style="font-size: 16px;"></span>
                 <span>{{ $t('dossier.exportDocx') }}</span>
               </button>
               <div v-if="aiEnabled" class="dv-export-divider" />
-              <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect">
-                <v-icon size="16">mdi-robot-outline</v-icon>
+              <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect(); exportMenuRef?.hide()">
+                <span class="mdi mdi-robot-outline" style="font-size: 16px;"></span>
                 <span>{{ $t('dossier.generateAiReport') }}</span>
               </button>
             </div>
-          </v-menu>
+          </Popover>
           <!-- Import -->
-          <v-menu>
-            <template #activator="{ props: menuProps }">
-              <button v-bind="menuProps" class="dv-action-btn" :title="$t('dossier.import')">
-                <v-icon size="16">mdi-upload-outline</v-icon>
-              </button>
-            </template>
+          <button class="dv-action-btn" :title="$t('dossier.import')" @click="importMenuRef?.toggle($event)">
+            <span class="mdi mdi-upload-outline" style="font-size: 16px;"></span>
+          </button>
+          <Popover ref="importMenuRef">
             <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="elephantasticOpen = true">
-                <v-icon size="16">mdi-elephant</v-icon>
+              <button class="dv-export-option" @click="elephantasticOpen = true; importMenuRef?.hide()">
+                <span class="mdi mdi-elephant" style="font-size: 16px;"></span>
                 <span>{{ $t('elephantastic.title') }}</span>
               </button>
-              <button class="dv-export-option" @click="webCheckOpen = true">
-                <v-icon size="16">mdi-web-check</v-icon>
+              <button class="dv-export-option" @click="webCheckOpen = true; importMenuRef?.hide()">
+                <span class="mdi mdi-web-check" style="font-size: 16px;"></span>
                 <span>{{ $t('webcheck.title') }}</span>
               </button>
-              <button class="dv-export-option" @click="osintIndustriesOpen = true">
-                <v-icon size="16">mdi-shield-search</v-icon>
+              <button class="dv-export-option" @click="osintIndustriesOpen = true; importMenuRef?.hide()">
+                <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
                 <span>{{ $t('osintIndustries.title') }}</span>
               </button>
               <button class="dv-export-option" disabled>
-                <v-icon size="16">mdi-graph-outline</v-icon>
+                <span class="mdi mdi-graph-outline" style="font-size: 16px;"></span>
                 <span>Import Tangles</span>
                 <span class="dv-soon-badge mono">{{ $t('common.soon') }}</span>
               </button>
             </div>
-          </v-menu>
+          </Popover>
           <!-- Historique -->
           <button
             v-if="dossierStore.selectedNode && ['note', 'mindmap', 'map'].includes(dossierStore.selectedNode.type)"
@@ -139,11 +131,11 @@
             @click="openSnapshots"
             :title="$t('dossier.versionHistory')"
           >
-            <v-icon size="16">mdi-history</v-icon>
+            <span class="mdi mdi-history" style="font-size: 16px;"></span>
           </button>
           <!-- Corbeille -->
           <button class="dv-action-btn" @click="scrollToTrash" :title="$t('tree.trash')">
-            <v-icon size="16">mdi-delete-outline</v-icon>
+            <span class="mdi mdi-delete-outline" style="font-size: 16px;"></span>
           </button>
         </div>
       </div>
@@ -151,15 +143,11 @@
       <!-- Online collaborators -->
       <div v-if="dossierStore.activeCollaborators.length" class="dv-collab-bar">
         <div class="dv-collab-avatars">
-          <v-tooltip v-for="collab in dossierStore.activeCollaborators" :key="collab.userId" :text="`${collab.firstName} ${collab.lastName}`" location="bottom">
-            <template #activator="{ props: tooltipProps }">
-              <div v-bind="tooltipProps" class="dv-collab-avatar">
+          <div v-for="collab in dossierStore.activeCollaborators" :key="collab.userId" class="dv-collab-avatar" :title="`${collab.firstName} ${collab.lastName}`">
                 <img v-if="collab.avatarPath" :src="SERVER_URL + '/' + collab.avatarPath" class="dv-collab-img" />
                 <span v-else class="dv-collab-initials">{{ collab.initials }}</span>
                 <span class="dv-collab-dot" />
-              </div>
-            </template>
-          </v-tooltip>
+          </div>
         </div>
         <span class="dv-collab-label">{{ $t('dossier.online', { count: dossierStore.activeCollaborators.length }) }}</span>
       </div>
@@ -167,11 +155,11 @@
       <!-- Quick nav -->
       <div class="dv-sidebar-nav">
         <button class="dv-nav-item" :class="{ active: sidebarTab === 'tree' }" @click="sidebarTab = 'tree'">
-          <v-icon size="18">mdi-file-tree-outline</v-icon>
+          <span class="mdi mdi-file-tree-outline" style="font-size: 18px;"></span>
           <span>{{ $t('dossier.tree') }}</span>
         </button>
         <button class="dv-nav-item" :class="{ active: sidebarTab === 'tasks' }" @click="sidebarTab = 'tasks'">
-          <v-icon size="18">mdi-checkbox-marked-outline</v-icon>
+          <span class="mdi mdi-checkbox-marked-outline" style="font-size: 18px;"></span>
           <span>{{ $t('dossier.tasks') }}</span>
         </button>
       </div>
@@ -196,7 +184,7 @@
           @click="annotatorOpen = !annotatorOpen"
           :title="$t('dossier.annotateImage')"
         >
-          <v-icon size="18">mdi-draw</v-icon>
+          <span class="mdi mdi-draw" style="font-size: 18px;"></span>
         </button>
         <PomodoroTimer v-if="focusMode" />
         <button
@@ -205,7 +193,7 @@
           @click="toggleFocusMode"
           :title="focusMode ? $t('dossier.exitFocusMode') : $t('dossier.focusMode')"
         >
-          <v-icon size="18">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+          <span :class="'mdi ' + (focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen')" style="font-size: 18px;"></span>
         </button>
       </div>
 
@@ -244,7 +232,7 @@
               @click="toggleFocusMode"
               :title="focusMode ? $t('dossier.exitFocusMode') : $t('dossier.focusMode')"
             >
-              <v-icon size="16">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+              <span :class="'mdi ' + (focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen')" style="font-size: 16px;"></span>
             </button>
           </template>
         </ExcalidrawWrapper>
@@ -264,7 +252,7 @@
               @click="toggleFocusMode"
               :title="focusMode ? $t('dossier.exitFocusMode') : $t('dossier.focusMode')"
             >
-              <v-icon size="16">{{ focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+              <span :class="'mdi ' + (focusMode ? 'mdi-fullscreen-exit' : 'mdi-fullscreen')" style="font-size: 16px;"></span>
             </button>
           </template>
         </MapEditor>
@@ -285,7 +273,7 @@
 
       <div v-else-if="dossierStore.selectedNode.type === 'document'" class="dv-content-panel dv-document-panel">
         <div class="dv-content-header">
-          <v-icon size="20" class="mr-2">mdi-file-document-outline</v-icon>
+          <span class="mdi mdi-file-document-outline" style="font-size: 20px; margin-right: 8px;"></span>
           <h2>{{ dossierStore.selectedNode.title }}</h2>
           <span class="text-muted mono ml-2" style="font-size: 12px;">{{ dossierStore.selectedNode.fileName }}</span>
           <div class="dv-doc-actions">
@@ -296,7 +284,7 @@
               @click="annotatorOpen = !annotatorOpen"
               :title="$t('dossier.annotateImage')"
             >
-              <v-icon size="16">mdi-draw</v-icon>
+              <span class="mdi mdi-draw" style="font-size: 16px;"></span>
             </button>
             <a
               v-if="dossierStore.selectedNode.fileUrl && decryptedFileUrl"
@@ -305,7 +293,7 @@
               class="dv-action-btn"
               :title="$t('dossier.openFile')"
             >
-              <v-icon size="16">mdi-open-in-new</v-icon>
+              <span class="mdi mdi-open-in-new" style="font-size: 16px;"></span>
             </a>
           </div>
         </div>
@@ -326,14 +314,14 @@
         </div>
         <!-- Non-image file info -->
         <div v-else-if="dossierStore.selectedNode.fileUrl && decryptedFileUrl" class="dv-doc-file-info">
-          <v-icon size="48" class="dv-doc-file-icon">mdi-file-document-outline</v-icon>
+          <span class="mdi mdi-file-document-outline dv-doc-file-icon" style="font-size: 48px;"></span>
           <p class="text-muted">{{ dossierStore.selectedNode.fileName }}</p>
           <a
             :href="decryptedFileUrl"
             :download="dossierStore.selectedNode.fileName"
             class="dv-doc-download-btn"
           >
-            <v-icon size="14" class="mr-1">mdi-download</v-icon>
+            <span class="mdi mdi-download" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('dossier.download') }}
           </a>
         </div>
@@ -342,7 +330,7 @@
 
       <div v-else-if="dossierStore.selectedNode.type === 'folder'" class="dv-content-panel">
         <div class="dv-content-header">
-          <v-icon size="20" class="mr-2">mdi-folder-outline</v-icon>
+          <span class="mdi mdi-folder-outline" style="font-size: 20px; margin-right: 8px;"></span>
           <h2>{{ dossierStore.selectedNode.title }}</h2>
         </div>
         <p class="text-muted">{{ $t('dossier.folderLabel') }}</p>
@@ -360,7 +348,8 @@
     <WebClipperDialog v-model="webClipperOpen" />
 
     <!-- Profile Analyzer -->
-    <v-dialog v-model="profileAnalyzerOpen" max-width="500" persistent>
+    <Dialog v-model:visible="profileAnalyzerOpen" modal :style="{ width: '500px' }" :closable="false">
+      <template #container>
       <ProfileAnalyzer
         v-if="profileAnalyzerOpen && dossierStore.currentDossier"
         :dossier-id="dossierStore.currentDossier._id"
@@ -368,7 +357,8 @@
         @node-created="handleProfileNodeCreated"
         @close="profileAnalyzerOpen = false"
       />
-    </v-dialog>
+      </template>
+    </Dialog>
 
     <!-- Reverse Image Search -->
     <ReverseImageSearch v-model="reverseImageOpen" />
@@ -416,24 +406,24 @@
   </div>
 
   <!-- Snapshot panel -->
-  <v-dialog v-model="snapshotDialog" max-width="480">
+  <Dialog v-model:visible="snapshotDialog" modal :style="{ width: '480px' }" :closable="false">
+    <template #container>
     <div class="glass-card dialog-card">
       <div class="dialog-header">
         <h3 class="mono">{{ $t('dossier.versionHistory') }}</h3>
         <button class="me-close-btn" @click="snapshotDialog = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <span class="mdi mdi-close" style="font-size: 18px;"></span>
         </button>
       </div>
       <div class="dialog-body" style="max-height: 400px; overflow-y: auto;">
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-          <v-text-field
+          <InputText
             v-model="snapshotLabel"
-            :label="$t('dossier.labelOptional')"
-            density="compact"
-            hide-details
+            :placeholder="$t('dossier.labelOptional')"
+            style="flex: 1;"
           />
           <button class="me-btn-primary" @click="createSnap" style="white-space: nowrap;">
-            <v-icon size="14" class="mr-1">mdi-camera-outline</v-icon>
+            <span class="mdi mdi-camera-outline" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('common.save') }}
           </button>
         </div>
@@ -447,32 +437,34 @@
           </div>
           <div class="snap-actions">
             <button class="snap-action-btn" @click="restoreSnap(snap._id)" :title="$t('common.restore')">
-              <v-icon size="14">mdi-restore</v-icon>
+              <span class="mdi mdi-restore" style="font-size: 14px;"></span>
             </button>
             <button class="snap-action-btn snap-action-danger" @click="deleteSnap(snap._id)" :title="$t('common.delete')">
-              <v-icon size="14">mdi-delete-outline</v-icon>
+              <span class="mdi mdi-delete-outline" style="font-size: 14px;"></span>
             </button>
           </div>
         </div>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 
   <!-- AI Template selection dialog -->
-  <v-dialog v-model="aiTemplateSelectDialog" max-width="500">
+  <Dialog v-model:visible="aiTemplateSelectDialog" modal :style="{ width: '500px' }" :closable="false">
+    <template #container>
     <div class="glass-card dialog-card">
       <div class="dialog-header">
         <h3 class="mono">
-          <v-icon size="18" class="mr-1">mdi-file-document-edit-outline</v-icon>
+          <span class="mdi mdi-file-document-edit-outline" style="font-size: 18px; margin-right: 4px;"></span>
           {{ $t('dossier.chooseTemplate') }}
         </h3>
         <button class="me-close-btn" @click="aiTemplateSelectDialog = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <span class="mdi mdi-close" style="font-size: 18px;"></span>
         </button>
       </div>
       <div class="dialog-body">
         <div v-if="aiLoadingTemplates" class="ai-tpl-loading">
-          <v-progress-circular indeterminate size="24" color="var(--me-accent)" />
+          <ProgressSpinner style="width: 24px; height: 24px;" />
           <span>{{ $t('common.loading') }}</span>
         </div>
         <div v-else class="ai-tpl-list">
@@ -484,7 +476,7 @@
               <span class="ai-tpl-item-title mono">{{ $t('dossier.defaultTemplate') }}</span>
               <span class="ai-tpl-item-desc">{{ $t('dossier.defaultTemplateDesc') }}</span>
             </div>
-            <v-icon v-if="aiSelectedTemplateId === null" size="16" color="var(--me-accent)">mdi-check-circle</v-icon>
+            <span v-if="aiSelectedTemplateId === null" class="mdi mdi-check-circle" style="font-size: 16px; color: var(--me-accent);"></span>
           </button>
           <button
             v-for="tpl in aiReportTemplates"
@@ -497,40 +489,42 @@
               <span class="ai-tpl-item-desc">{{ tpl.description || $t('dossier.noDescription') }}</span>
               <span v-if="tpl.isShared" class="ai-tpl-shared-badge mono">{{ $t('dossier.shared') }}</span>
             </div>
-            <v-icon v-if="aiSelectedTemplateId === tpl._id" size="16" color="var(--me-accent)">mdi-check-circle</v-icon>
+            <span v-if="aiSelectedTemplateId === tpl._id" class="mdi mdi-check-circle" style="font-size: 16px; color: var(--me-accent);"></span>
           </button>
         </div>
       </div>
       <div class="dialog-footer">
         <button class="me-btn-ghost" @click="aiTemplateSelectDialog = false">{{ $t('common.cancel') }}</button>
         <button class="me-btn-primary" @click="generateAiReport(aiSelectedTemplateId)" :disabled="aiLoadingTemplates">
-          <v-icon size="14" class="mr-1">mdi-robot-outline</v-icon>
+          <span class="mdi mdi-robot-outline" style="font-size: 14px; margin-right: 4px;"></span>
           {{ $t('dossier.generate') }}
         </button>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 
   <!-- AI Report dialog -->
-  <v-dialog v-model="aiReportDialog" max-width="800" persistent>
+  <Dialog v-model:visible="aiReportDialog" modal :style="{ width: '800px' }" :closable="false">
+    <template #container>
     <div class="glass-card dialog-card">
       <div class="dialog-header">
         <h3 class="mono">
-          <v-icon size="18" class="mr-1">mdi-robot-outline</v-icon>
+          <span class="mdi mdi-robot-outline" style="font-size: 18px; margin-right: 4px;"></span>
           {{ $t('dossier.aiReportTitle') }}
         </h3>
         <button class="me-close-btn" @click="closeAiReport" :disabled="aiGenerating">
-          <v-icon size="18">mdi-close</v-icon>
+          <span class="mdi mdi-close" style="font-size: 18px;"></span>
         </button>
       </div>
 
       <!-- Logs panel -->
       <div v-if="aiLogs.length" class="ai-logs-panel">
         <div class="ai-logs-header" @click="aiLogsExpanded = !aiLogsExpanded">
-          <v-icon size="14" class="mr-1" :class="{ 'ai-log-spin': aiGenerating }">{{ aiGenerating ? 'mdi-loading' : 'mdi-console' }}</v-icon>
+          <span :class="['mdi', aiGenerating ? 'mdi-loading ai-log-spin' : 'mdi-console']" style="font-size: 14px; margin-right: 4px;"></span>
           <span class="mono">Logs</span>
           <span class="ai-log-count mono">{{ aiLogs.length }}</span>
-          <v-icon size="14" class="ml-auto">{{ aiLogsExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+          <span :class="'mdi ' + (aiLogsExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down')" style="font-size: 14px; margin-left: auto;"></span>
         </div>
         <div v-if="aiLogsExpanded" class="ai-logs-content" ref="aiLogsRef">
           <div v-for="(log, i) in aiLogs" :key="i" class="ai-log-line mono">
@@ -543,7 +537,7 @@
       <!-- Report content -->
       <div class="dialog-body ai-report-body" ref="aiReportBodyRef">
         <div v-if="aiGenerating && !aiReportContent" class="ai-generating">
-          <v-progress-circular indeterminate size="28" color="var(--me-accent)" />
+          <ProgressSpinner style="width: 28px; height: 28px;" />
           <p>{{ $t('dossier.preparingReport') }}</p>
           <span v-if="aiElapsedSec > 0" class="ai-elapsed mono">{{ aiElapsedSec }}s</span>
         </div>
@@ -557,38 +551,40 @@
         </div>
 
         <div v-if="aiReportError" class="ai-report-error">
-          <v-icon size="20" color="#f87171" class="mr-2">mdi-alert-circle-outline</v-icon>
+          <span class="mdi mdi-alert-circle-outline" style="font-size: 20px; color: #f87171; margin-right: 8px;"></span>
           {{ aiReportError }}
         </div>
       </div>
 
       <div class="dialog-footer">
         <button v-if="aiGenerating" class="ai-cancel-gen-btn" @click="cancelAiReport">
-          <v-icon size="14" class="mr-1">mdi-stop-circle-outline</v-icon>
+          <span class="mdi mdi-stop-circle-outline" style="font-size: 14px; margin-right: 4px;"></span>
           {{ $t('dossier.stopGeneration') }}
         </button>
         <div v-else class="ai-footer-actions">
           <button class="me-btn-ghost" @click="closeAiReport">{{ $t('common.close') }}</button>
           <button v-if="aiReportContent" class="me-btn-primary" @click="downloadAiReportAsDocx">
-            <v-icon size="14" class="mr-1">mdi-file-word-box</v-icon>
+            <span class="mdi mdi-file-word-box" style="font-size: 14px; margin-right: 4px;"></span>
             DOCX
           </button>
         </div>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 
   <!-- Create node dialog -->
-  <v-dialog v-model="createDialog" max-width="480">
+  <Dialog v-model:visible="createDialog" modal :style="{ width: '480px' }" :closable="false">
+    <template #container>
     <div class="glass-card dialog-card">
       <div class="dialog-header">
         <h3 class="mono">{{ $t('dossier.newNode', { type: createType }) }}</h3>
         <button class="me-close-btn" @click="createDialog = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <span class="mdi mdi-close" style="font-size: 18px;"></span>
         </button>
       </div>
       <div class="dialog-body">
-        <v-text-field v-model="createTitle" :label="$t('common.title')" autofocus @keyup.enter="confirmCreate" />
+        <InputText v-model="createTitle" :placeholder="$t('common.title')" autofocus @keyup.enter="confirmCreate" style="width: 100%;" />
         <!-- Template selection for notes -->
         <div v-if="createType === 'note' && templateStore.templates.length" class="template-select-section">
           <span class="template-select-label mono">{{ $t('dossier.useTemplate') }}</span>
@@ -598,7 +594,7 @@
               @click="selectedTemplateId = null"
               type="button"
             >
-              <v-icon size="16" class="mr-1">mdi-file-outline</v-icon>
+              <span class="mdi mdi-file-outline" style="font-size: 16px; margin-right: 4px;"></span>
               <span>{{ $t('dossier.blankNote') }}</span>
             </button>
             <button
@@ -608,7 +604,7 @@
               @click="selectedTemplateId = tpl._id"
               type="button"
             >
-              <v-icon size="16" class="mr-1">mdi-file-document-check-outline</v-icon>
+              <span class="mdi mdi-file-document-check-outline" style="font-size: 16px; margin-right: 4px;"></span>
               <span>{{ tpl.title }}</span>
               <span v-if="tpl.description" class="template-select-desc">{{ tpl.description }}</span>
             </button>
@@ -620,7 +616,8 @@
         <button class="me-btn-primary" @click="confirmCreate" :disabled="!createTitle.trim()">{{ $t('common.create') }}</button>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 
     <AiDisclaimerModal ref="disclaimerModal" />
 </template>
@@ -628,6 +625,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import Popover from 'primevue/popover';
+import InputText from 'primevue/inputtext';
+import ProgressSpinner from 'primevue/progressspinner';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
@@ -677,6 +678,11 @@ const { uploadEncryptedFile } = useEncryptedUpload();
 const disclaimerModal = ref<InstanceType<typeof AiDisclaimerModal> | null>(null);
 const aiConfig = ref<{ isCommercial: boolean; disclaimerMessage: string } | null>(null);
 const disclaimerDismissed = ref(false);
+
+const newMenuRef = ref();
+const toolsMenuRef = ref();
+const exportMenuRef = ref();
+const importMenuRef = ref();
 
 const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);

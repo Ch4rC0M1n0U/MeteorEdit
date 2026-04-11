@@ -2,18 +2,18 @@
   <div class="admin-clipper">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-scissors-cutting</v-icon>
+        <span class="mdi mdi-scissors-cutting" style="font-size: 20px; margin-right: 8px;"></span>
         Web Clipper
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.clipperSubtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- Parametres du Web Clipper -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-scissors-cutting</v-icon>
+        <span class="mdi mdi-scissors-cutting" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.clipperSettings') }}</h3>
       </div>
       <div class="sec-option">
@@ -21,16 +21,12 @@
           <p class="sec-label">{{ $t('admin.clipperTimeout') }}</p>
           <p class="sec-desc">{{ $t('admin.clipperTimeoutDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.clipperTimeoutMs"
+        <InputText v-model.number="form.clipperTimeoutMs"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="1000"
           :max="120000"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -38,16 +34,12 @@
           <p class="sec-label">{{ $t('admin.clipperQuality') }}</p>
           <p class="sec-desc">{{ $t('admin.clipperQualityDesc') }}</p>
         </div>
-        <v-text-field
-          v-model.number="form.clipperQuality"
+        <InputText v-model.number="form.clipperQuality"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="10"
           :max="100"
-          @blur="save"
-        />
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -55,12 +47,8 @@
           <p class="sec-label">{{ $t('admin.clipperUserAgent') }}</p>
           <p class="sec-desc">{{ $t('admin.clipperUserAgentDesc') }}</p>
         </div>
-        <v-text-field
-          v-model="form.clipperUserAgent"
-          density="compact"
-          hide-details
-          @blur="save"
-        />
+        <InputText v-model="form.clipperUserAgent"
+          @blur="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -68,18 +56,12 @@
           <p class="sec-label">{{ $t('admin.clipperProxy') }}</p>
           <p class="sec-desc">{{ $t('admin.clipperProxyDesc') }}</p>
         </div>
-        <v-text-field
-          v-model="form.clipperProxy"
-          density="compact"
-          hide-details
-          @blur="save"
-        />
+        <InputText v-model="form.clipperProxy"
+          @blur="save" />
       </div>
     </div>
 
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      Parametres enregistres
-    </v-snackbar>
+    <!-- snackbar removed during migration -->
   </div>
 </template>
 
@@ -87,6 +69,8 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
 
 const { t } = useI18n();
 

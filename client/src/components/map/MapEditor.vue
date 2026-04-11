@@ -2,15 +2,13 @@
   <div class="map-editor" @keydown.escape="cancelDrawing">
     <div class="me-toolbar">
       <div class="me-toolbar-group">
-        <v-select
+        <Select
           v-model="currentStyle"
-          :items="mapStyles"
-          item-title="label"
-          item-value="value"
-          density="compact"
-          hide-details
+          :options="mapStyles"
+          optionLabel="label"
+          optionValue="value"
           class="me-style-select"
-          @update:model-value="changeStyle"
+          @update:modelValue="changeStyle"
         />
       </div>
 
@@ -23,10 +21,10 @@
           @click="toggleAddMarker"
           title="Ajouter un repere"
         >
-          <v-icon size="16">mdi-map-marker-plus</v-icon>
+          <span class="mdi mdi-map-marker-plus" style="font-size: 16px"></span>
         </button>
         <button class="me-btn" @click="fitMarkers" title="Voir tous les reperes" :disabled="!markers.length">
-          <v-icon size="16">mdi-fit-to-screen-outline</v-icon>
+          <span class="mdi mdi-fit-to-screen-outline" style="font-size: 16px"></span>
         </button>
       </div>
 
@@ -39,7 +37,7 @@
           @click="setDrawingMode('circle')"
           title="Dessiner un cercle"
         >
-          <v-icon size="16">mdi-circle-outline</v-icon>
+          <span class="mdi mdi-circle-outline" style="font-size: 16px"></span>
         </button>
         <button
           class="me-btn"
@@ -47,7 +45,7 @@
           @click="setDrawingMode('line')"
           title="Dessiner une ligne"
         >
-          <v-icon size="16">mdi-vector-line</v-icon>
+          <span class="mdi mdi-vector-line" style="font-size: 16px"></span>
         </button>
         <button
           class="me-btn"
@@ -55,7 +53,7 @@
           @click="setDrawingMode('arrow')"
           title="Dessiner une fleche"
         >
-          <v-icon size="16">mdi-arrow-top-right</v-icon>
+          <span class="mdi mdi-arrow-top-right" style="font-size: 16px"></span>
         </button>
         <button
           class="me-btn"
@@ -63,60 +61,54 @@
           @click="setDrawingMode('textbox')"
           title="Ajouter un texte"
         >
-          <v-icon size="16">mdi-format-text</v-icon>
+          <span class="mdi mdi-format-text" style="font-size: 16px"></span>
         </button>
-        <v-menu :close-on-content-click="false">
-          <template #activator="{ props: menuProps }">
-            <button
+        <button
               class="me-btn"
               :class="{ active: addingEntity }"
-              v-bind="menuProps"
+              @click="entityPopoverRef?.toggle($event)"
               title="Placer une entite"
             >
-              <v-icon size="16">mdi-map-marker-account</v-icon>
+              <span class="mdi mdi-map-marker-account" style="font-size: 16px"></span>
             </button>
-          </template>
-          <div class="me-entity-menu">
-            <div class="me-entity-menu-title mono">Placer une entite</div>
-            <button
-              v-for="et in entityTypes"
-              :key="et.type"
-              class="me-entity-menu-item"
-              @click="startAddingEntity(et.type)"
-            >
-              <v-icon size="18" :color="et.color">{{ et.icon }}</v-icon>
-              <span>{{ et.label }}</span>
-            </button>
-          </div>
-        </v-menu>
+            <Popover ref="entityPopoverRef">
+              <div class="me-entity-menu">
+                <div class="me-entity-menu-title mono">Placer une entite</div>
+                <button
+                  v-for="et in entityTypes"
+                  :key="et.type"
+                  class="me-entity-menu-item"
+                  @click="startAddingEntity(et.type)"
+                >
+                  <span :class="['mdi', et.icon]" :style="{ fontSize: '18px', color: et.color }"></span>
+                  <span>{{ et.label }}</span>
+                </button>
+              </div>
+            </Popover>
       </div>
 
       <div class="me-separator" />
 
       <div class="me-toolbar-group">
-        <v-text-field
-          v-model="searchQuery"
-          density="compact"
-          hide-details
-          placeholder="Rechercher un lieu..."
-          class="me-search-field"
-          prepend-inner-icon="mdi-magnify"
-          @keyup.enter="geocode"
-          clearable
-        />
+        <div class="me-search-field">
+          <i class="pi pi-search" style="font-size: 14px; color: var(--me-text-muted)"></i>
+          <InputText
+            v-model="searchQuery"
+            placeholder="Rechercher un lieu..."
+            @keyup.enter="geocode"
+          />
+        </div>
       </div>
 
       <div v-if="customLayers.length" class="me-toolbar-group">
-        <v-menu :close-on-content-click="false">
-          <template #activator="{ props: menuProps }">
-            <button
-              class="me-btn"
-              v-bind="menuProps"
-              title="Couches personnalisees"
-            >
-              <v-icon size="16">mdi-layers</v-icon>
-            </button>
-          </template>
+        <button
+          class="me-btn"
+          @click="layersPopoverRef?.toggle($event)"
+          title="Couches personnalisees"
+        >
+          <span class="mdi mdi-layers" style="font-size: 16px"></span>
+        </button>
+        <Popover ref="layersPopoverRef">
           <div class="me-layers-menu">
             <div class="me-layers-menu-title mono">Couches</div>
             <div
@@ -125,13 +117,11 @@
               class="me-layers-menu-item"
               @click="toggleCustomLayer(cl.id)"
             >
-              <v-icon size="16" :color="cl.visible ? 'var(--me-accent)' : 'var(--me-text-muted)'">
-                {{ cl.visible ? 'mdi-eye' : 'mdi-eye-off' }}
-              </v-icon>
+              <span :class="['mdi', cl.visible ? 'mdi-eye' : 'mdi-eye-off']" style="font-size: 16px; color: cl.visible ? 'var(--me-accent)' : 'var(--me-text-muted)'"></span>
               <span :style="{ opacity: cl.visible ? 1 : 0.5 }">{{ cl.label }}</span>
             </div>
           </div>
-        </v-menu>
+        </Popover>
       </div>
 
       <div class="me-toolbar-spacer" />
@@ -151,11 +141,11 @@
 
       <div class="me-toolbar-group">
         <button class="me-btn me-btn-comments" :class="{ active: showComments }" @click="showComments = !showComments" title="Commentaires">
-          <v-icon size="16">mdi-comment-text-outline</v-icon>
+          <span class="mdi mdi-comment-text-outline" style="font-size: 16px"></span>
           <span v-if="commentCount" class="me-comment-badge">{{ commentCount }}</span>
         </button>
         <button class="me-btn" @click="showSidebar = !showSidebar" :class="{ active: showSidebar }" title="Liste des elements">
-          <v-icon size="16">mdi-format-list-bulleted</v-icon>
+          <span class="mdi mdi-format-list-bulleted" style="font-size: 16px"></span>
           <span v-if="markers.length + drawings.length + entities.length" class="me-marker-badge">{{ markers.length + drawings.length + entities.length }}</span>
         </button>
         <slot name="toolbar-end" />
@@ -164,10 +154,10 @@
 
     <!-- Drawing status bar -->
     <div v-if="drawingMode !== 'none' || addingEntity" class="me-drawing-status">
-      <v-icon size="14" class="mr-1">{{ addingEntity ? 'mdi-map-marker-account' : 'mdi-draw' }}</v-icon>
+      <span :class="['mdi mr-1', addingEntity ? 'mdi-map-marker-account' : 'mdi-draw']" style="font-size: 14px"></span>
       <span>{{ addingEntity ? 'Cliquez pour placer l\'entite' : drawingStatusText }}</span>
       <button class="me-status-cancel" @click="addingEntity ? cancelAddEntity() : cancelDrawing()">
-        <v-icon size="14" class="mr-1">mdi-close</v-icon>
+        <i class="pi pi-times mr-1" style="font-size: 14px"></i>
         Annuler
       </button>
     </div>
@@ -180,13 +170,13 @@
         <div class="me-marker-sidebar-header">
           <h3 class="mono">Elements</h3>
           <button class="me-close-btn" @click="showSidebar = false">
-            <v-icon size="16">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 16px"></i>
           </button>
         </div>
         <div class="me-marker-list">
           <!-- Markers section -->
           <div class="me-sidebar-section-title">
-            <v-icon size="14">mdi-map-marker</v-icon>
+            <span class="mdi mdi-map-marker" style="font-size: 14px"></span>
             <span>Reperes</span>
             <span class="me-sidebar-count">{{ markers.length }}</span>
           </div>
@@ -203,13 +193,13 @@
               <span class="me-marker-item-coords mono">{{ m.lngLat[1].toFixed(4) }}, {{ m.lngLat[0].toFixed(4) }}</span>
             </div>
             <button class="me-marker-item-delete" @click.stop="deleteMarker(m.id)" title="Supprimer">
-              <v-icon size="14">mdi-delete-outline</v-icon>
+              <i class="pi pi-trash" style="font-size: 14px"></i>
             </button>
           </div>
 
           <!-- Drawings section -->
           <div class="me-sidebar-section-title" style="margin-top: 8px;">
-            <v-icon size="14">mdi-draw</v-icon>
+            <span class="mdi mdi-draw" style="font-size: 14px"></span>
             <span>Dessins</span>
             <span class="me-sidebar-count">{{ drawings.length }}</span>
           </div>
@@ -221,19 +211,19 @@
             @click="openDrawingEditPopup(d)"
           >
             <div class="me-marker-item-color" :style="{ background: d.color, opacity: d.opacity }" />
-            <v-icon size="14" class="me-drawing-type-icon">{{ drawingTypeIcon(d.type) }}</v-icon>
+            <span :class="['mdi me-drawing-type-icon', drawingTypeIcon(d.type)]" style="font-size: 14px"></span>
             <div class="me-marker-item-info">
               <span class="me-marker-item-title">{{ d.description || drawingTypeLabel(d.type) }}</span>
               <span v-if="d.type === 'circle' && d.radiusKm" class="me-marker-item-coords mono">{{ formatRadius(d.radiusKm) }}</span>
             </div>
             <button class="me-marker-item-delete" @click.stop="deleteDrawing(d.id)" title="Supprimer">
-              <v-icon size="14">mdi-delete-outline</v-icon>
+              <i class="pi pi-trash" style="font-size: 14px"></i>
             </button>
           </div>
 
           <!-- Entities section -->
           <div class="me-sidebar-section-title" style="margin-top: 8px;">
-            <v-icon size="14">mdi-map-marker-account</v-icon>
+            <span class="mdi mdi-map-marker-account" style="font-size: 14px"></span>
             <span>Entites</span>
             <span class="me-sidebar-count">{{ entities.length }}</span>
           </div>
@@ -244,13 +234,13 @@
             class="me-marker-item"
             @click="openEntityEditPopup(ent)"
           >
-            <v-icon size="16" :color="getEntityTypeInfo(ent.entityType)?.color">{{ getEntityTypeInfo(ent.entityType)?.icon || 'mdi-help-circle' }}</v-icon>
+            <span :class="['mdi', getEntityTypeInfo(ent.entityType)?.icon || 'mdi-help-circle']" style="font-size: 16px; color: getEntityTypeInfo(ent.entityType)?.color"></span>
             <div class="me-marker-item-info">
               <span class="me-marker-item-title">{{ ent.label || getEntityTypeInfo(ent.entityType)?.label || ent.entityType }}</span>
               <span class="me-marker-item-coords mono">{{ ent.lngLat[1].toFixed(4) }}, {{ ent.lngLat[0].toFixed(4) }}</span>
             </div>
             <button class="me-marker-item-delete" @click.stop="deleteEntity(ent.id)" title="Supprimer">
-              <v-icon size="14">mdi-delete-outline</v-icon>
+              <i class="pi pi-trash" style="font-size: 14px"></i>
             </button>
           </div>
         </div>
@@ -270,25 +260,18 @@
           <div class="me-popup-header">
             <h3 class="mono">{{ editingMarkerId ? 'Modifier le repere' : 'Nouveau repere' }}</h3>
             <button class="me-close-btn" @click="cancelEdit">
-              <v-icon size="16">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 16px"></i>
             </button>
           </div>
           <div class="me-popup-body">
-            <v-text-field
-              v-model="editingMarker.title"
-              label="Titre"
-              density="compact"
-              hide-details
-              autofocus
-            />
-            <v-textarea
-              v-model="editingMarker.description"
-              label="Description"
-              density="compact"
-              hide-details
-              rows="3"
-              class="mt-3"
-            />
+            <div class="me-field">
+              <label class="me-field-label mono">Titre</label>
+              <InputText v-model="editingMarker.title" autofocus />
+            </div>
+            <div class="me-field" style="margin-top: 12px;">
+              <label class="me-field-label mono">Description</label>
+              <Textarea v-model="editingMarker.description" rows="3" />
+            </div>
             <div class="me-popup-color-row mt-3">
               <label class="plugin-label mono">Couleur</label>
               <div class="me-color-options">
@@ -318,25 +301,18 @@
           <div class="me-popup-header">
             <h3 class="mono">{{ editingEntityId ? 'Modifier l\'entite' : 'Nouvelle entite' }}</h3>
             <button class="me-close-btn" @click="cancelEntityEdit">
-              <v-icon size="16">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 16px"></i>
             </button>
           </div>
           <div class="me-popup-body">
-            <v-text-field
-              v-model="editingEntity.label"
-              label="Nom"
-              density="compact"
-              hide-details
-              autofocus
-            />
-            <v-textarea
-              v-model="editingEntity.description"
-              label="Description"
-              density="compact"
-              hide-details
-              rows="3"
-              class="mt-3"
-            />
+            <div class="me-field">
+              <label class="me-field-label mono">Nom</label>
+              <InputText v-model="editingEntity.label" autofocus />
+            </div>
+            <div class="me-field" style="margin-top: 12px;">
+              <label class="me-field-label mono">Description</label>
+              <Textarea v-model="editingEntity.description" rows="3" />
+            </div>
             <div class="me-popup-entity-type mt-3">
               <label class="plugin-label mono">Type</label>
               <div class="me-entity-type-grid">
@@ -347,7 +323,7 @@
                   :class="{ active: editingEntity.entityType === et.type }"
                   @click="editingEntity && (editingEntity.entityType = et.type)"
                 >
-                  <v-icon size="18" :color="et.color">{{ et.icon }}</v-icon>
+                  <span :class="['mdi', et.icon]" style="font-size: 18px; color: et.color"></span>
                   <span>{{ et.label }}</span>
                 </button>
               </div>
@@ -370,27 +346,18 @@
           <div class="me-popup-header">
             <h3 class="mono">{{ editingDrawingId ? 'Modifier le dessin' : 'Nouveau dessin' }}</h3>
             <button class="me-close-btn" @click="cancelDrawingEdit">
-              <v-icon size="16">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 16px"></i>
             </button>
           </div>
           <div class="me-popup-body">
-            <v-text-field
-              v-if="editingDrawing.type === 'textbox'"
-              v-model="editingDrawing.text"
-              label="Texte"
-              density="compact"
-              hide-details
-              autofocus
-            />
-            <v-textarea
-              v-model="editingDrawing.description"
-              label="Commentaire"
-              density="compact"
-              hide-details
-              rows="3"
-              :class="editingDrawing.type === 'textbox' ? 'mt-3' : ''"
-              :autofocus="editingDrawing.type !== 'textbox'"
-            />
+            <div v-if="editingDrawing.type === 'textbox'" class="me-field">
+              <label class="me-field-label mono">Texte</label>
+              <InputText v-model="editingDrawing.text" autofocus />
+            </div>
+            <div class="me-field" :style="editingDrawing.type === 'textbox' ? 'margin-top: 12px;' : ''">
+              <label class="me-field-label mono">Commentaire</label>
+              <Textarea v-model="editingDrawing.description" rows="3" :autofocus="editingDrawing.type !== 'textbox'" />
+            </div>
             <div class="me-popup-color-row mt-3">
               <label class="plugin-label mono">Couleur</label>
               <div class="me-color-options">
@@ -406,14 +373,13 @@
             </div>
             <div class="me-popup-opacity-row mt-3">
               <label class="plugin-label mono">Opacite : {{ Math.round(editingDrawing.opacity * 100) }}%</label>
-              <v-slider
-                v-model="editingDrawing.opacity"
-                :min="0.05"
-                :max="1"
-                :step="0.05"
-                hide-details
-                density="compact"
-                color="var(--me-accent)"
+              <input
+                type="range"
+                v-model.number="editingDrawing.opacity"
+                min="0.05"
+                max="1"
+                step="0.05"
+                class="me-opacity-slider"
               />
             </div>
           </div>
@@ -440,6 +406,9 @@ import { useThemeStore } from '../../stores/theme';
 import { useAuthStore } from '../../stores/auth';
 import type { Socket } from 'socket.io-client';
 import CommentSidebar from '../editor/CommentSidebar.vue';
+import Popover from 'primevue/popover';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
 
 interface MapMarker {
   id: string;
@@ -487,6 +456,7 @@ const dossierStore = useDossierStore();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const mapContainer = ref<HTMLElement | null>(null);
+const layersPopoverRef = ref();
 
 // Markers
 const markers = ref<MapMarker[]>([]);
@@ -2563,4 +2533,7 @@ watch(() => props.nodeId, (_newId, oldId) => {
 .me-tileset-popup .mapboxgl-popup-tip {
   border-top-color: var(--me-bg-surface, #1a1a2e);
 }
+.me-field { display: flex; flex-direction: column; gap: 4px; }
+.me-field-label { font-size: 12px; font-weight: 500; color: var(--me-text-secondary); }
+.me-opacity-slider { width: 100%; accent-color: var(--me-accent); }
 </style>

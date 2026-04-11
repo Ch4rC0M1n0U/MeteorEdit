@@ -1,11 +1,12 @@
 <template>
-  <v-dialog v-model="model" max-width="620" persistent>
+  <Dialog v-model:visible="model" modal :style="{ width: '620px' }" :closable="false">
+    <template #container>
     <div class="us-dialog glass-card">
       <div class="us-header">
-        <v-icon size="20" class="us-header-icon">mdi-radar</v-icon>
+        <span class="mdi mdi-radar us-header-icon" style="font-size: 20px;"></span>
         <span class="mono">{{ t('dossier.scanTitle') }}</span>
         <button class="us-close" @click="close" :disabled="scanning">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
@@ -23,7 +24,7 @@
           />
           <!-- Detected type -->
           <div v-if="detectedType && query.trim()" class="us-detected">
-            <v-icon size="14">{{ typeIcon }}</v-icon>
+            <span :class="'mdi ' + typeIcon" style="font-size: 14px;"></span>
             <span>{{ t('dossier.scanDetected') }} : <strong>{{ t('dossier.scanType_' + detectedType) }}</strong></span>
             <!-- Override type -->
             <select v-model="overrideType" class="us-type-select">
@@ -57,7 +58,7 @@
 
         <!-- Scan button -->
         <button v-if="!scanning && results.length === 0" class="us-scan-btn" @click="startScan" :disabled="!query.trim() || selectedCount === 0">
-          <v-icon size="14">mdi-magnify</v-icon>
+          <i class="pi pi-search" style="font-size: 14px;"></i>
           {{ t('dossier.scanStart') }} ({{ selectedCount }} {{ t('dossier.scanPlatforms').toLowerCase() }})
         </button>
 
@@ -74,7 +75,7 @@
 
         <!-- Current scanning -->
         <div v-if="currentPlatform && scanning" class="us-current">
-          <v-icon size="14" class="me-spin">mdi-loading</v-icon>
+          <span class="mdi mdi-loading me-spin" style="font-size: 14px;"></span>
           {{ currentPlatform }}...
         </div>
 
@@ -85,15 +86,15 @@
             <span class="us-result-label">{{ r.label }}</span>
             <span v-if="r.found && r.displayName" class="us-result-name">{{ r.displayName }}</span>
             <span class="us-result-status">
-              <v-icon v-if="r.found" size="14" color="#4caf50">mdi-check-circle</v-icon>
-              <v-icon v-else size="14" color="var(--me-text-muted)">mdi-close-circle-outline</v-icon>
+              <i v-if="r.found" class="pi pi-check-circle" style="font-size: 14px; color: #4caf50;"></i>
+              <span v-else class="mdi mdi-close-circle-outline" style="font-size: 14px; color: var(--me-text-muted);"></span>
             </span>
           </div>
         </div>
 
         <!-- Done -->
         <div v-if="done && !scanning" class="us-done">
-          <v-icon size="16" color="#4caf50">mdi-check-circle</v-icon>
+          <i class="pi pi-check-circle" style="font-size: 16px; color: #4caf50;"></i>
           {{ t('dossier.scanDone', { found: foundCount, total: totalPlatforms }) }}
           <button v-if="results.length > 0" class="us-reset-btn" @click="reset">
             {{ t('dossier.scanNewSearch') }}
@@ -101,12 +102,14 @@
         </div>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
 import { useDossierStore } from '../../stores/dossier';
 import { SERVER_URL } from '../../services/api';
 

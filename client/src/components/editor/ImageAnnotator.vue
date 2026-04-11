@@ -11,7 +11,7 @@
           @click="activeTool = tool.id"
           :title="tool.label"
         >
-          <v-icon size="16">{{ tool.icon }}</v-icon>
+          <span :class="['mdi', tool.icon]" style="font-size: 16px"></span>
         </button>
       </div>
       <div class="ia-separator" />
@@ -36,30 +36,30 @@
       <div class="ia-separator" />
       <div class="ia-tool-group">
         <button class="ia-tool-btn" @click="undo" :disabled="!annotations.length" title="Annuler">
-          <v-icon size="16">mdi-undo</v-icon>
+          <i class="pi pi-undo" style="font-size: 16px"></i>
         </button>
         <button class="ia-tool-btn" @click="clearAll" :disabled="!annotations.length" title="Tout effacer">
-          <v-icon size="16">mdi-delete-outline</v-icon>
+          <i class="pi pi-trash" style="font-size: 16px"></i>
         </button>
       </div>
       <div class="ia-separator" />
       <!-- Zoom controls -->
       <div class="ia-tool-group">
         <button class="ia-tool-btn" @click="zoomOut" :disabled="zoomLevel <= 0.25" title="Zoom -">
-          <v-icon size="16">mdi-magnify-minus-outline</v-icon>
+          <span class="mdi mdi-magnify-minus-outline" style="font-size: 16px"></span>
         </button>
         <span class="ia-zoom-label mono">{{ Math.round(zoomLevel * 100) }}%</span>
         <button class="ia-tool-btn" @click="zoomIn" :disabled="zoomLevel >= 5" title="Zoom +">
-          <v-icon size="16">mdi-magnify-plus-outline</v-icon>
+          <span class="mdi mdi-magnify-plus-outline" style="font-size: 16px"></span>
         </button>
         <button class="ia-tool-btn" @click="zoomReset" title="Ajuster">
-          <v-icon size="16">mdi-fit-to-screen-outline</v-icon>
+          <span class="mdi mdi-fit-to-screen-outline" style="font-size: 16px"></span>
         </button>
       </div>
       <div class="ia-spacer" />
       <div class="ia-tool-group">
         <button class="ia-tool-btn ia-save-btn" @click="save" title="Sauvegarder">
-          <v-icon size="16">mdi-content-save-outline</v-icon>
+          <span class="mdi mdi-content-save-outline" style="font-size: 16px"></span>
           <span class="ia-save-label">Sauvegarder</span>
         </button>
       </div>
@@ -99,7 +99,7 @@
           @pointerdown.prevent="startTextDrag"
           title="Deplacer"
         >
-          <v-icon size="12">mdi-cursor-move</v-icon>
+          <span class="mdi mdi-cursor-move" style="font-size: 12px"></span>
         </div>
         <input
           ref="textInputRef"

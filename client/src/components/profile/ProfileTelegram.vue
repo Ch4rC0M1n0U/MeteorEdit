@@ -2,18 +2,18 @@
   <div class="admin-clipper">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-send</v-icon>
+        <span class="mdi mdi-send" style="font-size: 20px; margin-right: 8px;"></span>
         {{ t('telegram.connectionTitle') }}
       </h2>
       <p class="admin-section-subtitle">{{ t('telegram.connectionDesc') }}</p>
     </div>
 
-    <v-progress-linear v-if="loadingStatus" indeterminate color="primary" class="mb-4" />
+    <div v-if="loadingStatus" style="margin-bottom: 16px;"><ProgressSpinner style="width: 24px; height: 24px;" strokeWidth="2" /></div>
 
     <!-- Connected state -->
     <div v-if="connected" class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="success">mdi-check-circle</v-icon>
+        <i class="pi pi-check-circle" style="font-size: 18px; color: var(--me-success, #4ade80);"></i>
         <h3 class="sec-card-title mono">{{ t('telegram.connected') }}</h3>
       </div>
       <div class="sec-option">
@@ -26,8 +26,8 @@
           </span>
         </div>
         <button class="me-btn me-btn-ghost me-btn-danger" :disabled="disconnecting" @click="doDisconnect">
-          <v-progress-circular v-if="disconnecting" indeterminate size="14" width="2" class="mr-1" />
-          <v-icon v-else size="14" class="mr-1">mdi-logout</v-icon>
+          <ProgressSpinner v-if="disconnecting" style="width: 14px; height: 14px; margin-right: 4px;" strokeWidth="2" />
+          <span v-else class="mdi mdi-logout" style="font-size: 14px; margin-right: 4px;"></span>
           {{ t('telegram.disconnect') }}
         </button>
       </div>
@@ -36,7 +36,7 @@
     <!-- Not connected - wizard -->
     <div v-else class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="warning">mdi-alert-circle-outline</v-icon>
+        <i class="pi pi-exclamation-triangle" style="font-size: 18px; color: var(--me-warning, #f59e0b);"></i>
         <h3 class="sec-card-title mono">{{ t('telegram.notConnected') }}</h3>
       </div>
 
@@ -63,8 +63,8 @@
             :disabled="!phoneNumber.trim() || sendingCode"
             @click="sendCode"
           >
-            <v-progress-circular v-if="sendingCode" indeterminate size="14" width="2" class="mr-1" />
-            <v-icon v-else size="14" class="mr-1">mdi-send</v-icon>
+            <ProgressSpinner v-if="sendingCode" style="width: 14px; height: 14px; margin-right: 4px;" strokeWidth="2" />
+            <span v-else class="mdi mdi-send" style="font-size: 14px; margin-right: 4px;"></span>
             {{ sendingCode ? t('telegram.sendingCode') : t('telegram.sendCode') }}
           </button>
         </div>
@@ -83,7 +83,7 @@
         />
         <div class="tg-step-actions">
           <button class="me-btn me-btn-ghost" @click="step = 1">
-            <v-icon size="14" class="mr-1">mdi-arrow-left</v-icon>
+            <span class="mdi mdi-arrow-left" style="font-size: 14px; margin-right: 4px;"></span>
             {{ t('common.back') }}
           </button>
           <button
@@ -91,8 +91,8 @@
             :disabled="!otpCode.trim() || verifying"
             @click="verifyCode"
           >
-            <v-progress-circular v-if="verifying" indeterminate size="14" width="2" class="mr-1" />
-            <v-icon v-else size="14" class="mr-1">mdi-check</v-icon>
+            <ProgressSpinner v-if="verifying" style="width: 14px; height: 14px; margin-right: 4px;" strokeWidth="2" />
+            <i v-else class="pi pi-check" style="font-size: 14px; margin-right: 4px;"></i>
             {{ verifying ? t('telegram.verifying') : t('telegram.verify') }}
           </button>
         </div>
@@ -109,7 +109,7 @@
         />
         <div class="tg-step-actions">
           <button class="me-btn me-btn-ghost" @click="step = 2">
-            <v-icon size="14" class="mr-1">mdi-arrow-left</v-icon>
+            <span class="mdi mdi-arrow-left" style="font-size: 14px; margin-right: 4px;"></span>
             {{ t('common.back') }}
           </button>
           <button
@@ -117,8 +117,8 @@
             :disabled="!password2FA.trim() || verifying"
             @click="verifyWith2FA"
           >
-            <v-progress-circular v-if="verifying" indeterminate size="14" width="2" class="mr-1" />
-            <v-icon v-else size="14" class="mr-1">mdi-check</v-icon>
+            <ProgressSpinner v-if="verifying" style="width: 14px; height: 14px; margin-right: 4px;" strokeWidth="2" />
+            <i v-else class="pi pi-check" style="font-size: 14px; margin-right: 4px;"></i>
             {{ verifying ? t('telegram.verifying') : t('telegram.verify') }}
           </button>
         </div>
@@ -126,9 +126,9 @@
     </div>
 
     <!-- Error message -->
-    <v-snackbar v-model="snackbar" :timeout="4000" :color="snackbarColor" location="bottom right">
+    <div v-if="snackbar" :class="['tg-toast', snackbarColor === 'error' ? 'tg-toast--error' : 'tg-toast--success']">
       {{ snackbarText }}
-    </v-snackbar>
+    </div>
   </div>
 </template>
 
@@ -136,6 +136,7 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressSpinner from 'primevue/progressspinner';
 
 const { t } = useI18n();
 
@@ -428,5 +429,24 @@ onMounted(() => {
   background: rgba(244, 67, 54, 0.1);
   color: #f44336;
   border-color: #f44336;
+}
+
+.tg-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 10px 20px;
+  border-radius: var(--me-radius-xs);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+}
+.tg-toast--error {
+  background: rgba(244, 67, 54, 0.9);
+  color: #fff;
+}
+.tg-toast--success {
+  background: rgba(76, 175, 80, 0.9);
+  color: #fff;
 }
 </style>

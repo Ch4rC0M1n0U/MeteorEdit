@@ -2,18 +2,18 @@
   <div class="admin-storage">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-harddisk</v-icon>
+        <span class="mdi mdi-harddisk" style="font-size: 20px; margin-right: 8px;"></span>
         Stockage
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.storageSubtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- Limites d'upload -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-upload-outline</v-icon>
+        <i class="pi pi-upload" style="font-size: 18px; color: var(--me-accent);"></i>
         <h3 class="sec-card-title mono">{{ $t('admin.uploadLimits') }}</h3>
       </div>
       <div class="sec-option">
@@ -21,11 +21,9 @@
           <p class="sec-label">{{ $t('admin.maxFileSizeMB') }}</p>
           <p class="sec-desc">{{ $t('admin.maxFileSizeDesc') }}</p>
         </div>
-        <v-text-field
+        <InputText
           v-model.number="form.maxFileSizeMB"
           type="number"
-          density="compact"
-          hide-details
           style="max-width: 120px;"
           :min="1"
           :max="10240"
@@ -38,10 +36,8 @@
           <p class="sec-label">{{ $t('admin.allowedFileTypes') }}</p>
           <p class="sec-desc">{{ $t('admin.allowedFileTypesDesc') }}</p>
         </div>
-        <v-text-field
+        <InputText
           v-model="form.allowedFileTypes"
-          density="compact"
-          hide-details
           style="max-width: 360px;"
           placeholder="image/*,.pdf,.docx,.xlsx"
           @blur="save"
@@ -52,7 +48,7 @@
     <!-- Utilisation du stockage -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-chart-pie</v-icon>
+        <span class="mdi mdi-chart-pie" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.storageUsage') }}</h3>
       </div>
       <div class="sec-option">
@@ -75,7 +71,7 @@
     <!-- Fichiers orphelins -->
     <div class="sec-card glass-card fade-in fade-in-delay-3">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent-warm, #f59e0b)">mdi-broom</v-icon>
+        <span class="mdi mdi-broom" style="font-size: 18px; color: var(--me-accent-warm, #f59e0b);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.cleanOrphans') }}</h3>
       </div>
       <p class="sec-desc" style="margin-bottom: 12px;">{{ $t('admin.cleanOrphansDesc') }}</p>
@@ -86,16 +82,10 @@
           <p class="sec-label">{{ $t('admin.scanOrphansLabel') }}</p>
           <p class="sec-desc">{{ $t('admin.scanOrphansDesc') }}</p>
         </div>
-        <v-btn
-          variant="outlined"
-          color="primary"
-          size="small"
-          prepend-icon="mdi-magnify"
-          :loading="scanning"
-          @click="scanOrphans"
-        >
+        <button class="me-btn-ghost" :disabled="scanning" @click="scanOrphans">
+          <i class="pi pi-search" style="font-size: 14px; margin-right: 4px;"></i>
           {{ $t('admin.scan') }}
-        </v-btn>
+        </button>
       </div>
 
       <!-- Results -->
@@ -133,36 +123,22 @@
         </details>
 
         <div class="orphan-actions">
-          <v-btn
-            variant="outlined"
-            size="small"
-            prepend-icon="mdi-refresh"
-            @click="scanOrphans"
-            :loading="scanning"
-          >
+          <button class="me-btn-ghost" :disabled="scanning" @click="scanOrphans">
+            <i class="pi pi-refresh" style="font-size: 14px; margin-right: 4px;"></i>
             {{ $t('admin.rescan') }}
-          </v-btn>
-          <v-btn
+          </button>
+          <button
             v-if="orphanInfo.orphanCount > 0"
-            variant="flat"
-            color="warning"
-            size="small"
-            prepend-icon="mdi-delete-sweep"
-            :loading="cleaning"
+            class="me-btn-warn"
+            :disabled="cleaning"
             @click="handleClean"
           >
+            <span class="mdi mdi-delete-sweep" style="font-size: 14px; margin-right: 4px;"></span>
             {{ $t('admin.cleanOrphansBtn', { count: orphanInfo.orphanCount }) }}
-          </v-btn>
+          </button>
         </div>
       </template>
     </div>
-
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      {{ $t('admin.settingsSaved') }}
-    </v-snackbar>
-    <v-snackbar v-model="cleanedSnackbar" :timeout="3000" color="success" location="bottom right">
-      {{ cleanedMessage }}
-    </v-snackbar>
   </div>
 </template>
 
@@ -171,17 +147,16 @@ import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useConfirm } from '../../composables/useConfirm';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
 
 const loading = ref(true);
-const saved = ref(false);
 const scanning = ref(false);
 const cleaning = ref(false);
 const orphanScanned = ref(false);
-const cleanedSnackbar = ref(false);
-const cleanedMessage = ref('');
 
 const form = ref({
   maxFileSizeMB: 50,
@@ -231,7 +206,6 @@ function save() {
   saveTimeout = setTimeout(async () => {
     try {
       await api.put('/admin/settings', form.value);
-      saved.value = true;
     } catch {}
   }, 300);
 }
@@ -262,11 +236,6 @@ async function handleClean() {
   cleaning.value = true;
   try {
     const { data } = await api.delete('/admin/storage/orphans');
-    cleanedMessage.value = t('admin.cleanOrphansResult', {
-      count: data.deletedFiles,
-      size: formatBytes(data.freedBytes),
-    });
-    cleanedSnackbar.value = true;
 
     // Update storage info
     storageInfo.value.totalFiles = data.totalFiles;
@@ -296,6 +265,35 @@ async function handleClean() {
 .sec-divider { height: 1px; background: var(--me-border); margin: 10px 0; opacity: 0.5; }
 
 .storage-value { font-size: 14px; font-weight: 700; color: var(--me-accent); }
+
+/* Buttons */
+.me-btn-ghost {
+  padding: 8px 16px;
+  border-radius: var(--me-radius-xs);
+  background: none;
+  border: 1px solid var(--me-border);
+  color: var(--me-text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+.me-btn-ghost:hover { border-color: var(--me-border-hover); color: var(--me-text-primary); }
+.me-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+.me-btn-warn {
+  padding: 8px 16px;
+  border-radius: var(--me-radius-xs);
+  background: #f59e0b;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+.me-btn-warn:hover { box-shadow: 0 0 16px rgba(245, 158, 11, 0.3); }
+.me-btn-warn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Orphan stats grid */
 .orphan-stats {

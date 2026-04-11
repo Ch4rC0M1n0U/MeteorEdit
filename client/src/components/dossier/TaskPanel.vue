@@ -2,14 +2,14 @@
   <div class="task-panel">
     <div class="tp-header">
       <h3 class="tp-title mono">
-        <v-icon size="18" class="mr-2">mdi-checkbox-marked-outline</v-icon>
+        <span class="mdi mdi-checkbox-marked-outline" style="font-size: 18px; margin-right: 8px;"></span>
         {{ $t('tasks.title') }}
       </h3>
       <div class="tp-stats mono">
         <span class="tp-stat">{{ doneCount }}/{{ tasks.length }}</span>
       </div>
       <button class="tp-add-btn" @click="showCreate = true">
-        <v-icon size="16">mdi-plus</v-icon> {{ $t('tasks.newTask') }}
+        <i class="pi pi-plus" style="font-size: 16px;"></i> {{ $t('tasks.newTask') }}
       </button>
     </div>
 
@@ -29,7 +29,7 @@
       <div class="tp-progress-bar" :style="{ width: progressPct + '%' }" />
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-2" />
+    <div v-if="loading" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><ProgressSpinner style="width: 20px; height: 20px;" /></div>
 
     <!-- Task list -->
     <div class="tp-list">
@@ -39,21 +39,18 @@
         :class="{ 'tp-task--done': task.status === 'done' }"
       >
         <button class="tp-check" :class="'tp-check--' + task.status" @click="cycleStatus(task)">
-          <v-icon size="18">{{
-            task.status === 'done' ? 'mdi-checkbox-marked' :
-            task.status === 'in_progress' ? 'mdi-progress-check' : 'mdi-checkbox-blank-outline'
-          }}</v-icon>
+          <span :class="'mdi ' + (task.status === 'done' ? 'mdi-checkbox-marked' : task.status === 'in_progress' ? 'mdi-progress-check' : 'mdi-checkbox-blank-outline')" style="font-size: 18px;"></span>
         </button>
 
         <div class="tp-task-body" @click="editTask(task)">
           <div class="tp-task-title">{{ task.title }}</div>
           <div class="tp-task-meta">
             <span v-if="task.assigneeId" class="tp-assignee">
-              <v-icon size="12">mdi-account</v-icon>
+              <i class="pi pi-user" style="font-size: 12px;"></i>
               {{ task.assigneeId.firstName }} {{ task.assigneeId.lastName }}
             </span>
             <span v-if="task.dueDate" class="tp-due" :class="{ 'tp-due--late': isOverdue(task) }">
-              <v-icon size="12">mdi-calendar</v-icon>
+              <i class="pi pi-calendar" style="font-size: 12px;"></i>
               {{ formatDate(task.dueDate) }}
             </span>
             <span :class="'tp-priority tp-priority--' + task.priority">{{ priorityLabel(task.priority) }}</span>
@@ -61,7 +58,7 @@
         </div>
 
         <button class="tp-delete-btn" @click="handleDelete(task)" :title="$t('common.delete')">
-          <v-icon size="14">mdi-trash-can-outline</v-icon>
+          <i class="pi pi-trash" style="font-size: 14px;"></i>
         </button>
       </div>
 
@@ -71,13 +68,14 @@
     </div>
 
     <!-- Create / Edit Dialog -->
-    <v-dialog v-model="showCreate" max-width="440" persistent>
+    <Dialog v-model:visible="showCreate" modal :style="{ width: '440px' }" :closable="false">
+      <template #container>
       <div class="tp-dialog glass-card">
         <div class="tp-dialog-header">
-          <v-icon size="20" class="tp-dialog-icon">mdi-checkbox-marked-outline</v-icon>
+          <span class="mdi mdi-checkbox-marked-outline tp-dialog-icon" style="font-size: 20px;"></span>
           <span>{{ editingTask ? $t('tasks.editTask') : $t('tasks.newTask') }}</span>
           <button class="tp-dialog-close" @click="closeDialog">
-            <v-icon size="18">mdi-close</v-icon>
+            <i class="pi pi-times" style="font-size: 18px;"></i>
           </button>
         </div>
 
@@ -122,13 +120,16 @@
           </button>
         </div>
       </div>
-    </v-dialog>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import ProgressSpinner from 'primevue/progressspinner';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';

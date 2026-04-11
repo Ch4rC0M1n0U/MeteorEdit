@@ -2,7 +2,7 @@
   <div class="admin-plugins">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-puzzle-outline</v-icon>
+        <span class="mdi mdi-puzzle-outline" style="font-size: 20px; margin-right: 8px;"></span>
         Plugins
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.pluginsSubtitle') }}</p>
@@ -13,7 +13,7 @@
       <div class="plugin-card glass-card">
         <div class="plugin-card-header">
           <div class="plugin-icon">
-            <v-icon size="24">mdi-map-outline</v-icon>
+            <span class="mdi mdi-map-outline" style="font-size: 24px;"></span>
           </div>
           <div>
             <h3 class="plugin-card-title mono">Mapbox</h3>
@@ -28,62 +28,42 @@
           <div class="plugin-field">
             <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
             <div class="api-key-row">
-              <v-text-field
-                v-model="form.mapbox.apiKey"
-                density="compact"
-                hide-details
+              <InputText v-model="form.mapbox.apiKey"
                 :type="showApiKey ? 'text' : 'password'"
-                placeholder="pk.eyJ..."
-              />
+                placeholder="pk.eyJ..." />
               <button class="plugin-toggle-btn" @click="showApiKey = !showApiKey" :title="showApiKey ? $t('admin.hide') : $t('admin.show')">
-                <v-icon size="16">{{ showApiKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+                <span :class="['mdi', showApiKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
               </button>
             </div>
           </div>
 
           <div class="plugin-field">
             <label class="plugin-label mono">{{ $t('admin.defaultStyle') }}</label>
-            <v-select
-              v-model="form.mapbox.defaultStyle"
-              :items="mapStyles"
-              item-title="label"
-              item-value="value"
-              density="compact"
-              hide-details
-            />
+            <Select v-model="form.mapbox.defaultStyle"
+              :options="mapStyles"
+              optionLabel="label"
+              optionValue="value" />
           </div>
 
           <div class="plugin-field-row">
             <div class="plugin-field" style="flex: 1;">
               <label class="plugin-label mono">{{ $t('admin.centerLongitude') }}</label>
-              <v-text-field
-                v-model.number="form.mapbox.defaultCenter[0]"
-                density="compact"
-                hide-details
+              <InputText v-model.number="form.mapbox.defaultCenter[0]"
                 type="number"
-                step="0.0001"
-              />
+                step="0.0001" />
             </div>
             <div class="plugin-field" style="flex: 1;">
               <label class="plugin-label mono">{{ $t('admin.centerLatitude') }}</label>
-              <v-text-field
-                v-model.number="form.mapbox.defaultCenter[1]"
-                density="compact"
-                hide-details
+              <InputText v-model.number="form.mapbox.defaultCenter[1]"
                 type="number"
-                step="0.0001"
-              />
+                step="0.0001" />
             </div>
             <div class="plugin-field" style="flex: 0.5;">
               <label class="plugin-label mono">{{ $t('admin.zoom') }}</label>
-              <v-text-field
-                v-model.number="form.mapbox.defaultZoom"
-                density="compact"
-                hide-details
+              <InputText v-model.number="form.mapbox.defaultZoom"
                 type="number"
                 min="1"
-                max="20"
-              />
+                max="20" />
             </div>
           </div>
         </div>
@@ -92,7 +72,7 @@
 
     <div class="plugins-actions fade-in fade-in-delay-2">
       <button class="me-btn-primary" @click="save" :disabled="saving">
-        <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+        <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
         {{ saving ? $t('admin.savingSettings') : $t('admin.saveSettings') }}
       </button>
     </div>
@@ -103,6 +83,8 @@
 import { ref, onMounted, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
 
 const { t } = useI18n();
 

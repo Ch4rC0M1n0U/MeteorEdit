@@ -4,7 +4,7 @@
     <div class="ssm-header">
       <div class="ssm-header-left">
         <div class="ssm-header-icon">
-          <v-icon size="20">mdi-shield-account-outline</v-icon>
+          <span class="mdi mdi-shield-account-outline" style="font-size: 20px"></span>
         </div>
         <div>
           <h3 class="ssm-title mono">{{ $t('social.session.title') }}</h3>
@@ -18,12 +18,12 @@
           <span class="ssm-counter-total">{{ platformList.length }}</span>
         </span>
         <button class="ssm-close-btn" @click="$emit('close')">
-          <v-icon size="16">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 16px"></i>
         </button>
       </div>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="ssm-loader" />
+    <ProgressBar v-if="loading" mode="indeterminate" class="ssm-loader" style="height: 4px;" />
 
     <!-- ═══ VIEW: Platform list ═══ -->
     <div v-show="currentView === 'list'">
@@ -35,7 +35,7 @@
         >
           <div class="ssm-platform-left">
             <div class="ssm-platform-icon" :style="iconStyle(p, isConnected(p.key))">
-              <v-icon size="20" :color="isConnected(p.key) ? '#fff' : p.color">{{ p.icon }}</v-icon>
+              <span :class="['mdi', p.icon]" style="font-size: 20px; color: isConnected(p.key) ? '#fff' : p.color"></span>
             </div>
             <div class="ssm-platform-details">
               <span class="ssm-platform-name">{{ p.name }}</span>
@@ -55,7 +55,7 @@
               @click="openPlatformSite(p)"
               :title="$t('social.session.openSite')"
             >
-              <v-icon size="14" class="mr-1">mdi-open-in-new</v-icon>
+              <span class="mdi mdi-open-in-new mr-1" style="font-size: 14px"></span>
               {{ $t('social.session.openSite') }}
             </button>
             <button
@@ -63,7 +63,7 @@
               @click="openImportView(p)"
               :title="$t('social.session.importCookies')"
             >
-              <v-icon size="14">mdi-cookie</v-icon>
+              <span class="mdi mdi-cookie" style="font-size: 14px"></span>
             </button>
             <button
               v-if="isConnected(p.key)"
@@ -82,10 +82,10 @@
       <div class="ssm-view">
         <div class="ssm-view-header">
           <button class="ssm-back-btn" @click="currentView = 'list'">
-            <v-icon size="16">mdi-arrow-left</v-icon>
+            <span class="mdi mdi-arrow-left" style="font-size: 16px"></span>
           </button>
           <div class="ssm-view-header-icon" :style="importPlatform ? iconStyle(importPlatform, true) : {}">
-            <v-icon size="18" color="#fff">mdi-cookie</v-icon>
+            <span class="mdi mdi-cookie" style="font-size: 18px; color: #fff"></span>
           </div>
           <span class="ssm-view-title">
             {{ $t('social.session.importCookiesTitle', { platform: importPlatform?.name }) }}
@@ -101,19 +101,18 @@
               {{ $t('social.session.importStep1') }}
               <a href="https://cookie-editor.com" target="_blank" rel="noopener" class="ssm-import-link">
                 cookie-editor.com
-                <v-icon size="11" class="ml-1">mdi-open-in-new</v-icon>
+                <span class="mdi mdi-open-in-new ml-1" style="font-size: 11px"></span>
               </a>
             </li>
             <li>{{ $t('social.session.importStep2', { domain: importPlatform?.name }) }}</li>
             <li>{{ $t('social.session.importStep3') }}</li>
           </ol>
-          <v-textarea
+          <Textarea
             v-model="importJson"
             :placeholder="$t('social.session.importPlaceholder')"
             rows="6"
-            density="compact"
-            hide-details
             class="ssm-import-textarea mono"
+            style="width: 100%;"
           />
           <p v-if="importError" class="ssm-import-error">{{ importError }}</p>
           <p v-if="importSuccess" class="ssm-import-success">{{ importSuccess }}</p>
@@ -125,7 +124,7 @@
             :disabled="importing || !importJson.trim()"
             @click="doImportCookies"
           >
-            <v-icon size="14" class="mr-1">mdi-import</v-icon>
+            <span class="mdi mdi-import mr-1" style="font-size: 14px"></span>
             {{ importing ? $t('social.session.importing') : $t('social.session.importAction') }}
           </button>
           <button class="ssm-btn ssm-btn--ghost" @click="currentView = 'list'" :disabled="importing">
@@ -140,10 +139,10 @@
       <div class="ssm-view">
         <div class="ssm-view-header">
           <button class="ssm-back-btn" @click="cancelLogin">
-            <v-icon size="16">mdi-arrow-left</v-icon>
+            <span class="mdi mdi-arrow-left" style="font-size: 16px"></span>
           </button>
           <div class="ssm-view-header-icon" :style="loginPlatform ? iconStyle(loginPlatform, true) : {}">
-            <v-icon size="18" color="#fff">{{ loginPlatform?.icon }}</v-icon>
+            <span :class="['mdi', loginPlatform?.icon]" style="font-size: 18px; color: #fff"></span>
           </div>
           <span class="ssm-view-title">
             {{ $t('social.session.connectTo', { platform: loginPlatform?.name }) }}
@@ -154,7 +153,7 @@
           <!-- Waiting state -->
           <div v-if="loginLoading" class="ssm-dialog-status">
             <div class="ssm-pulse-ring">
-              <v-progress-circular indeterminate :color="loginPlatform?.color" size="56" width="3" />
+              <ProgressSpinner style="width: 56px; height: 56px;" strokeWidth="3" />
             </div>
             <p class="ssm-dialog-msg">{{ $t('social.session.loginInProgress') }}</p>
             <p class="ssm-dialog-hint">{{ $t('social.session.loginHint') }}</p>
@@ -164,7 +163,7 @@
           <!-- Success -->
           <div v-else-if="loginResult === 'success'" class="ssm-dialog-status">
             <div class="ssm-result-icon ssm-result-icon--success">
-              <v-icon size="28" color="#fff">mdi-check</v-icon>
+              <i class="pi pi-check" style="font-size: 28px; color: #fff"></i>
             </div>
             <p class="ssm-dialog-msg ssm-dialog-msg--success">{{ $t('social.session.loginSuccess') }}</p>
           </div>
@@ -172,7 +171,7 @@
           <!-- Error -->
           <div v-else-if="loginResult === 'error'" class="ssm-dialog-status">
             <div class="ssm-result-icon ssm-result-icon--error">
-              <v-icon size="28" color="#fff">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 28px; color: #fff"></i>
             </div>
             <p class="ssm-dialog-msg ssm-dialog-msg--error">{{ loginErrorMessage || $t('social.session.loginError') }}</p>
           </div>
@@ -180,7 +179,7 @@
           <!-- Timeout -->
           <div v-else-if="loginResult === 'timeout'" class="ssm-dialog-status">
             <div class="ssm-result-icon ssm-result-icon--warning">
-              <v-icon size="28" color="#fff">mdi-clock-alert-outline</v-icon>
+              <span class="mdi mdi-clock-alert-outline" style="font-size: 28px; color: #fff"></span>
             </div>
             <p class="ssm-dialog-msg ssm-dialog-msg--error">{{ $t('social.session.loginTimeout') }}</p>
           </div>
@@ -192,7 +191,7 @@
             class="ssm-btn ssm-btn--primary"
             @click="retryLogin"
           >
-            <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
+            <i class="pi pi-refresh mr-1" style="font-size: 14px"></i>
             {{ $t('social.session.retry') }}
           </button>
           <button
@@ -211,10 +210,10 @@
       <div class="ssm-view">
         <div class="ssm-view-header">
           <button class="ssm-back-btn" @click="currentView = 'list'">
-            <v-icon size="16">mdi-arrow-left</v-icon>
+            <span class="mdi mdi-arrow-left" style="font-size: 16px"></span>
           </button>
           <div class="ssm-result-icon ssm-result-icon--error" style="width:32px;height:32px;">
-            <v-icon size="18" color="#fff">mdi-link-off</v-icon>
+            <span class="mdi mdi-link-off" style="font-size: 18px; color: #fff"></span>
           </div>
           <span class="ssm-view-title">{{ $t('social.session.confirmDisconnect') }}</span>
         </div>
@@ -234,7 +233,7 @@
             :disabled="disconnecting"
             @click="doDisconnect"
           >
-            <v-icon size="14" class="mr-1">mdi-delete-outline</v-icon>
+            <i class="pi pi-trash mr-1" style="font-size: 14px"></i>
             {{ disconnecting ? $t('social.session.disconnecting') : $t('social.session.disconnect') }}
           </button>
         </div>
@@ -247,6 +246,9 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import ProgressSpinner from 'primevue/progressspinner';
+import Textarea from 'primevue/textarea';
 
 interface Platform {
   key: string;

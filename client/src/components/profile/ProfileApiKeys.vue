@@ -2,18 +2,18 @@
   <div class="admin-clipper">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-key-variant</v-icon>
+        <span class="mdi mdi-key-variant" style="font-size: 20px; margin-right: 8px;"></span>
         {{ t('admin.apiKeys') }}
       </h2>
       <p class="admin-section-subtitle">{{ t('admin.apiKeysSubtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <div v-if="loading" style="margin-bottom: 16px;"><ProgressSpinner style="width: 24px; height: 24px;" strokeWidth="2" /></div>
 
     <!-- Server URL -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-server-network</v-icon>
+        <span class="mdi mdi-server-network" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ t('admin.serverUrl') }}</h3>
       </div>
       <div class="sec-option">
@@ -22,7 +22,7 @@
           <div class="copy-field">
             <code class="copy-field-value">{{ serverUrl }}</code>
             <button class="me-btn-ghost copy-btn" @click="copyToClipboard(serverUrl)">
-              <v-icon size="16">mdi-content-copy</v-icon>
+              <i class="pi pi-copy" style="font-size: 16px;"></i>
             </button>
           </div>
         </div>
@@ -41,7 +41,7 @@
     <!-- External API Keys -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-cloud-key-outline</v-icon>
+        <span class="mdi mdi-cloud-key-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ t('admin.externalApiKeys') }}</h3>
       </div>
       <div class="sec-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -53,24 +53,22 @@
           </a>
         </p>
         <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
-          <v-text-field
+          <InputText
             v-model="googleApiKey"
-            density="compact"
-            hide-details
             :type="showGoogleKey ? 'text' : 'password'"
             placeholder="AIza..."
             style="flex: 1;"
           />
           <button class="me-btn-ghost" @click="showGoogleKey = !showGoogleKey">
-            <v-icon size="16">{{ showGoogleKey ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+            <span :class="showGoogleKey ? 'pi pi-eye-slash' : 'pi pi-eye'" style="font-size: 16px;"></span>
           </button>
           <button class="me-btn me-btn-sm" @click="saveGoogleApiKey" :disabled="savingGoogleKey">
-            <v-icon size="14" class="mr-1">mdi-content-save</v-icon>
+            <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
             {{ t('common.save') }}
           </button>
         </div>
         <span v-if="googleKeySaved" class="sec-saved mono">
-          <v-icon size="12" color="success" class="mr-1">mdi-check</v-icon>
+          <i class="pi pi-check" style="font-size: 12px; margin-right: 4px; color: var(--me-success, #4ade80);"></i>
           {{ t('admin.settingsSaved') }}
         </span>
       </div>
@@ -79,24 +77,24 @@
     <!-- Generate key button -->
     <div class="sec-card glass-card fade-in fade-in-delay-3">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-key-plus</v-icon>
+        <span class="mdi mdi-key-plus" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ t('admin.generateKey') }}</h3>
         <div style="flex: 1;" />
         <button class="me-btn me-btn-sm" @click="showCreateDialog = true">
-          <v-icon size="16" class="mr-1">mdi-plus</v-icon>
+          <i class="pi pi-plus" style="font-size: 16px; margin-right: 4px;"></i>
           {{ t('admin.generateKey') }}
         </button>
       </div>
 
       <!-- Newly created key display -->
       <div v-if="newlyCreatedKey" class="new-key-banner">
-        <v-icon size="18" color="warning" class="mr-2">mdi-alert</v-icon>
+        <i class="pi pi-exclamation-triangle" style="font-size: 18px; color: var(--me-warning, #f59e0b); margin-right: 8px;"></i>
         <div style="flex: 1; min-width: 0;">
           <p class="sec-label" style="color: var(--me-warning, #f59e0b);">{{ t('admin.keyCopyWarning') }}</p>
           <div class="copy-field" style="margin-top: 6px;">
             <code class="copy-field-value">{{ newlyCreatedKey }}</code>
             <button class="me-btn-ghost copy-btn" @click="copyToClipboard(newlyCreatedKey!)">
-              <v-icon size="16">mdi-content-copy</v-icon>
+              <i class="pi pi-copy" style="font-size: 16px;"></i>
             </button>
           </div>
         </div>
@@ -104,7 +102,7 @@
 
       <!-- Keys table -->
       <div v-if="keys.length === 0 && !loading" class="empty-state">
-        <v-icon size="40" color="var(--me-text-muted)">mdi-key-remove</v-icon>
+        <span class="mdi mdi-key-remove" style="font-size: 40px; color: var(--me-text-muted);"></span>
         <p class="empty-text">{{ t('admin.keyNoKeys') }}</p>
       </div>
 
@@ -135,17 +133,14 @@
               <td>{{ formatDate(key.createdAt) }}</td>
               <td>{{ key.expiresAt ? formatDate(key.expiresAt) : t('admin.keyNoExpiry') }}</td>
               <td>
-                <v-switch
-                  :model-value="key.isActive"
-                  density="compact"
-                  hide-details
-                  color="primary"
-                  @update:model-value="toggleActive(key)"
+                <ToggleSwitch
+                  :modelValue="key.isActive"
+                  @update:modelValue="toggleActive(key)"
                 />
               </td>
               <td>
                 <button class="me-btn-ghost me-btn-danger-ghost" @click="confirmRevoke(key)">
-                  <v-icon size="16">mdi-delete-outline</v-icon>
+                  <i class="pi pi-trash" style="font-size: 16px;"></i>
                 </button>
               </td>
             </tr>
@@ -155,115 +150,99 @@
     </div>
 
     <!-- Create dialog -->
-    <v-dialog v-model="showCreateDialog" max-width="480" persistent>
-      <div class="dialog-card glass-card">
-        <div class="dialog-header">
-          <h3 class="dialog-title mono">{{ t('admin.generateKey') }}</h3>
-          <button class="me-btn-ghost" @click="closeCreateDialog">
-            <v-icon size="18">mdi-close</v-icon>
-          </button>
-        </div>
-        <div class="dialog-body">
-          <div class="form-group">
-            <label class="form-label">{{ t('admin.keyName') }} *</label>
-            <v-text-field
-              v-model="createForm.name"
-              density="compact"
-              hide-details
-              :placeholder="t('admin.keyName')"
-            />
+    <Dialog v-model:visible="showCreateDialog" modal :style="{ width: '480px' }" :closable="false">
+      <template #container>
+        <div class="dialog-card glass-card">
+          <div class="dialog-header">
+            <h3 class="dialog-title mono">{{ t('admin.generateKey') }}</h3>
+            <button class="me-btn-ghost" @click="closeCreateDialog">
+              <i class="pi pi-times" style="font-size: 18px;"></i>
+            </button>
           </div>
-          <div class="form-group">
-            <label class="form-label">{{ t('admin.keyPermissions') }}</label>
-            <div class="perm-checkboxes">
-              <v-checkbox
-                v-model="createForm.permissions"
-                value="read"
-                :label="t('admin.keyPermRead')"
-                density="compact"
-                hide-details
+          <div class="dialog-body">
+            <div class="form-group">
+              <label class="form-label">{{ t('admin.keyName') }} *</label>
+              <InputText
+                v-model="createForm.name"
+                :placeholder="t('admin.keyName')"
+                class="w-full"
               />
-              <v-checkbox
-                v-model="createForm.permissions"
-                value="write"
-                :label="t('admin.keyPermWrite')"
-                density="compact"
-                hide-details
-              />
-              <v-checkbox
-                v-model="createForm.permissions"
-                value="clip"
-                :label="t('admin.keyPermClip')"
-                density="compact"
-                hide-details
-              />
-              <v-checkbox
-                v-model="createForm.permissions"
-                value="export"
-                :label="t('admin.keyPermExport')"
-                density="compact"
-                hide-details
-              />
-              <v-checkbox
-                v-model="createForm.permissions"
-                value="root"
-                :label="t('admin.keyPermRoot')"
-                density="compact"
-                hide-details
-                color="error"
+            </div>
+            <div class="form-group">
+              <label class="form-label">{{ t('admin.keyPermissions') }}</label>
+              <div class="perm-checkboxes">
+                <div class="perm-checkbox-item">
+                  <Checkbox v-model="createForm.permissions" inputId="perm-read" value="read" />
+                  <label for="perm-read" class="perm-checkbox-label">{{ t('admin.keyPermRead') }}</label>
+                </div>
+                <div class="perm-checkbox-item">
+                  <Checkbox v-model="createForm.permissions" inputId="perm-write" value="write" />
+                  <label for="perm-write" class="perm-checkbox-label">{{ t('admin.keyPermWrite') }}</label>
+                </div>
+                <div class="perm-checkbox-item">
+                  <Checkbox v-model="createForm.permissions" inputId="perm-clip" value="clip" />
+                  <label for="perm-clip" class="perm-checkbox-label">{{ t('admin.keyPermClip') }}</label>
+                </div>
+                <div class="perm-checkbox-item">
+                  <Checkbox v-model="createForm.permissions" inputId="perm-export" value="export" />
+                  <label for="perm-export" class="perm-checkbox-label">{{ t('admin.keyPermExport') }}</label>
+                </div>
+                <div class="perm-checkbox-item">
+                  <Checkbox v-model="createForm.permissions" inputId="perm-root" value="root" />
+                  <label for="perm-root" class="perm-checkbox-label" style="color: #f87171;">{{ t('admin.keyPermRoot') }}</label>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">{{ t('admin.keyExpires') }}</label>
+              <InputText
+                v-model="createForm.expiresAt"
+                type="date"
+                :placeholder="t('admin.keyNoExpiry')"
+                class="w-full"
               />
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">{{ t('admin.keyExpires') }}</label>
-            <v-text-field
-              v-model="createForm.expiresAt"
-              type="date"
-              density="compact"
-              hide-details
-              :placeholder="t('admin.keyNoExpiry')"
-            />
+          <div class="dialog-footer">
+            <button class="me-btn-ghost" @click="closeCreateDialog">{{ t('common.cancel') }}</button>
+            <button class="me-btn" :disabled="!createForm.name.trim() || creating" @click="createKey">
+              <ProgressSpinner v-if="creating" style="width: 16px; height: 16px; margin-right: 4px;" strokeWidth="2" class="spin" />
+              {{ t('common.create') }}
+            </button>
           </div>
         </div>
-        <div class="dialog-footer">
-          <button class="me-btn-ghost" @click="closeCreateDialog">{{ t('common.cancel') }}</button>
-          <button class="me-btn" :disabled="!createForm.name.trim() || creating" @click="createKey">
-            <v-icon v-if="creating" size="16" class="mr-1 spin">mdi-loading</v-icon>
-            {{ t('common.create') }}
-          </button>
-        </div>
-      </div>
-    </v-dialog>
+      </template>
+    </Dialog>
 
     <!-- Revoke confirmation dialog -->
-    <v-dialog v-model="showRevokeDialog" max-width="400" persistent>
-      <div class="dialog-card glass-card">
-        <div class="dialog-header">
-          <h3 class="dialog-title mono">{{ t('admin.keyRevoke') }}</h3>
-          <button class="me-btn-ghost" @click="showRevokeDialog = false">
-            <v-icon size="18">mdi-close</v-icon>
-          </button>
+    <Dialog v-model:visible="showRevokeDialog" modal :style="{ width: '400px' }" :closable="false">
+      <template #container>
+        <div class="dialog-card glass-card">
+          <div class="dialog-header">
+            <h3 class="dialog-title mono">{{ t('admin.keyRevoke') }}</h3>
+            <button class="me-btn-ghost" @click="showRevokeDialog = false">
+              <i class="pi pi-times" style="font-size: 18px;"></i>
+            </button>
+          </div>
+          <div class="dialog-body">
+            <p>{{ t('admin.keyRevokeConfirm') }}</p>
+            <p v-if="keyToRevoke" class="revoke-key-name">
+              <strong>{{ keyToRevoke.name }}</strong> ({{ keyToRevoke.prefix }}...)
+            </p>
+          </div>
+          <div class="dialog-footer">
+            <button class="me-btn-ghost" @click="showRevokeDialog = false">{{ t('common.cancel') }}</button>
+            <button class="me-btn me-btn-danger" :disabled="revoking" @click="revokeKey">
+              <ProgressSpinner v-if="revoking" style="width: 16px; height: 16px; margin-right: 4px;" strokeWidth="2" class="spin" />
+              {{ t('admin.keyRevoke') }}
+            </button>
+          </div>
         </div>
-        <div class="dialog-body">
-          <p>{{ t('admin.keyRevokeConfirm') }}</p>
-          <p v-if="keyToRevoke" class="revoke-key-name">
-            <strong>{{ keyToRevoke.name }}</strong> ({{ keyToRevoke.prefix }}...)
-          </p>
-        </div>
-        <div class="dialog-footer">
-          <button class="me-btn-ghost" @click="showRevokeDialog = false">{{ t('common.cancel') }}</button>
-          <button class="me-btn me-btn-danger" :disabled="revoking" @click="revokeKey">
-            <v-icon v-if="revoking" size="16" class="mr-1 spin">mdi-loading</v-icon>
-            {{ t('admin.keyRevoke') }}
-          </button>
-        </div>
-      </div>
-    </v-dialog>
+      </template>
+    </Dialog>
 
     <!-- Snackbar -->
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" location="bottom right">
-      {{ snackbarText }}
-    </v-snackbar>
+    <div v-if="snackbar" class="api-toast">{{ snackbarText }}</div>
   </div>
 </template>
 
@@ -271,6 +250,11 @@
 import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Checkbox from 'primevue/checkbox';
+import ToggleSwitch from 'primevue/toggleswitch';
+import ProgressSpinner from 'primevue/progressspinner';
 
 const { t, locale } = useI18n();
 
@@ -674,5 +658,20 @@ onMounted(() => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+.w-full { width: 100%; }
+.perm-checkbox-item { display: flex; align-items: center; gap: 8px; }
+.perm-checkbox-label { font-size: 13px; color: var(--me-text-secondary); cursor: pointer; }
+.api-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 10px 20px;
+  border-radius: var(--me-radius-xs);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  background: rgba(76, 175, 80, 0.9);
+  color: #fff;
 }
 </style>

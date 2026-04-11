@@ -2,18 +2,18 @@
   <div class="admin-network">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-lan</v-icon>
+        <span class="mdi mdi-lan" style="font-size: 20px; margin-right: 8px;"></span>
         Reseau & Annonces
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.networkSubtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- CORS / Origines autorisees -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-web</v-icon>
+        <span class="mdi mdi-web" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.corsOrigins') }}</h3>
       </div>
       <div class="sec-option">
@@ -22,20 +22,16 @@
           <p class="sec-desc">{{ $t('admin.allowedOriginsDesc') }}</p>
         </div>
       </div>
-      <v-text-field
-        v-model="form.allowedOrigins"
+      <InputText v-model="form.allowedOrigins"
         :label="$t('admin.allowedOriginsLabel')"
-        density="compact"
-        hide-details
         class="mt-3"
-        @blur="save"
-      />
+        @blur="save" />
     </div>
 
     <!-- Banniere d'annonce -->
     <div class="sec-card glass-card fade-in fade-in-delay-2">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-bullhorn-outline</v-icon>
+        <span class="mdi mdi-bullhorn-outline" style="font-size: 18px; color: var(--me-accent);"></span>
         <h3 class="sec-card-title mono">{{ $t('admin.announcementBanner') }}</h3>
       </div>
       <div class="sec-option">
@@ -43,7 +39,7 @@
           <p class="sec-label">{{ $t('admin.enableBanner') }}</p>
           <p class="sec-desc">{{ $t('admin.enableBannerDesc') }}</p>
         </div>
-        <v-switch v-model="form.announcementEnabled" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.announcementEnabled" @update:model-value="save" />
       </div>
       <template v-if="form.announcementEnabled">
         <div class="sec-divider" />
@@ -53,35 +49,25 @@
             <p class="sec-desc">{{ $t('admin.messageDesc') }}</p>
           </div>
         </div>
-        <v-text-field
-          v-model="form.announcementMessage"
+        <InputText v-model="form.announcementMessage"
           :label="$t('admin.message')"
-          density="compact"
-          hide-details
           class="mt-3"
-          @blur="save"
-        />
+          @blur="save" />
         <div class="sec-divider" />
         <div class="sec-option">
           <div>
             <p class="sec-label">{{ $t('admin.bannerType') }}</p>
             <p class="sec-desc">{{ $t('admin.bannerTypeDesc') }}</p>
           </div>
-          <v-select
-            v-model="form.announcementVariant"
-            :items="['info', 'warning', 'error']"
-            density="compact"
-            hide-details
+          <Select v-model="form.announcementVariant"
+            :options="['info', 'warning', 'error']"
             style="max-width: 200px;"
-            @update:model-value="save"
-          />
+            @update:model-value="save" />
         </div>
       </template>
     </div>
 
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      Parametres enregistres
-    </v-snackbar>
+    <!-- snackbar removed during migration -->
   </div>
 </template>
 
@@ -89,6 +75,10 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const { t } = useI18n();
 

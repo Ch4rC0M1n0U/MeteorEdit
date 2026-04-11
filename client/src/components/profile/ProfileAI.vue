@@ -2,7 +2,7 @@
   <div class="profile-ai">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-robot-outline</v-icon>
+        <span class="mdi mdi-robot-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ t('profile.ai.title') }}
       </h2>
       <p class="admin-section-subtitle">{{ t('profile.ai.subtitle') }}</p>
@@ -12,7 +12,7 @@
     <div class="ai-card glass-card fade-in fade-in-delay-1">
       <div class="ai-card-header">
         <div class="ai-icon">
-          <v-icon size="24">mdi-swap-horizontal</v-icon>
+          <span class="mdi mdi-swap-horizontal" style="font-size: 24px;"></span>
         </div>
         <div>
           <h3 class="ai-card-title mono">{{ t('profile.ai.providerTitle') }}</h3>
@@ -25,7 +25,7 @@
           :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'ollama' }]"
           @click="form.aiProvider = 'ollama'; savePrefs()"
         >
-          <v-icon size="20" class="mr-2">mdi-server-network</v-icon>
+          <span class="mdi mdi-server-network" style="font-size: 20px; margin-right: 8px;"></span>
           <div class="ai-provider-btn-content">
             <span class="ai-provider-btn-title">Ollama</span>
             <span class="ai-provider-btn-desc">{{ t('profile.ai.ollamaDesc') }}</span>
@@ -35,7 +35,7 @@
           :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'claude' }]"
           @click="form.aiProvider = 'claude'; savePrefs()"
         >
-          <v-icon size="20" class="mr-2">mdi-cloud-outline</v-icon>
+          <span class="mdi mdi-cloud-outline" style="font-size: 20px; margin-right: 8px;"></span>
           <div class="ai-provider-btn-content">
             <span class="ai-provider-btn-title">Claude API</span>
             <span class="ai-provider-btn-desc">{{ t('profile.ai.claudeDesc') }}</span>
@@ -45,7 +45,7 @@
           :class="['ai-provider-btn', { 'ai-provider-btn--active': form.aiProvider === 'openai' }]"
           @click="form.aiProvider = 'openai'; savePrefs()"
         >
-          <v-icon size="20" class="mr-2">mdi-creation</v-icon>
+          <span class="mdi mdi-creation" style="font-size: 20px; margin-right: 8px;"></span>
           <div class="ai-provider-btn-content">
             <span class="ai-provider-btn-title">OpenAI / ChatGPT</span>
             <span class="ai-provider-btn-desc">{{ t('profile.ai.openaiDesc') }}</span>
@@ -57,15 +57,15 @@
     <!-- Claude Privacy Warning + Config -->
     <div v-if="form.aiProvider === 'claude'" class="ai-card ai-privacy-card fade-in">
       <div class="ai-privacy-header">
-        <v-icon size="22" color="#f59e0b">mdi-shield-alert-outline</v-icon>
+        <span class="mdi mdi-shield-alert-outline" style="font-size: 22px; color: #f59e0b;"></span>
         <h3 class="ai-card-title mono">{{ t('profile.ai.claudeConfig') }}</h3>
       </div>
       <div class="ai-privacy-content">
         <p>{{ t('profile.ai.commercialWarning') }}</p>
         <ul class="ai-privacy-list">
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ t('profile.ai.privacyItem1') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ t('profile.ai.privacyItem2') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ t('profile.ai.privacyItem3') }}</li>
+          <li><span class="mdi mdi-alert-outline" style="font-size: 14px; margin-right: 4px; color: #f59e0b;"></span>{{ t('profile.ai.privacyItem1') }}</li>
+          <li><span class="mdi mdi-alert-outline" style="font-size: 14px; margin-right: 4px; color: #f59e0b;"></span>{{ t('profile.ai.privacyItem2') }}</li>
+          <li><span class="mdi mdi-check-circle-outline" style="font-size: 14px; margin-right: 4px; color: #34d399;"></span>{{ t('profile.ai.privacyItem3') }}</li>
         </ul>
         <p class="ai-privacy-footer">{{ t('profile.ai.privacyFooter') }}</p>
       </div>
@@ -76,57 +76,54 @@
         <div class="ai-field">
           <label class="ai-label mono">{{ t('profile.ai.apiKey') }}</label>
           <div class="ai-field-row">
-            <v-text-field
+            <InputText
               v-model="form.claudeApiKey"
-              density="compact"
-              hide-details
               :type="showClaudeKey ? 'text' : 'password'"
               placeholder="sk-ant-api03-..."
+              style="flex: 1;"
             />
             <button class="ai-test-btn" @click="showClaudeKey = !showClaudeKey">
-              <v-icon size="14">{{ showClaudeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+              <span :class="showClaudeKey ? 'mdi mdi-eye-off-outline' : 'mdi mdi-eye-outline'" style="font-size: 14px;"></span>
             </button>
             <button class="ai-test-btn" @click="testClaude" :disabled="testingClaude">
-              <v-icon size="14" class="mr-1">mdi-connection</v-icon>
+              <span class="mdi mdi-connection" style="font-size: 14px; margin-right: 4px;"></span>
               {{ testingClaude ? t('profile.ai.testing') : t('profile.ai.test') }}
             </button>
           </div>
           <p v-if="claudeHasKey" class="ai-field-hint ai-field-hint--ok">
-            <v-icon size="12" class="mr-1" color="#34d399">mdi-key</v-icon>
+            <i class="pi pi-key" style="font-size: 12px; margin-right: 4px; color: #34d399;"></i>
             {{ t('profile.ai.keyConfigured') }}
           </p>
           <p class="ai-field-hint">
             <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" class="ai-link">
-              <v-icon size="12" class="mr-1">mdi-open-in-new</v-icon>
+              <span class="mdi mdi-open-in-new" style="font-size: 12px; margin-right: 4px;"></span>
               {{ t('profile.ai.getClaudeKey') }}
             </a>
           </p>
           <div v-if="claudeTestStatus" :class="['ai-status-msg', claudeTestStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-            <v-icon size="14" class="mr-1">{{ claudeTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+            <span :class="claudeTestStatus.ok ? 'mdi mdi-check-circle-outline' : 'mdi mdi-alert-circle-outline'" style="font-size: 14px; margin-right: 4px;"></span>
             {{ claudeTestStatus.message }}
           </div>
         </div>
 
         <div class="ai-field">
           <label class="ai-label mono">{{ t('profile.ai.model') }}</label>
-          <v-select
+          <Select
             v-model="form.claudeModel"
-            :items="claudeModels"
-            item-title="label"
-            item-value="value"
-            density="compact"
-            hide-details
+            :options="claudeModels"
+            optionLabel="label"
+            optionValue="value"
           />
         </div>
       </div>
 
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveApiKeys" :disabled="savingKeys">
-          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
           {{ savingKeys ? t('profile.ai.saving') : t('profile.ai.save') }}
         </button>
         <div v-if="saveStatus" :class="['ai-status-msg', saveStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-          <v-icon size="14" class="mr-1">{{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+          <span :class="saveStatus.ok ? 'mdi mdi-check-circle-outline' : 'mdi mdi-alert-circle-outline'" style="font-size: 14px; margin-right: 4px;"></span>
           {{ saveStatus.message }}
         </div>
       </div>
@@ -135,15 +132,15 @@
     <!-- OpenAI Privacy Warning + Config -->
     <div v-if="form.aiProvider === 'openai'" class="ai-card ai-privacy-card fade-in">
       <div class="ai-privacy-header">
-        <v-icon size="22" color="#f59e0b">mdi-shield-alert-outline</v-icon>
+        <span class="mdi mdi-shield-alert-outline" style="font-size: 22px; color: #f59e0b;"></span>
         <h3 class="ai-card-title mono">{{ t('profile.ai.openaiConfig') }}</h3>
       </div>
       <div class="ai-privacy-content">
         <p>{{ t('profile.ai.commercialWarning') }}</p>
         <ul class="ai-privacy-list">
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ t('profile.ai.privacyItem1') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#f59e0b">mdi-alert-outline</v-icon>{{ t('profile.ai.privacyItem2') }}</li>
-          <li><v-icon size="14" class="mr-1" color="#34d399">mdi-check-circle-outline</v-icon>{{ t('profile.ai.privacyItem3') }}</li>
+          <li><span class="mdi mdi-alert-outline" style="font-size: 14px; margin-right: 4px; color: #f59e0b;"></span>{{ t('profile.ai.privacyItem1') }}</li>
+          <li><span class="mdi mdi-alert-outline" style="font-size: 14px; margin-right: 4px; color: #f59e0b;"></span>{{ t('profile.ai.privacyItem2') }}</li>
+          <li><span class="mdi mdi-check-circle-outline" style="font-size: 14px; margin-right: 4px; color: #34d399;"></span>{{ t('profile.ai.privacyItem3') }}</li>
         </ul>
         <p class="ai-privacy-footer">{{ t('profile.ai.privacyFooter') }}</p>
       </div>
@@ -154,57 +151,54 @@
         <div class="ai-field">
           <label class="ai-label mono">{{ t('profile.ai.apiKey') }}</label>
           <div class="ai-field-row">
-            <v-text-field
+            <InputText
               v-model="form.openaiApiKey"
-              density="compact"
-              hide-details
               :type="showOpenaiKey ? 'text' : 'password'"
               placeholder="sk-proj-..."
+              style="flex: 1;"
             />
             <button class="ai-test-btn" @click="showOpenaiKey = !showOpenaiKey">
-              <v-icon size="14">{{ showOpenaiKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+              <span :class="showOpenaiKey ? 'mdi mdi-eye-off-outline' : 'mdi mdi-eye-outline'" style="font-size: 14px;"></span>
             </button>
             <button class="ai-test-btn" @click="testOpenai" :disabled="testingOpenai">
-              <v-icon size="14" class="mr-1">mdi-connection</v-icon>
+              <span class="mdi mdi-connection" style="font-size: 14px; margin-right: 4px;"></span>
               {{ testingOpenai ? t('profile.ai.testing') : t('profile.ai.test') }}
             </button>
           </div>
           <p v-if="openaiHasKey" class="ai-field-hint ai-field-hint--ok">
-            <v-icon size="12" class="mr-1" color="#34d399">mdi-key</v-icon>
+            <i class="pi pi-key" style="font-size: 12px; margin-right: 4px; color: #34d399;"></i>
             {{ t('profile.ai.keyConfigured') }}
           </p>
           <p class="ai-field-hint">
             <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" class="ai-link">
-              <v-icon size="12" class="mr-1">mdi-open-in-new</v-icon>
+              <span class="mdi mdi-open-in-new" style="font-size: 12px; margin-right: 4px;"></span>
               {{ t('profile.ai.getOpenaiKey') }}
             </a>
           </p>
           <div v-if="openaiTestStatus" :class="['ai-status-msg', openaiTestStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-            <v-icon size="14" class="mr-1">{{ openaiTestStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+            <span :class="openaiTestStatus.ok ? 'mdi mdi-check-circle-outline' : 'mdi mdi-alert-circle-outline'" style="font-size: 14px; margin-right: 4px;"></span>
             {{ openaiTestStatus.message }}
           </div>
         </div>
 
         <div class="ai-field">
           <label class="ai-label mono">{{ t('profile.ai.model') }}</label>
-          <v-select
+          <Select
             v-model="form.openaiModel"
-            :items="openaiModels"
-            item-title="label"
-            item-value="value"
-            density="compact"
-            hide-details
+            :options="openaiModels"
+            optionLabel="label"
+            optionValue="value"
           />
         </div>
       </div>
 
       <div class="ai-actions">
         <button class="me-btn-primary" @click="saveApiKeys" :disabled="savingKeys">
-          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
           {{ savingKeys ? t('profile.ai.saving') : t('profile.ai.save') }}
         </button>
         <div v-if="saveStatus" :class="['ai-status-msg', saveStatus.ok ? 'ai-status-msg--ok' : 'ai-status-msg--error']">
-          <v-icon size="14" class="mr-1">{{ saveStatus.ok ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}</v-icon>
+          <span :class="saveStatus.ok ? 'mdi mdi-check-circle-outline' : 'mdi mdi-alert-circle-outline'" style="font-size: 14px; margin-right: 4px;"></span>
           {{ saveStatus.message }}
         </div>
       </div>
@@ -216,6 +210,8 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
 
 const { t } = useI18n();
 

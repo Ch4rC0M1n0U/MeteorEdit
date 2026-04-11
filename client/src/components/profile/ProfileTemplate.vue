@@ -2,7 +2,7 @@
   <div class="profile-template">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-file-document-edit-outline</v-icon>
+        <span class="mdi mdi-file-document-edit-outline" style="font-size: 20px; margin-right: 8px;"></span>
         Template rapport
       </h2>
     </div>
@@ -10,29 +10,28 @@
     <!-- Presets -->
     <div class="tpl-card glass-card fade-in fade-in-delay-1">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-bookmark-multiple-outline</v-icon>
+        <span class="mdi mdi-bookmark-multiple-outline" style="font-size: 16px; margin-right: 4px;"></span>
         Presets
       </h3>
       <div class="tpl-row tpl-row-preset">
         <div class="tpl-field" style="flex: 1;">
           <label class="tpl-label mono">Preset actif</label>
-          <v-select
+          <Select
             v-model="activePresetName"
-            :items="presetNames"
-            density="compact"
-            hide-details
+            :options="presetNames"
             placeholder="Aucun preset"
-            clearable
+            showClear
+            class="w-full"
             @update:model-value="loadPreset"
           />
         </div>
         <div class="tpl-preset-actions">
           <button class="me-btn-ghost me-btn-sm" @click="showSavePresetDialog = true">
-            <v-icon size="14" class="mr-1">mdi-content-save-plus-outline</v-icon>
+            <span class="mdi mdi-content-save-plus-outline" style="font-size: 14px; margin-right: 4px;"></span>
             Sauver comme preset
           </button>
           <button class="me-btn-ghost me-btn-sm me-btn-danger" @click="deletePreset" :disabled="!activePresetName">
-            <v-icon size="14" class="mr-1">mdi-delete-outline</v-icon>
+            <i class="pi pi-trash" style="font-size: 14px; margin-right: 4px;"></i>
             Supprimer
           </button>
         </div>
@@ -42,27 +41,26 @@
     <!-- Global settings -->
     <div class="tpl-card glass-card fade-in fade-in-delay-1">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-cog-outline</v-icon>
+        <i class="pi pi-cog" style="font-size: 16px; margin-right: 4px;"></i>
         Parametres generaux
       </h3>
       <div class="tpl-row tpl-row-3col">
         <div class="tpl-field">
           <label class="tpl-label mono">Police</label>
-          <v-select
+          <Select
             v-model="tpl.fontFamily"
-            :items="fontOptions"
-            density="compact"
-            hide-details
+            :options="fontOptions"
+            class="w-full"
           />
         </div>
         <div class="tpl-field">
           <label class="tpl-label mono">Marge horizontale (mm)</label>
-          <v-slider v-model="tpl.page.marginH" :min="10" :max="35" :step="1" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.page.marginH" :min="10" :max="35" :step="1" class="w-full" />
           <span class="tpl-value mono">{{ tpl.page.marginH }}mm</span>
         </div>
         <div class="tpl-field">
           <label class="tpl-label mono">Marge verticale (mm)</label>
-          <v-slider v-model="tpl.page.marginV" :min="10" :max="30" :step="1" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.page.marginV" :min="10" :max="30" :step="1" class="w-full" />
           <span class="tpl-value mono">{{ tpl.page.marginV }}mm</span>
         </div>
       </div>
@@ -71,7 +69,7 @@
     <!-- Header config -->
     <div class="tpl-card glass-card fade-in fade-in-delay-1">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-page-layout-header</v-icon>
+        <span class="mdi mdi-page-layout-header" style="font-size: 16px; margin-right: 4px;"></span>
         En-tete
       </h3>
       <div class="tpl-row">
@@ -88,11 +86,11 @@
             <div v-else class="tpl-logo-empty">Aucun logo</div>
             <div class="tpl-logo-actions">
               <label class="tpl-upload-btn">
-                <v-icon size="14">mdi-upload</v-icon>
+                <i class="pi pi-upload" style="font-size: 14px;"></i>
                 <input type="file" accept="image/*" hidden @change="e => uploadLogo('headerLeft', e)" />
               </label>
               <button v-if="tpl.header.logoLeft" class="tpl-remove-btn" @click="removeLogo('headerLeft')">
-                <v-icon size="14">mdi-close</v-icon>
+                <i class="pi pi-times" style="font-size: 14px;"></i>
               </button>
             </div>
           </div>
@@ -104,11 +102,11 @@
             <div v-else class="tpl-logo-empty">Aucun logo</div>
             <div class="tpl-logo-actions">
               <label class="tpl-upload-btn">
-                <v-icon size="14">mdi-upload</v-icon>
+                <i class="pi pi-upload" style="font-size: 14px;"></i>
                 <input type="file" accept="image/*" hidden @change="e => uploadLogo('headerRight', e)" />
               </label>
               <button v-if="tpl.header.logoRight" class="tpl-remove-btn" @click="removeLogo('headerRight')">
-                <v-icon size="14">mdi-close</v-icon>
+                <i class="pi pi-times" style="font-size: 14px;"></i>
               </button>
             </div>
           </div>
@@ -128,7 +126,7 @@
     <!-- Cover page config -->
     <div class="tpl-card glass-card fade-in fade-in-delay-2">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-book-open-page-variant-outline</v-icon>
+        <span class="mdi mdi-book-open-page-variant-outline" style="font-size: 16px; margin-right: 4px;"></span>
         Premiere page
       </h3>
       <div class="tpl-row">
@@ -140,7 +138,7 @@
       <div class="tpl-row tpl-row-2col">
         <div class="tpl-field">
           <label class="tpl-label mono">Taille titre (pt)</label>
-          <v-slider v-model="tpl.cover.titleSize" :min="20" :max="48" :step="2" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.cover.titleSize" :min="20" :max="48" :step="2" class="w-full" />
           <span class="tpl-value mono">{{ tpl.cover.titleSize }}pt</span>
         </div>
         <div class="tpl-field">
@@ -154,7 +152,7 @@
       <div class="tpl-row tpl-row-2col">
         <div class="tpl-field">
           <label class="tpl-label mono">Taille sous-titre (pt)</label>
-          <v-slider v-model="tpl.cover.subtitleSize" :min="12" :max="30" :step="1" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.cover.subtitleSize" :min="12" :max="30" :step="1" class="w-full" />
           <span class="tpl-value mono">{{ tpl.cover.subtitleSize }}pt</span>
         </div>
         <div class="tpl-field">
@@ -167,7 +165,7 @@
     <!-- Section styles -->
     <div class="tpl-card glass-card fade-in fade-in-delay-3">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-format-header-1</v-icon>
+        <span class="mdi mdi-format-header-1" style="font-size: 16px; margin-right: 4px;"></span>
         Styles de sections
       </h3>
 
@@ -176,7 +174,7 @@
         <div class="tpl-row tpl-row-3col">
           <div class="tpl-field">
             <label class="tpl-label mono">Taille (pt)</label>
-            <v-slider v-model="tpl.headings[h.key].fontSize" :min="h.minSize" :max="h.maxSize" :step="1" hide-details thumb-label color="primary" />
+            <Slider v-model="tpl.headings[h.key].fontSize" :min="h.minSize" :max="h.maxSize" :step="1" class="w-full" />
             <span class="tpl-value mono">{{ tpl.headings[h.key].fontSize }}pt</span>
           </div>
           <div class="tpl-field">
@@ -192,30 +190,32 @@
               <input type="color" v-model="tpl.headings[h.key].bgColor" class="tpl-color-input" />
               <span class="tpl-color-hex mono">{{ tpl.headings[h.key].bgColor }}</span>
               <button class="tpl-remove-btn" title="Sans fond" @click="tpl.headings[h.key].bgColor = ''">
-                <v-icon size="12">mdi-close</v-icon>
+                <i class="pi pi-times" style="font-size: 12px;"></i>
               </button>
             </div>
           </div>
         </div>
         <div class="tpl-row tpl-row-toggles">
           <div class="tpl-toggle-item">
-            <v-switch v-model="tpl.headings[h.key].bold" hide-details density="compact" color="primary" label="Gras" />
+            <label class="tpl-toggle-label mono">Gras</label>
+            <ToggleSwitch v-model="tpl.headings[h.key].bold" />
           </div>
           <div class="tpl-toggle-item">
-            <v-switch v-model="tpl.headings[h.key].italic" hide-details density="compact" color="primary" label="Italique" />
+            <label class="tpl-toggle-label mono">Italique</label>
+            <ToggleSwitch v-model="tpl.headings[h.key].italic" />
           </div>
           <div class="tpl-toggle-item">
-            <v-switch v-model="tpl.headings[h.key].uppercase" hide-details density="compact" color="primary" label="Majuscules" />
+            <label class="tpl-toggle-label mono">Majuscules</label>
+            <ToggleSwitch v-model="tpl.headings[h.key].uppercase" />
           </div>
         </div>
         <div class="tpl-row tpl-row-3col">
           <div class="tpl-field">
             <label class="tpl-label mono">Bordure</label>
-            <v-select
+            <Select
               v-model="tpl.headings[h.key].borderStyle"
-              :items="borderStyleOptions"
-              density="compact"
-              hide-details
+              :options="borderStyleOptions"
+              class="w-full"
             />
           </div>
           <div class="tpl-field">
@@ -227,7 +227,7 @@
           </div>
           <div class="tpl-field">
             <label class="tpl-label mono">Epaisseur (pt)</label>
-            <v-slider v-model="tpl.headings[h.key].borderWidth" :min="0.5" :max="4" :step="0.5" hide-details thumb-label color="primary" :disabled="tpl.headings[h.key].borderStyle === 'none'" />
+            <Slider v-model="tpl.headings[h.key].borderWidth" :min="0.5" :max="4" :step="0.5" class="w-full" :disabled="tpl.headings[h.key].borderStyle === 'none'" />
             <span class="tpl-value mono">{{ tpl.headings[h.key].borderWidth }}pt</span>
           </div>
         </div>
@@ -241,13 +241,13 @@
     <!-- Body & disclaimer -->
     <div class="tpl-card glass-card fade-in fade-in-delay-4">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-text</v-icon>
+        <span class="mdi mdi-text" style="font-size: 16px; margin-right: 4px;"></span>
         Corps de texte
       </h3>
       <div class="tpl-row tpl-row-3col">
         <div class="tpl-field">
           <label class="tpl-label mono">Taille police (pt)</label>
-          <v-slider v-model="tpl.body.fontSize" :min="8" :max="14" :step="0.5" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.body.fontSize" :min="8" :max="14" :step="0.5" class="w-full" />
           <span class="tpl-value mono">{{ tpl.body.fontSize }}pt</span>
         </div>
         <div class="tpl-field">
@@ -263,23 +263,23 @@
     <!-- Spacing config -->
     <div class="tpl-card glass-card fade-in fade-in-delay-4">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-format-line-spacing</v-icon>
+        <span class="mdi mdi-format-line-spacing" style="font-size: 16px; margin-right: 4px;"></span>
         Espacement
       </h3>
       <div class="tpl-row tpl-row-3col">
         <div class="tpl-field">
           <label class="tpl-label mono">Interligne</label>
-          <v-slider v-model="tpl.spacing.lineHeight" :min="1" :max="2.5" :step="0.1" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.spacing.lineHeight" :min="1" :max="2.5" :step="0.1" class="w-full" />
           <span class="tpl-value mono">{{ tpl.spacing.lineHeight }}x</span>
         </div>
         <div class="tpl-field">
           <label class="tpl-label mono">Espacement paragraphes (mm)</label>
-          <v-slider v-model="tpl.spacing.paragraphSpacing" :min="1" :max="10" :step="0.5" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.spacing.paragraphSpacing" :min="1" :max="10" :step="0.5" class="w-full" />
           <span class="tpl-value mono">{{ tpl.spacing.paragraphSpacing }}mm</span>
         </div>
         <div class="tpl-field">
           <label class="tpl-label mono">Espacement sections (mm)</label>
-          <v-slider v-model="tpl.spacing.sectionSpacing" :min="2" :max="15" :step="1" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.spacing.sectionSpacing" :min="2" :max="15" :step="1" class="w-full" />
           <span class="tpl-value mono">{{ tpl.spacing.sectionSpacing }}mm</span>
         </div>
       </div>
@@ -288,7 +288,7 @@
     <!-- Table styling -->
     <div class="tpl-card glass-card fade-in fade-in-delay-4">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-table</v-icon>
+        <span class="mdi mdi-table" style="font-size: 16px; margin-right: 4px;"></span>
         Style des tableaux
       </h3>
       <div class="tpl-row tpl-row-3col">
@@ -317,7 +317,7 @@
       <div class="tpl-row tpl-row-2col">
         <div class="tpl-field">
           <label class="tpl-label mono">Epaisseur bordure (pt)</label>
-          <v-slider v-model="tpl.table.borderWidth" :min="0.25" :max="2" :step="0.25" hide-details thumb-label color="primary" />
+          <Slider v-model="tpl.table.borderWidth" :min="0.25" :max="2" :step="0.25" class="w-full" />
           <span class="tpl-value mono">{{ tpl.table.borderWidth }}pt</span>
         </div>
         <div class="tpl-field">
@@ -326,7 +326,7 @@
             <input type="color" v-model="tpl.table.alternateRowColor" class="tpl-color-input" />
             <span class="tpl-color-hex mono">{{ tpl.table.alternateRowColor }}</span>
             <button class="tpl-remove-btn" title="Sans alternance" @click="tpl.table.alternateRowColor = ''">
-              <v-icon size="12">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 12px;"></i>
             </button>
           </div>
         </div>
@@ -355,17 +355,17 @@
     <!-- Observations style -->
     <div class="tpl-card glass-card fade-in fade-in-delay-5">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-eye-outline</v-icon>
+        <i class="pi pi-eye" style="font-size: 16px; margin-right: 4px;"></i>
         Style des observations
       </h3>
       <div class="tpl-row tpl-row-3col">
         <div class="tpl-field">
           <label class="tpl-label mono">Gras</label>
-          <v-switch v-model="tpl.observations!.bold" hide-details density="compact" color="primary" />
+          <ToggleSwitch v-model="tpl.observations!.bold" />
         </div>
         <div class="tpl-field">
           <label class="tpl-label mono">Italique</label>
-          <v-switch v-model="tpl.observations!.italic" hide-details density="compact" color="primary" />
+          <ToggleSwitch v-model="tpl.observations!.italic" />
         </div>
       </div>
       <div class="tpl-row tpl-row-3col">
@@ -375,7 +375,7 @@
             <input type="color" v-model="tpl.observations!.bgColor" class="tpl-color-input" />
             <span class="tpl-color-hex mono">{{ tpl.observations?.bgColor }}</span>
             <button class="tpl-remove-btn" title="Sans fond" @click="tpl.observations!.bgColor = ''">
-              <v-icon size="12">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 12px;"></i>
             </button>
           </div>
         </div>
@@ -385,7 +385,7 @@
             <input type="color" v-model="tpl.observations!.borderColor" class="tpl-color-input" />
             <span class="tpl-color-hex mono">{{ tpl.observations?.borderColor }}</span>
             <button class="tpl-remove-btn" title="Sans bordure" @click="tpl.observations!.borderColor = ''">
-              <v-icon size="12">mdi-close</v-icon>
+              <i class="pi pi-times" style="font-size: 12px;"></i>
             </button>
           </div>
         </div>
@@ -409,17 +409,16 @@
     <!-- Footer config -->
     <div class="tpl-card glass-card fade-in fade-in-delay-5">
       <h3 class="tpl-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-page-layout-footer</v-icon>
+        <span class="mdi mdi-page-layout-footer" style="font-size: 16px; margin-right: 4px;"></span>
         Pied de page
       </h3>
       <div class="tpl-row tpl-row-2col">
         <div class="tpl-field">
           <label class="tpl-label mono">Format pagination</label>
-          <v-select
+          <Select
             v-model="tpl.footer.format"
-            :items="paginationOptions"
-            density="compact"
-            hide-details
+            :options="paginationOptions"
+            class="w-full"
           />
         </div>
         <div class="tpl-field">
@@ -436,51 +435,49 @@
     <div class="tpl-actions fade-in">
       <div class="tpl-actions-left">
         <label class="me-btn-ghost">
-          <v-icon size="14" class="mr-1">mdi-import</v-icon>
+          <span class="mdi mdi-import" style="font-size: 14px; margin-right: 4px;"></span>
           Importer
           <input type="file" accept=".json" hidden @change="importTemplate" />
         </label>
         <button class="me-btn-ghost" @click="exportTemplate">
-          <v-icon size="14" class="mr-1">mdi-export</v-icon>
+          <span class="mdi mdi-export" style="font-size: 14px; margin-right: 4px;"></span>
           Exporter
         </button>
       </div>
       <div class="tpl-actions-right">
         <button class="me-btn-ghost" @click="resetToDefaults">
-          <v-icon size="14" class="mr-1">mdi-refresh</v-icon>
+          <i class="pi pi-refresh" style="font-size: 14px; margin-right: 4px;"></i>
           Reinitialiser
         </button>
         <button class="me-btn-primary" @click="save" :disabled="saving">
-          <v-icon size="14" class="mr-1">mdi-content-save-outline</v-icon>
+          <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
           Sauvegarder
         </button>
       </div>
     </div>
 
     <!-- Save preset dialog -->
-    <v-dialog v-model="showSavePresetDialog" max-width="400">
-      <v-card class="glass-card">
-        <v-card-title class="mono">Sauvegarder comme preset</v-card-title>
-        <v-card-text>
-          <input v-model="newPresetName" class="tpl-input mono" style="width: 100%;" placeholder="Nom du preset..." @keyup.enter="savePreset" />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
+    <Dialog v-model:visible="showSavePresetDialog" modal :style="{ width: '400px' }" header="Sauvegarder comme preset">
+      <div class="glass-card" style="padding: 20px;">
+        <input v-model="newPresetName" class="tpl-input mono" style="width: 100%;" placeholder="Nom du preset..." @keyup.enter="savePreset" />
+      </div>
+      <template #footer>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
           <button class="me-btn-ghost" @click="showSavePresetDialog = false">Annuler</button>
           <button class="me-btn-primary" @click="savePreset" :disabled="!newPresetName.trim()">Sauvegarder</button>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-snackbar v-model="snackbar" :timeout="2500" color="success" location="bottom right">
-      {{ snackbarText }}
-    </v-snackbar>
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
 import api, { SERVER_URL } from '../../services/api';
+import Dialog from 'primevue/dialog';
+import Select from 'primevue/select';
+import Slider from 'primevue/slider';
+import ToggleSwitch from 'primevue/toggleswitch';
 import {
   type PdfTemplateConfig,
   defaultPdfTemplate,
@@ -801,7 +798,9 @@ onMounted(async () => {
 
 /* Toggle row */
 .tpl-row-toggles { display: flex; gap: 16px; margin-top: 4px; flex-wrap: wrap; }
-.tpl-toggle-item { min-width: 100px; }
+.tpl-toggle-item { min-width: 100px; display: flex; align-items: center; gap: 8px; }
+.tpl-toggle-label { font-size: 12px; color: var(--me-text-secondary); }
+.w-full { width: 100%; }
 
 /* Actions */
 .tpl-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }

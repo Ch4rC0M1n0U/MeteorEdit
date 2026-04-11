@@ -2,7 +2,7 @@
   <div class="profile-security-advanced">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-shield-check-outline</v-icon>
+        <span class="mdi mdi-shield-check-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('securityAdvanced.title') }}
       </h2>
     </div>
@@ -10,7 +10,7 @@
     <!-- Security Score -->
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <h3 class="branding-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-speedometer</v-icon>
+        <span class="mdi mdi-speedometer" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('securityAdvanced.securityScore') }}
       </h3>
       <div class="score-container">
@@ -25,9 +25,7 @@
         </div>
         <div class="score-details">
           <div v-for="item in scoreItems" :key="item.label" class="score-item">
-            <v-icon size="16" :color="item.ok ? scoreColorOk : 'grey'">
-              {{ item.ok ? 'mdi-check-circle' : 'mdi-circle-outline' }}
-            </v-icon>
+            <span :class="item.ok ? 'mdi mdi-check-circle' : 'mdi mdi-circle-outline'" :style="{ fontSize: '16px', color: item.ok ? scoreColorOk : 'grey' }"></span>
             <span :class="['score-item-label', { 'score-item-label--ok': item.ok }]">{{ item.label }}</span>
             <span class="score-item-points mono">+{{ item.points }}%</span>
           </div>
@@ -38,11 +36,11 @@
     <!-- Login History -->
     <div class="branding-card glass-card fade-in fade-in-delay-2">
       <h3 class="branding-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-history</v-icon>
+        <span class="mdi mdi-history" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('securityAdvanced.loginHistory') }}
       </h3>
       <div v-if="historyLoading" class="section-loading">
-        <v-progress-circular indeterminate size="24" color="primary" />
+        <ProgressSpinner style="width: 24px; height: 24px;" strokeWidth="2" />
         <span class="mono">{{ $t('common.loading') }}</span>
       </div>
       <div v-else-if="loginHistory.length === 0" class="section-empty mono">
@@ -51,7 +49,7 @@
       <div v-else class="history-list">
         <div v-for="(entry, i) in loginHistory" :key="i" class="history-item">
           <div class="history-item-icon">
-            <v-icon size="18" color="var(--me-text-muted)">{{ getBrowserIcon(entry.browser) }}</v-icon>
+            <span :class="getBrowserIcon(entry.browser)" style="font-size: 18px; color: var(--me-text-muted);"></span>
           </div>
           <div class="history-item-info">
             <span class="history-item-browser">{{ entry.browser }} / {{ entry.os }}</span>
@@ -65,11 +63,11 @@
     <!-- Active Sessions -->
     <div class="branding-card glass-card fade-in fade-in-delay-3">
       <h3 class="branding-card-title mono">
-        <v-icon size="16" class="mr-1">mdi-devices</v-icon>
+        <span class="mdi mdi-devices" style="font-size: 16px; margin-right: 4px;"></span>
         {{ $t('securityAdvanced.activeSessions') }}
       </h3>
       <div v-if="sessionsLoading" class="section-loading">
-        <v-progress-circular indeterminate size="24" color="primary" />
+        <ProgressSpinner style="width: 24px; height: 24px;" strokeWidth="2" />
         <span class="mono">{{ $t('common.loading') }}</span>
       </div>
       <div v-else-if="sessions.length === 0" class="section-empty mono">
@@ -78,19 +76,16 @@
       <div v-else class="sessions-list">
         <div v-for="(session, i) in sessions" :key="i" class="session-card">
           <div class="session-card-header">
-            <v-icon size="20" color="var(--me-text-muted)">{{ getDeviceIcon(session.os) }}</v-icon>
+            <span :class="getDeviceIcon(session.os)" style="font-size: 20px; color: var(--me-text-muted);"></span>
             <div class="session-card-info">
               <div class="session-card-browser">
                 {{ session.browser }} / {{ session.os }}
-                <v-chip
+                <Tag
                   v-if="session.isCurrent"
-                  size="x-small"
-                  color="success"
-                  variant="tonal"
-                  class="ml-2"
-                >
-                  {{ $t('securityAdvanced.currentSession') }}
-                </v-chip>
+                  :value="$t('securityAdvanced.currentSession')"
+                  severity="success"
+                  style="margin-left: 8px;"
+                />
               </div>
               <span class="session-card-ip mono">{{ session.ip }}</span>
             </div>
@@ -108,6 +103,8 @@ import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import { useEncryptionStore } from '../../stores/encryption';
+import ProgressSpinner from 'primevue/progressspinner';
+import Tag from 'primevue/tag';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -187,23 +184,23 @@ function parseOS(ua: string): string {
 
 function getBrowserIcon(browser: string): string {
   switch (browser) {
-    case 'Chrome': return 'mdi-google-chrome';
-    case 'Firefox': return 'mdi-firefox';
-    case 'Safari': return 'mdi-apple-safari';
-    case 'Edge': return 'mdi-microsoft-edge';
-    case 'Opera': return 'mdi-opera';
-    default: return 'mdi-web';
+    case 'Chrome': return 'mdi mdi-google-chrome';
+    case 'Firefox': return 'mdi mdi-firefox';
+    case 'Safari': return 'mdi mdi-apple-safari';
+    case 'Edge': return 'mdi mdi-microsoft-edge';
+    case 'Opera': return 'mdi mdi-opera';
+    default: return 'mdi mdi-web';
   }
 }
 
 function getDeviceIcon(os: string): string {
   switch (os) {
-    case 'Windows': return 'mdi-microsoft-windows';
-    case 'macOS': return 'mdi-apple';
-    case 'Linux': return 'mdi-linux';
-    case 'Android': return 'mdi-android';
-    case 'iOS': return 'mdi-apple';
-    default: return 'mdi-monitor';
+    case 'Windows': return 'mdi mdi-microsoft-windows';
+    case 'macOS': return 'mdi mdi-apple';
+    case 'Linux': return 'mdi mdi-linux';
+    case 'Android': return 'mdi mdi-android';
+    case 'iOS': return 'mdi mdi-apple';
+    default: return 'mdi mdi-monitor';
   }
 }
 

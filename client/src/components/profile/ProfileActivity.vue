@@ -2,7 +2,7 @@
   <div class="profile-activity">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-history</v-icon>
+        <span class="mdi mdi-history" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('activity.title') }}
       </h2>
     </div>
@@ -10,22 +10,17 @@
     <!-- Filters + Export -->
     <div class="branding-card glass-card fade-in fade-in-delay-1">
       <div class="activity-toolbar">
-        <v-select
+        <Select
           v-model="selectedActions"
-          :items="actionGroups"
-          item-title="label"
-          item-value="value"
-          :label="$t('activity.filterByType')"
-          density="compact"
-          hide-details
-          multiple
-          chips
-          closable-chips
-          clearable
+          :options="actionGroups"
+          optionLabel="label"
+          optionValue="value"
+          :placeholder="$t('activity.filterByType')"
           class="activity-filter"
+          multiple
         />
         <button class="me-btn-ghost" @click="exportCsv" :disabled="exporting">
-          <v-icon size="14" class="mr-1">mdi-download-outline</v-icon>
+          <i class="pi pi-download" style="font-size: 14px; margin-right: 4px;"></i>
           {{ exporting ? $t('activity.exporting') : $t('activity.exportCsv') }}
         </button>
       </div>
@@ -34,20 +29,18 @@
     <!-- Activity list -->
     <div class="branding-card glass-card fade-in fade-in-delay-2">
       <div v-if="loading" class="activity-loading">
-        <v-progress-circular indeterminate size="24" width="2" />
+        <ProgressSpinner style="width: 24px; height: 24px;" strokeWidth="2" />
       </div>
 
       <div v-else-if="activities.length === 0" class="activity-empty">
-        <v-icon size="40" class="mb-2" style="opacity: 0.3">mdi-clock-outline</v-icon>
+        <span class="mdi mdi-clock-outline" style="font-size: 40px; opacity: 0.3; margin-bottom: 8px;"></span>
         <p>{{ $t('activity.noActivity') }}</p>
       </div>
 
       <div v-else class="activity-list">
         <div v-for="item in activities" :key="item._id" class="activity-item">
           <div class="activity-icon-wrapper">
-            <v-icon size="18" :color="getActionColor(item.action)">
-              {{ getActionIcon(item.action) }}
-            </v-icon>
+            <span :class="getActionIcon(item.action)" :style="{ fontSize: '18px', color: getActionColor(item.action) }"></span>
           </div>
           <div class="activity-content">
             <div class="activity-main">
@@ -67,13 +60,13 @@
       <!-- Pagination -->
       <div v-if="activities.length > 0" class="activity-pagination">
         <button class="me-btn-ghost" :disabled="page <= 1" @click="page--; fetchActivities()">
-          <v-icon size="14">mdi-chevron-left</v-icon>
+          <i class="pi pi-chevron-left" style="font-size: 14px;"></i>
           {{ $t('activity.previous') }}
         </button>
         <span class="activity-page mono">{{ $t('activity.page', { page }) }}</span>
         <button class="me-btn-ghost" :disabled="activities.length < limit" @click="page++; fetchActivities()">
           {{ $t('activity.next') }}
-          <v-icon size="14">mdi-chevron-right</v-icon>
+          <i class="pi pi-chevron-right" style="font-size: 14px;"></i>
         </button>
       </div>
     </div>
@@ -84,6 +77,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '../../services/api'
+import Select from 'primevue/select'
+import ProgressSpinner from 'primevue/progressspinner'
 
 const { t } = useI18n()
 

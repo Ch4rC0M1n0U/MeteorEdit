@@ -3,7 +3,7 @@
     <aside class="admin-sidebar">
       <div class="admin-sidebar-header">
         <h2 class="admin-sidebar-title mono">
-          <v-icon size="18" class="mr-2">mdi-account-cog-outline</v-icon>
+          <span class="mdi mdi-account-cog-outline" style="font-size: 18px; margin-right: 8px;"></span>
           {{ t('profile.myAccount') }}
         </h2>
       </div>
@@ -15,7 +15,7 @@
             :class="['admin-nav-item', { 'admin-nav-item--active': activeSection === item.id }]"
             @click="activeSection = item.id ?? ''"
           >
-            <v-icon size="18">{{ item.icon }}</v-icon>
+            <span :class="item.icon" style="font-size: 18px;"></span>
             <span>{{ item.label }}</span>
           </button>
         </div>
@@ -72,25 +72,25 @@ interface NavItem {
 
 const navItems = computed<NavItem[]>(() => [
   { type: 'group', label: t('profile.myProfile') },
-  { id: 'info', label: t('profile.myProfile'), icon: 'mdi-account-outline' },
-  { id: 'template', label: t('profile.templateReport'), icon: 'mdi-file-document-edit-outline' },
+  { id: 'info', label: t('profile.myProfile'), icon: 'mdi mdi-account-outline' },
+  { id: 'template', label: t('profile.templateReport'), icon: 'mdi mdi-file-document-edit-outline' },
 
   { type: 'group', label: t('profile.security') },
-  { id: 'security', label: t('profile.passwordAnd2FA'), icon: 'mdi-shield-lock-outline' },
-  { id: 'security-advanced', label: t('profile.sessionsAndScore'), icon: 'mdi-shield-check-outline' },
-  { id: 'encryption', label: t('profile.encryption.title'), icon: 'mdi-shield-key-outline' },
+  { id: 'security', label: t('profile.passwordAnd2FA'), icon: 'mdi mdi-shield-lock-outline' },
+  { id: 'security-advanced', label: t('profile.sessionsAndScore'), icon: 'mdi mdi-shield-check-outline' },
+  { id: 'encryption', label: t('profile.encryption.title'), icon: 'mdi mdi-shield-key-outline' },
 
   { type: 'group', label: t('profile.settings') },
-  { id: 'preferences', label: t('profile.preferences'), icon: 'mdi-cog-outline' },
-  { id: 'notifications', label: t('profile.notifications'), icon: 'mdi-bell-cog-outline' },
-  { id: 'shortcuts', label: t('profile.keyboardShortcuts'), icon: 'mdi-keyboard-outline' },
-  ...(aiIndividualMode.value ? [{ id: 'ai', label: t('profile.ai.navLabel'), icon: 'mdi-robot-outline' }] : []),
-  { id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi-key-variant' },
-  { id: 'telegram', label: t('profile.telegram'), icon: 'mdi-send' },
+  { id: 'preferences', label: t('profile.preferences'), icon: 'mdi mdi-cog-outline' },
+  { id: 'notifications', label: t('profile.notifications'), icon: 'mdi mdi-bell-cog-outline' },
+  { id: 'shortcuts', label: t('profile.keyboardShortcuts'), icon: 'mdi mdi-keyboard-outline' },
+  ...(aiIndividualMode.value ? [{ id: 'ai', label: t('profile.ai.navLabel'), icon: 'mdi mdi-robot-outline' }] : []),
+  { id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi mdi-key-variant' },
+  { id: 'telegram', label: t('profile.telegram'), icon: 'mdi mdi-send' },
 
   { type: 'group', label: t('profile.data') },
-  { id: 'activity', label: t('profile.activityLog'), icon: 'mdi-history' },
-  { id: 'data', label: t('profile.myData'), icon: 'mdi-database-outline' },
+  { id: 'activity', label: t('profile.activityLog'), icon: 'mdi mdi-history' },
+  { id: 'data', label: t('profile.myData'), icon: 'mdi mdi-database-outline' },
 ]);
 
 onMounted(async () => {

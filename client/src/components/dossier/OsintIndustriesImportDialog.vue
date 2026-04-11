@@ -1,11 +1,12 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="720" persistent>
+  <Dialog :visible="modelValue" @update:visible="$emit('update:modelValue', $event)" modal :style="{ width: '720px' }" :closable="false">
+    <template #container>
     <div class="oi-dialog glass-card">
       <div class="oi-header">
-        <v-icon size="20" class="oi-header-icon">mdi-shield-search</v-icon>
+        <span class="mdi mdi-shield-search oi-header-icon" style="font-size: 20px;"></span>
         <span>{{ $t('osintIndustries.title') }}</span>
         <button class="oi-close" @click="close">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
@@ -20,18 +21,18 @@
         <!-- Tab switcher: File / Paste -->
         <div class="oi-tabs">
           <button :class="['oi-tab', { 'oi-tab--active': inputMode === 'file' }]" @click="inputMode = 'file'">
-            <v-icon size="14">mdi-file-upload-outline</v-icon>
+            <span class="mdi mdi-file-upload-outline" style="font-size: 14px;"></span>
             {{ $t('osintIndustries.fileUpload') }}
           </button>
           <button :class="['oi-tab', { 'oi-tab--active': inputMode === 'paste' }]" @click="inputMode = 'paste'">
-            <v-icon size="14">mdi-content-paste</v-icon>
+            <span class="mdi mdi-content-paste" style="font-size: 14px;"></span>
             {{ $t('osintIndustries.pasteJson') }}
           </button>
         </div>
 
         <!-- File upload -->
         <div v-if="inputMode === 'file'" class="oi-drop-zone" @dragover.prevent @drop.prevent="onDrop" @click="triggerFileInput">
-          <v-icon size="32" color="var(--me-text-muted)">mdi-file-upload-outline</v-icon>
+          <span class="mdi mdi-file-upload-outline" style="font-size: 32px; color: var(--me-text-muted);"></span>
           <span class="oi-drop-label">{{ $t('osintIndustries.dropOrClick') }}</span>
           <span class="oi-drop-hint">.json</span>
         </div>
@@ -50,18 +51,18 @@
           </div>
           <div class="oi-paste-actions">
             <button class="oi-btn oi-btn--paste" @click="pasteFromClipboard">
-              <v-icon size="14">mdi-content-paste</v-icon>
+              <span class="mdi mdi-content-paste" style="font-size: 14px;"></span>
               {{ $t('osintIndustries.pasteClipboard') }}
             </button>
             <button class="oi-btn oi-btn--parse" :disabled="!rawJson.trim()" @click="parseJson">
-              <v-icon size="14">mdi-code-json</v-icon>
+              <span class="mdi mdi-code-json" style="font-size: 14px;"></span>
               {{ $t('osintIndustries.parse') }}
             </button>
           </div>
         </div>
 
         <div v-if="parseError" class="oi-error">
-          <v-icon size="14">mdi-alert-circle-outline</v-icon>
+          <span class="mdi mdi-alert-circle-outline" style="font-size: 14px;"></span>
           {{ parseError }}
         </div>
       </div>
@@ -69,18 +70,18 @@
       <!-- Step 2: Preview & Confirm -->
       <div v-else class="oi-body">
         <div class="oi-preview-header">
-          <v-icon size="18" color="var(--me-accent)">mdi-shield-search</v-icon>
+          <span class="mdi mdi-shield-search" style="font-size: 18px; color: var(--me-accent);"></span>
           <span class="oi-entity-name">{{ entityLabel }}</span>
-          <v-chip size="x-small" variant="tonal" color="primary">{{ platformEntries.length }} {{ $t('osintIndustries.platforms') }}</v-chip>
+          <Tag style="font-size: 10px;">{{ platformEntries.length }} {{ $t('osintIndustries.platforms') }}</Tag>
         </div>
 
         <!-- Query info -->
         <div v-if="parsed.query" class="oi-status-row">
           <span class="oi-badge oi-badge--seen">
-            <v-icon size="12">mdi-magnify</v-icon> {{ parsed.query }}
+            <span class="mdi mdi-magnify" style="font-size: 12px;"></span> {{ parsed.query }}
           </span>
           <span class="oi-badge oi-badge--registered">
-            <v-icon size="12">mdi-check-circle</v-icon> {{ platformEntries.length }} {{ $t('osintIndustries.platforms') }}
+            <span class="mdi mdi-check-circle" style="font-size: 12px;"></span> {{ platformEntries.length }} {{ $t('osintIndustries.platforms') }}
           </span>
         </div>
 
@@ -94,12 +95,10 @@
             @click="entry.selected = !entry.selected"
           >
             <div class="oi-entry-header">
-              <v-icon size="16" :style="{ color: getGroupColor(entry.name) }">{{ getGroupIcon(entry.name) }}</v-icon>
+              <span :class="'mdi ' + getGroupIcon(entry.name)" :style="{ fontSize: '16px', color: getGroupColor(entry.name) }"></span>
               <span class="oi-entry-name">{{ entry.name }}</span>
-              <v-chip size="x-small" variant="outlined">{{ entry.items.length }} {{ $t('osintIndustries.activities') }}</v-chip>
-              <v-icon size="16" :color="entry.selected ? 'var(--me-accent)' : 'var(--me-text-muted)'" class="oi-check">
-                {{ entry.selected ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}
-              </v-icon>
+              <Tag style="font-size: 10px; background: transparent; border: 1px solid var(--me-border);">{{ entry.items.length }} {{ $t('osintIndustries.activities') }}</Tag>
+              <span :class="'mdi ' + (entry.selected ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline') + ' oi-check'" :style="{ fontSize: '16px', color: entry.selected ? 'var(--me-accent)' : 'var(--me-text-muted)' }"></span>
             </div>
             <div class="oi-entry-items">
               <div v-for="(item, ii) in entry.items.slice(0, 3)" :key="ii" class="oi-item-preview">
@@ -125,7 +124,7 @@
 
       <div v-if="parsed" class="oi-footer">
         <button class="oi-btn oi-btn--back" @click="resetState">
-          <v-icon size="14">mdi-arrow-left</v-icon>
+          <i class="pi pi-arrow-left" style="font-size: 14px;"></i>
           {{ $t('common.back') }}
         </button>
         <div class="oi-footer-right">
@@ -136,19 +135,22 @@
             :disabled="!selectedCount || importing"
             @click="doImport"
           >
-            <v-icon v-if="importing" size="14" class="oi-spin">mdi-loading</v-icon>
-            <v-icon v-else size="14">mdi-import</v-icon>
+            <span v-if="importing" class="mdi mdi-loading oi-spin" style="font-size: 14px;"></span>
+            <span v-else class="mdi mdi-import" style="font-size: 14px;"></span>
             {{ importing ? $t('elephantastic.importing') : $t('elephantastic.import') }}
           </button>
         </div>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import Tag from 'primevue/tag';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import FolderPicker from '../common/FolderPicker.vue';

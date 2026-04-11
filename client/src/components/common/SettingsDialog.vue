@@ -1,43 +1,30 @@
 <template>
-  <v-dialog v-model="dialog" max-width="480">
-    <template #activator="{ props }">
-      <button class="me-dropdown-item" v-bind="props">
-        <v-icon size="16" class="mr-2">mdi-cog-outline</v-icon>
-        Preferences
-      </button>
-    </template>
-
+  <Dialog v-model:visible="dialog" modal :style="{ width: '480px' }">
+    <template #container>
     <div class="glass-card settings-dialog">
       <div class="settings-header">
         <h3 class="mono">Preferences</h3>
         <button class="me-close-btn" @click="dialog = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
       <div class="settings-body">
         <div class="settings-group">
           <label class="settings-label mono">Theme par defaut</label>
-          <v-select
+          <Select
             v-model="prefs.defaultTheme"
-            :items="themeOptions"
-            density="compact"
-            hide-details
+            :options="themeOptions"
+            optionLabel="title"
+            optionValue="value"
+            class="w-full"
           />
         </div>
 
         <div class="settings-group">
           <label class="settings-label mono">Largeur sidebar</label>
           <div class="settings-slider-row">
-            <v-slider
-              v-model="prefs.sidebarWidth"
-              :min="200"
-              :max="500"
-              :step="10"
-              hide-details
-              thumb-label
-              color="primary"
-            />
+            <Slider v-model="prefs.sidebarWidth" :min="200" :max="500" :step="10" class="settings-slider" />
             <span class="settings-value mono">{{ prefs.sidebarWidth }}px</span>
           </div>
         </div>
@@ -45,15 +32,7 @@
         <div class="settings-group">
           <label class="settings-label mono">Taille police editeur</label>
           <div class="settings-slider-row">
-            <v-slider
-              v-model="prefs.editorFontSize"
-              :min="12"
-              :max="24"
-              :step="1"
-              hide-details
-              thumb-label
-              color="primary"
-            />
+            <Slider v-model="prefs.editorFontSize" :min="12" :max="24" :step="1" class="settings-slider" />
             <span class="settings-value mono">{{ prefs.editorFontSize }}px</span>
           </div>
         </div>
@@ -64,14 +43,18 @@
         <button class="me-btn-primary" @click="save">Sauvegarder</button>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
+import Dialog from 'primevue/dialog';
+import Select from 'primevue/select';
+import Slider from 'primevue/slider';
 import api from '../../services/api';
 
-const dialog = ref(false);
+const dialog = defineModel<boolean>({ default: false });
 const saving = ref(false);
 
 const themeOptions = [
@@ -85,7 +68,6 @@ const prefs = reactive({
   editorFontSize: 16,
 });
 
-// Load from localStorage first (fast), then sync from server
 const saved = localStorage.getItem('userPreferences');
 if (saved) {
   Object.assign(prefs, JSON.parse(saved));
@@ -152,7 +134,6 @@ async function save() {
   flex-direction: column;
   gap: 20px;
 }
-.settings-group {}
 .settings-label {
   display: block;
   font-size: 11px;
@@ -165,6 +146,9 @@ async function save() {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.settings-slider {
+  flex: 1;
 }
 .settings-value {
   font-size: 12px;
@@ -206,22 +190,5 @@ async function save() {
 }
 .me-btn-primary:hover {
   box-shadow: 0 0 16px var(--me-accent-glow);
-}
-.me-dropdown-item {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: var(--me-radius-xs);
-  background: none;
-  border: none;
-  color: var(--me-text-secondary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.me-dropdown-item:hover {
-  background: var(--me-accent-glow);
-  color: var(--me-text-primary);
 }
 </style>

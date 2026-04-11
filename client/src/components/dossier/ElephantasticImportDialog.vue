@@ -1,11 +1,12 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="720" persistent>
+  <Dialog :visible="modelValue" @update:visible="$emit('update:modelValue', $event)" modal :style="{ width: '720px' }" :closable="false">
+    <template #container>
     <div class="ei-dialog glass-card">
       <div class="ei-header">
-        <v-icon size="20" class="ei-header-icon">mdi-elephant</v-icon>
+        <span class="mdi mdi-elephant ei-header-icon" style="font-size: 20px;"></span>
         <span>{{ $t('elephantastic.title') }}</span>
         <button class="ei-close" @click="close">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
@@ -13,13 +14,13 @@
       <div v-if="!parsedEntries.length" class="ei-body">
         <p class="ei-desc">{{ $t('elephantastic.description') }}</p>
         <div class="ei-drop-zone" @dragover.prevent @drop.prevent="onDrop" @click="triggerFileInput">
-          <v-icon size="32" color="var(--me-text-muted)">mdi-file-upload-outline</v-icon>
+          <span class="mdi mdi-file-upload-outline" style="font-size: 32px; color: var(--me-text-muted);"></span>
           <span class="ei-drop-label">{{ $t('elephantastic.dropOrClick') }}</span>
           <span class="ei-drop-hint">.json</span>
         </div>
         <input ref="fileInput" type="file" accept=".json" style="display:none" @change="onFileSelect" />
         <div v-if="parseError" class="ei-error">
-          <v-icon size="14">mdi-alert-circle-outline</v-icon>
+          <span class="mdi mdi-alert-circle-outline" style="font-size: 14px;"></span>
           {{ parseError }}
         </div>
       </div>
@@ -28,9 +29,9 @@
       <div v-else class="ei-body">
         <div class="ei-entity-header">
           <div class="ei-entity-info">
-            <v-icon size="18" color="var(--me-accent)">mdi-account-circle-outline</v-icon>
+            <span class="mdi mdi-account-circle-outline" style="font-size: 18px; color: var(--me-accent);"></span>
             <span class="ei-entity-name">{{ entityLabel }}</span>
-            <v-chip size="x-small" variant="tonal" color="primary">{{ parsedEntries.length }} {{ $t('elephantastic.sources') }}</v-chip>
+            <Tag severity="info" style="font-size: 10px;">{{ parsedEntries.length }} {{ $t('elephantastic.sources') }}</Tag>
           </div>
           <div class="ei-select-actions">
             <button class="ei-link-btn" @click="toggleAll(true)">{{ $t('elephantastic.selectAll') }}</button>
@@ -49,11 +50,11 @@
           >
             <div class="ei-entry-header">
               <input type="checkbox" v-model="entry.selected" @click.stop class="ei-checkbox" />
-              <v-icon size="20" :color="getProviderColor(entry.collection)">{{ getProviderIcon(entry.collection) }}</v-icon>
+              <span :class="'mdi ' + getProviderIcon(entry.collection)" :style="{ fontSize: '20px', color: getProviderColor(entry.collection) }"></span>
               <span class="ei-entry-collection">{{ entry.collection }}</span>
-              <v-chip size="x-small" variant="outlined" :color="getCategoryColor(entry.category_id)">
+              <Tag :style="{ fontSize: '10px', borderColor: getCategoryColor(entry.category_id), color: getCategoryColor(entry.category_id), background: 'transparent', border: '1px solid' }">
                 {{ getCategoryLabel(entry.category_id) }}
-              </v-chip>
+              </Tag>
             </div>
             <div class="ei-entry-details">
               <div v-if="entry.names?.length" class="ei-detail">
@@ -89,7 +90,7 @@
 
       <div v-if="parsedEntries.length" class="ei-footer">
         <button class="ei-btn ei-btn--back" @click="resetEntries">
-          <v-icon size="14">mdi-arrow-left</v-icon>
+          <i class="pi pi-arrow-left" style="font-size: 14px;"></i>
           {{ $t('common.back') }}
         </button>
         <div class="ei-footer-right">
@@ -100,19 +101,22 @@
             :disabled="!selectedCount || importing"
             @click="doImport"
           >
-            <v-icon v-if="importing" size="14" class="ei-spin">mdi-loading</v-icon>
-            <v-icon v-else size="14">mdi-import</v-icon>
+            <span v-if="importing" class="mdi mdi-loading ei-spin" style="font-size: 14px;"></span>
+            <span v-else class="mdi mdi-import" style="font-size: 14px;"></span>
             {{ importing ? $t('elephantastic.importing') : $t('elephantastic.import') }}
           </button>
         </div>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import Tag from 'primevue/tag';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import FolderPicker from '../common/FolderPicker.vue';

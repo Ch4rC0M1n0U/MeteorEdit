@@ -1,10 +1,10 @@
 <template>
   <div class="pa-dialog glass-card">
     <div class="pa-header">
-      <v-icon size="20" class="pa-header-icon">mdi-account-search-outline</v-icon>
+      <span class="mdi mdi-account-search-outline pa-header-icon" style="font-size: 20px"></span>
       <span>{{ $t('social.profile.title') }}</span>
       <button class="pa-close" @click="$emit('close')">
-        <v-icon size="18">mdi-close</v-icon>
+        <i class="pi pi-times" style="font-size: 18px"></i>
       </button>
     </div>
 
@@ -22,28 +22,28 @@
 
       <!-- Platform badge -->
       <div v-if="detectedPlatform" class="pa-platform-badge" :style="{ borderColor: platformColor }">
-        <v-icon size="16" :color="platformColor">{{ platformIcon }}</v-icon>
+        <span :class="['mdi', platformIcon]" style="font-size: 16px; color: platformColor"></span>
         <span class="pa-platform-name" :style="{ color: platformColor }">{{ platformLabel }}</span>
-        <v-icon size="14" color="var(--me-accent)">mdi-check-circle</v-icon>
+        <span class="mdi mdi-check-circle" style="font-size: 14px; color: var(--me-accent)"></span>
       </div>
 
       <div v-else-if="url.trim()" class="pa-platform-unknown">
-        <v-icon size="14" color="#f87171">mdi-alert-circle-outline</v-icon>
+        <span class="mdi mdi-alert-circle-outline" style="font-size: 14px; color: #f87171"></span>
         <span>{{ $t('social.profile.unsupportedPlatform') }}</span>
       </div>
 
       <!-- Cookie status -->
       <div v-if="detectedPlatform && detectedPlatform !== 'whatsapp' && detectedPlatform !== 'mastodon'" class="pa-cookie-status">
         <div v-if="cookieLoading" class="pa-cookie-checking">
-          <v-icon size="14" class="pa-spin">mdi-loading</v-icon>
+          <span class="mdi mdi-loading pa-spin" style="font-size: 14px"></span>
           <span>{{ $t('social.profile.checkingCookies') }}</span>
         </div>
         <div v-else-if="hasCookies" class="pa-cookie-ok">
-          <v-icon size="14" color="#4ade80">mdi-cookie-check-outline</v-icon>
+          <span class="mdi mdi-cookie-check-outline" style="font-size: 14px; color: #4ade80"></span>
           <span>{{ $t('social.profile.cookiesFound') }}</span>
         </div>
         <div v-else class="pa-cookie-warn">
-          <v-icon size="14" color="#fbbf24">mdi-cookie-alert-outline</v-icon>
+          <span class="mdi mdi-cookie-alert-outline" style="font-size: 14px; color: #fbbf24"></span>
           <span>{{ $t('social.profile.noCookies') }}</span>
         </div>
       </div>
@@ -56,7 +56,7 @@
 
       <!-- Error -->
       <div v-if="errorMsg" class="pa-error">
-        <v-icon size="14">mdi-alert-circle-outline</v-icon>
+        <span class="mdi mdi-alert-circle-outline" style="font-size: 14px"></span>
         {{ errorMsg }}
       </div>
     </div>
@@ -68,8 +68,8 @@
         :disabled="!canAnalyze || scraping"
         @click="analyze"
       >
-        <v-icon v-if="scraping" size="14" class="pa-spin">mdi-loading</v-icon>
-        <v-icon v-else size="14">mdi-magnify</v-icon>
+        <span class="mdi mdi-loading pa-spin" style="font-size: 14px" v-if="scraping"></span>
+        <i class="pi pi-search" style="font-size: 14px" v-else></i>
         {{ scraping ? $t('social.profile.scraping') : $t('social.profile.analyze') }}
       </button>
     </div>

@@ -1,11 +1,12 @@
 <template>
-  <v-dialog v-model="model" max-width="560" persistent>
+  <Dialog v-model:visible="model" modal :style="{ width: '560px' }" :closable="false">
+    <template #container>
     <div class="ris-dialog glass-card">
       <div class="ris-header">
-        <v-icon size="20" class="ris-header-icon">mdi-image-search-outline</v-icon>
+        <span class="mdi mdi-image-search-outline ris-header-icon" style="font-size: 20px;"></span>
         <span class="mono">{{ t('dossier.reverseImageTitle') }}</span>
         <button class="ris-close" @click="model = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
@@ -25,7 +26,7 @@
           >
             <img v-if="previewSrc" :src="previewSrc" class="ris-preview" />
             <div v-else class="ris-dropzone-text">
-              <v-icon size="32" color="var(--me-text-muted)">mdi-image-plus-outline</v-icon>
+              <span class="mdi mdi-image-plus-outline" style="font-size: 32px; color: var(--me-text-muted);"></span>
               <span>{{ t('dossier.reverseImageDrop') }}</span>
               <span class="ris-dropzone-hint">{{ t('dossier.reverseImageDropHint') }}</span>
             </div>
@@ -42,18 +43,18 @@
               @paste="onUrlPaste"
             />
             <button class="ris-url-btn" @click="loadFromUrl" :disabled="!imageUrl.trim()">
-              <v-icon size="14">mdi-arrow-right</v-icon>
+              <span class="mdi mdi-arrow-right" style="font-size: 14px;"></span>
             </button>
           </div>
 
           <button v-if="previewSrc" class="ris-clear-btn" @click="clearImage">
-            <v-icon size="14">mdi-close</v-icon> {{ t('dossier.reverseImageClear') }}
+            <i class="pi pi-times" style="font-size: 14px;"></i> {{ t('dossier.reverseImageClear') }}
           </button>
         </div>
 
         <!-- Uploading indicator -->
         <div v-if="uploading" class="ris-uploading">
-          <v-icon size="14" class="me-spin">mdi-loading</v-icon>
+          <span class="mdi mdi-loading me-spin" style="font-size: 14px;"></span>
           {{ t('dossier.reverseImageUploading') }}
         </div>
 
@@ -61,11 +62,11 @@
         <div v-if="previewSrc" class="ris-engines">
           <div class="ris-engines-title">{{ t('dossier.reverseImageEngines') }}</div>
           <div v-if="isPublicUrl" class="ris-mode-hint ris-mode-direct">
-            <v-icon size="14">mdi-link-variant</v-icon>
+            <i class="pi pi-link" style="font-size: 14px;"></i>
             {{ t('dossier.reverseImageDirectMode') }}
           </div>
           <div v-else class="ris-mode-hint ris-mode-clipboard">
-            <v-icon size="14">mdi-content-paste</v-icon>
+            <span class="mdi mdi-content-paste" style="font-size: 14px;"></span>
             {{ t('dossier.reverseImageClipboardMode') }}
           </div>
           <div class="ris-engine-grid">
@@ -83,14 +84,14 @@
         </div>
 
         <!-- Toast -->
-        <v-snackbar v-model="toastVisible" :timeout="3000" color="success" location="bottom right">
+        <div v-if="toastVisible" class="ris-toast" style="position: fixed; bottom: 16px; right: 16px; padding: 10px 18px; border-radius: 8px; background: #4caf50; color: #fff; font-size: 13px; z-index: 9999;">
           {{ t('dossier.reverseImageCopied') }}
-        </v-snackbar>
+        </div>
 
         <!-- Tips -->
         <div class="ris-tips">
           <div class="ris-tips-title">
-            <v-icon size="14">mdi-lightbulb-outline</v-icon>
+            <span class="mdi mdi-lightbulb-outline" style="font-size: 14px;"></span>
             {{ t('dossier.dorkTips') }}
           </div>
           <ul class="ris-tips-list">
@@ -102,12 +103,14 @@
         </div>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
 
 const { t } = useI18n();
 const model = defineModel<boolean>({ default: false });

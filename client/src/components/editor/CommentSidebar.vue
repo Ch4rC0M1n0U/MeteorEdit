@@ -2,12 +2,12 @@
   <div class="comment-sidebar" :class="{ open: modelValue }">
     <div class="cs-header">
       <h3 class="cs-title mono">
-        <v-icon size="18" class="mr-1">mdi-comment-text-outline</v-icon>
+        <span class="mdi mdi-comment-text-outline mr-1" style="font-size: 18px"></span>
         {{ $t('editor.comments') }}
         <span v-if="comments.length" class="cs-count">{{ comments.length }}</span>
       </h3>
       <button class="cs-close" @click="$emit('update:modelValue', false)">
-        <v-icon size="18">mdi-close</v-icon>
+        <i class="pi pi-times" style="font-size: 18px"></i>
       </button>
     </div>
 
@@ -20,7 +20,7 @@
         @keydown.ctrl.enter="postComment"
       />
       <button class="cs-send" :disabled="!newComment.trim() || posting" @click="postComment">
-        <v-icon size="16">mdi-send</v-icon>
+        <i class="pi pi-send" style="font-size: 16px"></i>
       </button>
     </div>
 
@@ -43,7 +43,7 @@
             @click="removeComment(c._id)"
             :title="$t('common.delete')"
           >
-            <v-icon size="14">mdi-delete-outline</v-icon>
+            <i class="pi pi-trash" style="font-size: 14px"></i>
           </button>
         </div>
         <p class="cs-body">{{ c.content }}</p>

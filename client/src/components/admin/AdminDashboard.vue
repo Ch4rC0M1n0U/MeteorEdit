@@ -2,17 +2,17 @@
   <div class="admin-dashboard">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-view-dashboard-outline</v-icon>
+        <span class="mdi mdi-view-dashboard-outline" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.dashboard') }}
       </h2>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- KPI Cards -->
     <div class="kpi-row fade-in fade-in-delay-1">
       <div class="kpi-card glass-card">
-        <div class="kpi-icon"><v-icon size="24">mdi-account-group-outline</v-icon></div>
+        <div class="kpi-icon"><span class="mdi mdi-account-group-outline" style="font-size: 24px;"></span></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.totalUsers }}</span>
           <span class="kpi-label">{{ $t('admin.users') }}</span>
@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="kpi-card glass-card kpi-card--live">
-        <div class="kpi-icon"><v-icon size="24">mdi-access-point</v-icon></div>
+        <div class="kpi-icon"><span class="mdi mdi-access-point" style="font-size: 24px;"></span></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ onlineCount }}</span>
           <span class="kpi-label">{{ $t('admin.online') }}</span>
@@ -28,14 +28,14 @@
         </div>
       </div>
       <div class="kpi-card glass-card">
-        <div class="kpi-icon"><v-icon size="24">mdi-folder-multiple-outline</v-icon></div>
+        <div class="kpi-icon"><span class="mdi mdi-folder-multiple-outline" style="font-size: 24px;"></span></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.totalDossiers }}</span>
           <span class="kpi-label">{{ $t('admin.dossiers') }}</span>
         </div>
       </div>
       <div class="kpi-card glass-card">
-        <div class="kpi-icon"><v-icon size="24">mdi-calendar-week</v-icon></div>
+        <div class="kpi-icon"><span class="mdi mdi-calendar-week" style="font-size: 24px;"></span></div>
         <div class="kpi-data">
           <span class="kpi-value mono">{{ stats.weeklyDossiers }}</span>
           <span class="kpi-label">{{ $t('admin.thisWeek') }}</span>
@@ -89,6 +89,7 @@ import {
   LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
 import { getSocket } from '../../services/socket';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);

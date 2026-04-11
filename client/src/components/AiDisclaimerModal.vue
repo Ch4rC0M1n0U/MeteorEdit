@@ -1,8 +1,9 @@
 <template>
-  <v-dialog v-model="visible" max-width="520" persistent>
-    <v-card class="disclaimer-card">
+  <Dialog v-model:visible="visible" modal :style="{ width: '520px' }" :closable="false">
+    <template #container>
+    <div class="disclaimer-card">
       <div class="disclaimer-header">
-        <v-icon size="32" color="#f59e0b">mdi-shield-alert-outline</v-icon>
+        <span class="mdi mdi-shield-alert-outline" style="font-size: 32px; color: #f59e0b"></span>
         <h3 class="disclaimer-title mono">{{ t('ai.disclaimer.title') }}</h3>
       </div>
 
@@ -11,13 +12,10 @@
       </div>
 
       <div class="disclaimer-checkbox">
-        <v-checkbox
-          v-model="dontShowAgain"
-          :label="t('ai.disclaimer.dontShowAgain')"
-          hide-details
-          density="compact"
-          color="var(--me-accent)"
-        />
+        <label class="disclaimer-check-label">
+          <Checkbox v-model="dontShowAgain" :binary="true" />
+          <span style="margin-left: 8px;">{{ t('ai.disclaimer.dontShowAgain') }}</span>
+        </label>
       </div>
 
       <div class="disclaimer-actions">
@@ -25,17 +23,20 @@
           {{ t('ai.disclaimer.cancel') }}
         </button>
         <button class="me-btn-primary" @click="confirm">
-          <v-icon size="14" class="mr-1">mdi-robot-outline</v-icon>
+          <span class="mdi mdi-robot-outline" style="font-size: 14px; margin-right: 4px;"></span>
           {{ t('ai.disclaimer.continue') }}
         </button>
       </div>
-    </v-card>
-  </v-dialog>
+    </div>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
+import Checkbox from 'primevue/checkbox';
 import api from '../services/api';
 
 const { t } = useI18n();
@@ -76,7 +77,8 @@ defineExpose({ checkAndShow });
 </script>
 
 <style scoped>
-.disclaimer-card { background: var(--me-bg-surface) !important; border: 1px solid var(--me-border); padding: 24px; }
+.disclaimer-card { background: var(--me-bg-surface); border: 1px solid var(--me-border); padding: 24px; border-radius: 12px; }
+.disclaimer-check-label { display: flex; align-items: center; cursor: pointer; font-size: 14px; color: var(--me-text-secondary); }
 .disclaimer-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .disclaimer-title { font-size: 18px; font-weight: 700; color: var(--me-text-primary); }
 .disclaimer-body { margin-bottom: 16px; }

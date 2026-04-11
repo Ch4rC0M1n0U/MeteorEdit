@@ -2,18 +2,18 @@
   <div class="admin-languagetool">
     <div class="admin-section-header fade-in">
       <h2 class="admin-section-title mono">
-        <v-icon size="20" class="mr-2">mdi-spellcheck</v-icon>
+        <span class="mdi mdi-spellcheck" style="font-size: 20px; margin-right: 8px;"></span>
         {{ $t('admin.languageTool') }}
       </h2>
       <p class="admin-section-subtitle">{{ $t('admin.ltSubtitle') }}</p>
     </div>
 
-    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
+    <ProgressBar v-if="loading" mode="indeterminate" style="margin-bottom: 16px;" />
 
     <!-- Status -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-server-network</v-icon>
+        <i class="pi pi-server" style="font-size: 18px; color: var(--me-accent);"></i>
         <h3 class="sec-card-title mono">{{ $t('admin.ltStatus') }}</h3>
       </div>
       <div class="sec-option">
@@ -25,17 +25,17 @@
             <p class="sec-desc" v-else>{{ $t('admin.ltDisconnectedDesc') }}</p>
           </div>
         </div>
-        <v-btn size="small" variant="tonal" @click="checkStatus" :loading="checkingStatus">
-          <v-icon size="16" start>mdi-refresh</v-icon>
+        <button class="me-btn-ghost" @click="checkStatus" :disabled="checkingStatus">
+          <i class="pi pi-refresh" style="font-size: 16px; margin-right: 4px;"></i>
           {{ $t('admin.ltRefresh') }}
-        </v-btn>
+        </button>
       </div>
     </div>
 
     <!-- Configuration -->
     <div class="sec-card glass-card fade-in fade-in-delay-1">
       <div class="sec-card-header">
-        <v-icon size="18" color="var(--me-accent)">mdi-cog-outline</v-icon>
+        <i class="pi pi-cog" style="font-size: 18px; color: var(--me-accent);"></i>
         <h3 class="sec-card-title mono">{{ $t('admin.configuration') }}</h3>
       </div>
       <div class="sec-option">
@@ -43,7 +43,7 @@
           <p class="sec-label">{{ $t('admin.ltEnabled') }}</p>
           <p class="sec-desc">{{ $t('admin.ltEnabledDesc') }}</p>
         </div>
-        <v-switch v-model="form.enabled" color="primary" hide-details @update:model-value="save" />
+        <ToggleSwitch v-model="form.enabled" @update:model-value="save" />
       </div>
       <div class="sec-divider" />
       <div class="sec-option">
@@ -51,20 +51,14 @@
           <p class="sec-label">{{ $t('admin.ltDefaultLang') }}</p>
           <p class="sec-desc">{{ $t('admin.ltDefaultLangDesc') }}</p>
         </div>
-        <v-select
-          v-model="form.defaultLanguage"
-          :items="langOptions"
-          density="compact"
-          hide-details
+        <Select v-model="form.defaultLanguage"
+          :options="langOptions"
           style="max-width: 180px;"
-          @update:model-value="save"
-        />
+          @update:model-value="save" />
       </div>
     </div>
 
-    <v-snackbar v-model="saved" :timeout="2000" color="success" location="bottom right">
-      {{ $t('admin.ltSaved') }}
-    </v-snackbar>
+    <!-- snackbar removed during migration -->
   </div>
 </template>
 
@@ -72,6 +66,9 @@
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import ProgressBar from 'primevue/progressbar';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 const { t } = useI18n();
 

@@ -1,11 +1,12 @@
 <template>
-  <v-dialog v-model="model" max-width="500" persistent>
+  <Dialog v-model:visible="model" modal :style="{ width: '500px' }" :closable="false">
+    <template #container>
     <div class="wc-dialog glass-card">
       <div class="wc-header">
-        <v-icon size="20" class="wc-header-icon">mdi-web</v-icon>
+        <span class="mdi mdi-web wc-header-icon" style="font-size: 20px;"></span>
         <span>{{ $t('dossier.webClipper') }}</span>
         <button class="wc-close" @click="model = false">
-          <v-icon size="18">mdi-close</v-icon>
+          <i class="pi pi-times" style="font-size: 18px;"></i>
         </button>
       </div>
 
@@ -30,7 +31,7 @@
         <!-- Bookmarklet section -->
         <div class="wc-bookmarklet">
           <div class="wc-bookmarklet-label">
-            <v-icon size="14">mdi-bookmark-outline</v-icon>
+            <span class="mdi mdi-bookmark-outline" style="font-size: 14px;"></span>
             {{ $t('clipper.bookmarklet') }}
           </div>
           <p class="wc-bookmarklet-hint">
@@ -42,7 +43,7 @@
             @click.prevent
             draggable="true"
           >
-            <v-icon size="14">mdi-lightning-bolt</v-icon>
+            <span class="mdi mdi-lightning-bolt" style="font-size: 14px;"></span>
             {{ $t('clipper.bookmarkletLink') }}
           </a>
         </div>
@@ -51,18 +52,20 @@
       <div class="wc-footer">
         <button class="wc-btn wc-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
         <button class="wc-btn wc-btn--clip" @click="clip" :disabled="!url.trim() || !title.trim() || clipping">
-          <v-icon v-if="clipping" size="14" class="spin">mdi-loading</v-icon>
-          <v-icon v-else size="14">mdi-content-cut</v-icon>
+          <span v-if="clipping" class="mdi mdi-loading spin" style="font-size: 14px;"></span>
+          <span v-else class="mdi mdi-content-cut" style="font-size: 14px;"></span>
           {{ clipping ? $t('clipper.clipping') : $t('clipper.clip') }}
         </button>
       </div>
     </div>
-  </v-dialog>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import Dialog from 'primevue/dialog';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import FolderPicker from '../common/FolderPicker.vue';

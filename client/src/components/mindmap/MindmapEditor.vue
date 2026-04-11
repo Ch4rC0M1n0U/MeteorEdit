@@ -2,15 +2,15 @@
   <div class="mindmap-outer">
     <div class="mindmap-toolbar">
       <button class="mm-tb-btn" @click="addNode">
-        <v-icon size="16">mdi-plus</v-icon>
+        <i class="pi pi-plus" style="font-size: 16px"></i>
         <span class="mono">Ajouter</span>
       </button>
       <button class="mm-tb-btn" @click="removeSelected" :disabled="!selectedNodeId">
-        <v-icon size="16">mdi-delete-outline</v-icon>
+        <i class="pi pi-trash" style="font-size: 16px"></i>
         <span class="mono">Supprimer</span>
       </button>
       <button class="mm-tb-btn" @click="autoLayout">
-        <v-icon size="16">mdi-auto-fix</v-icon>
+        <span class="mdi mdi-auto-fix" style="font-size: 16px"></span>
         <span class="mono">Organiser</span>
       </button>
       <div v-if="awarenessUsers.length" class="collab-presence">
