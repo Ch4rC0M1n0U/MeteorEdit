@@ -9,7 +9,7 @@
           <div v-if="!collapsed" class="brand-text">
             <span class="brand-name">{{ brandingStore.appName }}</span>
             <div class="brand-meta">
-              <span class="brand-version mono">v3.6.0</span>
+              <span class="brand-version mono">v3.7.0</span>
               <span
                 class="connection-dot"
                 :class="backendConnected ? 'connection-dot--ok' : 'connection-dot--err'"
@@ -22,8 +22,22 @@
     </div>
 
     <nav class="sidebar-nav">
+      <!-- Close dossier button when a dossier is open -->
+      <div v-if="dossierStore.currentDossier" class="nav-section">
+        <button
+          class="nav-item nav-item--back"
+          :title="collapsed ? t('nav.closeDossier') : undefined"
+          @click="closeDossier"
+        >
+          <i class="pi pi-arrow-left nav-icon" />
+          <transition name="fade-text">
+            <span v-if="!collapsed" class="nav-text">{{ t('nav.closeDossier') }}</span>
+          </transition>
+        </button>
+      </div>
+
       <div class="nav-section">
-        <span v-if="!collapsed" class="nav-label">{{ t('nav.main') || 'Principal' }}</span>
+        <span v-if="!collapsed" class="nav-label">{{ t('nav.main') }}</span>
         <router-link
           v-for="item in mainNavItems"
           :key="item.key"
@@ -31,6 +45,7 @@
           class="nav-item"
           :class="{ 'nav-item--active': isActive(item) }"
           :title="collapsed ? item.label : undefined"
+          @click="item.key === 'dossiers' ? onDossiersClick($event) : undefined"
         >
           <i :class="item.icon" class="nav-icon" />
           <transition name="fade-text">
@@ -41,7 +56,7 @@
       </div>
 
       <div class="nav-section">
-        <span v-if="!collapsed" class="nav-label">{{ t('nav.tools') || 'Outils' }}</span>
+        <span v-if="!collapsed" class="nav-label">{{ t('nav.tools') }}</span>
         <router-link
           v-for="item in toolNavItems"
           :key="item.key"
@@ -91,7 +106,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import Avatar from 'primevue/avatar';
 import Badge from 'primevue/badge';
@@ -107,6 +122,7 @@ defineEmits<{ 'toggle-collapse': []; logout: [] }>();
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const dossierStore = useDossierStore();
@@ -125,7 +141,6 @@ const avatarUrl = computed(() => authStore.user?.avatarPath ? `${SERVER_URL}/${a
 
 const mainNavItems = computed(() => [
   { key: 'dossiers', icon: 'pi pi-folder', label: t('home.myDossiers'), to: '/', badge: dossierStore.dossiers.length || null },
-  { key: 'osint', icon: 'pi pi-search', label: t('nav.osintSearch') || 'OSINT Search', to: '/osint-search' },
   { key: 'templates', icon: 'pi pi-file-edit', label: t('nav.templates'), to: '/templates' },
 ]);
 
@@ -136,6 +151,18 @@ const toolNavItems = computed(() => [
 
 function isActive(item: { to: string; key: string }): boolean {
   return route.path === item.to || (item.key === 'dossiers' && route.path === '/');
+}
+
+function closeDossier() {
+  dossierStore.closeDossier();
+  router.push('/');
+}
+
+function onDossiersClick(e: MouseEvent) {
+  if (dossierStore.currentDossier) {
+    e.preventDefault();
+    closeDossier();
+  }
 }
 
 async function checkHealth() {
@@ -215,6 +242,13 @@ onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
 .nav-item:hover { background: var(--me-accent-glow); color: var(--me-text-primary); }
 .nav-item--active { background: rgba(99, 145, 214, 0.12); color: #6391d6; font-weight: 600; }
 .nav-item--active .nav-icon { color: #6391d6; }
+.nav-item--back {
+  color: var(--me-accent); font-weight: 600;
+  background: rgba(99, 145, 214, 0.08);
+  border: 1px solid rgba(99, 145, 214, 0.15);
+}
+.nav-item--back:hover { background: rgba(99, 145, 214, 0.16); color: var(--me-accent); }
+.nav-item--back .nav-icon { color: var(--me-accent); }
 .nav-item--danger:hover { color: var(--me-error); }
 .nav-item--danger:hover .nav-icon { color: var(--me-error); }
 

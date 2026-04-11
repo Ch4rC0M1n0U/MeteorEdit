@@ -129,14 +129,6 @@
                   </div>
                 </div>
 
-                <h3 class="dash-card-title mono mt-16">{{ $t('dashboard.elementTypes') }}</h3>
-                <div class="dash-node-types">
-                  <div v-for="n in nodeTypeItems" :key="n.type" class="dash-node-type">
-                    <i :class="n.icon" style="font-size: 16px;" class="dash-node-icon" />
-                    <span class="dash-node-label">{{ n.label }}</span>
-                    <span class="dash-node-count mono">{{ n.count }}</span>
-                  </div>
-                </div>
               </div>
             </div>
 

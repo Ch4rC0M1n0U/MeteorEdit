@@ -91,7 +91,11 @@
     "whatsNew": "Nouveautés",
     "osintSearch": "Recherche OSINT",
     "backendConnected": "Serveur connecte",
-    "backendDisconnected": "Serveur deconnecte"
+    "backendDisconnected": "Serveur deconnecte",
+    "profile": "Mon profil",
+    "main": "Navigation",
+    "tools": "Outils",
+    "closeDossier": "Fermer le dossier"
   },
   "home": {
     "myDossiers": "Mes dossiers",

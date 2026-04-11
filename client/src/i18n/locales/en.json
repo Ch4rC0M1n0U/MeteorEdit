@@ -91,7 +91,11 @@
     "whatsNew": "What's new",
     "osintSearch": "OSINT Search",
     "backendConnected": "Server connected",
-    "backendDisconnected": "Server disconnected"
+    "backendDisconnected": "Server disconnected",
+    "profile": "My profile",
+    "main": "Navigation",
+    "tools": "Tools",
+    "closeDossier": "Close dossier"
   },
   "home": {
     "myDossiers": "My cases",

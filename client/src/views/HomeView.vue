@@ -64,7 +64,6 @@
           @click="handleOpen(dossier._id)"
         >
           <div class="closed-card-header">
-            <Tag v-if="dossier.referenceNumber" :value="dossier.referenceNumber" severity="contrast" rounded class="closed-card-ref" />
             <span class="closed-card-date mono">{{ formatClosureDate(dossier.closureDate) }}</span>
           </div>
           <h4 class="closed-card-title">{{ dossier.title }}</h4>

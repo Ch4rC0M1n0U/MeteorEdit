@@ -255,6 +255,18 @@ async function seedChangelog() {
         { type: 'improvement', message: 'Enquêteur et classification en grille 4-5 colonnes' },
       ],
     },
+    {
+      version: '3.7.0',
+      entries: [
+        { type: 'feature', message: 'Migration compl\u00e8te Vuetify \u2192 PrimeVue 4 (72 composants)' },
+        { type: 'feature', message: 'Nouveau sidebar avec navigation am\u00e9lior\u00e9e et bouton retour dossier' },
+        { type: 'fix', message: 'Traductions i18n manquantes (nav.profile, nav.main, nav.tools)' },
+        { type: 'fix', message: 'Contenu des mod\u00e8les affich\u00e9 correctement dans la modal d\'\u00e9dition' },
+        { type: 'improvement', message: 'Dashboard simplifi\u00e9 : suppression section Types d\'\u00e9l\u00e9ments' },
+        { type: 'improvement', message: 'Cards dossiers cl\u00f4tur\u00e9s all\u00e9g\u00e9es (r\u00e9f\u00e9rence retir\u00e9e)' },
+        { type: 'improvement', message: 'Recherche OSINT retir\u00e9e du menu principal' },
+      ],
+    },
   ];
   for (const v of versions) {
     const exists = await Changelog.findOne({ version: v.version });

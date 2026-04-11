@@ -201,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import Dialog from 'primevue/dialog';
 import ProgressBar from 'primevue/progressbar';
 import InputText from 'primevue/inputtext';
@@ -263,14 +263,27 @@ onMounted(() => {
   templateStore.fetchTemplates();
 });
 
+const pendingContent = ref<any>(null);
+
 function openEdit(tpl: NoteTemplate) {
   editForm.value = { id: tpl._id, title: tpl.title, description: tpl.description || '' };
   editFullscreen.value = false;
+  pendingContent.value = tpl.content || '';
   editDialog.value = true;
-  nextTick(() => {
-    templateEditor.value?.commands.setContent(tpl.content || '');
-  });
 }
+
+watch(editDialog, (open) => {
+  if (open && pendingContent.value !== null) {
+    const content = pendingContent.value;
+    pendingContent.value = null;
+    // Wait for dialog DOM to render the editor
+    nextTick(() => {
+      setTimeout(() => {
+        templateEditor.value?.commands.setContent(content);
+      }, 50);
+    });
+  }
+});
 
 function insertPlaceholderInEditor(placeholder: string) {
   if (!templateEditor.value) return;

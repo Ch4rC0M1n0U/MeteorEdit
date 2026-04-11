@@ -74,7 +74,7 @@ const pageTitle = computed(() => {
   }
   const titles: Record<string, string> = {
     '/admin': t('nav.admin'),
-    '/profile': t('nav.profile') || 'Profil',
+    '/profile': t('nav.profile'),
     '/templates': t('nav.templates'),
     '/help': t('nav.help'),
     '/osint-search': t('nav.osintSearch') || 'OSINT Search',

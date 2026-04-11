@@ -91,7 +91,11 @@
     "whatsNew": "Nieuw",
     "osintSearch": "OSINT Zoeken",
     "backendConnected": "Server verbonden",
-    "backendDisconnected": "Server niet verbonden"
+    "backendDisconnected": "Server niet verbonden",
+    "profile": "Mijn profiel",
+    "main": "Navigatie",
+    "tools": "Hulpmiddelen",
+    "closeDossier": "Dossier sluiten"
   },
   "home": {
     "myDossiers": "Mijn dossiers",
