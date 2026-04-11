@@ -20,7 +20,7 @@
     </div>
     <div class="dc-title-row">
       <img v-if="logoUrl" :src="logoUrl" alt="" class="dc-logo" />
-      <i v-else-if="dossier.icon" :class="dossier.icon" class="dc-icon" style="font-size: 20px;" />
+      <i v-else-if="dossier.icon && dossier.icon.startsWith('pi ')" :class="dossier.icon" class="dc-icon" style="font-size: 20px;" />
       <i v-else class="pi pi-folder dc-icon dc-icon-default" style="font-size: 20px;" />
       <h3 class="dc-title">{{ dossier.title }}</h3>
       <i v-if="dossier.isEmbargo" class="pi pi-shield dc-embargo" :title="$t('dossier.isEmbargo')" />
