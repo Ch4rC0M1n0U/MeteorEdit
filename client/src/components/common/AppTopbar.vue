@@ -67,7 +67,18 @@ onMounted(async () => {
 .page-tag { font-size: 11px; }
 .topbar-center { flex: 1; max-width: 480px; margin: 0 auto; }
 .topbar-right { flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
-.topbar-btn { width: 36px !important; height: 36px !important; }
+.topbar-btn { width: 36px !important; height: 36px !important; overflow: visible !important; position: relative; }
+.topbar-btn :deep(.p-badge) {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 11px;
+  padding: 0 4px;
+  border-radius: 9px;
+}
 
 @media (max-width: 768px) {
   .topbar-menu-btn { display: inline-flex; }
