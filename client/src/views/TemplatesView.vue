@@ -201,14 +201,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, shallowRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import Dialog from 'primevue/dialog';
 import ProgressBar from 'primevue/progressbar';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import { useTemplateStore } from '../stores/template';
 import { useConfirm } from '../composables/useConfirm';
-import { useEditor, EditorContent } from '@tiptap/vue-3';
+import { Editor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
 import { TextAlign } from '@tiptap/extension-text-align';
@@ -228,6 +228,7 @@ const { confirm } = useConfirm();
 const editDialog = ref(false);
 const editFullscreen = ref(false);
 const editForm = ref({ id: '', title: '', description: '' });
+const templateEditor = shallowRef<Editor | null>(null);
 
 const availablePlaceholders = [
   { key: '{{dossier.title}}', label: 'Titre dossier' },
@@ -242,46 +243,49 @@ const availablePlaceholders = [
   { key: '{{user.name}}', label: 'Utilisateur' },
 ];
 
-const templateEditor = useEditor({
-  extensions: [
-    StarterKit,
-    Underline,
-    TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    Highlight.configure({ multicolor: true }),
-    TaskList,
-    TaskItem.configure({ nested: true }),
-    Table.configure({ resizable: true }),
-    TableRow,
-    TableCell,
-    TableHeader,
-    Placeholder.configure({ placeholder: 'Contenu du modele...' }),
-  ],
-  content: '',
-});
+const editorExtensions = [
+  StarterKit,
+  Underline,
+  TextAlign.configure({ types: ['heading', 'paragraph'] }),
+  Highlight.configure({ multicolor: true }),
+  TaskList,
+  TaskItem.configure({ nested: true }),
+  Table.configure({ resizable: true }),
+  TableRow,
+  TableCell,
+  TableHeader,
+  Placeholder.configure({ placeholder: 'Contenu du modele...' }),
+];
 
 onMounted(() => {
   templateStore.fetchTemplates();
 });
 
-const pendingContent = ref<any>(null);
-
 function openEdit(tpl: NoteTemplate) {
   editForm.value = { id: tpl._id, title: tpl.title, description: tpl.description || '' };
   editFullscreen.value = false;
+  // Store content to set when editor is created
+  editForm.value = { ...editForm.value };
   pendingContent.value = tpl.content || '';
   editDialog.value = true;
 }
 
-watch(editDialog, (open) => {
-  if (open && pendingContent.value !== null) {
-    const content = pendingContent.value;
+const pendingContent = ref<any>(null);
+
+watch(editDialog, async (open) => {
+  if (open) {
+    // Wait for Dialog DOM to render before creating editor
+    const content = pendingContent.value || '';
     pendingContent.value = null;
-    // Wait for dialog DOM to render the editor
-    nextTick(() => {
-      setTimeout(() => {
-        templateEditor.value?.commands.setContent(content);
-      }, 50);
+    await nextTick();
+    templateEditor.value = new Editor({
+      extensions: editorExtensions,
+      content,
     });
+  } else {
+    // Destroy editor when dialog closes
+    templateEditor.value?.destroy();
+    templateEditor.value = null;
   }
 });
 

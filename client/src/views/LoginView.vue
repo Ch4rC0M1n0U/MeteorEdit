@@ -314,7 +314,7 @@ async function handle2FA() {
 }
 
 .login-left.has-bg-image .login-left-overlay {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .login-left.has-bg-image::before {
@@ -360,18 +360,20 @@ async function handle2FA() {
 .login-brand-title {
   font-size: 32px;
   font-weight: 800;
-  color: var(--me-text-primary);
+  color: #fff;
   letter-spacing: -0.5px;
   margin-bottom: 8px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
 .login-brand-tagline {
   font-size: 13px;
-  color: var(--me-text-muted);
+  color: rgba(255, 255, 255, 0.75);
   letter-spacing: 0.5px;
   text-transform: uppercase;
   font-family: var(--me-font-mono);
   line-height: 1.6;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
 }
 
 .login-left-features {
@@ -386,13 +388,13 @@ async function handle2FA() {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--me-text-secondary);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
   padding: 10px 16px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
   transition: all 0.2s ease;
 }
 
@@ -581,19 +583,28 @@ async function handle2FA() {
 .remember-me-inner :deep(.p-checkbox) {
   width: 18px;
   height: 18px;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
 }
 
-.remember-me-inner :deep(.p-checkbox-box) {
+.remember-me-inner :deep(.p-checkbox .p-checkbox-box) {
   border-radius: 4px;
   border: 1px solid var(--me-border);
   background: var(--me-bg-surface);
   width: 18px;
   height: 18px;
+  cursor: pointer;
 }
 
-.remember-me-inner :deep(.p-checkbox-box.p-highlight) {
+.remember-me-inner :deep(.p-checkbox.p-highlight .p-checkbox-box) {
   background: #6391d6;
   border-color: #6391d6;
+}
+
+.remember-me-inner :deep(.p-checkbox .p-checkbox-input) {
+  cursor: pointer;
+  z-index: 1;
 }
 
 /* ─── Remembered user card ─── */
