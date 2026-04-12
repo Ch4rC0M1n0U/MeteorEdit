@@ -273,145 +273,139 @@
       />
     </div>
 
-    <!-- Marker edit popup -->
-    <Teleport to="body">
-      <div v-if="editingMarker" class="me-popup-overlay" @click.self="cancelEdit">
-        <div class="me-popup glass-card">
-          <div class="me-popup-header">
-            <h3 class="mono">{{ editingMarkerId ? 'Modifier le repere' : 'Nouveau repere' }}</h3>
-            <button class="me-close-btn" @click="cancelEdit">
-              <i class="pi pi-times" style="font-size: 16px"></i>
-            </button>
-          </div>
-          <div class="me-popup-body">
-            <div class="me-field">
-              <label class="me-field-label mono">Titre</label>
-              <InputText v-model="editingMarker.title" autofocus />
-            </div>
-            <div class="me-field" style="margin-top: 12px;">
-              <label class="me-field-label mono">Description</label>
-              <Textarea v-model="editingMarker.description" rows="3" />
-            </div>
-            <div class="me-popup-color-row mt-3">
-              <label class="plugin-label mono">Couleur</label>
-              <div class="me-color-options">
-                <button
-                  v-for="c in markerColors"
-                  :key="c"
-                  class="me-color-btn"
-                  :class="{ active: editingMarker.color === c }"
-                  :style="{ background: c }"
-                  @click="editingMarker && (editingMarker.color = c)"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="me-popup-footer">
-            <button class="me-btn-ghost" @click="cancelEdit">Annuler</button>
-            <button class="me-btn-primary" @click="saveMarker">Enregistrer</button>
+    <!-- Marker edit dialog -->
+    <Dialog
+      :visible="!!editingMarker"
+      modal
+      :header="editingMarkerId ? 'Modifier le repere' : 'Nouveau repere'"
+      :style="{ width: '420px' }"
+      @update:visible="!$event && cancelEdit()"
+    >
+      <div v-if="editingMarker" class="me-dialog-body">
+        <div class="me-field">
+          <label class="me-field-label mono">Titre</label>
+          <InputText v-model="editingMarker.title" autofocus fluid />
+        </div>
+        <div class="me-field mt-3">
+          <label class="me-field-label mono">Description</label>
+          <Textarea v-model="editingMarker.description" rows="3" fluid />
+        </div>
+        <div class="mt-3">
+          <label class="me-field-label mono">Couleur</label>
+          <div class="me-color-options">
+            <button
+              v-for="c in markerColors"
+              :key="c"
+              class="me-color-btn"
+              :class="{ active: editingMarker.color === c }"
+              :style="{ background: c }"
+              @click="editingMarker && (editingMarker.color = c)"
+            />
           </div>
         </div>
       </div>
-    </Teleport>
+      <template #footer>
+        <Button label="Annuler" severity="secondary" text @click="cancelEdit" />
+        <Button label="Enregistrer" icon="pi pi-check" @click="saveMarker" />
+      </template>
+    </Dialog>
 
-    <!-- Entity edit popup -->
-    <Teleport to="body">
-      <div v-if="editingEntity" class="me-popup-overlay" @click.self="cancelEntityEdit">
-        <div class="me-popup glass-card">
-          <div class="me-popup-header">
-            <h3 class="mono">{{ editingEntityId ? 'Modifier l\'entite' : 'Nouvelle entite' }}</h3>
-            <button class="me-close-btn" @click="cancelEntityEdit">
-              <i class="pi pi-times" style="font-size: 16px"></i>
+    <!-- Entity edit dialog -->
+    <Dialog
+      :visible="!!editingEntity"
+      modal
+      :header="editingEntityId ? 'Modifier l\'entite' : 'Nouvelle entite'"
+      :style="{ width: '480px' }"
+      @update:visible="!$event && cancelEntityEdit()"
+    >
+      <div v-if="editingEntity" class="me-dialog-body">
+        <div class="me-field">
+          <label class="me-field-label mono">Nom</label>
+          <InputText v-model="editingEntity.label" autofocus fluid />
+        </div>
+        <div class="me-field mt-3">
+          <label class="me-field-label mono">Description</label>
+          <Textarea v-model="editingEntity.description" rows="3" fluid />
+        </div>
+        <div class="mt-3">
+          <label class="me-field-label mono">Type</label>
+          <div class="me-entity-type-grid">
+            <button
+              v-for="et in entityTypes"
+              :key="et.type"
+              class="me-entity-type-btn"
+              :class="{ active: editingEntity.entityType === et.type }"
+              @click="editingEntity && (editingEntity.entityType = et.type)"
+            >
+              <span :class="['mdi', et.icon]" style="font-size: 18px;" :style="{ color: et.color }"></span>
+              <span>{{ et.label }}</span>
             </button>
-          </div>
-          <div class="me-popup-body">
-            <div class="me-field">
-              <label class="me-field-label mono">Nom</label>
-              <InputText v-model="editingEntity.label" autofocus />
-            </div>
-            <div class="me-field" style="margin-top: 12px;">
-              <label class="me-field-label mono">Description</label>
-              <Textarea v-model="editingEntity.description" rows="3" />
-            </div>
-            <div class="me-popup-entity-type mt-3">
-              <label class="plugin-label mono">Type</label>
-              <div class="me-entity-type-grid">
-                <button
-                  v-for="et in entityTypes"
-                  :key="et.type"
-                  class="me-entity-type-btn"
-                  :class="{ active: editingEntity.entityType === et.type }"
-                  @click="editingEntity && (editingEntity.entityType = et.type)"
-                >
-                  <span :class="['mdi', et.icon]" style="font-size: 18px; color: et.color"></span>
-                  <span>{{ et.label }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="me-popup-footer">
-            <button v-if="editingEntityId" class="me-btn-danger" @click="deleteEntityFromPopup">Supprimer</button>
-            <div class="me-popup-footer-spacer" />
-            <button class="me-btn-ghost" @click="cancelEntityEdit">Annuler</button>
-            <button class="me-btn-primary" @click="saveEntity">Enregistrer</button>
           </div>
         </div>
       </div>
-    </Teleport>
+      <template #footer>
+        <div class="me-dialog-footer-split">
+          <Button v-if="editingEntityId" label="Supprimer" severity="danger" text icon="pi pi-trash" @click="deleteEntityFromPopup" />
+          <div class="me-dialog-footer-actions">
+            <Button label="Annuler" severity="secondary" text @click="cancelEntityEdit" />
+            <Button label="Enregistrer" icon="pi pi-check" @click="saveEntity" />
+          </div>
+        </div>
+      </template>
+    </Dialog>
 
-    <!-- Drawing edit popup -->
-    <Teleport to="body">
-      <div v-if="editingDrawing" class="me-popup-overlay" @click.self="cancelDrawingEdit">
-        <div class="me-popup glass-card">
-          <div class="me-popup-header">
-            <h3 class="mono">{{ editingDrawingId ? 'Modifier le dessin' : 'Nouveau dessin' }}</h3>
-            <button class="me-close-btn" @click="cancelDrawingEdit">
-              <i class="pi pi-times" style="font-size: 16px"></i>
-            </button>
-          </div>
-          <div class="me-popup-body">
-            <div v-if="editingDrawing.type === 'textbox'" class="me-field">
-              <label class="me-field-label mono">Texte</label>
-              <InputText v-model="editingDrawing.text" autofocus />
-            </div>
-            <div class="me-field" :style="editingDrawing.type === 'textbox' ? 'margin-top: 12px;' : ''">
-              <label class="me-field-label mono">Commentaire</label>
-              <Textarea v-model="editingDrawing.description" rows="3" :autofocus="editingDrawing.type !== 'textbox'" />
-            </div>
-            <div class="me-popup-color-row mt-3">
-              <label class="plugin-label mono">Couleur</label>
-              <div class="me-color-options">
-                <button
-                  v-for="c in markerColors"
-                  :key="c"
-                  class="me-color-btn"
-                  :class="{ active: editingDrawing.color === c }"
-                  :style="{ background: c }"
-                  @click="editingDrawing && (editingDrawing.color = c)"
-                />
-              </div>
-            </div>
-            <div class="me-popup-opacity-row mt-3">
-              <label class="plugin-label mono">Opacite : {{ Math.round(editingDrawing.opacity * 100) }}%</label>
-              <input
-                type="range"
-                v-model.number="editingDrawing.opacity"
-                min="0.05"
-                max="1"
-                step="0.05"
-                class="me-opacity-slider"
-              />
-            </div>
-          </div>
-          <div class="me-popup-footer">
-            <button v-if="editingDrawingId" class="me-btn-danger" @click="deleteDrawingFromPopup">Supprimer</button>
-            <div class="me-popup-footer-spacer" />
-            <button class="me-btn-ghost" @click="cancelDrawingEdit">Annuler</button>
-            <button class="me-btn-primary" @click="saveDrawing">Enregistrer</button>
+    <!-- Drawing edit dialog -->
+    <Dialog
+      :visible="!!editingDrawing"
+      modal
+      :header="editingDrawingId ? 'Modifier le dessin' : 'Nouveau dessin'"
+      :style="{ width: '420px' }"
+      @update:visible="!$event && cancelDrawingEdit()"
+    >
+      <div v-if="editingDrawing" class="me-dialog-body">
+        <div v-if="editingDrawing.type === 'textbox'" class="me-field">
+          <label class="me-field-label mono">Texte</label>
+          <InputText v-model="editingDrawing.text" autofocus fluid />
+        </div>
+        <div class="me-field" :class="{ 'mt-3': editingDrawing.type === 'textbox' }">
+          <label class="me-field-label mono">Commentaire</label>
+          <Textarea v-model="editingDrawing.description" rows="3" :autofocus="editingDrawing.type !== 'textbox'" fluid />
+        </div>
+        <div class="mt-3">
+          <label class="me-field-label mono">Couleur</label>
+          <div class="me-color-options">
+            <button
+              v-for="c in markerColors"
+              :key="c"
+              class="me-color-btn"
+              :class="{ active: editingDrawing.color === c }"
+              :style="{ background: c }"
+              @click="editingDrawing && (editingDrawing.color = c)"
+            />
           </div>
         </div>
+        <div class="mt-3">
+          <label class="me-field-label mono">Opacite : {{ Math.round(editingDrawing.opacity * 100) }}%</label>
+          <input
+            type="range"
+            v-model.number="editingDrawing.opacity"
+            min="0.05"
+            max="1"
+            step="0.05"
+            class="me-opacity-slider"
+          />
+        </div>
       </div>
-    </Teleport>
+      <template #footer>
+        <div class="me-dialog-footer-split">
+          <Button v-if="editingDrawingId" label="Supprimer" severity="danger" text icon="pi pi-trash" @click="deleteDrawingFromPopup" />
+          <div class="me-dialog-footer-actions">
+            <Button label="Annuler" severity="secondary" text @click="cancelDrawingEdit" />
+            <Button label="Enregistrer" icon="pi pi-check" @click="saveDrawing" />
+          </div>
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -427,6 +421,8 @@ import { useAuthStore } from '../../stores/auth';
 import type { Socket } from 'socket.io-client';
 import CommentSidebar from '../editor/CommentSidebar.vue';
 import Popover from 'primevue/popover';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
@@ -2431,116 +2427,42 @@ watch(() => props.nodeId, (_newId, oldId) => {
 }
 
 /* Edit popup */
-.me-popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.me-popup {
-  width: 400px;
-  max-width: 90vw;
-}
-.me-popup-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--me-border);
-}
-.me-popup-header h3 {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-}
-.me-popup-body {
-  padding: 16px 20px;
-}
-.me-popup-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border-top: 1px solid var(--me-border);
-}
-.me-popup-footer-spacer {
-  flex: 1;
-}
-.me-popup-color-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.me-popup-opacity-row {
+.me-dialog-body {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+.me-dialog-footer-split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.me-dialog-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
 .me-color-options {
   display: flex;
   gap: 6px;
+  margin-top: 6px;
 }
 .me-color-btn {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.15s;
 }
 .me-color-btn:hover {
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 .me-color-btn.active {
   border-color: white;
   box-shadow: 0 0 0 2px var(--me-accent);
-}
-.plugin-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--me-text-secondary);
-}
-.me-btn-ghost {
-  padding: 8px 16px;
-  border-radius: var(--me-radius-xs);
-  background: none;
-  border: 1px solid var(--me-border);
-  color: var(--me-text-secondary);
-  cursor: pointer;
-  font-size: 13px;
-}
-.me-btn-ghost:hover {
-  color: var(--me-text-primary);
-}
-.me-btn-primary {
-  padding: 8px 16px;
-  border-radius: var(--me-radius-xs);
-  background: var(--me-accent);
-  border: none;
-  color: var(--me-bg-deep);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
-.me-btn-primary:hover {
-  box-shadow: 0 0 16px var(--me-accent-glow);
-}
-.me-btn-danger {
-  padding: 8px 16px;
-  border-radius: var(--me-radius-xs);
-  background: none;
-  border: 1px solid rgba(248, 113, 113, 0.4);
-  color: #f87171;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-}
-.me-btn-danger:hover {
-  background: rgba(248, 113, 113, 0.1);
-  border-color: #f87171;
 }
 
 /* Presence bar */
@@ -2610,8 +2532,8 @@ watch(() => props.nodeId, (_newId, oldId) => {
   background: var(--me-accent-glow);
 }
 
-/* Entity type grid in popup */
-.me-popup-entity-type {
+/* Entity type grid */
+.me-entity-type-grid-wrap {
   display: flex;
   flex-direction: column;
   gap: 6px;
