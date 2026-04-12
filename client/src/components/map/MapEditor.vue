@@ -407,6 +407,7 @@ import { useAuthStore } from '../../stores/auth';
 import type { Socket } from 'socket.io-client';
 import CommentSidebar from '../editor/CommentSidebar.vue';
 import Popover from 'primevue/popover';
+import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 
@@ -457,6 +458,7 @@ const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const mapContainer = ref<HTMLElement | null>(null);
 const layersPopoverRef = ref();
+const entityPopoverRef = ref();
 
 // Markers
 const markers = ref<MapMarker[]>([]);
@@ -2083,8 +2085,21 @@ watch(() => props.nodeId, (_newId, oldId) => {
 .me-style-select {
   max-width: 180px;
 }
+.me-style-select .p-select-label {
+  font-size: 12px;
+  padding: 5px 8px;
+}
 .me-search-field {
-  min-width: 300px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 160px;
+  max-width: 240px;
+}
+.me-search-field .p-inputtext {
+  flex: 1;
+  font-size: 12px;
+  padding: 5px 8px;
 }
 
 /* Drawing status bar */
