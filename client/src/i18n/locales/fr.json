@@ -1789,7 +1789,12 @@
     "contentPlaceholder": "Contenu du modèle...",
     "phDossierTitle": "Titre dossier",
     "phDateNow": "Date du jour",
-    "phUser": "Utilisateur"
+    "phUser": "Utilisateur",
+    "newTemplate": "Nouveau modèle",
+    "noTemplates": "Aucun modèle",
+    "emptyHint": "Créez votre premier modèle pour générer des notes pré-remplies.",
+    "modelSingular": "modèle",
+    "modelsPlural": "modèles"
   },
   "questionBuilder": {
     "panelTitle": "Questions interactives",

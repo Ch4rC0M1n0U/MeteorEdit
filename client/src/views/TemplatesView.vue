@@ -2,9 +2,13 @@
   <div class="templates-page">
     <div class="templates-header fade-in">
       <div>
-        <h1 class="templates-title mono">Mes modeles</h1>
-        <p class="templates-subtitle">{{ templateStore.templates.length }} modele{{ templateStore.templates.length > 1 ? 's' : '' }}</p>
+        <h1 class="templates-title mono">{{ $t('nav.templates') }}</h1>
+        <p class="templates-subtitle">{{ templateStore.templates.length }} {{ $t(templateStore.templates.length > 1 ? 'templates.modelsPlural' : 'templates.modelSingular') }}</p>
       </div>
+      <button class="tpl-new-btn" @click="handleCreate">
+        <i class="pi pi-plus" style="font-size: 14px;" />
+        {{ $t('templates.newTemplate') }}
+      </button>
     </div>
 
     <ProgressBar v-if="templateStore.loading" mode="indeterminate" style="height: 4px; border-radius: 4px; margin-bottom: 16px;" />
@@ -36,8 +40,12 @@
 
     <div v-else-if="!templateStore.loading" class="templates-empty fade-in">
       <span class="mdi mdi-file-document-check-outline" style="font-size: 48px; color: var(--me-accent); margin-bottom: 16px;"></span>
-      <h3 class="mono">Aucun modele</h3>
-      <p class="text-muted">Sauvegardez une note comme modele depuis l'editeur pour commencer.</p>
+      <h3 class="mono">{{ $t('templates.noTemplates') }}</h3>
+      <p class="text-muted">{{ $t('templates.emptyHint') }}</p>
+      <button class="tpl-new-btn" style="margin-top: 16px;" @click="handleCreate">
+        <i class="pi pi-plus" style="font-size: 14px;" />
+        {{ $t('templates.newTemplate') }}
+      </button>
     </div>
 
   </div>
@@ -60,6 +68,11 @@ onMounted(() => {
 });
 
 function openEdit(tpl: NoteTemplate) {
+  router.push(`/templates/${tpl._id}/edit`);
+}
+
+async function handleCreate() {
+  const tpl = await templateStore.createTemplate({ title: 'Nouveau modèle', content: null });
   router.push(`/templates/${tpl._id}/edit`);
 }
 
@@ -174,5 +187,23 @@ function formatDate(dateStr: string): string {
 .text-muted {
   color: var(--me-text-muted);
   font-size: 14px;
+}
+.tpl-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--me-accent);
+  border: none;
+  color: var(--me-bg-deep);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tpl-new-btn:hover {
+  box-shadow: 0 0 16px var(--me-accent-glow);
 }
 </style>

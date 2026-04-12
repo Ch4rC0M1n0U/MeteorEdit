@@ -1777,7 +1777,12 @@
     "contentPlaceholder": "Template content...",
     "phDossierTitle": "Dossier title",
     "phDateNow": "Today's date",
-    "phUser": "User"
+    "phUser": "User",
+    "newTemplate": "New template",
+    "noTemplates": "No templates",
+    "emptyHint": "Create your first template to generate pre-filled notes.",
+    "modelSingular": "template",
+    "modelsPlural": "templates"
   },
   "questionBuilder": {
     "panelTitle": "Interactive questions",
