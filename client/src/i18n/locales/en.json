@@ -13,6 +13,8 @@
     "ok": "OK",
     "error": "Error",
     "loading": "Loading...",
+    "saving": "Saving...",
+    "saved": "Saved",
     "noResults": "No results",
     "yes": "Yes",
     "no": "No",
@@ -1769,6 +1771,13 @@
     "improvement": "Improvement",
     "noChanges": "No changes yet",
     "version": "Version"
+  },
+  "templates": {
+    "titlePlaceholder": "Template title",
+    "contentPlaceholder": "Template content...",
+    "phDossierTitle": "Dossier title",
+    "phDateNow": "Today's date",
+    "phUser": "User"
   },
   "osint": {
     "searchTitle": "Leaks Search",

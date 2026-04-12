@@ -17,6 +17,11 @@ export const useTemplateStore = defineStore('template', () => {
     }
   }
 
+  async function fetchTemplate(id: string): Promise<NoteTemplate> {
+    const { data } = await api.get<NoteTemplate>(`/templates/${id}`);
+    return data;
+  }
+
   async function createTemplate(templateData: { title: string; description?: string; content: any }) {
     const { data } = await api.post<NoteTemplate>('/templates', templateData);
     templates.value.unshift(data);
@@ -42,6 +47,6 @@ export const useTemplateStore = defineStore('template', () => {
 
   return {
     templates, loading,
-    fetchTemplates, createTemplate, updateTemplate, deleteTemplate, resolveTemplate,
+    fetchTemplates, fetchTemplate, createTemplate, updateTemplate, deleteTemplate, resolveTemplate,
   };
 });

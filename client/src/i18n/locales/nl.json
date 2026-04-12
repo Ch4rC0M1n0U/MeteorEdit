@@ -13,6 +13,8 @@
     "ok": "OK",
     "error": "Fout",
     "loading": "Laden...",
+    "saving": "Opslaan...",
+    "saved": "Opgeslagen",
     "noResults": "Geen resultaten",
     "yes": "Ja",
     "no": "Nee",
@@ -1768,6 +1770,13 @@
     "improvement": "Verbetering",
     "noChanges": "Nog geen wijzigingen",
     "version": "Versie"
+  },
+  "templates": {
+    "titlePlaceholder": "Sjabloontitel",
+    "contentPlaceholder": "Sjablooninhoud...",
+    "phDossierTitle": "Dossiertitel",
+    "phDateNow": "Datum van vandaag",
+    "phUser": "Gebruiker"
   },
   "osint": {
     "searchTitle": "Leaks Search",

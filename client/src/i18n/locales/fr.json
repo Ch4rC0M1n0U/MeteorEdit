@@ -13,6 +13,8 @@
     "ok": "OK",
     "error": "Erreur",
     "loading": "Chargement...",
+    "saving": "Sauvegarde...",
+    "saved": "Sauvegardé",
     "noResults": "Aucun résultat",
     "yes": "Oui",
     "no": "Non",
@@ -1781,6 +1783,13 @@
     "improvement": "Amélioration",
     "noChanges": "Aucune nouveauté pour le moment",
     "version": "Version"
+  },
+  "templates": {
+    "titlePlaceholder": "Titre du modèle",
+    "contentPlaceholder": "Contenu du modèle...",
+    "phDossierTitle": "Titre dossier",
+    "phDateNow": "Date du jour",
+    "phUser": "Utilisateur"
   },
   "osint": {
     "searchTitle": "Leaks Search",
