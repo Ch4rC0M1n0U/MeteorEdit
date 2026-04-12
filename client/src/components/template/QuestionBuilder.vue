@@ -185,6 +185,8 @@ function emitAll() {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 100%;
+  width: 100%;
 }
 
 /* Header */
@@ -231,8 +233,11 @@ function emitAll() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   padding: 48px 24px;
+  flex: 1;
+  min-height: 50vh;
   text-align: center;
   border: 2px dashed var(--me-border);
   border-radius: 16px;

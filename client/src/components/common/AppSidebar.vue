@@ -199,6 +199,15 @@ onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
   border-radius: 8px;
   transition: background 0.15s;
 }
+.sidebar--collapsed .sidebar-header {
+  padding: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+.sidebar--collapsed .sidebar-brand {
+  padding: 6px;
+  justify-content: center;
+}
 .sidebar-brand:hover { background: var(--me-accent-glow); }
 .brand-icon {
   width: 36px; height: 36px;
