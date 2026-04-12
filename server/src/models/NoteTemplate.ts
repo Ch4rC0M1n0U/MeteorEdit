@@ -5,7 +5,7 @@ export interface ITemplateQuestion {
   parentId: string | null;
   parentAnswerValue: string | null;
   order: number;
-  type: 'boolean' | 'select' | 'text';
+  type: 'boolean' | 'radio' | 'checkbox' | 'text';
   label: string;
   options?: string[];
   contentBlocks: Record<string, any>;

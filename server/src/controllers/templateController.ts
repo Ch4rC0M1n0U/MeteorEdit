@@ -155,8 +155,14 @@ export async function compileTemplate(req: AuthRequest, res: Response) {
     for (const q of questions.sort((a: any, b: any) => a.order - b.order)) {
       if (!q.parentId) {
         active.push(q);
-      } else if (answers[q.parentId] === q.parentAnswerValue) {
-        active.push(q);
+      } else {
+        const parentAnswer = answers[q.parentId];
+        if (!parentAnswer) continue;
+        // For checkbox parents, answer is "val1||val2", check if parentAnswerValue is included
+        const parentValues = parentAnswer.split('||').filter(Boolean);
+        if (parentValues.includes(q.parentAnswerValue)) {
+          active.push(q);
+        }
       }
     }
     return active;
@@ -171,19 +177,30 @@ export async function compileTemplate(req: AuthRequest, res: Response) {
     const answer = answers[q.id];
     if (!answer) continue;
 
-    let block = q.contentBlocks?.[q.type === 'text' ? '__text__' : answer];
-    if (!block) continue;
+    if (q.type === 'checkbox') {
+      // Checkbox: answer is "val1||val2||val3", concat content blocks for each
+      const selectedValues = answer.split('||').filter(Boolean);
+      for (const sv of selectedValues) {
+        const block = q.contentBlocks?.[sv];
+        if (block?.content && Array.isArray(block.content)) {
+          docNodes.push(...block.content);
+        }
+      }
+    } else {
+      let block = q.contentBlocks?.[q.type === 'text' ? '__text__' : answer];
+      if (!block) continue;
 
-    // For text type, replace {{questionId}} placeholders with the answer text
-    if (q.type === 'text' && block) {
-      const blockJson = JSON.stringify(block);
-      const replaced = blockJson.split(`{{${q.id}}}`).join(answer);
-      block = JSON.parse(replaced);
-    }
+      // For text type, replace {{questionId}} placeholders with the answer text
+      if (q.type === 'text' && block) {
+        const blockJson = JSON.stringify(block);
+        const replaced = blockJson.split(`{{${q.id}}}`).join(answer);
+        block = JSON.parse(replaced);
+      }
 
-    // Append block's content nodes to the document
-    if (block.content && Array.isArray(block.content)) {
-      docNodes.push(...block.content);
+      // Append block's content nodes to the document
+      if (block.content && Array.isArray(block.content)) {
+        docNodes.push(...block.content);
+      }
     }
   }
 

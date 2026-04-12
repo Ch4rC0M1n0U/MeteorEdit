@@ -51,7 +51,7 @@
     </div>
 
     <!-- Options (for select type) -->
-    <div v-if="localType === 'select'" class="qi-field">
+    <div v-if="localType === 'radio' || localType === 'checkbox'" class="qi-field">
       <label class="qi-label">{{ t('questionBuilder.options') }}</label>
       <div class="qi-options-list">
         <div v-for="(opt, oi) in localOptions" :key="oi" class="qi-option-row">
@@ -150,13 +150,14 @@ watch(() => props.question, (q) => {
 
 const typeOptions = computed(() => [
   { value: 'boolean' as const, label: t('questionBuilder.boolean'), icon: 'pi pi-check-circle' },
-  { value: 'select' as const, label: t('questionBuilder.select'), icon: 'pi pi-list' },
+  { value: 'radio' as const, label: t('questionBuilder.radio'), icon: 'pi pi-circle' },
+  { value: 'checkbox' as const, label: t('questionBuilder.checkbox'), icon: 'pi pi-check-square' },
   { value: 'text' as const, label: t('questionBuilder.text'), icon: 'pi pi-pencil' },
 ]);
 
 const answerKeys = computed<string[]>(() => {
   if (localType.value === 'boolean') return ['yes', 'no'];
-  if (localType.value === 'select') return localOptions.value.filter(o => o.trim());
+  if (localType.value === 'radio' || localType.value === 'checkbox') return localOptions.value.filter(o => o.trim());
   if (localType.value === 'text') return ['__text__'];
   return [];
 });
@@ -184,7 +185,7 @@ function emitUpdate() {
     ...props.question,
     label: localLabel.value,
     type: localType.value,
-    options: localType.value === 'select' ? [...localOptions.value] : undefined,
+    options: (localType.value === 'radio' || localType.value === 'checkbox') ? [...localOptions.value] : undefined,
     contentBlocks: { ...localContentBlocks.value },
   });
 }
