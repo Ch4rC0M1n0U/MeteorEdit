@@ -7,9 +7,9 @@
   --me-bg-deep: #0a0e17;
   --me-bg-surface: #111827;
   --me-bg-elevated: #1a2332;
-  --me-bg-glass: rgba(17, 24, 39, 0.7);
-  --me-border: rgba(99, 179, 237, 0.12);
-  --me-border-hover: rgba(99, 179, 237, 0.25);
+  --me-bg-glass: rgba(17, 24, 39, 0.85);
+  --me-border: rgba(99, 179, 237, 0.15);
+  --me-border-hover: rgba(99, 179, 237, 0.28);
   --me-accent: #38bdf8;
   --me-accent-glow: rgba(56, 189, 248, 0.15);
   --me-accent-warm: #f59e0b;
