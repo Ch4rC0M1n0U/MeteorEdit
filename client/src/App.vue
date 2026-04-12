@@ -59,6 +59,15 @@ const dossierStore = useDossierStore();
 
 const sidebarCollapsed = ref(false);
 
+// Auto-collapse sidebar when opening a dossier, expand when closing
+watch(() => dossierStore.currentDossier, (current, previous) => {
+  if (current && !previous) {
+    sidebarCollapsed.value = true;
+  } else if (!current && previous) {
+    sidebarCollapsed.value = false;
+  }
+});
+
 const announcementIcon = computed(() => {
   const icons: Record<string, string> = {
     info: 'pi pi-info-circle',
