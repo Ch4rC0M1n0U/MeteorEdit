@@ -7,124 +7,128 @@
           <i class="pi pi-arrow-left" style="font-size: 16px;" />
         </button>
         <div class="tpl-edit-title-wrap">
-          <input
+          <InputText
             v-model="title"
             class="tpl-edit-title-input"
             :placeholder="t('templates.titlePlaceholder')"
+            variant="filled"
+            size="large"
             @blur="autoSave"
           />
-          <span class="tpl-edit-status mono" :class="{ 'tpl-edit-status--saving': saving }">
-            {{ saving ? t('common.saving') : saved ? t('common.saved') : '' }}
-          </span>
+          <Tag v-if="saving" :value="t('common.saving')" severity="secondary" class="tpl-status-tag" />
+          <Tag v-else-if="saved" :value="t('common.saved')" severity="success" class="tpl-status-tag" />
         </div>
       </div>
       <div class="tpl-edit-header-right">
-        <button
-          v-for="ph in availablePlaceholders"
-          :key="ph.key"
-          class="placeholder-chip"
-          @click="insertPlaceholder(ph.key)"
-          type="button"
-        >
-          {{ ph.label }}
-        </button>
-        <div class="tpl-header-sep" />
-        <button
-          class="tpl-toggle-btn"
-          :class="{ active: showQuestions }"
-          @click="showQuestions = !showQuestions"
-          type="button"
-          :title="t('questionBuilder.panelTitle')"
-        >
-          <i class="pi pi-question-circle" style="font-size: 16px;" />
-          {{ t('questionBuilder.panelTitle') }}
-          <span v-if="interactiveQuestions.length" class="tpl-q-badge mono">{{ interactiveQuestions.length }}</span>
-        </button>
+        <!-- Mode switcher -->
+        <SelectButton
+          v-model="currentMode"
+          :options="modeOptions"
+          optionLabel="label"
+          optionValue="value"
+          :allowEmpty="false"
+          class="tpl-mode-switcher"
+        />
       </div>
     </div>
 
     <!-- Description -->
     <div class="tpl-edit-desc-row">
       <label class="tpl-field-label">{{ t('common.description') }}</label>
-      <input
+      <InputText
         v-model="description"
         class="tpl-edit-desc-input"
         :placeholder="t('common.description')"
+        variant="filled"
+        size="small"
         @blur="autoSave"
       />
     </div>
 
-    <!-- Toolbar -->
-    <div class="tpl-edit-toolbar" v-if="editor">
-      <button class="ne-btn" :class="{ active: editor.isActive('bold') }" @click="editor.chain().focus().toggleBold().run()">
-        <span class="mdi mdi-format-bold" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" :class="{ active: editor.isActive('italic') }" @click="editor.chain().focus().toggleItalic().run()">
-        <span class="mdi mdi-format-italic" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" :class="{ active: editor.isActive('underline') }" @click="editor.chain().focus().toggleUnderline().run()">
-        <span class="mdi mdi-format-underline" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" :class="{ active: editor.isActive('strike') }" @click="editor.chain().focus().toggleStrike().run()">
-        <span class="mdi mdi-format-strikethrough" style="font-size: 16px;" />
-      </button>
-      <div class="ne-separator" />
-      <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 1 }) }" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()">
-        <span class="mono">H1</span>
-      </button>
-      <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 2 }) }" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">
-        <span class="mono">H2</span>
-      </button>
-      <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 3 }) }" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()">
-        <span class="mono">H3</span>
-      </button>
-      <div class="ne-separator" />
-      <button class="ne-btn" :class="{ active: editor.isActive('bulletList') }" @click="editor.chain().focus().toggleBulletList().run()">
-        <span class="mdi mdi-format-list-bulleted" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" :class="{ active: editor.isActive('orderedList') }" @click="editor.chain().focus().toggleOrderedList().run()">
-        <span class="mdi mdi-format-list-numbered" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" :class="{ active: editor.isActive('taskList') }" @click="editor.chain().focus().toggleTaskList().run()">
-        <span class="mdi mdi-checkbox-marked-outline" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" :class="{ active: editor.isActive('blockquote') }" @click="editor.chain().focus().toggleBlockquote().run()">
-        <span class="mdi mdi-format-quote-close" style="font-size: 16px;" />
-      </button>
-      <div class="ne-separator" />
-      <button class="ne-btn" @click="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">
-        <span class="mdi mdi-table" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" @click="editor.chain().focus().setHorizontalRule().run()">
-        <span class="mdi mdi-minus" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" @click="editor.chain().focus().setCodeBlock().run()">
-        <span class="mdi mdi-code-braces" style="font-size: 16px;" />
-      </button>
-      <div class="ne-separator" />
-      <button class="ne-btn" @click="editor.chain().focus().setTextAlign('left').run()" :class="{ active: editor.isActive({ textAlign: 'left' }) }">
-        <span class="mdi mdi-format-align-left" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" @click="editor.chain().focus().setTextAlign('center').run()" :class="{ active: editor.isActive({ textAlign: 'center' }) }">
-        <span class="mdi mdi-format-align-center" style="font-size: 16px;" />
-      </button>
-      <button class="ne-btn" @click="editor.chain().focus().setTextAlign('right').run()" :class="{ active: editor.isActive({ textAlign: 'right' }) }">
-        <span class="mdi mdi-format-align-right" style="font-size: 16px;" />
-      </button>
-    </div>
+    <!-- Editor mode: toolbar + editor -->
+    <Transition name="tpl-fade" mode="out-in">
+      <div v-if="currentMode === 'editor'" key="editor-mode" class="tpl-edit-mode">
+        <!-- Toolbar -->
+        <div class="tpl-edit-toolbar" v-if="editor">
+          <button class="ne-btn" :class="{ active: editor.isActive('bold') }" @click="editor.chain().focus().toggleBold().run()">
+            <span class="mdi mdi-format-bold" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" :class="{ active: editor.isActive('italic') }" @click="editor.chain().focus().toggleItalic().run()">
+            <span class="mdi mdi-format-italic" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" :class="{ active: editor.isActive('underline') }" @click="editor.chain().focus().toggleUnderline().run()">
+            <span class="mdi mdi-format-underline" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" :class="{ active: editor.isActive('strike') }" @click="editor.chain().focus().toggleStrike().run()">
+            <span class="mdi mdi-format-strikethrough" style="font-size: 16px;" />
+          </button>
+          <div class="ne-separator" />
+          <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 1 }) }" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()">
+            <span class="mono">H1</span>
+          </button>
+          <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 2 }) }" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">
+            <span class="mono">H2</span>
+          </button>
+          <button class="ne-btn ne-btn-text" :class="{ active: editor.isActive('heading', { level: 3 }) }" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()">
+            <span class="mono">H3</span>
+          </button>
+          <div class="ne-separator" />
+          <button class="ne-btn" :class="{ active: editor.isActive('bulletList') }" @click="editor.chain().focus().toggleBulletList().run()">
+            <span class="mdi mdi-format-list-bulleted" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" :class="{ active: editor.isActive('orderedList') }" @click="editor.chain().focus().toggleOrderedList().run()">
+            <span class="mdi mdi-format-list-numbered" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" :class="{ active: editor.isActive('taskList') }" @click="editor.chain().focus().toggleTaskList().run()">
+            <span class="mdi mdi-checkbox-marked-outline" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" :class="{ active: editor.isActive('blockquote') }" @click="editor.chain().focus().toggleBlockquote().run()">
+            <span class="mdi mdi-format-quote-close" style="font-size: 16px;" />
+          </button>
+          <div class="ne-separator" />
+          <button class="ne-btn" @click="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">
+            <span class="mdi mdi-table" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" @click="editor.chain().focus().setHorizontalRule().run()">
+            <span class="mdi mdi-minus" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" @click="editor.chain().focus().setCodeBlock().run()">
+            <span class="mdi mdi-code-braces" style="font-size: 16px;" />
+          </button>
+          <div class="ne-separator" />
+          <button class="ne-btn" @click="editor.chain().focus().setTextAlign('left').run()" :class="{ active: editor.isActive({ textAlign: 'left' }) }">
+            <span class="mdi mdi-format-align-left" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" @click="editor.chain().focus().setTextAlign('center').run()" :class="{ active: editor.isActive({ textAlign: 'center' }) }">
+            <span class="mdi mdi-format-align-center" style="font-size: 16px;" />
+          </button>
+          <button class="ne-btn" @click="editor.chain().focus().setTextAlign('right').run()" :class="{ active: editor.isActive({ textAlign: 'right' }) }">
+            <span class="mdi mdi-format-align-right" style="font-size: 16px;" />
+          </button>
+          <div class="ne-separator" />
+          <!-- Placeholder chips -->
+          <div class="tpl-placeholder-chips">
+            <Chip
+              v-for="ph in availablePlaceholders"
+              :key="ph.key"
+              :label="ph.label"
+              class="tpl-ph-chip"
+              @click="insertPlaceholder(ph.key)"
+            />
+          </div>
+        </div>
 
-    <!-- Main area: editor + optional question panel -->
-    <div class="tpl-edit-main">
-      <!-- Editor content -->
-      <div class="tpl-edit-body">
-        <editor-content :editor="editor" class="tpl-edit-content" />
+        <!-- Editor content -->
+        <div class="tpl-edit-body">
+          <editor-content :editor="editor" class="tpl-edit-content" />
+        </div>
       </div>
 
-      <!-- Question Builder panel -->
-      <div v-if="showQuestions" class="tpl-edit-questions">
+      <!-- Questions mode: full area -->
+      <div v-else key="questions-mode" class="tpl-edit-mode tpl-questions-mode">
         <QuestionBuilder v-model="interactiveQuestions" @update:modelValue="debouncedAutoSave" />
       </div>
-    </div>
+    </Transition>
 
     <!-- Loading -->
     <div v-if="loadingTemplate" class="tpl-edit-loading">
@@ -134,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, onBeforeUnmount } from 'vue';
+import { ref, shallowRef, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { Editor, EditorContent } from '@tiptap/vue-3';
@@ -150,6 +154,10 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import ProgressBar from 'primevue/progressbar';
+import InputText from 'primevue/inputtext';
+import SelectButton from 'primevue/selectbutton';
+import Tag from 'primevue/tag';
+import Chip from 'primevue/chip';
 import { useTemplateStore } from '../stores/template';
 import QuestionBuilder from '../components/template/QuestionBuilder.vue';
 import type { TemplateQuestion } from '../types';
@@ -166,9 +174,14 @@ const saved = ref(false);
 const loadingTemplate = ref(true);
 const templateId = route.params.id as string;
 const editor = shallowRef<Editor | null>(null);
-const showQuestions = ref(false);
+const currentMode = ref<'editor' | 'questions'>('editor');
 const interactiveQuestions = ref<TemplateQuestion[]>([]);
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const modeOptions = computed(() => [
+  { value: 'editor', label: t('templates.modeEditor') },
+  { value: 'questions', label: t('questionBuilder.panelTitle') + (interactiveQuestions.value.length ? ` (${interactiveQuestions.value.length})` : '') },
+]);
 
 const availablePlaceholders = [
   { key: '{{dossier.title}}', label: t('templates.phDossierTitle') },
@@ -211,7 +224,6 @@ function debouncedAutoSave() {
 }
 
 function goBack() {
-  // Save before leaving
   if (title.value.trim() && editor.value) {
     autoSave();
   }
@@ -224,7 +236,7 @@ onMounted(async () => {
     title.value = tpl.title;
     description.value = tpl.description || '';
     interactiveQuestions.value = tpl.interactiveQuestions || [];
-    if (interactiveQuestions.value.length) showQuestions.value = true;
+    if (interactiveQuestions.value.length) currentMode.value = 'questions';
 
     editor.value = new Editor({
       extensions: [
@@ -315,50 +327,24 @@ onBeforeUnmount(() => {
 
 .tpl-edit-title-input {
   flex: 1;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  background: none;
-  border: none;
-  outline: none;
-  font-family: var(--me-font-body);
   min-width: 0;
-}
-.tpl-edit-title-input::placeholder {
-  color: var(--me-text-muted);
+  font-weight: 700 !important;
+  font-size: 18px !important;
 }
 
-.tpl-edit-status {
-  font-size: 11px;
-  color: var(--me-success);
+.tpl-status-tag {
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.3s;
 }
-.tpl-edit-status--saving { color: var(--me-text-muted); opacity: 1; }
-.tpl-edit-status:not(:empty) { opacity: 1; }
 
 .tpl-edit-header-right {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
   flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
 }
 
-.placeholder-chip {
-  padding: 3px 8px;
-  border-radius: 10px;
-  background: var(--me-accent-glow);
-  border: 1px solid var(--me-border);
-  color: var(--me-text-secondary);
-  font-size: 11px;
-  font-family: var(--me-font-mono);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.placeholder-chip:hover {
-  border-color: var(--me-accent);
-  color: var(--me-accent);
+.tpl-mode-switcher {
+  flex-shrink: 0;
 }
 
 .tpl-edit-desc-row {
@@ -382,15 +368,15 @@ onBeforeUnmount(() => {
 
 .tpl-edit-desc-input {
   flex: 1;
-  font-size: 13px;
-  color: var(--me-text-secondary);
-  background: none;
-  border: none;
-  outline: none;
-  font-family: var(--me-font-body);
 }
-.tpl-edit-desc-input::placeholder {
-  color: var(--me-text-muted);
+
+/* Main mode wrapper */
+.tpl-edit-mode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* Toolbar */
@@ -423,44 +409,21 @@ onBeforeUnmount(() => {
 .ne-btn-text { width: auto; padding: 0 7px; font-size: 11px; font-weight: 700; }
 .ne-separator { width: 1px; height: 20px; background: var(--me-border); margin: 0 5px; }
 
-/* Toggle button */
-.tpl-header-sep {
-  width: 1px;
-  height: 20px;
-  background: var(--me-border);
-  margin: 0 4px;
-}
-.tpl-toggle-btn {
+/* Placeholder chips in toolbar */
+.tpl-placeholder-chips {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border: 1px solid var(--me-border);
-  border-radius: 8px;
-  background: none;
-  color: var(--me-text-secondary);
-  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 4px;
+}
+.tpl-ph-chip {
   cursor: pointer;
+  font-size: 11px !important;
   transition: all 0.15s;
-  white-space: nowrap;
 }
-.tpl-toggle-btn:hover { border-color: var(--me-accent); color: var(--me-accent); }
-.tpl-toggle-btn.active { border-color: var(--me-accent); background: var(--me-accent-glow); color: var(--me-accent); }
-.tpl-q-badge {
-  font-size: 10px;
-  background: var(--me-accent);
-  color: var(--me-bg-deep);
-  padding: 0 5px;
-  border-radius: 8px;
-  font-weight: 700;
-}
-
-/* Main area: editor + optional question panel */
-.tpl-edit-main {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-height: 0;
+.tpl-ph-chip:hover {
+  border-color: var(--me-accent) !important;
+  color: var(--me-accent) !important;
 }
 
 /* Editor body */
@@ -471,32 +434,37 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 
-/* Question panel */
-.tpl-edit-questions {
-  width: 420px;
-  flex-shrink: 0;
+/* Questions mode */
+.tpl-questions-mode {
   overflow-y: auto;
-  border-left: 1px solid var(--me-border);
-  background: var(--me-bg-surface);
-  padding: 16px;
+  background: var(--me-bg-deep);
+  padding: 24px;
 }
 
 .tpl-edit-loading {
   padding: 20px;
 }
 
+/* Transition */
+.tpl-fade-enter-active,
+.tpl-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.tpl-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.tpl-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
 @media (max-width: 900px) {
-  .tpl-edit-header-right { display: none; }
   .tpl-edit-header { padding: 8px 12px; }
   .tpl-edit-desc-row { padding: 6px 12px; }
   .tpl-edit-toolbar { padding: 6px 12px; }
-  .tpl-edit-main { flex-direction: column; }
-  .tpl-edit-questions {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid var(--me-border);
-    max-height: 50vh;
-  }
+  .tpl-questions-mode { padding: 16px 12px; }
+  .tpl-placeholder-chips { display: none; }
 }
 </style>
 

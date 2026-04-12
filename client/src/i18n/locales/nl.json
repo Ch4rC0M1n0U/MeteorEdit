@@ -1781,10 +1781,16 @@
     "noTemplates": "Geen sjablonen",
     "emptyHint": "Maak uw eerste sjabloon om vooraf ingevulde notities te genereren.",
     "modelSingular": "sjabloon",
-    "modelsPlural": "sjablonen"
+    "modelsPlural": "sjablonen",
+    "modeEditor": "Redactie"
   },
   "questionBuilder": {
     "panelTitle": "Interactieve vragen",
+    "panelSubtitle": "Configureer vragen en voorwaardelijke inhoud",
+    "questionsPlural": "vragen",
+    "questionSingular": "vraag",
+    "emptyTitle": "Geen vragen",
+    "addFirstQuestion": "Eerste vraag toevoegen",
     "addQuestion": "Vraag toevoegen",
     "questionLabel": "Vraag",
     "questionLabelPlaceholder": "Bijv.: Heeft u een Mercurius-antwoord gegeven?",

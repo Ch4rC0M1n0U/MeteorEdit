@@ -1782,10 +1782,16 @@
     "noTemplates": "No templates",
     "emptyHint": "Create your first template to generate pre-filled notes.",
     "modelSingular": "template",
-    "modelsPlural": "templates"
+    "modelsPlural": "templates",
+    "modeEditor": "Editor"
   },
   "questionBuilder": {
     "panelTitle": "Interactive questions",
+    "panelSubtitle": "Configure questions and conditional content",
+    "questionsPlural": "questions",
+    "questionSingular": "question",
+    "emptyTitle": "No questions",
+    "addFirstQuestion": "Add the first question",
     "addQuestion": "Add a question",
     "questionLabel": "Question",
     "questionLabelPlaceholder": "E.g.: Did you complete a Mercury response?",

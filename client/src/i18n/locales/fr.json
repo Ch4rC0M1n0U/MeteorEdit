@@ -1794,10 +1794,16 @@
     "noTemplates": "Aucun modèle",
     "emptyHint": "Créez votre premier modèle pour générer des notes pré-remplies.",
     "modelSingular": "modèle",
-    "modelsPlural": "modèles"
+    "modelsPlural": "modèles",
+    "modeEditor": "Rédaction"
   },
   "questionBuilder": {
     "panelTitle": "Questions interactives",
+    "panelSubtitle": "Configurez les questions et le contenu conditionnel",
+    "questionsPlural": "questions",
+    "questionSingular": "question",
+    "emptyTitle": "Aucune question",
+    "addFirstQuestion": "Ajouter la première question",
     "addQuestion": "Ajouter une question",
     "questionLabel": "Question",
     "questionLabelPlaceholder": "Ex: Avez-vous effectué une réponse Mercure ?",

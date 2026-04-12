@@ -1,13 +1,13 @@
 <template>
   <div class="cbe-wrap">
     <div class="cbe-toolbar" v-if="editor">
-      <button class="cbe-btn" :class="{ active: editor.isActive('bold') }" @click="editor.chain().focus().toggleBold().run()" type="button">
+      <button class="cbe-btn" :class="{ active: editor.isActive('bold') }" @click="editor.chain().focus().toggleBold().run()" type="button" title="Bold">
         <span class="mdi mdi-format-bold" />
       </button>
-      <button class="cbe-btn" :class="{ active: editor.isActive('italic') }" @click="editor.chain().focus().toggleItalic().run()" type="button">
+      <button class="cbe-btn" :class="{ active: editor.isActive('italic') }" @click="editor.chain().focus().toggleItalic().run()" type="button" title="Italic">
         <span class="mdi mdi-format-italic" />
       </button>
-      <button class="cbe-btn" :class="{ active: editor.isActive('underline') }" @click="editor.chain().focus().toggleUnderline().run()" type="button">
+      <button class="cbe-btn" :class="{ active: editor.isActive('underline') }" @click="editor.chain().focus().toggleUnderline().run()" type="button" title="Underline">
         <span class="mdi mdi-format-underline" />
       </button>
       <div class="cbe-sep" />
@@ -84,25 +84,29 @@ onBeforeUnmount(() => {
 <style scoped>
 .cbe-wrap {
   border: 1px solid var(--me-border);
-  border-radius: 6px;
+  border-radius: 10px;
   overflow: hidden;
+  transition: border-color 0.15s;
+}
+.cbe-wrap:focus-within {
+  border-color: var(--me-accent);
 }
 .cbe-toolbar {
   display: flex;
   align-items: center;
   gap: 1px;
-  padding: 3px 6px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--me-border);
-  background: var(--me-bg-surface);
+  background: var(--me-bg-elevated);
   flex-wrap: wrap;
 }
 .cbe-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 6px;
   background: none;
   border: none;
   color: var(--me-text-muted);
@@ -112,8 +116,8 @@ onBeforeUnmount(() => {
 }
 .cbe-btn:hover { background: var(--me-accent-glow); color: var(--me-text-primary); }
 .cbe-btn.active { background: var(--me-accent-glow); color: var(--me-accent); }
-.cbe-btn-text { width: auto; padding: 0 5px; font-size: 10px; font-weight: 700; }
-.cbe-sep { width: 1px; height: 16px; background: var(--me-border); margin: 0 3px; }
+.cbe-btn-text { width: auto; padding: 0 6px; font-size: 10px; font-weight: 700; }
+.cbe-sep { width: 1px; height: 16px; background: var(--me-border); margin: 0 4px; }
 </style>
 
 <style>
@@ -121,14 +125,15 @@ onBeforeUnmount(() => {
   min-height: 80px;
   max-height: 200px;
   overflow-y: auto;
-  padding: 10px 12px;
+  padding: 10px 14px;
+  background: var(--me-bg-deep);
 }
 .cbe-content .ProseMirror {
   min-height: 60px;
   outline: none;
   font-family: var(--me-font-body);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--me-text-primary);
 }
 .cbe-content .ProseMirror p.is-editor-empty:first-child::before {
