@@ -119,6 +119,91 @@ body {
   box-shadow: var(--me-shadow), var(--me-shadow-glow);
 }
 
+/* PrimeVue Dialog — theme-aware */
+.p-dialog {
+  background: var(--me-bg-surface) !important;
+  border: 1px solid var(--me-border) !important;
+  border-radius: var(--me-radius) !important;
+  box-shadow: var(--me-shadow) !important;
+  color: var(--me-text-primary) !important;
+}
+.p-dialog .p-dialog-header {
+  background: transparent !important;
+  color: var(--me-text-primary) !important;
+  border-bottom: 1px solid var(--me-border);
+  padding: 16px 20px !important;
+}
+.p-dialog .p-dialog-content {
+  background: transparent !important;
+  color: var(--me-text-primary) !important;
+  padding: 20px !important;
+}
+.p-dialog .p-dialog-footer {
+  background: transparent !important;
+  border-top: 1px solid var(--me-border);
+  padding: 12px 20px !important;
+}
+.p-dialog .p-dialog-header-actions .p-button {
+  color: var(--me-text-muted) !important;
+}
+.p-dialog .p-dialog-header-actions .p-button:hover {
+  color: var(--me-text-primary) !important;
+  background: var(--me-accent-glow) !important;
+}
+
+/* PrimeVue InputText / Textarea — theme-aware */
+.p-inputtext, .p-textarea {
+  background: var(--me-bg-elevated) !important;
+  border: 1px solid var(--me-border) !important;
+  color: var(--me-text-primary) !important;
+  border-radius: var(--me-radius-sm) !important;
+}
+.p-inputtext:focus, .p-textarea:focus,
+.p-inputtext:enabled:focus, .p-textarea:enabled:focus {
+  border-color: var(--me-accent) !important;
+  box-shadow: 0 0 0 3px var(--me-accent-glow) !important;
+}
+.p-inputtext::placeholder, .p-textarea::placeholder {
+  color: var(--me-text-muted) !important;
+}
+
+/* PrimeVue Tabs — theme-aware */
+.p-tabs, .p-tablist, .p-tabpanels, .p-tabpanel {
+  background: transparent !important;
+}
+
+/* PrimeVue SelectButton — theme-aware */
+.p-selectbutton {
+  background: var(--me-bg-elevated) !important;
+  border: 1px solid var(--me-border) !important;
+  border-radius: var(--me-radius-sm) !important;
+}
+.p-selectbutton .p-togglebutton {
+  background: transparent !important;
+  color: var(--me-text-secondary) !important;
+  border: none !important;
+}
+.p-selectbutton .p-togglebutton:hover {
+  color: var(--me-text-primary) !important;
+  background: var(--me-accent-glow) !important;
+}
+.p-selectbutton .p-togglebutton.p-highlight,
+.p-selectbutton .p-togglebutton[data-p-active="true"] {
+  background: var(--me-accent-glow) !important;
+  color: var(--me-accent) !important;
+}
+
+/* PrimeVue misc — theme-aware */
+.p-message { border-radius: var(--me-radius-sm) !important; }
+.p-progressbar { background: var(--me-bg-elevated) !important; }
+.p-popover, .p-overlaypanel {
+  background: var(--me-bg-surface) !important;
+  border: 1px solid var(--me-border) !important;
+  color: var(--me-text-primary) !important;
+  border-radius: var(--me-radius) !important;
+  box-shadow: var(--me-shadow) !important;
+}
+
 /* Accent glow button */
 .btn-accent {
   background: var(--me-accent) !important;
