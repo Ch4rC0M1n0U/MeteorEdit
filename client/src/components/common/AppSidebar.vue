@@ -9,7 +9,7 @@
           <div v-if="!collapsed" class="brand-text">
             <span class="brand-name">{{ brandingStore.appName }}</span>
             <div class="brand-meta">
-              <span class="brand-version mono">v3.7.0</span>
+              <span class="brand-version mono">v3.9.0</span>
               <span
                 class="connection-dot"
                 :class="backendConnected ? 'connection-dot--ok' : 'connection-dot--err'"

@@ -910,10 +910,17 @@ const categories: Category[] = [
 <p>Rendez vos modèles dynamiques en ajoutant des <strong>questions interactives</strong> :</p>
 <ul>
 <li><strong>Oui / Non</strong> — Questions à réponse binaire</li>
-<li><strong>Choix multiple</strong> — Sélection parmi plusieurs options</li>
+<li><strong>Choix unique (radio)</strong> — Sélection d'une seule option parmi plusieurs</li>
+<li><strong>Choix multiple (checkbox)</strong> — Sélection de plusieurs options simultanément</li>
 <li><strong>Texte libre</strong> — Saisie libre de l'utilisateur</li>
 </ul>
-<p>Chaque réponse peut déclencher un bloc de texte différent, et des <strong>sous-questions</strong> conditionnelles.</p>
+<p>Chaque réponse peut déclencher un bloc de texte différent, et des <strong>sous-questions</strong> conditionnelles. Pour les checkbox, les blocs de contenu de toutes les options cochées sont concaténés.</p>
+<h3>Interface de conception</h3>
+<p>L'éditeur de templates propose deux modes via un sélecteur :</p>
+<ul>
+<li><strong>Rédaction</strong> — Éditeur riche avec placeholders cliquables pour le contenu de base</li>
+<li><strong>Questions interactives</strong> — Interface dédiée plein écran pour configurer les questions, types de réponses et contenus conditionnels</li>
+</ul>
 <p>Lors de l'utilisation, un <strong>assistant pas-à-pas</strong> guide l'utilisateur à travers les questions. Le texte final est injecté dans une nouvelle note, directement éditable.</p>`,
       },
     ],
