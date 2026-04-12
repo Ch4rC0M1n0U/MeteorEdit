@@ -7,6 +7,7 @@ import {
   updateTemplate,
   deleteTemplate,
   resolveTemplate,
+  compileTemplate,
   getAvailablePlaceholders,
 } from '../controllers/templateController';
 
@@ -211,5 +212,56 @@ router.delete('/:id', deleteTemplate);
  *         description: Modele ou dossier non trouve
  */
 router.post('/:id/resolve', resolveTemplate);
+
+/**
+ * @swagger
+ * /api/templates/{id}/compile:
+ *   post:
+ *     tags: [Templates]
+ *     summary: Compiler un modele interactif avec les reponses
+ *     description: Assemble le contenu du modele en integrant les blocs conditionnels selon les reponses fournies, puis resout les placeholders.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [dossierId, answers]
+ *             properties:
+ *               dossierId:
+ *                 type: string
+ *               answers:
+ *                 type: object
+ *                 additionalProperties:
+ *                   type: string
+ *                 description: Map questionId -> answer value
+ *     responses:
+ *       200:
+ *         description: Contenu compile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 content:
+ *                   type: object
+ *                 title:
+ *                   type: string
+ *       400:
+ *         description: Parametres manquants
+ *       403:
+ *         description: Acces refuse au dossier
+ *       404:
+ *         description: Modele ou dossier non trouve
+ */
+router.post('/:id/compile', compileTemplate);
 
 export default router;

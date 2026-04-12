@@ -898,14 +898,23 @@ const categories: Category[] = [
       {
         id: 'oth-templates',
         title: 'Templates de rapport',
-        keywords: ['template', 'modèle', 'rapport', 'personnaliser'],
+        keywords: ['template', 'modèle', 'rapport', 'personnaliser', 'interactif', 'question', 'wizard'],
         content: `<h2>Templates de rapport</h2>
 <p>Gérez vos modèles de rapport depuis la page <strong>Mes modèles</strong> (accessible depuis le menu avatar).</p>
 <ul>
-<li>Créez des templates personnalisés</li>
-<li>Partagez des templates avec d'autres utilisateurs</li>
-<li>Utilisez-les lors de la génération de rapports IA</li>
-</ul>`,
+<li>Créez des templates personnalisés avec l'éditeur pleine page</li>
+<li>Utilisez des <strong>placeholders</strong> (titre dossier, date, enquêteur...) pour l'insertion automatique</li>
+<li>Utilisez-les lors de la création de notes dans un dossier</li>
+</ul>
+<h3>Templates interactifs</h3>
+<p>Rendez vos modèles dynamiques en ajoutant des <strong>questions interactives</strong> :</p>
+<ul>
+<li><strong>Oui / Non</strong> — Questions à réponse binaire</li>
+<li><strong>Choix multiple</strong> — Sélection parmi plusieurs options</li>
+<li><strong>Texte libre</strong> — Saisie libre de l'utilisateur</li>
+</ul>
+<p>Chaque réponse peut déclencher un bloc de texte différent, et des <strong>sous-questions</strong> conditionnelles.</p>
+<p>Lors de l'utilisation, un <strong>assistant pas-à-pas</strong> guide l'utilisateur à travers les questions. Le texte final est injecté dans une nouvelle note, directement éditable.</p>`,
       },
     ],
   },

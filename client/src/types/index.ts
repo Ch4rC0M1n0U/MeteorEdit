@@ -81,11 +81,23 @@ export interface Investigator {
   email: string;
 }
 
+export interface TemplateQuestion {
+  id: string;
+  parentId: string | null;
+  parentAnswerValue: string | null;
+  order: number;
+  type: 'boolean' | 'select' | 'text';
+  label: string;
+  options?: string[];
+  contentBlocks: Record<string, any>;
+}
+
 export interface NoteTemplate {
   _id: string;
   title: string;
   description: string;
   content: any;
+  interactiveQuestions?: TemplateQuestion[];
   owner: string;
   isShared: boolean;
   createdAt: string;

@@ -28,6 +28,18 @@
         >
           {{ ph.label }}
         </button>
+        <div class="tpl-header-sep" />
+        <button
+          class="tpl-toggle-btn"
+          :class="{ active: showQuestions }"
+          @click="showQuestions = !showQuestions"
+          type="button"
+          :title="t('questionBuilder.panelTitle')"
+        >
+          <i class="pi pi-question-circle" style="font-size: 16px;" />
+          {{ t('questionBuilder.panelTitle') }}
+          <span v-if="interactiveQuestions.length" class="tpl-q-badge mono">{{ interactiveQuestions.length }}</span>
+        </button>
       </div>
     </div>
 
@@ -101,9 +113,17 @@
       </button>
     </div>
 
-    <!-- Editor content -->
-    <div class="tpl-edit-body">
-      <editor-content :editor="editor" class="tpl-edit-content" />
+    <!-- Main area: editor + optional question panel -->
+    <div class="tpl-edit-main">
+      <!-- Editor content -->
+      <div class="tpl-edit-body">
+        <editor-content :editor="editor" class="tpl-edit-content" />
+      </div>
+
+      <!-- Question Builder panel -->
+      <div v-if="showQuestions" class="tpl-edit-questions">
+        <QuestionBuilder v-model="interactiveQuestions" @update:modelValue="debouncedAutoSave" />
+      </div>
     </div>
 
     <!-- Loading -->
@@ -131,6 +151,8 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import ProgressBar from 'primevue/progressbar';
 import { useTemplateStore } from '../stores/template';
+import QuestionBuilder from '../components/template/QuestionBuilder.vue';
+import type { TemplateQuestion } from '../types';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -144,6 +166,8 @@ const saved = ref(false);
 const loadingTemplate = ref(true);
 const templateId = route.params.id as string;
 const editor = shallowRef<Editor | null>(null);
+const showQuestions = ref(false);
+const interactiveQuestions = ref<TemplateQuestion[]>([]);
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const availablePlaceholders = [
@@ -172,6 +196,7 @@ async function autoSave() {
       title: title.value,
       description: description.value,
       content: editor.value?.getJSON(),
+      interactiveQuestions: interactiveQuestions.value,
     });
     saved.value = true;
     setTimeout(() => { saved.value = false; }, 2000);
@@ -198,6 +223,8 @@ onMounted(async () => {
     const tpl = await templateStore.fetchTemplate(templateId);
     title.value = tpl.title;
     description.value = tpl.description || '';
+    interactiveQuestions.value = tpl.interactiveQuestions || [];
+    if (interactiveQuestions.value.length) showQuestions.value = true;
 
     editor.value = new Editor({
       extensions: [
@@ -396,11 +423,62 @@ onBeforeUnmount(() => {
 .ne-btn-text { width: auto; padding: 0 7px; font-size: 11px; font-weight: 700; }
 .ne-separator { width: 1px; height: 20px; background: var(--me-border); margin: 0 5px; }
 
+/* Toggle button */
+.tpl-header-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--me-border);
+  margin: 0 4px;
+}
+.tpl-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid var(--me-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--me-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tpl-toggle-btn:hover { border-color: var(--me-accent); color: var(--me-accent); }
+.tpl-toggle-btn.active { border-color: var(--me-accent); background: var(--me-accent-glow); color: var(--me-accent); }
+.tpl-q-badge {
+  font-size: 10px;
+  background: var(--me-accent);
+  color: var(--me-bg-deep);
+  padding: 0 5px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+/* Main area: editor + optional question panel */
+.tpl-edit-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
 /* Editor body */
 .tpl-edit-body {
   flex: 1;
   overflow-y: auto;
   background: var(--me-bg-deep);
+  min-width: 0;
+}
+
+/* Question panel */
+.tpl-edit-questions {
+  width: 420px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--me-border);
+  background: var(--me-bg-surface);
+  padding: 16px;
 }
 
 .tpl-edit-loading {
@@ -412,6 +490,13 @@ onBeforeUnmount(() => {
   .tpl-edit-header { padding: 8px 12px; }
   .tpl-edit-desc-row { padding: 6px 12px; }
   .tpl-edit-toolbar { padding: 6px 12px; }
+  .tpl-edit-main { flex-direction: column; }
+  .tpl-edit-questions {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--me-border);
+    max-height: 50vh;
+  }
 }
 </style>
 

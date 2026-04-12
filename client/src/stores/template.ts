@@ -45,8 +45,13 @@ export const useTemplateStore = defineStore('template', () => {
     return data.content;
   }
 
+  async function compileTemplate(templateId: string, dossierId: string, answers: Record<string, string>): Promise<{ content: any; title: string }> {
+    const { data } = await api.post(`/templates/${templateId}/compile`, { dossierId, answers });
+    return data;
+  }
+
   return {
     templates, loading,
-    fetchTemplates, fetchTemplate, createTemplate, updateTemplate, deleteTemplate, resolveTemplate,
+    fetchTemplates, fetchTemplate, createTemplate, updateTemplate, deleteTemplate, resolveTemplate, compileTemplate,
   };
 });

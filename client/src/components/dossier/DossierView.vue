@@ -620,6 +620,15 @@
   </Dialog>
 
     <AiDisclaimerModal ref="disclaimerModal" />
+
+    <!-- Template Wizard -->
+    <TemplateWizard
+      v-if="showWizard && wizardTemplate && dossierStore.currentDossier"
+      :template="wizardTemplate"
+      :dossierId="dossierStore.currentDossier._id"
+      @complete="handleWizardComplete"
+      @cancel="showWizard = false; wizardTemplate = null"
+    />
 </template>
 
 <script setup lang="ts">
@@ -632,6 +641,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
+import TemplateWizard from '../template/TemplateWizard.vue';
 import { useEncryptionStore } from '../../stores/encryption';
 import { useConfirm } from '../../composables/useConfirm';
 import api, { SERVER_URL } from '../../services/api';
@@ -713,6 +723,8 @@ const createType = ref('');
 const createParentId = ref<string | null>(null);
 const createTitle = ref('');
 const selectedTemplateId = ref<string | null>(null);
+const wizardTemplate = ref<any>(null);
+const showWizard = ref(false);
 
 // Sidebar
 const sidebarTab = ref<'tree' | 'tasks'>('tree');
@@ -1190,10 +1202,25 @@ function handleCreateNode(type: string, parentId: string | null) {
 }
 
 async function confirmCreate() {
-  let content = null;
-
-  // If a template is selected, resolve placeholders
+  // Check if selected template has interactive questions
   if (selectedTemplateId.value && dossierStore.currentDossier) {
+    const tpl = templateStore.templates.find(t => t._id === selectedTemplateId.value);
+    if (tpl && tpl.interactiveQuestions && tpl.interactiveQuestions.length > 0) {
+      // Open wizard instead of creating directly
+      wizardTemplate.value = tpl;
+      createDialog.value = false;
+      showWizard.value = true;
+      return;
+    }
+  }
+
+  let content = null;
+  let noteTitle = createTitle.value;
+
+  // If a template is selected (no interactive questions), resolve placeholders
+  if (selectedTemplateId.value && dossierStore.currentDossier) {
+    const tpl = templateStore.templates.find(t => t._id === selectedTemplateId.value);
+    if (tpl && !createTitle.value.trim()) noteTitle = tpl.title;
     try {
       content = await templateStore.resolveTemplate(
         selectedTemplateId.value,
@@ -1206,11 +1233,22 @@ async function confirmCreate() {
 
   await dossierStore.createNode({
     type: createType.value as any,
-    title: createTitle.value,
+    title: noteTitle,
     parentId: createParentId.value,
     content,
   });
   createDialog.value = false;
+}
+
+async function handleWizardComplete(result: { content: any; title: string }) {
+  showWizard.value = false;
+  await dossierStore.createNode({
+    type: createType.value as any,
+    title: result.title,
+    parentId: createParentId.value,
+    content: result.content,
+  });
+  wizardTemplate.value = null;
 }
 
 const pendingDownloadUrl = ref('');
