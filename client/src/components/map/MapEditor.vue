@@ -90,13 +90,33 @@
       <div class="me-separator" />
 
       <div class="me-toolbar-group">
-        <div class="me-search-field">
+        <div class="me-search-field" ref="searchFieldRef">
           <i class="pi pi-search" style="font-size: 14px; color: var(--me-text-muted)"></i>
           <InputText
             v-model="searchQuery"
             placeholder="Rechercher un lieu..."
-            @keyup.enter="geocode"
+            @input="onSearchInput"
+            @keyup.enter="selectFirstResult"
+            @keydown.down.prevent="highlightNext"
+            @keydown.up.prevent="highlightPrev"
+            @keydown.escape="searchResults = []"
+            @blur="onSearchBlur"
           />
+          <div v-if="searchResults.length" class="me-search-dropdown">
+            <button
+              v-for="(r, i) in searchResults"
+              :key="r.id"
+              class="me-search-result"
+              :class="{ 'me-search-result--active': i === highlightedIndex }"
+              @mousedown.prevent="selectResult(r)"
+            >
+              <i class="pi pi-map-marker" style="font-size: 12px; color: var(--me-accent); flex-shrink: 0;" />
+              <div class="me-search-result-text">
+                <span class="me-search-result-name">{{ r.text }}</span>
+                <span class="me-search-result-place">{{ r.place_name }}</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -488,6 +508,10 @@ const showSidebar = ref(false);
 const showComments = ref(false);
 const commentCount = ref(0);
 const searchQuery = ref('');
+const searchResults = ref<Array<{ id: string; text: string; place_name: string; center: [number, number] }>>([]);
+const highlightedIndex = ref(-1);
+const searchFieldRef = ref<HTMLElement | null>(null);
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
 const customLayers = ref<Array<{ id: string; label: string; visible: boolean }>>([]);
 function getDefaultStyle() {
   return themeStore.isDark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
@@ -1705,20 +1729,63 @@ function changeStyle(style: string) {
   }
 }
 
-async function geocode() {
+function onSearchInput() {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  highlightedIndex.value = -1;
+  if (!searchQuery.value.trim() || searchQuery.value.trim().length < 2) {
+    searchResults.value = [];
+    return;
+  }
+  searchDebounce = setTimeout(() => fetchSuggestions(), 300);
+}
+
+async function fetchSuggestions() {
   if (!searchQuery.value.trim() || !mapboxgl.accessToken) return;
   try {
+    const center = map ? `${map.getCenter().lng},${map.getCenter().lat}` : '';
+    const proximity = center ? `&proximity=${center}` : '';
     const res = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery.value)}.json?access_token=${mapboxgl.accessToken}&limit=1`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery.value)}.json?access_token=${mapboxgl.accessToken}&limit=5&language=fr${proximity}`
     );
     const data = await res.json();
-    if (data.features?.length) {
-      const [lng, lat] = data.features[0].center;
-      map?.flyTo({ center: [lng, lat], zoom: 16, duration: 1500 });
-    }
-  } catch (err) {
-    console.error('Geocoding failed:', err);
+    searchResults.value = (data.features || []).map((f: any) => ({
+      id: f.id,
+      text: f.text,
+      place_name: f.place_name,
+      center: f.center as [number, number],
+    }));
+  } catch {
+    searchResults.value = [];
   }
+}
+
+function selectResult(r: { center: [number, number]; text: string }) {
+  map?.flyTo({ center: r.center, zoom: 16, duration: 1500 });
+  searchQuery.value = r.text;
+  searchResults.value = [];
+  highlightedIndex.value = -1;
+}
+
+function selectFirstResult() {
+  if (highlightedIndex.value >= 0 && highlightedIndex.value < searchResults.value.length) {
+    selectResult(searchResults.value[highlightedIndex.value]!);
+  } else if (searchResults.value.length) {
+    selectResult(searchResults.value[0]!);
+  }
+}
+
+function highlightNext() {
+  if (!searchResults.value.length) return;
+  highlightedIndex.value = (highlightedIndex.value + 1) % searchResults.value.length;
+}
+
+function highlightPrev() {
+  if (!searchResults.value.length) return;
+  highlightedIndex.value = highlightedIndex.value <= 0 ? searchResults.value.length - 1 : highlightedIndex.value - 1;
+}
+
+function onSearchBlur() {
+  setTimeout(() => { searchResults.value = []; }, 150);
 }
 
 // --- Socket.io ---
@@ -2094,12 +2161,67 @@ watch(() => props.nodeId, (_newId, oldId) => {
   align-items: center;
   gap: 6px;
   min-width: 160px;
-  max-width: 240px;
+  max-width: 280px;
+  position: relative;
 }
 .me-search-field .p-inputtext {
   flex: 1;
   font-size: 12px;
   padding: 5px 8px;
+}
+.me-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  z-index: 100;
+  overflow: hidden;
+  min-width: 320px;
+}
+.me-search-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+  color: var(--me-text-primary);
+}
+.me-search-result:hover,
+.me-search-result--active {
+  background: var(--me-accent-glow);
+}
+.me-search-result + .me-search-result {
+  border-top: 1px solid var(--me-border);
+}
+.me-search-result-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.me-search-result-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.me-search-result-place {
+  font-size: 10px;
+  color: var(--me-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Drawing status bar */
