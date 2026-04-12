@@ -512,6 +512,7 @@ const searchResults = ref<Array<{ id: string; text: string; place_name: string; 
 const highlightedIndex = ref(-1);
 const searchFieldRef = ref<HTMLElement | null>(null);
 let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+let searchPin: mapboxgl.Marker | null = null;
 const customLayers = ref<Array<{ id: string; label: string; visible: boolean }>>([]);
 function getDefaultStyle() {
   return themeStore.isDark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
@@ -1729,6 +1730,10 @@ function changeStyle(style: string) {
   }
 }
 
+function removeSearchPin() {
+  if (searchPin) { searchPin.remove(); searchPin = null; }
+}
+
 function onSearchInput() {
   if (searchDebounce) clearTimeout(searchDebounce);
   highlightedIndex.value = -1;
@@ -1740,6 +1745,7 @@ function onSearchInput() {
 }
 
 async function fetchSuggestions() {
+  removeSearchPin();
   if (!searchQuery.value.trim() || !mapboxgl.accessToken) return;
   try {
     const center = map ? `${map.getCenter().lng},${map.getCenter().lat}` : '';
@@ -1760,10 +1766,20 @@ async function fetchSuggestions() {
 }
 
 function selectResult(r: { center: [number, number]; text: string }) {
+  removeSearchPin();
   map?.flyTo({ center: r.center, zoom: 16, duration: 1500 });
   searchQuery.value = r.text;
   searchResults.value = [];
   highlightedIndex.value = -1;
+
+  if (map) {
+    const el = document.createElement('div');
+    el.className = 'me-search-pin';
+    el.innerHTML = '<i class="pi pi-map-marker" style="font-size:24px;color:var(--me-accent);filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></i>';
+    searchPin = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat(r.center)
+      .addTo(map);
+  }
 }
 
 function selectFirstResult() {
@@ -2018,6 +2034,7 @@ onBeforeUnmount(() => {
   socket?.off('map-entity-deleted', onRemoteEntityDeleted);
   socket?.off('map-presence-joined', onRemotePresenceJoined);
   socket?.off('map-presence-left', onRemotePresenceLeft);
+  removeSearchPin();
   if (drawingMode.value === 'line' && map) map.doubleClickZoom.enable();
   textboxMarkers.forEach(m => m.remove());
   textboxMarkers.clear();
@@ -2160,8 +2177,9 @@ watch(() => props.nodeId, (_newId, oldId) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 160px;
-  max-width: 280px;
+  min-width: 260px;
+  max-width: 400px;
+  flex: 1;
   position: relative;
 }
 .me-search-field .p-inputtext {
@@ -2222,6 +2240,14 @@ watch(() => props.nodeId, (_newId, oldId) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.me-search-pin {
+  cursor: default;
+  animation: me-pin-drop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes me-pin-drop {
+  from { opacity: 0; transform: translateY(-16px) scale(0.6); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Drawing status bar */
