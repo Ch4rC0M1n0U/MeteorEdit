@@ -18,9 +18,18 @@ async function censysFetch(url: string, apiKey: string, options: { method?: stri
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeout || 10000);
   try {
-    const basicAuth = Buffer.from(`${apiKey}:`).toString('base64');
+    // Censys PAT format: censys_{ID}_{SECRET} → Basic Auth with ID:SECRET
+    let authValue: string;
+    if (apiKey.startsWith('censys_')) {
+      const parts = apiKey.slice(7).split('_');
+      const id = parts[0];
+      const secret = parts.slice(1).join('_');
+      authValue = `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`;
+    } else {
+      authValue = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
+    }
     const headers: Record<string, string> = {
-      'Authorization': `Basic ${basicAuth}`,
+      'Authorization': authValue,
       'Accept': 'application/json',
     };
     if (options.body) headers['Content-Type'] = 'application/json';

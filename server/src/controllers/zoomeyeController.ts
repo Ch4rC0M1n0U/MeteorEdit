@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import PluginSettings from '../models/PluginSettings';
 import { logActivity } from '../utils/activityLogger';
 
-const ZOOMEYE_API = 'https://api.zoomeye.org';
+const ZOOMEYE_API = 'https://api.zoomeye.ai';
 
 async function getZoomEyeKey(): Promise<string | null> {
   const settings = await PluginSettings.findOne();
