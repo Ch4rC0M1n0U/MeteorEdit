@@ -18,8 +18,9 @@ async function censysFetch(url: string, apiKey: string, options: { method?: stri
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeout || 10000);
   try {
+    const basicAuth = Buffer.from(`${apiKey}:`).toString('base64');
     const headers: Record<string, string> = {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Basic ${basicAuth}`,
       'Accept': 'application/json',
     };
     if (options.body) headers['Content-Type'] = 'application/json';
