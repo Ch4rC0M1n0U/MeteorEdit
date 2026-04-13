@@ -39,12 +39,21 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
     if (!obj.shodan) obj.shodan = {};
     obj.shodan.hasKey = false;
   }
+  // Mask Telegago (Google CSE) API key
+  if (obj.telegago?.apiKey) {
+    const key = obj.telegago.apiKey;
+    obj.telegago.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+    obj.telegago.hasKey = true;
+  } else {
+    if (!obj.telegago) obj.telegago = {};
+    obj.telegago.hasKey = false;
+  }
   res.json(obj);
 }
 
 export async function updatePluginSettings(req: AuthRequest, res: Response) {
   const settings = await getOrCreate();
-  const { mapbox, shodan } = req.body;
+  const { mapbox, shodan, telegago } = req.body;
   const updatedPlugins: string[] = [];
 
   if (mapbox) {
@@ -59,6 +68,12 @@ export async function updatePluginSettings(req: AuthRequest, res: Response) {
     if (shodan.apiKey !== undefined) settings.shodan.apiKey = shodan.apiKey;
     if (shodan.enabled !== undefined) settings.shodan.enabled = shodan.enabled;
     updatedPlugins.push('shodan');
+  }
+
+  if (telegago) {
+    if (telegago.apiKey !== undefined) settings.telegago.apiKey = telegago.apiKey;
+    if (telegago.enabled !== undefined) settings.telegago.enabled = telegago.enabled;
+    updatedPlugins.push('telegago');
   }
 
   await settings.save();

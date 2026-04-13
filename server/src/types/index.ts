@@ -239,6 +239,10 @@ export interface IPluginSettings extends Document {
     apiKey: string;
     enabled: boolean;
   };
+  telegago: {
+    apiKey: string;
+    enabled: boolean;
+  };
 }
 
 export interface INotification extends Document {

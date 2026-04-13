@@ -1110,6 +1110,8 @@
     "mapboxDesc": "Interactieve cartografie voor dossiers",
     "shodanDesc": "IoT/apparaat zoeken via Shodan API",
     "shodanEnabled": "Shodan inschakelen",
+    "telegagoDesc": "Telegram zoeken via Google Custom Search Engine",
+    "telegagoEnabled": "Telegago inschakelen",
     "apiKey": "API-sleutel",
     "show": "Tonen",
     "hide": "Verbergen",

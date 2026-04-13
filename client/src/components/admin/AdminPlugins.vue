@@ -123,6 +123,49 @@
           </div>
         </div>
       </div>
+
+      <!-- Telegago (Google CSE) -->
+      <div class="plugin-card glass-card">
+        <div class="plugin-card-header">
+          <div class="plugin-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">
+            <span class="mdi mdi-telegram" style="font-size: 24px;"></span>
+          </div>
+          <div>
+            <h3 class="plugin-card-title mono">Telegago</h3>
+            <p class="plugin-card-desc">{{ $t('admin.telegagoDesc') }}</p>
+          </div>
+          <span :class="['plugin-status', form.telegago.apiKey ? 'plugin-status--active' : 'plugin-status--inactive']">
+            {{ form.telegago.apiKey ? $t('admin.activeModel') : $t('admin.notConfigured') }}
+          </span>
+        </div>
+
+        <div class="plugin-fields">
+          <div class="plugin-field">
+            <label class="plugin-label mono">{{ $t('admin.googleApiKey') }}</label>
+            <p class="plugin-field-desc">
+              {{ $t('admin.googleApiKeyDesc') }}
+              <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" class="plugin-link">
+                {{ $t('admin.getGoogleApiKey') }} ↗
+              </a>
+            </p>
+            <div class="api-key-row">
+              <InputText v-model="form.telegago.apiKey"
+                :type="showTelegagoKey ? 'text' : 'password'"
+                placeholder="AIza..." style="flex: 1;" />
+              <button class="plugin-toggle-btn" @click="showTelegagoKey = !showTelegagoKey" :title="showTelegagoKey ? $t('admin.hide') : $t('admin.show')">
+                <span :class="['mdi', showTelegagoKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="plugin-field">
+            <label class="shodan-toggle-row">
+              <input type="checkbox" v-model="form.telegago.enabled" class="shodan-checkbox" />
+              <span class="plugin-label mono">{{ $t('admin.telegagoEnabled') }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="plugins-actions fade-in fade-in-delay-2">
@@ -146,6 +189,7 @@ const { t } = useI18n();
 const saving = ref(false);
 const showApiKey = ref(false);
 const showShodanKey = ref(false);
+const showTelegagoKey = ref(false);
 const testingShodan = ref(false);
 const shodanStatus = reactive({ available: false, plan: '', queryCredits: 0, scanCredits: 0 });
 
@@ -159,6 +203,10 @@ const form = reactive({
   shodan: {
     apiKey: '',
     enabled: false,
+  },
+  telegago: {
+    apiKey: '',
+    enabled: true,
   },
 });
 
@@ -183,6 +231,10 @@ async function load() {
     if (data.shodan) {
       form.shodan.apiKey = data.shodan.apiKey || '';
       form.shodan.enabled = data.shodan.enabled || false;
+    }
+    if (data.telegago) {
+      form.telegago.apiKey = data.telegago.apiKey || '';
+      form.telegago.enabled = data.telegago.enabled !== false;
     }
     await checkShodanStatus();
   } catch (err) {
@@ -217,6 +269,7 @@ async function save() {
     await api.put('/admin/plugins', {
       mapbox: form.mapbox,
       shodan: form.shodan,
+      telegago: form.telegago,
     });
     await checkShodanStatus();
   } catch (err) {

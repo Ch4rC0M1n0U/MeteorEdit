@@ -1123,6 +1123,8 @@
     "mapboxDesc": "Cartographie interactive pour les dossiers",
     "shodanDesc": "Recherche IoT/appareils via Shodan API",
     "shodanEnabled": "Activer Shodan",
+    "telegagoDesc": "Recherche Telegram via Google Custom Search Engine",
+    "telegagoEnabled": "Activer Telegago",
     "apiKey": "Clé API",
     "show": "Afficher",
     "hide": "Masquer",

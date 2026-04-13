@@ -38,42 +38,6 @@
       </div>
     </div>
 
-    <!-- External API Keys -->
-    <div class="sec-card glass-card fade-in fade-in-delay-2">
-      <div class="sec-card-header">
-        <span class="mdi mdi-cloud-key-outline" style="font-size: 18px; color: var(--me-accent);"></span>
-        <h3 class="sec-card-title mono">{{ t('admin.externalApiKeys') }}</h3>
-      </div>
-      <div class="sec-option" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-        <p class="sec-label">{{ t('admin.googleApiKey') }}</p>
-        <p class="sec-desc">
-          {{ t('admin.googleApiKeyDesc') }}
-          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" class="sec-link">
-            {{ t('admin.getGoogleApiKey') }} ↗
-          </a>
-        </p>
-        <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
-          <InputText
-            v-model="googleApiKey"
-            :type="showGoogleKey ? 'text' : 'password'"
-            placeholder="AIza..."
-            style="flex: 1;"
-          />
-          <button class="me-btn-ghost" @click="showGoogleKey = !showGoogleKey">
-            <span :class="showGoogleKey ? 'pi pi-eye-slash' : 'pi pi-eye'" style="font-size: 16px;"></span>
-          </button>
-          <button class="me-btn me-btn-sm" @click="saveGoogleApiKey" :disabled="savingGoogleKey">
-            <i class="pi pi-save" style="font-size: 14px; margin-right: 4px;"></i>
-            {{ t('common.save') }}
-          </button>
-        </div>
-        <span v-if="googleKeySaved" class="sec-saved mono">
-          <i class="pi pi-check" style="font-size: 12px; margin-right: 4px; color: var(--me-success, #4ade80);"></i>
-          {{ t('admin.settingsSaved') }}
-        </span>
-      </div>
-    </div>
-
     <!-- Generate key button -->
     <div class="sec-card glass-card fade-in fade-in-delay-3">
       <div class="sec-card-header">
@@ -273,12 +237,6 @@ const loading = ref(true);
 const keys = ref<ApiKey[]>([]);
 const newlyCreatedKey = ref<string | null>(null);
 
-// External API keys
-const googleApiKey = ref('');
-const showGoogleKey = ref(false);
-const savingGoogleKey = ref(false);
-const googleKeySaved = ref(false);
-
 const showCreateDialog = ref(false);
 const creating = ref(false);
 const createForm = ref({
@@ -385,35 +343,8 @@ function copyToClipboard(text: string) {
   });
 }
 
-async function loadExternalKeys() {
-  try {
-    const { data } = await api.get('/auth/me');
-    if (data.preferences?.googleApiKey) {
-      googleApiKey.value = '\u2022'.repeat(20);
-    }
-  } catch { /* */ }
-}
-
-async function saveGoogleApiKey() {
-  savingGoogleKey.value = true;
-  googleKeySaved.value = false;
-  try {
-    const payload: Record<string, string> = {};
-    if (googleApiKey.value && !googleApiKey.value.startsWith('\u2022')) {
-      payload.googleApiKey = googleApiKey.value;
-    }
-    await api.put('/auth/preferences', payload);
-    googleKeySaved.value = true;
-    googleApiKey.value = '\u2022'.repeat(20);
-    setTimeout(() => { googleKeySaved.value = false; }, 3000);
-  } catch { /* */ } finally {
-    savingGoogleKey.value = false;
-  }
-}
-
 onMounted(() => {
   fetchKeys();
-  loadExternalKeys();
 });
 </script>
 

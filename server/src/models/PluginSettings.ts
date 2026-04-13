@@ -115,6 +115,10 @@ Synthese globale des resultats et recommandations concretes pour la suite de l'i
       apiKey: { type: String, default: '' },
       enabled: { type: Boolean, default: false },
     },
+    telegago: {
+      apiKey: { type: String, default: '' },
+      enabled: { type: Boolean, default: true },
+    },
   },
   { collection: 'pluginsettings' }
 );

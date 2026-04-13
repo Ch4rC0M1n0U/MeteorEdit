@@ -2,15 +2,20 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { logActivity } from '../utils/activityLogger';
 import DossierNode from '../models/DossierNode';
-import User from '../models/User';
+import PluginSettings from '../models/PluginSettings';
 
 const SEARXNG_URL = process.env.SEARXNG_URL || 'http://100.64.0.2:8091';
 const TELEGAGO_CSE_ID = '006368593537057042503:efxu7xprihg';
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+
+/** Get Telegago API key from PluginSettings */
+async function getTelegagoKey(): Promise<string | null> {
+  const settings = await PluginSettings.findOne();
+  return settings?.telegago?.apiKey || null;
+}
 
 /** Search Telegago (Google CSE for Telegram) directly */
-async function searchTelegago(query: string, apiKey?: string): Promise<Array<{ title: string; url: string; content: string; engine: string }>> {
-  const key = apiKey || GOOGLE_API_KEY;
+export async function searchTelegago(query: string): Promise<Array<{ title: string; url: string; content: string; engine: string }>> {
+  const key = await getTelegagoKey();
   if (!key) return [];
   try {
     const params = new URLSearchParams({

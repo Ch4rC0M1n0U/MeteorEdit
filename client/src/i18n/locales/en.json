@@ -1111,6 +1111,8 @@
     "mapboxDesc": "Interactive mapping for cases",
     "shodanDesc": "IoT/device search via Shodan API",
     "shodanEnabled": "Enable Shodan",
+    "telegagoDesc": "Telegram search via Google Custom Search Engine",
+    "telegagoEnabled": "Enable Telegago",
     "apiKey": "API Key",
     "show": "Show",
     "hide": "Hide",
