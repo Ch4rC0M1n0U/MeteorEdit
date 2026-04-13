@@ -120,7 +120,8 @@ Synthese globale des resultats et recommandations concretes pour la suite de l'i
       enabled: { type: Boolean, default: true },
     },
     censys: {
-      apiKey: { type: String, default: '' },
+      apiId: { type: String, default: '' },
+      apiSecret: { type: String, default: '' },
       enabled: { type: Boolean, default: false },
     },
     zoomeye: {

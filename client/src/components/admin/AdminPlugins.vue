@@ -183,14 +183,23 @@
 
         <div class="plugin-fields">
           <div class="plugin-field">
-            <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
+            <label class="plugin-label mono">API ID</label>
             <div class="api-key-row">
-              <InputText v-model="form.censys.apiKey"
+              <InputText v-model="form.censys.apiId"
                 :type="showCensysKey ? 'text' : 'password'"
-                placeholder="Bo2ZGYax..." style="flex: 1;" />
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
               <button class="plugin-toggle-btn" @click="showCensysKey = !showCensysKey" :title="showCensysKey ? $t('admin.hide') : $t('admin.show')">
                 <span :class="['mdi', showCensysKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
               </button>
+            </div>
+          </div>
+
+          <div class="plugin-field">
+            <label class="plugin-label mono">API Secret</label>
+            <div class="api-key-row">
+              <InputText v-model="form.censys.apiSecret"
+                :type="showCensysKey ? 'text' : 'password'"
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="flex: 1;" />
               <button class="plugin-toggle-btn" @click="testCensys" :title="$t('admin.testConnection')">
                 <span :class="['mdi', testingCensys ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
               </button>
@@ -369,8 +378,7 @@ const form = reactive({
     apiKey: '',
     enabled: true,
   },
-  censys: {
-    apiKey: '',
+  censys: { apiId: '', apiSecret: '',
     enabled: false,
   },
   zoomeye: {
@@ -411,7 +419,8 @@ async function load() {
       form.telegago.enabled = data.telegago.enabled !== false;
     }
     if (data.censys) {
-      form.censys.apiKey = data.censys.hasKey ? data.censys.apiKey : '';
+      form.censys.apiId = data.censys.hasKey ? data.censys.apiId : '';
+      form.censys.apiSecret = data.censys.hasKey ? data.censys.apiSecret : '';
       form.censys.enabled = data.censys.enabled || false;
       censysStatus.hasKey = !!data.censys.hasKey;
     }
@@ -523,7 +532,7 @@ async function save() {
       mapbox: { ...form.mapbox, apiKey: cleanKey(form.mapbox.apiKey) ?? form.mapbox.apiKey },
       shodan: { ...form.shodan, apiKey: cleanKey(form.shodan.apiKey) },
       telegago: { ...form.telegago, apiKey: cleanKey(form.telegago.apiKey) },
-      censys: { ...form.censys, apiKey: cleanKey(form.censys.apiKey) },
+      censys: { apiId: cleanKey(form.censys.apiId), apiSecret: cleanKey(form.censys.apiSecret), enabled: form.censys.enabled },
       zoomeye: { ...form.zoomeye, apiKey: cleanKey(form.zoomeye.apiKey) },
       onyphe: { ...form.onyphe, apiKey: cleanKey(form.onyphe.apiKey) },
     });

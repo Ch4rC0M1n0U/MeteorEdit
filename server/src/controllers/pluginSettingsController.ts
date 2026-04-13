@@ -48,13 +48,15 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
     if (!obj.telegago) obj.telegago = {};
     obj.telegago.hasKey = false;
   }
-  // Mask Censys API key
-  if (obj.censys?.apiKey) {
-    const key = obj.censys.apiKey;
-    obj.censys.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+  // Mask Censys API ID + Secret
+  if (!obj.censys) obj.censys = {};
+  if (obj.censys.apiId && obj.censys.apiSecret) {
+    const id = obj.censys.apiId;
+    const secret = obj.censys.apiSecret;
+    obj.censys.apiId = id.length > 4 ? '•'.repeat(id.length - 4) + id.slice(-4) : id;
+    obj.censys.apiSecret = secret.length > 4 ? '•'.repeat(secret.length - 4) + secret.slice(-4) : secret;
     obj.censys.hasKey = true;
   } else {
-    if (!obj.censys) obj.censys = {};
     obj.censys.hasKey = false;
   }
   // Mask ZoomEye API key
@@ -104,7 +106,8 @@ export async function updatePluginSettings(req: AuthRequest, res: Response) {
   }
 
   if (censys) {
-    if (censys.apiKey !== undefined) settings.censys.apiKey = censys.apiKey;
+    if (censys.apiId !== undefined) settings.censys.apiId = censys.apiId;
+    if (censys.apiSecret !== undefined) settings.censys.apiSecret = censys.apiSecret;
     if (censys.enabled !== undefined) settings.censys.enabled = censys.enabled;
     updatedPlugins.push('censys');
   }

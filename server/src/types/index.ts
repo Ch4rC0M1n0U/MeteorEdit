@@ -244,7 +244,8 @@ export interface IPluginSettings extends Document {
     enabled: boolean;
   };
   censys: {
-    apiKey: string;
+    apiId: string;
+    apiSecret: string;
     enabled: boolean;
   };
   zoomeye: {

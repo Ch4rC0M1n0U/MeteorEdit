@@ -5,31 +5,23 @@ import { logActivity } from '../utils/activityLogger';
 
 const CENSYS_API = 'https://search.censys.io/api';
 
-async function getCensysKey(): Promise<string | null> {
+async function getCensysCredentials(): Promise<{ apiId: string; apiSecret: string } | null> {
   const settings = await PluginSettings.findOne();
-  return settings?.censys?.apiKey || null;
+  if (!settings?.censys?.apiId || !settings?.censys?.apiSecret) return null;
+  return { apiId: settings.censys.apiId, apiSecret: settings.censys.apiSecret };
 }
 
 function getClientIp(req: AuthRequest): string {
   return (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
 }
 
-async function censysFetch(url: string, apiKey: string, options: { method?: string; body?: any; timeout?: number } = {}): Promise<{ ok: boolean; status: number; data: any }> {
+async function censysFetch(url: string, creds: { apiId: string; apiSecret: string }, options: { method?: string; body?: any; timeout?: number } = {}): Promise<{ ok: boolean; status: number; data: any }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeout || 10000);
   try {
-    // Censys PAT format: censys_{ID}_{SECRET} → Basic Auth with ID:SECRET
-    let authValue: string;
-    if (apiKey.startsWith('censys_')) {
-      const parts = apiKey.slice(7).split('_');
-      const id = parts[0];
-      const secret = parts.slice(1).join('_');
-      authValue = `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}`;
-    } else {
-      authValue = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`;
-    }
+    const basicAuth = Buffer.from(`${creds.apiId}:${creds.apiSecret}`).toString('base64');
     const headers: Record<string, string> = {
-      'Authorization': authValue,
+      'Authorization': `Basic ${basicAuth}`,
       'Accept': 'application/json',
     };
     if (options.body) headers['Content-Type'] = 'application/json';
@@ -49,11 +41,11 @@ async function censysFetch(url: string, apiKey: string, options: { method?: stri
 
 /** GET /api/censys/status — check if Censys is configured + account info */
 export async function getCensysStatus(req: AuthRequest, res: Response) {
-  const key = await getCensysKey();
-  if (!key) return res.json({ available: false });
+  const creds = await getCensysCredentials();
+  if (!creds) return res.json({ available: false });
 
   try {
-    const { ok, data } = await censysFetch(`${CENSYS_API}/v1/account`, key, { timeout: 5000 });
+    const { ok, data } = await censysFetch(`${CENSYS_API}/v1/account`, creds, { timeout: 5000 });
     if (!ok) return res.json({ available: false });
     res.json({
       available: true,
@@ -72,8 +64,8 @@ export async function getCensysStatus(req: AuthRequest, res: Response) {
 
 /** POST /api/censys/search — search hosts by location */
 export async function censysSearch(req: AuthRequest, res: Response) {
-  const key = await getCensysKey();
-  if (!key) return res.status(400).json({ message: 'Censys API key not configured' });
+  const creds = await getCensysCredentials();
+  if (!creds) return res.status(400).json({ message: 'Censys API credentials not configured' });
 
   const { lat, lng, radius = 5, filters = '', cursor } = req.body;
   if (lat == null || lng == null) {
@@ -88,7 +80,7 @@ export async function censysSearch(req: AuthRequest, res: Response) {
     const body: any = { q: query, per_page: 25 };
     if (cursor) body.cursor = cursor;
 
-    const { ok, status, data } = await censysFetch(`${CENSYS_API}/v2/hosts/search`, key, {
+    const { ok, status, data } = await censysFetch(`${CENSYS_API}/v2/hosts/search`, creds, {
       method: 'POST',
       body,
       timeout: 15000,
@@ -141,12 +133,12 @@ export async function censysSearch(req: AuthRequest, res: Response) {
 
 /** GET /api/censys/host/:ip — get host details */
 export async function censysHostInfo(req: AuthRequest, res: Response) {
-  const key = await getCensysKey();
-  if (!key) return res.status(400).json({ message: 'Censys API key not configured' });
+  const creds = await getCensysCredentials();
+  if (!creds) return res.status(400).json({ message: 'Censys API credentials not configured' });
 
   const { ip } = req.params;
   try {
-    const { ok, status, data } = await censysFetch(`${CENSYS_API}/v2/hosts/${ip}`, key, { timeout: 10000 });
+    const { ok, status, data } = await censysFetch(`${CENSYS_API}/v2/hosts/${ip}`, creds, { timeout: 10000 });
     if (!ok) return res.status(status).json({ message: data?.error || 'Host not found' });
 
     const h = data.result || {};

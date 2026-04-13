@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import PluginSettings from '../models/PluginSettings';
 import { logActivity } from '../utils/activityLogger';
 
-const ZOOMEYE_API = 'https://api.zoomeye.ai';
+const ZOOMEYE_API = 'https://api.zoomeye.org';
 
 async function getZoomEyeKey(): Promise<string | null> {
   const settings = await PluginSettings.findOne();
@@ -14,12 +14,21 @@ function getClientIp(req: AuthRequest): string {
   return (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
 }
 
-async function zoomeyeFetch(url: string, apiKey: string, timeout = 10000): Promise<{ ok: boolean; status: number; data: any }> {
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+
+async function zoomeyeFetch(url: string, apiKey: string, options: { method?: string; body?: any; timeout?: number } = {}): Promise<{ ok: boolean; status: number; data: any }> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
+  const timer = setTimeout(() => controller.abort(), options.timeout || 10000);
   try {
+    const headers: Record<string, string> = {
+      'API-KEY': apiKey,
+      'User-Agent': BROWSER_UA,
+      'Content-Type': 'application/json',
+    };
     const resp = await fetch(url, {
-      headers: { 'API-KEY': apiKey },
+      method: options.method || 'POST',
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined,
       signal: controller.signal,
     });
     const data = await resp.json();
@@ -35,14 +44,14 @@ export async function getZoomEyeStatus(req: AuthRequest, res: Response) {
   if (!key) return res.json({ available: false });
 
   try {
-    const { ok, data } = await zoomeyeFetch(`${ZOOMEYE_API}/resources-info`, key, 5000);
+    const { ok, data } = await zoomeyeFetch(`${ZOOMEYE_API}/v2/userinfo`, key, { timeout: 5000 });
     if (!ok) return res.json({ available: false });
     res.json({
       available: true,
-      plan: data.plan || 'free',
+      plan: data.plan || data.user_type || 'free',
       quota: {
-        search: data.resources?.search || 0,
-        stats: data.resources?.stats || 0,
+        search: data.resources?.search || data.quota?.search || 0,
+        stats: data.resources?.stats || data.quota?.stats || 0,
         interval: data.resources?.interval || '',
       },
     });
@@ -65,10 +74,13 @@ export async function zoomeyeSearch(req: AuthRequest, res: Response) {
   // The geo filter is available in ZoomEye for host search
   const geoQuery = `geo:"${lat},${lng},${radius}km"`;
   const query = filters ? `${filters} +${geoQuery}` : geoQuery;
-  const params = new URLSearchParams({ query, page: String(page) });
 
   try {
-    const { ok, status, data } = await zoomeyeFetch(`${ZOOMEYE_API}/host/search?${params}`, key, 15000);
+    const { ok, status, data } = await zoomeyeFetch(`${ZOOMEYE_API}/v2/search`, key, {
+      method: 'POST',
+      body: { query, page, type: 'host' },
+      timeout: 15000,
+    });
     if (!ok) {
       return res.status(status).json({ message: data?.message || 'ZoomEye search failed' });
     }
@@ -115,8 +127,11 @@ export async function zoomeyeHostInfo(req: AuthRequest, res: Response) {
 
   const { ip } = req.params;
   try {
-    const params = new URLSearchParams({ query: `ip:"${ip}"` });
-    const { ok, status, data } = await zoomeyeFetch(`${ZOOMEYE_API}/host/search?${params}`, key, 10000);
+    const { ok, status, data } = await zoomeyeFetch(`${ZOOMEYE_API}/v2/search`, key, {
+      method: 'POST',
+      body: { query: `ip:"${ip}"`, type: 'host' },
+      timeout: 10000,
+    });
     if (!ok) return res.status(status).json({ message: data?.message || 'Host not found' });
 
     const matches = data.matches || [];
