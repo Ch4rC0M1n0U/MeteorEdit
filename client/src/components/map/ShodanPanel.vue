@@ -88,6 +88,7 @@
           <div v-if="r.location.city || r.location.country" class="shodan-result-loc">
             <span class="mdi mdi-map-marker-outline" style="font-size: 12px;"></span>
             {{ [r.location.city, r.location.country].filter(Boolean).join(', ') }}
+            <span class="shodan-distance">{{ distanceLabel(r) }}</span>
           </div>
           <div v-if="r.vulns.length" class="shodan-result-vulns">
             <span v-for="v in r.vulns.slice(0, 3)" :key="v" class="shodan-vuln-tag">{{ v }}</span>
@@ -290,6 +291,29 @@ function selectFilter(f: ShodanFilter) {
   customQuery.value = f.query;
 }
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function sortByDistance(items: ShodanResult[]): ShodanResult[] {
+  const [cLng, cLat] = props.mapCenter;
+  return [...items].sort((a, b) => {
+    const dA = haversineKm(cLat, cLng, a.location.lat, a.location.lng);
+    const dB = haversineKm(cLat, cLng, b.location.lat, b.location.lng);
+    return dA - dB;
+  });
+}
+
+function distanceLabel(r: ShodanResult): string {
+  const [cLng, cLat] = props.mapCenter;
+  const d = haversineKm(cLat, cLng, r.location.lat, r.location.lng);
+  return d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(1)} km`;
+}
+
 async function search() {
   if (searching.value) return;
   searching.value = true;
@@ -303,7 +327,8 @@ async function search() {
       filters: customQuery.value,
       page: 1,
     });
-    results.value = data.matches || [];
+    const matches = data.matches || [];
+    results.value = sortByDistance(matches);
     totalResults.value = data.total || 0;
     emit('results', results.value);
   } catch (err: any) {
@@ -329,7 +354,7 @@ async function loadMore() {
       page: currentPage.value,
     });
     const newMatches = data.matches || [];
-    results.value = [...results.value, ...newMatches];
+    results.value = sortByDistance([...results.value, ...newMatches]);
     emit('results', results.value);
   } catch (err: any) {
     console.error('Shodan load more failed:', err);
@@ -547,6 +572,13 @@ onMounted(async () => {
   gap: 4px;
   font-size: 11px;
   color: var(--me-text-muted);
+}
+.shodan-distance {
+  margin-left: auto;
+  font-family: var(--me-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--me-accent);
 }
 .shodan-result-vulns {
   display: flex;

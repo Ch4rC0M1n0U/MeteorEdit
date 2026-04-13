@@ -1896,6 +1896,7 @@ function onShodanResults(items: ShodanResult[]) {
             ${r.org ? `<br/><span style="color:#888;">${r.org}</span>` : ''}
             ${r.vulns.length ? `<br/><span style="color:#ef4444;">CVE: ${r.vulns.slice(0, 3).join(', ')}</span>` : ''}
             ${r.hostnames.length ? `<br/>${r.hostnames[0]}` : ''}
+            <br/><a href="https://www.shodan.io/host/${r.ip}" target="_blank" rel="noopener" style="color:#ef4444; text-decoration:none; font-size:11px;">Shodan ↗</a>
           </div>
         `)
       )
