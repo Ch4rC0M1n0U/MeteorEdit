@@ -1917,6 +1917,9 @@
     "shodanClear": "Effacer",
     "shodanLoadMore": "Charger plus",
     "shodanHostDetail": "Détails de l'hôte",
-    "shodanLocation": "Localisation"
+    "shodanLocation": "Localisation",
+    "shodanOpenShodan": "Ouvrir sur Shodan",
+    "shodanAddMarker": "Ajouter comme marqueur",
+    "shodanPlacePin": "Placer un repère de recherche"
   }
 }

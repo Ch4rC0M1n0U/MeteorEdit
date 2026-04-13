@@ -1904,6 +1904,9 @@
     "shodanClear": "Wissen",
     "shodanLoadMore": "Meer laden",
     "shodanHostDetail": "Hostdetails",
-    "shodanLocation": "Locatie"
+    "shodanLocation": "Locatie",
+    "shodanOpenShodan": "Openen op Shodan",
+    "shodanAddMarker": "Toevoegen als markering",
+    "shodanPlacePin": "Zoekpin plaatsen"
   }
 }

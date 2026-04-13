@@ -1905,6 +1905,9 @@
     "shodanClear": "Clear",
     "shodanLoadMore": "Load more",
     "shodanHostDetail": "Host details",
-    "shodanLocation": "Location"
+    "shodanLocation": "Location",
+    "shodanOpenShodan": "Open on Shodan",
+    "shodanAddMarker": "Add as marker",
+    "shodanPlacePin": "Place search pin"
   }
 }

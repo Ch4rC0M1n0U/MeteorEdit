@@ -93,9 +93,24 @@
             <span v-for="v in r.vulns.slice(0, 3)" :key="v" class="shodan-vuln-tag">{{ v }}</span>
             <span v-if="r.vulns.length > 3" class="shodan-vuln-more">+{{ r.vulns.length - 3 }}</span>
           </div>
-          <button class="shodan-detail-btn" @click.stop="$emit('host-detail', r.ip)" :title="$t('map.shodanHostDetail')">
-            <span class="mdi mdi-information-outline" style="font-size: 14px;"></span>
-          </button>
+          <div class="shodan-result-actions">
+            <a
+              :href="'https://www.shodan.io/host/' + r.ip"
+              target="_blank"
+              rel="noopener"
+              class="shodan-action-btn"
+              :title="$t('map.shodanOpenShodan')"
+              @click.stop
+            >
+              <span class="mdi mdi-open-in-new" style="font-size: 14px;"></span>
+            </a>
+            <button class="shodan-action-btn" @click.stop="$emit('add-marker', r)" :title="$t('map.shodanAddMarker')">
+              <span class="mdi mdi-map-marker-plus-outline" style="font-size: 14px;"></span>
+            </button>
+            <button class="shodan-action-btn" @click.stop="$emit('host-detail', r.ip)" :title="$t('map.shodanHostDetail')">
+              <span class="mdi mdi-information-outline" style="font-size: 14px;"></span>
+            </button>
+          </div>
         </div>
 
         <div v-if="results.length && totalResults && totalResults > results.length" class="shodan-load-more">
@@ -237,6 +252,7 @@ const emit = defineEmits<{
   'results': [results: ShodanResult[]];
   'fly-to': [result: ShodanResult];
   'host-detail': [ip: string];
+  'add-marker': [result: ShodanResult];
   'clear': [];
 }>();
 
@@ -551,18 +567,28 @@ onMounted(async () => {
   font-size: 10px;
   color: var(--me-text-muted);
 }
-.shodan-detail-btn {
+.shodan-result-actions {
   position: absolute;
-  top: 10px;
-  right: 12px;
+  top: 8px;
+  right: 10px;
+  display: flex;
+  gap: 2px;
+}
+.shodan-action-btn {
   background: none;
   border: none;
   color: var(--me-text-muted);
   cursor: pointer;
-  padding: 2px;
+  padding: 3px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
-.shodan-detail-btn:hover {
+.shodan-action-btn:hover {
   color: var(--me-accent);
+  background: var(--me-bg-hover);
 }
 .shodan-load-more {
   padding: 8px 16px;

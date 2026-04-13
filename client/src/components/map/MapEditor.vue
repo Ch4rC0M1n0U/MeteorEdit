@@ -156,6 +156,15 @@
           <span class="mdi mdi-radar" style="font-size: 16px"></span>
           <span v-if="shodanMarkerCount" class="me-marker-badge" style="background: #ef4444;">{{ shodanMarkerCount }}</span>
         </button>
+        <button
+          v-if="showShodan"
+          class="me-btn"
+          :class="{ active: shodanPinMode }"
+          @click="toggleShodanPinMode"
+          :title="$t('map.shodanPlacePin')"
+        >
+          <span class="mdi mdi-crosshairs-gps" style="font-size: 16px"></span>
+        </button>
       </div>
 
       <div class="me-toolbar-spacer" />
@@ -293,6 +302,7 @@
         @results="onShodanResults"
         @fly-to="onShodanFlyTo"
         @host-detail="onShodanHostDetail"
+        @add-marker="onShodanAddMarker"
         @clear="clearShodanMarkers"
       />
     </div>
@@ -529,6 +539,8 @@ const presenceUsers = ref<PresenceUser[]>([]);
 const showSidebar = ref(false);
 const showComments = ref(false);
 const showShodan = ref(false);
+const shodanPinMode = ref(false);
+let shodanSearchPin: mapboxgl.Marker | null = null;
 const shodanPanelRef = ref<InstanceType<typeof ShodanPanel> | null>(null);
 const shodanMarkerCount = ref(0);
 const commentCount = ref(0);
@@ -1832,11 +1844,37 @@ function onSearchBlur() {
 
 // --- Shodan ---
 
-const mapCenter = computed<[number, number]>(() => {
-  if (!map) return [2.3522, 48.8566];
-  const c = map.getCenter();
-  return [c.lng, c.lat];
-});
+const mapCenter = ref<[number, number]>([2.3522, 48.8566]);
+
+function toggleShodanPinMode() {
+  shodanPinMode.value = !shodanPinMode.value;
+  if (shodanPinMode.value && map) {
+    map.getCanvas().style.cursor = 'crosshair';
+  } else if (map) {
+    map.getCanvas().style.cursor = '';
+  }
+}
+
+function onShodanPinClick(e: mapboxgl.MapMouseEvent) {
+  if (!shodanPinMode.value || !map) return;
+  const { lng, lat } = e.lngLat;
+  mapCenter.value = [lng, lat];
+  // Remove old pin
+  if (shodanSearchPin) {
+    shodanSearchPin.remove();
+    shodanSearchPin = null;
+  }
+  // Create visual pin
+  const el = document.createElement('div');
+  el.className = 'shodan-search-pin';
+  el.innerHTML = '<span class="mdi mdi-crosshairs-gps" style="font-size: 22px; color: #ef4444;"></span>';
+  shodanSearchPin = new mapboxgl.Marker({ element: el })
+    .setLngLat([lng, lat])
+    .addTo(map);
+  // Exit pin mode
+  shodanPinMode.value = false;
+  map.getCanvas().style.cursor = '';
+}
 
 function onShodanResults(items: ShodanResult[]) {
   clearShodanMarkers();
@@ -1876,10 +1914,29 @@ function onShodanHostDetail(ip: string) {
   shodanPanelRef.value?.fetchHostDetail(ip);
 }
 
+function onShodanAddMarker(r: ShodanResult) {
+  if (!r.location.lat || !r.location.lng) return;
+  const newMarker: MapMarker = {
+    id: `shodan-${r.ip}-${Date.now()}`,
+    lngLat: [r.location.lng, r.location.lat],
+    title: `${r.ip}:${r.port}`,
+    description: [r.product, r.org, r.location.city, r.location.country].filter(Boolean).join(' — '),
+    color: '#ef4444',
+  };
+  markers.value.push(newMarker);
+  addMapboxMarker(newMarker);
+  emitMarkerAdd(newMarker);
+  scheduleSave();
+}
+
 function clearShodanMarkers() {
   for (const m of shodanDomMarkers) m.remove();
   shodanDomMarkers = [];
   shodanMarkerCount.value = 0;
+  if (shodanSearchPin) {
+    shodanSearchPin.remove();
+    shodanSearchPin = null;
+  }
 }
 
 // --- Socket.io ---
@@ -2016,6 +2073,7 @@ async function initMap() {
   map.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
 
   map.on('click', handleMapClick);
+  map.on('click', onShodanPinClick);
   map.on('dblclick', handleDblClick);
 
   mouseMoveHandler = handleMouseMove;
@@ -2030,7 +2088,13 @@ async function initMap() {
     setupTilesetInteraction();
   });
 
-  map.on('moveend', scheduleSave);
+  map.on('moveend', () => {
+    scheduleSave();
+    if (map) {
+      const c = map.getCenter();
+      mapCenter.value = [c.lng, c.lat];
+    }
+  });
   map.on('zoom', () => { updateTextboxScales(); });
 }
 
@@ -2733,5 +2797,21 @@ watch(() => props.nodeId, (_newId, oldId) => {
 @keyframes shodan-pop {
   from { opacity: 0; transform: scale(0.3); }
   to { opacity: 1; transform: scale(1); }
+}
+.shodan-search-pin {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px dashed #ef4444;
+  border-radius: 50%;
+  cursor: default;
+  animation: shodan-pin-pulse 1.5s ease-in-out infinite;
+}
+@keyframes shodan-pin-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
 }
 </style>
