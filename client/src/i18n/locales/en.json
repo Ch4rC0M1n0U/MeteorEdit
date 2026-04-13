@@ -1109,6 +1109,8 @@
     "testing": "Testing...",
     "pluginsSubtitle": "External services configuration",
     "mapboxDesc": "Interactive mapping for cases",
+    "shodanDesc": "IoT/device search via Shodan API",
+    "shodanEnabled": "Enable Shodan",
     "apiKey": "API Key",
     "show": "Show",
     "hide": "Hide",
@@ -1889,5 +1891,18 @@
     "domainDetected": "Domain detected",
     "importSuccess": "Web-Check analysis imported",
     "categories": "categories selected"
+  },
+  "map": {
+    "shodanUnavailable": "Shodan unavailable. Configure API key in Administration > Plugins.",
+    "shodanFilters": "Search filters",
+    "shodanCustomFilter": "Custom filter (e.g. port:80 nginx)",
+    "shodanRadius": "Radius",
+    "shodanSearch": "Search",
+    "shodanSearching": "Searching...",
+    "shodanResults": "results",
+    "shodanClear": "Clear",
+    "shodanLoadMore": "Load more",
+    "shodanHostDetail": "Host details",
+    "shodanLocation": "Location"
   }
 }

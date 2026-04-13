@@ -144,6 +144,20 @@
         </Popover>
       </div>
 
+      <div class="me-separator" />
+
+      <div class="me-toolbar-group">
+        <button
+          class="me-btn me-btn-shodan"
+          :class="{ active: showShodan }"
+          @click="showShodan = !showShodan"
+          title="Shodan IoT Search"
+        >
+          <span class="mdi mdi-radar" style="font-size: 16px"></span>
+          <span v-if="shodanMarkerCount" class="me-marker-badge" style="background: #ef4444;">{{ shodanMarkerCount }}</span>
+        </button>
+      </div>
+
       <div class="me-toolbar-spacer" />
 
       <!-- Presence -->
@@ -270,6 +284,16 @@
         v-model="showComments"
         :node-id="props.nodeId"
         @count-change="commentCount = $event"
+      />
+
+      <ShodanPanel
+        ref="shodanPanelRef"
+        v-model="showShodan"
+        :map-center="mapCenter"
+        @results="onShodanResults"
+        @fly-to="onShodanFlyTo"
+        @host-detail="onShodanHostDetail"
+        @clear="clearShodanMarkers"
       />
     </div>
 
@@ -420,6 +444,8 @@ import { useThemeStore } from '../../stores/theme';
 import { useAuthStore } from '../../stores/auth';
 import type { Socket } from 'socket.io-client';
 import CommentSidebar from '../editor/CommentSidebar.vue';
+import ShodanPanel from './ShodanPanel.vue';
+import type { ShodanResult } from './ShodanPanel.vue';
 import Popover from 'primevue/popover';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -502,6 +528,9 @@ const presenceUsers = ref<PresenceUser[]>([]);
 // UI state
 const showSidebar = ref(false);
 const showComments = ref(false);
+const showShodan = ref(false);
+const shodanPanelRef = ref<InstanceType<typeof ShodanPanel> | null>(null);
+const shodanMarkerCount = ref(0);
 const commentCount = ref(0);
 const searchQuery = ref('');
 const searchResults = ref<Array<{ id: string; text: string; place_name: string; center: [number, number] }>>([]);
@@ -522,6 +551,7 @@ let socket: Socket | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let mouseMoveHandler: ((e: mapboxgl.MapMouseEvent) => void) | null = null;
 let entityDomMarkers: Map<string, mapboxgl.Marker> = new Map();
+let shodanDomMarkers: mapboxgl.Marker[] = [];
 
 const markerColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'];
 
@@ -1800,6 +1830,58 @@ function onSearchBlur() {
   setTimeout(() => { searchResults.value = []; }, 150);
 }
 
+// --- Shodan ---
+
+const mapCenter = computed<[number, number]>(() => {
+  if (!map) return [2.3522, 48.8566];
+  const c = map.getCenter();
+  return [c.lng, c.lat];
+});
+
+function onShodanResults(items: ShodanResult[]) {
+  clearShodanMarkers();
+  if (!map) return;
+  for (const r of items) {
+    if (r.location.lat == null || r.location.lng == null) continue;
+    const el = document.createElement('div');
+    el.className = 'shodan-map-marker';
+    el.innerHTML = `<span class="mdi mdi-access-point" style="font-size: 16px; color: #ef4444;"></span>`;
+    el.title = `${r.ip}:${r.port} — ${r.product || r.org || 'unknown'}`;
+
+    const marker = new mapboxgl.Marker({ element: el })
+      .setLngLat([r.location.lng, r.location.lat])
+      .setPopup(
+        new mapboxgl.Popup({ offset: 12, maxWidth: '280px' }).setHTML(`
+          <div style="font-family: var(--me-font-mono); font-size: 12px;">
+            <strong>${r.ip}:${r.port}</strong>
+            ${r.product ? `<br/>${r.product} ${r.version || ''}` : ''}
+            ${r.org ? `<br/><span style="color:#888;">${r.org}</span>` : ''}
+            ${r.vulns.length ? `<br/><span style="color:#ef4444;">CVE: ${r.vulns.slice(0, 3).join(', ')}</span>` : ''}
+            ${r.hostnames.length ? `<br/>${r.hostnames[0]}` : ''}
+          </div>
+        `)
+      )
+      .addTo(map);
+    shodanDomMarkers.push(marker);
+  }
+  shodanMarkerCount.value = shodanDomMarkers.length;
+}
+
+function onShodanFlyTo(r: ShodanResult) {
+  if (!map || r.location.lat == null || r.location.lng == null) return;
+  map.flyTo({ center: [r.location.lng, r.location.lat], zoom: 15, duration: 1200 });
+}
+
+function onShodanHostDetail(ip: string) {
+  shodanPanelRef.value?.fetchHostDetail(ip);
+}
+
+function clearShodanMarkers() {
+  for (const m of shodanDomMarkers) m.remove();
+  shodanDomMarkers = [];
+  shodanMarkerCount.value = 0;
+}
+
 // --- Socket.io ---
 
 function emitMarkerAdd(marker: MapMarker) {
@@ -2031,6 +2113,7 @@ onBeforeUnmount(() => {
   socket?.off('map-presence-joined', onRemotePresenceJoined);
   socket?.off('map-presence-left', onRemotePresenceLeft);
   removeSearchPin();
+  clearShodanMarkers();
   if (drawingMode.value === 'line' && map) map.doubleClickZoom.enable();
   textboxMarkers.forEach(m => m.remove());
   textboxMarkers.clear();
@@ -2621,4 +2704,34 @@ watch(() => props.nodeId, (_newId, oldId) => {
 .me-field { display: flex; flex-direction: column; gap: 4px; }
 .me-field-label { font-size: 12px; font-weight: 500; color: var(--me-text-secondary); }
 .me-opacity-slider { width: 100%; accent-color: var(--me-accent); }
+
+/* Shodan markers */
+.me-btn-shodan.active {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+</style>
+<style>
+/* Shodan map marker (global, non-scoped — used by DOM markers) */
+.shodan-map-marker {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 15, 20, 0.85);
+  border: 2px solid #ef4444;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  animation: shodan-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.shodan-map-marker:hover {
+  transform: scale(1.25);
+  z-index: 10;
+}
+@keyframes shodan-pop {
+  from { opacity: 0; transform: scale(0.3); }
+  to { opacity: 1; transform: scale(1); }
+}
 </style>

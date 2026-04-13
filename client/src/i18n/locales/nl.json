@@ -1108,6 +1108,8 @@
     "testing": "Testen...",
     "pluginsSubtitle": "Configuratie van externe diensten",
     "mapboxDesc": "Interactieve cartografie voor dossiers",
+    "shodanDesc": "IoT/apparaat zoeken via Shodan API",
+    "shodanEnabled": "Shodan inschakelen",
     "apiKey": "API-sleutel",
     "show": "Tonen",
     "hide": "Verbergen",
@@ -1888,5 +1890,18 @@
     "domainDetected": "Domein gedetecteerd",
     "importSuccess": "Web-Check analyse geimporteerd",
     "categories": "categorieen geselecteerd"
+  },
+  "map": {
+    "shodanUnavailable": "Shodan niet beschikbaar. Configureer API-sleutel in Administratie > Plugins.",
+    "shodanFilters": "Zoekfilters",
+    "shodanCustomFilter": "Aangepast filter (bv. port:80 nginx)",
+    "shodanRadius": "Radius",
+    "shodanSearch": "Zoeken",
+    "shodanSearching": "Zoeken...",
+    "shodanResults": "resultaten",
+    "shodanClear": "Wissen",
+    "shodanLoadMore": "Meer laden",
+    "shodanHostDetail": "Hostdetails",
+    "shodanLocation": "Locatie"
   }
 }

@@ -68,6 +68,61 @@
           </div>
         </div>
       </div>
+
+      <!-- Shodan -->
+      <div class="plugin-card glass-card">
+        <div class="plugin-card-header">
+          <div class="plugin-icon" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+            <span class="mdi mdi-radar" style="font-size: 24px;"></span>
+          </div>
+          <div>
+            <h3 class="plugin-card-title mono">Shodan</h3>
+            <p class="plugin-card-desc">{{ $t('admin.shodanDesc') }}</p>
+          </div>
+          <span :class="['plugin-status', shodanStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
+            {{ shodanStatus.available ? `${shodanStatus.plan} — ${shodanStatus.queryCredits} credits` : $t('admin.notConfigured') }}
+          </span>
+        </div>
+
+        <div class="plugin-fields">
+          <div class="plugin-field">
+            <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
+            <div class="api-key-row">
+              <InputText v-model="form.shodan.apiKey"
+                :type="showShodanKey ? 'text' : 'password'"
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="flex: 1;" />
+              <button class="plugin-toggle-btn" @click="showShodanKey = !showShodanKey" :title="showShodanKey ? $t('admin.hide') : $t('admin.show')">
+                <span :class="['mdi', showShodanKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
+              </button>
+              <button class="plugin-toggle-btn" @click="testShodan" :title="$t('admin.testConnection')">
+                <span :class="['mdi', testingShodan ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="plugin-field">
+            <label class="shodan-toggle-row">
+              <input type="checkbox" v-model="form.shodan.enabled" class="shodan-checkbox" />
+              <span class="plugin-label mono">{{ $t('admin.shodanEnabled') }}</span>
+            </label>
+          </div>
+
+          <div v-if="shodanStatus.available" class="shodan-info">
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">Plan</span>
+              <span class="shodan-info-value">{{ shodanStatus.plan }}</span>
+            </div>
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">Query Credits</span>
+              <span class="shodan-info-value">{{ shodanStatus.queryCredits }}</span>
+            </div>
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">Scan Credits</span>
+              <span class="shodan-info-value">{{ shodanStatus.scanCredits }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="plugins-actions fade-in fade-in-delay-2">
@@ -90,6 +145,9 @@ const { t } = useI18n();
 
 const saving = ref(false);
 const showApiKey = ref(false);
+const showShodanKey = ref(false);
+const testingShodan = ref(false);
+const shodanStatus = reactive({ available: false, plan: '', queryCredits: 0, scanCredits: 0 });
 
 const form = reactive({
   mapbox: {
@@ -97,6 +155,10 @@ const form = reactive({
     defaultStyle: 'mapbox://styles/mapbox/dark-v11',
     defaultCenter: [2.3522, 48.8566] as [number, number],
     defaultZoom: 5,
+  },
+  shodan: {
+    apiKey: '',
+    enabled: false,
   },
 });
 
@@ -118,15 +180,45 @@ async function load() {
       form.mapbox.defaultCenter = data.mapbox.defaultCenter || [2.3522, 48.8566];
       form.mapbox.defaultZoom = data.mapbox.defaultZoom || 5;
     }
+    if (data.shodan) {
+      form.shodan.apiKey = data.shodan.apiKey || '';
+      form.shodan.enabled = data.shodan.enabled || false;
+    }
+    await checkShodanStatus();
   } catch (err) {
     console.error('Failed to load plugin settings:', err);
+  }
+}
+
+async function checkShodanStatus() {
+  try {
+    const { data } = await api.get('/shodan/status');
+    shodanStatus.available = data.available;
+    shodanStatus.plan = data.plan || '';
+    shodanStatus.queryCredits = data.queryCredits || 0;
+    shodanStatus.scanCredits = data.scanCredits || 0;
+  } catch {
+    shodanStatus.available = false;
+  }
+}
+
+async function testShodan() {
+  testingShodan.value = true;
+  try {
+    await checkShodanStatus();
+  } finally {
+    testingShodan.value = false;
   }
 }
 
 async function save() {
   saving.value = true;
   try {
-    await api.put('/admin/plugins', { mapbox: form.mapbox });
+    await api.put('/admin/plugins', {
+      mapbox: form.mapbox,
+      shodan: form.shodan,
+    });
+    await checkShodanStatus();
   } catch (err) {
     console.error('Failed to save plugin settings:', err);
   } finally {
@@ -271,5 +363,40 @@ onMounted(load);
 .me-btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.shodan-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.shodan-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--me-accent);
+}
+.shodan-info {
+  background: var(--me-bg-deep);
+  border-radius: var(--me-radius-xs);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shodan-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.shodan-info-label {
+  font-size: 12px;
+  color: var(--me-text-muted);
+  font-family: var(--me-font-mono);
+}
+.shodan-info-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  font-family: var(--me-font-mono);
 }
 </style>

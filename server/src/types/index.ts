@@ -235,6 +235,10 @@ export interface IPluginSettings extends Document {
   aiProvider: 'ollama' | 'claude' | 'openai';
   aiIndividualMode: boolean;
   aiDisclaimerMessage: string;
+  shodan: {
+    apiKey: string;
+    enabled: boolean;
+  };
 }
 
 export interface INotification extends Document {

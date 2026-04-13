@@ -111,6 +111,10 @@ Synthese globale des resultats et recommandations concretes pour la suite de l'i
     aiProvider: { type: String, enum: ['ollama', 'claude', 'openai'], default: 'ollama' },
     aiIndividualMode: { type: Boolean, default: false },
     aiDisclaimerMessage: { type: String, default: "Attention : vous allez utiliser un service d'intelligence artificielle commercial. Les donnees du dossier seront envoyees aux serveurs du fournisseur (Anthropic pour Claude, OpenAI pour ChatGPT). Assurez-vous de respecter les regles de confidentialite applicables a votre organisation. Aucune donnee classifiee ou sensible ne devrait etre transmise sans autorisation prealable." },
+    shodan: {
+      apiKey: { type: String, default: '' },
+      enabled: { type: Boolean, default: false },
+    },
   },
   { collection: 'pluginsettings' }
 );
