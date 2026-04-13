@@ -166,6 +166,165 @@
           </div>
         </div>
       </div>
+      <!-- Censys -->
+      <div class="plugin-card glass-card">
+        <div class="plugin-card-header">
+          <div class="plugin-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+            <span class="mdi mdi-shield-search" style="font-size: 24px;"></span>
+          </div>
+          <div>
+            <h3 class="plugin-card-title mono">Censys</h3>
+            <p class="plugin-card-desc">{{ $t('admin.censysDesc') }}</p>
+          </div>
+          <span :class="['plugin-status', censysStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
+            {{ censysStatus.available ? `${censysStatus.quota.remaining}/${censysStatus.quota.allowance} credits` : $t('admin.notConfigured') }}
+          </span>
+        </div>
+
+        <div class="plugin-fields">
+          <div class="plugin-field">
+            <label class="plugin-label mono">API ID</label>
+            <div class="api-key-row">
+              <InputText v-model="form.censys.apiId"
+                :type="showCensysKey ? 'text' : 'password'"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
+              <button class="plugin-toggle-btn" @click="showCensysKey = !showCensysKey" :title="showCensysKey ? $t('admin.hide') : $t('admin.show')">
+                <span :class="['mdi', showCensysKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
+              </button>
+              <button class="plugin-toggle-btn" @click="testCensys" :title="$t('admin.testConnection')">
+                <span :class="['mdi', testingCensys ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="plugin-field">
+            <label class="plugin-label mono">API Secret</label>
+            <InputText v-model="form.censys.apiSecret"
+              :type="showCensysKey ? 'text' : 'password'"
+              placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+          </div>
+
+          <div class="plugin-field">
+            <label class="shodan-toggle-row">
+              <input type="checkbox" v-model="form.censys.enabled" class="shodan-checkbox" />
+              <span class="plugin-label mono">{{ $t('admin.censysEnabled') }}</span>
+            </label>
+          </div>
+
+          <div v-if="censysStatus.available" class="shodan-info">
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">{{ $t('admin.quotaUsed') }}</span>
+              <span class="shodan-info-value">{{ censysStatus.quota.used }} / {{ censysStatus.quota.allowance }}</span>
+            </div>
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">{{ $t('admin.quotaRemaining') }}</span>
+              <span class="shodan-info-value">{{ censysStatus.quota.remaining }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ZoomEye -->
+      <div class="plugin-card glass-card">
+        <div class="plugin-card-header">
+          <div class="plugin-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">
+            <span class="mdi mdi-eye-circle-outline" style="font-size: 24px;"></span>
+          </div>
+          <div>
+            <h3 class="plugin-card-title mono">ZoomEye</h3>
+            <p class="plugin-card-desc">{{ $t('admin.zoomeyeDesc') }}</p>
+          </div>
+          <span :class="['plugin-status', zoomeyeStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
+            {{ zoomeyeStatus.available ? `${zoomeyeStatus.quota.search} searches` : $t('admin.notConfigured') }}
+          </span>
+        </div>
+
+        <div class="plugin-fields">
+          <div class="plugin-field">
+            <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
+            <div class="api-key-row">
+              <InputText v-model="form.zoomeye.apiKey"
+                :type="showZoomeyeKey ? 'text' : 'password'"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
+              <button class="plugin-toggle-btn" @click="showZoomeyeKey = !showZoomeyeKey" :title="showZoomeyeKey ? $t('admin.hide') : $t('admin.show')">
+                <span :class="['mdi', showZoomeyeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
+              </button>
+              <button class="plugin-toggle-btn" @click="testZoomeye" :title="$t('admin.testConnection')">
+                <span :class="['mdi', testingZoomeye ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="plugin-field">
+            <label class="shodan-toggle-row">
+              <input type="checkbox" v-model="form.zoomeye.enabled" class="shodan-checkbox" />
+              <span class="plugin-label mono">{{ $t('admin.zoomeyeEnabled') }}</span>
+            </label>
+          </div>
+
+          <div v-if="zoomeyeStatus.available" class="shodan-info">
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">Plan</span>
+              <span class="shodan-info-value">{{ zoomeyeStatus.plan }}</span>
+            </div>
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">{{ $t('admin.quotaSearch') }}</span>
+              <span class="shodan-info-value">{{ zoomeyeStatus.quota.search }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BinaryEdge -->
+      <div class="plugin-card glass-card">
+        <div class="plugin-card-header">
+          <div class="plugin-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+            <span class="mdi mdi-hexagon-multiple-outline" style="font-size: 24px;"></span>
+          </div>
+          <div>
+            <h3 class="plugin-card-title mono">BinaryEdge</h3>
+            <p class="plugin-card-desc">{{ $t('admin.binaryedgeDesc') }}</p>
+          </div>
+          <span :class="['plugin-status', binaryedgeStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
+            {{ binaryedgeStatus.available ? `${binaryedgeStatus.quota.remaining}/${binaryedgeStatus.quota.total} req` : $t('admin.notConfigured') }}
+          </span>
+        </div>
+
+        <div class="plugin-fields">
+          <div class="plugin-field">
+            <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
+            <div class="api-key-row">
+              <InputText v-model="form.binaryedge.apiKey"
+                :type="showBinaryedgeKey ? 'text' : 'password'"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
+              <button class="plugin-toggle-btn" @click="showBinaryedgeKey = !showBinaryedgeKey" :title="showBinaryedgeKey ? $t('admin.hide') : $t('admin.show')">
+                <span :class="['mdi', showBinaryedgeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
+              </button>
+              <button class="plugin-toggle-btn" @click="testBinaryedge" :title="$t('admin.testConnection')">
+                <span :class="['mdi', testingBinaryedge ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="plugin-field">
+            <label class="shodan-toggle-row">
+              <input type="checkbox" v-model="form.binaryedge.enabled" class="shodan-checkbox" />
+              <span class="plugin-label mono">{{ $t('admin.binaryedgeEnabled') }}</span>
+            </label>
+          </div>
+
+          <div v-if="binaryedgeStatus.available" class="shodan-info">
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">Plan</span>
+              <span class="shodan-info-value">{{ binaryedgeStatus.plan }}</span>
+            </div>
+            <div class="shodan-info-row">
+              <span class="shodan-info-label">{{ $t('admin.quotaRemaining') }}</span>
+              <span class="shodan-info-value">{{ binaryedgeStatus.quota.remaining }} / {{ binaryedgeStatus.quota.total }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="plugins-actions fade-in fade-in-delay-2">
@@ -190,8 +349,17 @@ const saving = ref(false);
 const showApiKey = ref(false);
 const showShodanKey = ref(false);
 const showTelegagoKey = ref(false);
+const showCensysKey = ref(false);
+const showZoomeyeKey = ref(false);
+const showBinaryedgeKey = ref(false);
 const testingShodan = ref(false);
+const testingCensys = ref(false);
+const testingZoomeye = ref(false);
+const testingBinaryedge = ref(false);
 const shodanStatus = reactive({ available: false, plan: '', queryCredits: 0, scanCredits: 0 });
+const censysStatus = reactive({ available: false, quota: { used: 0, allowance: 0, remaining: 0 } });
+const zoomeyeStatus = reactive({ available: false, plan: '', quota: { search: 0, stats: 0 } });
+const binaryedgeStatus = reactive({ available: false, plan: '', quota: { used: 0, remaining: 0, total: 0 } });
 
 const form = reactive({
   mapbox: {
@@ -207,6 +375,19 @@ const form = reactive({
   telegago: {
     apiKey: '',
     enabled: true,
+  },
+  censys: {
+    apiId: '',
+    apiSecret: '',
+    enabled: false,
+  },
+  zoomeye: {
+    apiKey: '',
+    enabled: false,
+  },
+  binaryedge: {
+    apiKey: '',
+    enabled: false,
   },
 });
 
@@ -236,7 +417,20 @@ async function load() {
       form.telegago.apiKey = data.telegago.apiKey || '';
       form.telegago.enabled = data.telegago.enabled !== false;
     }
-    await checkShodanStatus();
+    if (data.censys) {
+      form.censys.apiId = data.censys.apiId || '';
+      form.censys.apiSecret = data.censys.apiSecret || '';
+      form.censys.enabled = data.censys.enabled || false;
+    }
+    if (data.zoomeye) {
+      form.zoomeye.apiKey = data.zoomeye.apiKey || '';
+      form.zoomeye.enabled = data.zoomeye.enabled || false;
+    }
+    if (data.binaryedge) {
+      form.binaryedge.apiKey = data.binaryedge.apiKey || '';
+      form.binaryedge.enabled = data.binaryedge.enabled || false;
+    }
+    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkBinaryedgeStatus()]);
   } catch (err) {
     console.error('Failed to load plugin settings:', err);
   }
@@ -263,6 +457,64 @@ async function testShodan() {
   }
 }
 
+async function checkCensysStatus() {
+  try {
+    const { data } = await api.get('/censys/status');
+    censysStatus.available = data.available;
+    if (data.quota) {
+      censysStatus.quota.used = data.quota.used || 0;
+      censysStatus.quota.allowance = data.quota.allowance || 0;
+      censysStatus.quota.remaining = data.quota.remaining || 0;
+    }
+  } catch {
+    censysStatus.available = false;
+  }
+}
+
+async function testCensys() {
+  testingCensys.value = true;
+  try { await checkCensysStatus(); } finally { testingCensys.value = false; }
+}
+
+async function checkZoomeyeStatus() {
+  try {
+    const { data } = await api.get('/zoomeye/status');
+    zoomeyeStatus.available = data.available;
+    zoomeyeStatus.plan = data.plan || '';
+    if (data.quota) {
+      zoomeyeStatus.quota.search = data.quota.search || 0;
+      zoomeyeStatus.quota.stats = data.quota.stats || 0;
+    }
+  } catch {
+    zoomeyeStatus.available = false;
+  }
+}
+
+async function testZoomeye() {
+  testingZoomeye.value = true;
+  try { await checkZoomeyeStatus(); } finally { testingZoomeye.value = false; }
+}
+
+async function checkBinaryedgeStatus() {
+  try {
+    const { data } = await api.get('/binaryedge/status');
+    binaryedgeStatus.available = data.available;
+    binaryedgeStatus.plan = data.plan || '';
+    if (data.quota) {
+      binaryedgeStatus.quota.used = data.quota.used || 0;
+      binaryedgeStatus.quota.remaining = data.quota.remaining || 0;
+      binaryedgeStatus.quota.total = data.quota.total || 0;
+    }
+  } catch {
+    binaryedgeStatus.available = false;
+  }
+}
+
+async function testBinaryedge() {
+  testingBinaryedge.value = true;
+  try { await checkBinaryedgeStatus(); } finally { testingBinaryedge.value = false; }
+}
+
 async function save() {
   saving.value = true;
   try {
@@ -270,8 +522,11 @@ async function save() {
       mapbox: form.mapbox,
       shodan: form.shodan,
       telegago: form.telegago,
+      censys: form.censys,
+      zoomeye: form.zoomeye,
+      binaryedge: form.binaryedge,
     });
-    await checkShodanStatus();
+    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkBinaryedgeStatus()]);
   } catch (err) {
     console.error('Failed to save plugin settings:', err);
   } finally {

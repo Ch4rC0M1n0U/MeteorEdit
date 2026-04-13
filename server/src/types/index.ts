@@ -243,6 +243,19 @@ export interface IPluginSettings extends Document {
     apiKey: string;
     enabled: boolean;
   };
+  censys: {
+    apiId: string;
+    apiSecret: string;
+    enabled: boolean;
+  };
+  zoomeye: {
+    apiKey: string;
+    enabled: boolean;
+  };
+  binaryedge: {
+    apiKey: string;
+    enabled: boolean;
+  };
 }
 
 export interface INotification extends Document {

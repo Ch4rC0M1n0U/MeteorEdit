@@ -48,12 +48,43 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
     if (!obj.telegago) obj.telegago = {};
     obj.telegago.hasKey = false;
   }
+  // Mask Censys API credentials
+  if (obj.censys?.apiId) {
+    const id = obj.censys.apiId;
+    obj.censys.apiId = id.length > 8 ? '•'.repeat(id.length - 8) + id.slice(-8) : id;
+    obj.censys.hasKey = true;
+  } else {
+    if (!obj.censys) obj.censys = {};
+    obj.censys.hasKey = false;
+  }
+  if (obj.censys?.apiSecret) {
+    const sec = obj.censys.apiSecret;
+    obj.censys.apiSecret = sec.length > 8 ? '•'.repeat(sec.length - 8) + sec.slice(-8) : sec;
+  }
+  // Mask ZoomEye API key
+  if (obj.zoomeye?.apiKey) {
+    const key = obj.zoomeye.apiKey;
+    obj.zoomeye.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+    obj.zoomeye.hasKey = true;
+  } else {
+    if (!obj.zoomeye) obj.zoomeye = {};
+    obj.zoomeye.hasKey = false;
+  }
+  // Mask BinaryEdge API key
+  if (obj.binaryedge?.apiKey) {
+    const key = obj.binaryedge.apiKey;
+    obj.binaryedge.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+    obj.binaryedge.hasKey = true;
+  } else {
+    if (!obj.binaryedge) obj.binaryedge = {};
+    obj.binaryedge.hasKey = false;
+  }
   res.json(obj);
 }
 
 export async function updatePluginSettings(req: AuthRequest, res: Response) {
   const settings = await getOrCreate();
-  const { mapbox, shodan, telegago } = req.body;
+  const { mapbox, shodan, telegago, censys, zoomeye, binaryedge } = req.body;
   const updatedPlugins: string[] = [];
 
   if (mapbox) {
@@ -74,6 +105,25 @@ export async function updatePluginSettings(req: AuthRequest, res: Response) {
     if (telegago.apiKey !== undefined) settings.telegago.apiKey = telegago.apiKey;
     if (telegago.enabled !== undefined) settings.telegago.enabled = telegago.enabled;
     updatedPlugins.push('telegago');
+  }
+
+  if (censys) {
+    if (censys.apiId !== undefined) settings.censys.apiId = censys.apiId;
+    if (censys.apiSecret !== undefined) settings.censys.apiSecret = censys.apiSecret;
+    if (censys.enabled !== undefined) settings.censys.enabled = censys.enabled;
+    updatedPlugins.push('censys');
+  }
+
+  if (zoomeye) {
+    if (zoomeye.apiKey !== undefined) settings.zoomeye.apiKey = zoomeye.apiKey;
+    if (zoomeye.enabled !== undefined) settings.zoomeye.enabled = zoomeye.enabled;
+    updatedPlugins.push('zoomeye');
+  }
+
+  if (binaryedge) {
+    if (binaryedge.apiKey !== undefined) settings.binaryedge.apiKey = binaryedge.apiKey;
+    if (binaryedge.enabled !== undefined) settings.binaryedge.enabled = binaryedge.enabled;
+    updatedPlugins.push('binaryedge');
   }
 
   await settings.save();
