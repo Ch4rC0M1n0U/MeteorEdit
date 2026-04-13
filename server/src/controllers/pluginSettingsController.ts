@@ -59,15 +59,6 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
   } else {
     obj.censys.hasKey = false;
   }
-  // Mask ZoomEye API key
-  if (obj.zoomeye?.apiKey) {
-    const key = obj.zoomeye.apiKey;
-    obj.zoomeye.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
-    obj.zoomeye.hasKey = true;
-  } else {
-    if (!obj.zoomeye) obj.zoomeye = {};
-    obj.zoomeye.hasKey = false;
-  }
   // Mask Onyphe API key
   if (obj.onyphe?.apiKey) {
     const key = obj.onyphe.apiKey;
@@ -82,7 +73,7 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
 
 export async function updatePluginSettings(req: AuthRequest, res: Response) {
   const settings = await getOrCreate();
-  const { mapbox, shodan, telegago, censys, zoomeye, onyphe } = req.body;
+  const { mapbox, shodan, telegago, censys, onyphe } = req.body;
   const updatedPlugins: string[] = [];
 
   if (mapbox) {
@@ -112,11 +103,6 @@ export async function updatePluginSettings(req: AuthRequest, res: Response) {
     updatedPlugins.push('censys');
   }
 
-  if (zoomeye) {
-    if (zoomeye.apiKey !== undefined) settings.zoomeye.apiKey = zoomeye.apiKey;
-    if (zoomeye.enabled !== undefined) settings.zoomeye.enabled = zoomeye.enabled;
-    updatedPlugins.push('zoomeye');
-  }
 
   if (onyphe) {
     if (onyphe.apiKey !== undefined) settings.onyphe.apiKey = onyphe.apiKey;

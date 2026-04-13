@@ -226,57 +226,6 @@
         </div>
       </div>
 
-      <!-- ZoomEye -->
-      <div class="plugin-card glass-card">
-        <div class="plugin-card-header">
-          <div class="plugin-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">
-            <span class="mdi mdi-eye-circle-outline" style="font-size: 24px;"></span>
-          </div>
-          <div>
-            <h3 class="plugin-card-title mono">ZoomEye</h3>
-            <p class="plugin-card-desc">{{ $t('admin.zoomeyeDesc') }}</p>
-          </div>
-          <span :class="['plugin-status', zoomeyeStatus.available ? 'plugin-status--active' : zoomeyeStatus.hasKey ? 'plugin-status--warning' : 'plugin-status--inactive']">
-            {{ zoomeyeStatus.available ? `${zoomeyeStatus.quota.search} searches` : zoomeyeStatus.hasKey ? $t('admin.connectionError') : $t('admin.notConfigured') }}
-          </span>
-        </div>
-
-        <div class="plugin-fields">
-          <div class="plugin-field">
-            <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
-            <div class="api-key-row">
-              <InputText v-model="form.zoomeye.apiKey"
-                :type="showZoomeyeKey ? 'text' : 'password'"
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
-              <button class="plugin-toggle-btn" @click="showZoomeyeKey = !showZoomeyeKey" :title="showZoomeyeKey ? $t('admin.hide') : $t('admin.show')">
-                <span :class="['mdi', showZoomeyeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
-              </button>
-              <button class="plugin-toggle-btn" @click="testZoomeye" :title="$t('admin.testConnection')">
-                <span :class="['mdi', testingZoomeye ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="plugin-field">
-            <label class="shodan-toggle-row">
-              <input type="checkbox" v-model="form.zoomeye.enabled" class="shodan-checkbox" />
-              <span class="plugin-label mono">{{ $t('admin.zoomeyeEnabled') }}</span>
-            </label>
-          </div>
-
-          <div v-if="zoomeyeStatus.available" class="shodan-info">
-            <div class="shodan-info-row">
-              <span class="shodan-info-label">Plan</span>
-              <span class="shodan-info-value">{{ zoomeyeStatus.plan }}</span>
-            </div>
-            <div class="shodan-info-row">
-              <span class="shodan-info-label">{{ $t('admin.quotaSearch') }}</span>
-              <span class="shodan-info-value">{{ zoomeyeStatus.quota.search }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Onyphe -->
       <div class="plugin-card glass-card">
         <div class="plugin-card-header">
@@ -352,15 +301,12 @@ const showApiKey = ref(false);
 const showShodanKey = ref(false);
 const showTelegagoKey = ref(false);
 const showCensysKey = ref(false);
-const showZoomeyeKey = ref(false);
 const showOnypheKey = ref(false);
 const testingShodan = ref(false);
 const testingCensys = ref(false);
-const testingZoomeye = ref(false);
 const testingOnyphe = ref(false);
 const shodanStatus = reactive({ available: false, hasKey: false, plan: '', queryCredits: 0, scanCredits: 0 });
 const censysStatus = reactive({ available: false, hasKey: false, quota: { used: 0, allowance: 0, remaining: 0 } });
-const zoomeyeStatus = reactive({ available: false, hasKey: false, plan: '', quota: { search: 0, stats: 0 } });
 const onypheStatus = reactive({ available: false, hasKey: false, plan: '', quota: { used: 0, remaining: 0, total: 0 } });
 
 const form = reactive({
@@ -379,10 +325,6 @@ const form = reactive({
     enabled: true,
   },
   censys: { apiId: '', apiSecret: '',
-    enabled: false,
-  },
-  zoomeye: {
-    apiKey: '',
     enabled: false,
   },
   onyphe: {
@@ -424,17 +366,12 @@ async function load() {
       form.censys.enabled = data.censys.enabled || false;
       censysStatus.hasKey = !!data.censys.hasKey;
     }
-    if (data.zoomeye) {
-      form.zoomeye.apiKey = data.zoomeye.hasKey ? data.zoomeye.apiKey : '';
-      form.zoomeye.enabled = data.zoomeye.enabled || false;
-      zoomeyeStatus.hasKey = !!data.zoomeye.hasKey;
-    }
     if (data.onyphe) {
       form.onyphe.apiKey = data.onyphe.hasKey ? data.onyphe.apiKey : '';
       form.onyphe.enabled = data.onyphe.enabled || false;
       onypheStatus.hasKey = !!data.onyphe.hasKey;
     }
-    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkOnypheStatus()]);
+    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkOnypheStatus()]);
   } catch (err) {
     console.error('Failed to load plugin settings:', err);
   }
@@ -480,24 +417,6 @@ async function testCensys() {
   try { await checkCensysStatus(); } finally { testingCensys.value = false; }
 }
 
-async function checkZoomeyeStatus() {
-  try {
-    const { data } = await api.get('/zoomeye/status');
-    zoomeyeStatus.available = data.available;
-    zoomeyeStatus.plan = data.plan || '';
-    if (data.quota) {
-      zoomeyeStatus.quota.search = data.quota.search || 0;
-      zoomeyeStatus.quota.stats = data.quota.stats || 0;
-    }
-  } catch {
-    zoomeyeStatus.available = false;
-  }
-}
-
-async function testZoomeye() {
-  testingZoomeye.value = true;
-  try { await checkZoomeyeStatus(); } finally { testingZoomeye.value = false; }
-}
 
 async function checkOnypheStatus() {
   try {
@@ -533,10 +452,9 @@ async function save() {
       shodan: { ...form.shodan, apiKey: cleanKey(form.shodan.apiKey) },
       telegago: { ...form.telegago, apiKey: cleanKey(form.telegago.apiKey) },
       censys: { apiId: cleanKey(form.censys.apiId), apiSecret: cleanKey(form.censys.apiSecret), enabled: form.censys.enabled },
-      zoomeye: { ...form.zoomeye, apiKey: cleanKey(form.zoomeye.apiKey) },
       onyphe: { ...form.onyphe, apiKey: cleanKey(form.onyphe.apiKey) },
     });
-    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkOnypheStatus()]);
+    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkOnypheStatus()]);
   } catch (err) {
     console.error('Failed to save plugin settings:', err);
   } finally {
