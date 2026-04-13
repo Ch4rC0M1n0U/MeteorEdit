@@ -48,18 +48,14 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
     if (!obj.telegago) obj.telegago = {};
     obj.telegago.hasKey = false;
   }
-  // Mask Censys API credentials
-  if (obj.censys?.apiId) {
-    const id = obj.censys.apiId;
-    obj.censys.apiId = id.length > 8 ? '•'.repeat(id.length - 8) + id.slice(-8) : id;
+  // Mask Censys API key
+  if (obj.censys?.apiKey) {
+    const key = obj.censys.apiKey;
+    obj.censys.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
     obj.censys.hasKey = true;
   } else {
     if (!obj.censys) obj.censys = {};
     obj.censys.hasKey = false;
-  }
-  if (obj.censys?.apiSecret) {
-    const sec = obj.censys.apiSecret;
-    obj.censys.apiSecret = sec.length > 8 ? '•'.repeat(sec.length - 8) + sec.slice(-8) : sec;
   }
   // Mask ZoomEye API key
   if (obj.zoomeye?.apiKey) {
@@ -70,21 +66,21 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
     if (!obj.zoomeye) obj.zoomeye = {};
     obj.zoomeye.hasKey = false;
   }
-  // Mask BinaryEdge API key
-  if (obj.binaryedge?.apiKey) {
-    const key = obj.binaryedge.apiKey;
-    obj.binaryedge.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
-    obj.binaryedge.hasKey = true;
+  // Mask Onyphe API key
+  if (obj.onyphe?.apiKey) {
+    const key = obj.onyphe.apiKey;
+    obj.onyphe.apiKey = key.length > 8 ? '•'.repeat(key.length - 8) + key.slice(-8) : key;
+    obj.onyphe.hasKey = true;
   } else {
-    if (!obj.binaryedge) obj.binaryedge = {};
-    obj.binaryedge.hasKey = false;
+    if (!obj.onyphe) obj.onyphe = {};
+    obj.onyphe.hasKey = false;
   }
   res.json(obj);
 }
 
 export async function updatePluginSettings(req: AuthRequest, res: Response) {
   const settings = await getOrCreate();
-  const { mapbox, shodan, telegago, censys, zoomeye, binaryedge } = req.body;
+  const { mapbox, shodan, telegago, censys, zoomeye, onyphe } = req.body;
   const updatedPlugins: string[] = [];
 
   if (mapbox) {
@@ -108,8 +104,7 @@ export async function updatePluginSettings(req: AuthRequest, res: Response) {
   }
 
   if (censys) {
-    if (censys.apiId !== undefined) settings.censys.apiId = censys.apiId;
-    if (censys.apiSecret !== undefined) settings.censys.apiSecret = censys.apiSecret;
+    if (censys.apiKey !== undefined) settings.censys.apiKey = censys.apiKey;
     if (censys.enabled !== undefined) settings.censys.enabled = censys.enabled;
     updatedPlugins.push('censys');
   }
@@ -120,10 +115,10 @@ export async function updatePluginSettings(req: AuthRequest, res: Response) {
     updatedPlugins.push('zoomeye');
   }
 
-  if (binaryedge) {
-    if (binaryedge.apiKey !== undefined) settings.binaryedge.apiKey = binaryedge.apiKey;
-    if (binaryedge.enabled !== undefined) settings.binaryedge.enabled = binaryedge.enabled;
-    updatedPlugins.push('binaryedge');
+  if (onyphe) {
+    if (onyphe.apiKey !== undefined) settings.onyphe.apiKey = onyphe.apiKey;
+    if (onyphe.enabled !== undefined) settings.onyphe.enabled = onyphe.enabled;
+    updatedPlugins.push('onyphe');
   }
 
   await settings.save();

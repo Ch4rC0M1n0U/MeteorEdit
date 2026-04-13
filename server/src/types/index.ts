@@ -244,15 +244,14 @@ export interface IPluginSettings extends Document {
     enabled: boolean;
   };
   censys: {
-    apiId: string;
-    apiSecret: string;
+    apiKey: string;
     enabled: boolean;
   };
   zoomeye: {
     apiKey: string;
     enabled: boolean;
   };
-  binaryedge: {
+  onyphe: {
     apiKey: string;
     enabled: boolean;
   };

@@ -42,7 +42,7 @@ import telegramRoutes from './routes/telegram';
 import shodanRoutes from './routes/shodan';
 import censysRoutes from './routes/censys';
 import zoomeyeRoutes from './routes/zoomeye';
-import binaryedgeRoutes from './routes/binaryedge';
+import onypheRoutes from './routes/onyphe';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
 import { startYjsServer } from './yjs-server';
@@ -155,7 +155,7 @@ app.use('/api/telegram', telegramRoutes);
 app.use('/api/shodan', shodanRoutes);
 app.use('/api/censys', censysRoutes);
 app.use('/api/zoomeye', zoomeyeRoutes);
-app.use('/api/binaryedge', binaryedgeRoutes);
+app.use('/api/onyphe', onypheRoutes);
 
 setupSocket(httpServer);
 

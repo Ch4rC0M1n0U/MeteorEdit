@@ -79,8 +79,8 @@
             <h3 class="plugin-card-title mono">Shodan</h3>
             <p class="plugin-card-desc">{{ $t('admin.shodanDesc') }}</p>
           </div>
-          <span :class="['plugin-status', shodanStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
-            {{ shodanStatus.available ? `${shodanStatus.plan} — ${shodanStatus.queryCredits} credits` : $t('admin.notConfigured') }}
+          <span :class="['plugin-status', shodanStatus.available ? 'plugin-status--active' : shodanStatus.hasKey ? 'plugin-status--warning' : 'plugin-status--inactive']">
+            {{ shodanStatus.available ? `${shodanStatus.plan} — ${shodanStatus.queryCredits} credits` : shodanStatus.hasKey ? $t('admin.connectionError') : $t('admin.notConfigured') }}
           </span>
         </div>
 
@@ -176,18 +176,18 @@
             <h3 class="plugin-card-title mono">Censys</h3>
             <p class="plugin-card-desc">{{ $t('admin.censysDesc') }}</p>
           </div>
-          <span :class="['plugin-status', censysStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
-            {{ censysStatus.available ? `${censysStatus.quota.remaining}/${censysStatus.quota.allowance} credits` : $t('admin.notConfigured') }}
+          <span :class="['plugin-status', censysStatus.available ? 'plugin-status--active' : censysStatus.hasKey ? 'plugin-status--warning' : 'plugin-status--inactive']">
+            {{ censysStatus.available ? `${censysStatus.quota.remaining}/${censysStatus.quota.allowance} credits` : censysStatus.hasKey ? $t('admin.connectionError') : $t('admin.notConfigured') }}
           </span>
         </div>
 
         <div class="plugin-fields">
           <div class="plugin-field">
-            <label class="plugin-label mono">API ID</label>
+            <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
             <div class="api-key-row">
-              <InputText v-model="form.censys.apiId"
+              <InputText v-model="form.censys.apiKey"
                 :type="showCensysKey ? 'text' : 'password'"
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
+                placeholder="Bo2ZGYax..." style="flex: 1;" />
               <button class="plugin-toggle-btn" @click="showCensysKey = !showCensysKey" :title="showCensysKey ? $t('admin.hide') : $t('admin.show')">
                 <span :class="['mdi', showCensysKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
               </button>
@@ -195,13 +195,6 @@
                 <span :class="['mdi', testingCensys ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
               </button>
             </div>
-          </div>
-
-          <div class="plugin-field">
-            <label class="plugin-label mono">API Secret</label>
-            <InputText v-model="form.censys.apiSecret"
-              :type="showCensysKey ? 'text' : 'password'"
-              placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
           </div>
 
           <div class="plugin-field">
@@ -234,8 +227,8 @@
             <h3 class="plugin-card-title mono">ZoomEye</h3>
             <p class="plugin-card-desc">{{ $t('admin.zoomeyeDesc') }}</p>
           </div>
-          <span :class="['plugin-status', zoomeyeStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
-            {{ zoomeyeStatus.available ? `${zoomeyeStatus.quota.search} searches` : $t('admin.notConfigured') }}
+          <span :class="['plugin-status', zoomeyeStatus.available ? 'plugin-status--active' : zoomeyeStatus.hasKey ? 'plugin-status--warning' : 'plugin-status--inactive']">
+            {{ zoomeyeStatus.available ? `${zoomeyeStatus.quota.search} searches` : zoomeyeStatus.hasKey ? $t('admin.connectionError') : $t('admin.notConfigured') }}
           </span>
         </div>
 
@@ -275,18 +268,18 @@
         </div>
       </div>
 
-      <!-- BinaryEdge -->
+      <!-- Onyphe -->
       <div class="plugin-card glass-card">
         <div class="plugin-card-header">
           <div class="plugin-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
-            <span class="mdi mdi-hexagon-multiple-outline" style="font-size: 24px;"></span>
+            <span class="mdi mdi-bee" style="font-size: 24px;"></span>
           </div>
           <div>
-            <h3 class="plugin-card-title mono">BinaryEdge</h3>
-            <p class="plugin-card-desc">{{ $t('admin.binaryedgeDesc') }}</p>
+            <h3 class="plugin-card-title mono">Onyphe</h3>
+            <p class="plugin-card-desc">{{ $t('admin.onypheDesc') }}</p>
           </div>
-          <span :class="['plugin-status', binaryedgeStatus.available ? 'plugin-status--active' : 'plugin-status--inactive']">
-            {{ binaryedgeStatus.available ? `${binaryedgeStatus.quota.remaining}/${binaryedgeStatus.quota.total} req` : $t('admin.notConfigured') }}
+          <span :class="['plugin-status', onypheStatus.available ? 'plugin-status--active' : onypheStatus.hasKey ? 'plugin-status--warning' : 'plugin-status--inactive']">
+            {{ onypheStatus.available ? `${onypheStatus.quota.remaining}/${onypheStatus.quota.total} req` : onypheStatus.hasKey ? $t('admin.connectionError') : $t('admin.notConfigured') }}
           </span>
         </div>
 
@@ -294,33 +287,33 @@
           <div class="plugin-field">
             <label class="plugin-label mono">{{ $t('admin.apiKey') }}</label>
             <div class="api-key-row">
-              <InputText v-model="form.binaryedge.apiKey"
-                :type="showBinaryedgeKey ? 'text' : 'password'"
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
-              <button class="plugin-toggle-btn" @click="showBinaryedgeKey = !showBinaryedgeKey" :title="showBinaryedgeKey ? $t('admin.hide') : $t('admin.show')">
-                <span :class="['mdi', showBinaryedgeKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
+              <InputText v-model="form.onyphe.apiKey"
+                :type="showOnypheKey ? 'text' : 'password'"
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="flex: 1;" />
+              <button class="plugin-toggle-btn" @click="showOnypheKey = !showOnypheKey" :title="showOnypheKey ? $t('admin.hide') : $t('admin.show')">
+                <span :class="['mdi', showOnypheKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
               </button>
-              <button class="plugin-toggle-btn" @click="testBinaryedge" :title="$t('admin.testConnection')">
-                <span :class="['mdi', testingBinaryedge ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
+              <button class="plugin-toggle-btn" @click="testOnyphe" :title="$t('admin.testConnection')">
+                <span :class="['mdi', testingOnyphe ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
               </button>
             </div>
           </div>
 
           <div class="plugin-field">
             <label class="shodan-toggle-row">
-              <input type="checkbox" v-model="form.binaryedge.enabled" class="shodan-checkbox" />
-              <span class="plugin-label mono">{{ $t('admin.binaryedgeEnabled') }}</span>
+              <input type="checkbox" v-model="form.onyphe.enabled" class="shodan-checkbox" />
+              <span class="plugin-label mono">{{ $t('admin.onypheEnabled') }}</span>
             </label>
           </div>
 
-          <div v-if="binaryedgeStatus.available" class="shodan-info">
+          <div v-if="onypheStatus.available" class="shodan-info">
             <div class="shodan-info-row">
               <span class="shodan-info-label">Plan</span>
-              <span class="shodan-info-value">{{ binaryedgeStatus.plan }}</span>
+              <span class="shodan-info-value">{{ onypheStatus.plan }}</span>
             </div>
             <div class="shodan-info-row">
               <span class="shodan-info-label">{{ $t('admin.quotaRemaining') }}</span>
-              <span class="shodan-info-value">{{ binaryedgeStatus.quota.remaining }} / {{ binaryedgeStatus.quota.total }}</span>
+              <span class="shodan-info-value">{{ onypheStatus.quota.remaining }} / {{ onypheStatus.quota.total }}</span>
             </div>
           </div>
         </div>
@@ -351,15 +344,15 @@ const showShodanKey = ref(false);
 const showTelegagoKey = ref(false);
 const showCensysKey = ref(false);
 const showZoomeyeKey = ref(false);
-const showBinaryedgeKey = ref(false);
+const showOnypheKey = ref(false);
 const testingShodan = ref(false);
 const testingCensys = ref(false);
 const testingZoomeye = ref(false);
-const testingBinaryedge = ref(false);
-const shodanStatus = reactive({ available: false, plan: '', queryCredits: 0, scanCredits: 0 });
-const censysStatus = reactive({ available: false, quota: { used: 0, allowance: 0, remaining: 0 } });
-const zoomeyeStatus = reactive({ available: false, plan: '', quota: { search: 0, stats: 0 } });
-const binaryedgeStatus = reactive({ available: false, plan: '', quota: { used: 0, remaining: 0, total: 0 } });
+const testingOnyphe = ref(false);
+const shodanStatus = reactive({ available: false, hasKey: false, plan: '', queryCredits: 0, scanCredits: 0 });
+const censysStatus = reactive({ available: false, hasKey: false, quota: { used: 0, allowance: 0, remaining: 0 } });
+const zoomeyeStatus = reactive({ available: false, hasKey: false, plan: '', quota: { search: 0, stats: 0 } });
+const onypheStatus = reactive({ available: false, hasKey: false, plan: '', quota: { used: 0, remaining: 0, total: 0 } });
 
 const form = reactive({
   mapbox: {
@@ -377,15 +370,14 @@ const form = reactive({
     enabled: true,
   },
   censys: {
-    apiId: '',
-    apiSecret: '',
+    apiKey: '',
     enabled: false,
   },
   zoomeye: {
     apiKey: '',
     enabled: false,
   },
-  binaryedge: {
+  onyphe: {
     apiKey: '',
     enabled: false,
   },
@@ -410,27 +402,30 @@ async function load() {
       form.mapbox.defaultZoom = data.mapbox.defaultZoom || 5;
     }
     if (data.shodan) {
-      form.shodan.apiKey = data.shodan.apiKey || '';
+      form.shodan.apiKey = data.shodan.hasKey ? data.shodan.apiKey : '';
       form.shodan.enabled = data.shodan.enabled || false;
+      shodanStatus.hasKey = !!data.shodan.hasKey;
     }
     if (data.telegago) {
-      form.telegago.apiKey = data.telegago.apiKey || '';
+      form.telegago.apiKey = data.telegago.hasKey ? data.telegago.apiKey : '';
       form.telegago.enabled = data.telegago.enabled !== false;
     }
     if (data.censys) {
-      form.censys.apiId = data.censys.apiId || '';
-      form.censys.apiSecret = data.censys.apiSecret || '';
+      form.censys.apiKey = data.censys.hasKey ? data.censys.apiKey : '';
       form.censys.enabled = data.censys.enabled || false;
+      censysStatus.hasKey = !!data.censys.hasKey;
     }
     if (data.zoomeye) {
-      form.zoomeye.apiKey = data.zoomeye.apiKey || '';
+      form.zoomeye.apiKey = data.zoomeye.hasKey ? data.zoomeye.apiKey : '';
       form.zoomeye.enabled = data.zoomeye.enabled || false;
+      zoomeyeStatus.hasKey = !!data.zoomeye.hasKey;
     }
-    if (data.binaryedge) {
-      form.binaryedge.apiKey = data.binaryedge.apiKey || '';
-      form.binaryedge.enabled = data.binaryedge.enabled || false;
+    if (data.onyphe) {
+      form.onyphe.apiKey = data.onyphe.hasKey ? data.onyphe.apiKey : '';
+      form.onyphe.enabled = data.onyphe.enabled || false;
+      onypheStatus.hasKey = !!data.onyphe.hasKey;
     }
-    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkBinaryedgeStatus()]);
+    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkOnypheStatus()]);
   } catch (err) {
     console.error('Failed to load plugin settings:', err);
   }
@@ -495,38 +490,44 @@ async function testZoomeye() {
   try { await checkZoomeyeStatus(); } finally { testingZoomeye.value = false; }
 }
 
-async function checkBinaryedgeStatus() {
+async function checkOnypheStatus() {
   try {
-    const { data } = await api.get('/binaryedge/status');
-    binaryedgeStatus.available = data.available;
-    binaryedgeStatus.plan = data.plan || '';
+    const { data } = await api.get('/onyphe/status');
+    onypheStatus.available = data.available;
+    onypheStatus.plan = data.plan || '';
     if (data.quota) {
-      binaryedgeStatus.quota.used = data.quota.used || 0;
-      binaryedgeStatus.quota.remaining = data.quota.remaining || 0;
-      binaryedgeStatus.quota.total = data.quota.total || 0;
+      onypheStatus.quota.used = data.quota.used || 0;
+      onypheStatus.quota.remaining = data.quota.remaining || 0;
+      onypheStatus.quota.total = data.quota.total || 0;
     }
   } catch {
-    binaryedgeStatus.available = false;
+    onypheStatus.available = false;
   }
 }
 
-async function testBinaryedge() {
-  testingBinaryedge.value = true;
-  try { await checkBinaryedgeStatus(); } finally { testingBinaryedge.value = false; }
+async function testOnyphe() {
+  testingOnyphe.value = true;
+  try { await checkOnypheStatus(); } finally { testingOnyphe.value = false; }
+}
+
+function cleanKey(key: string): string | undefined {
+  // Don't send masked keys back to server (they contain • characters)
+  if (!key || key.includes('•')) return undefined;
+  return key;
 }
 
 async function save() {
   saving.value = true;
   try {
     await api.put('/admin/plugins', {
-      mapbox: form.mapbox,
-      shodan: form.shodan,
-      telegago: form.telegago,
-      censys: form.censys,
-      zoomeye: form.zoomeye,
-      binaryedge: form.binaryedge,
+      mapbox: { ...form.mapbox, apiKey: cleanKey(form.mapbox.apiKey) ?? form.mapbox.apiKey },
+      shodan: { ...form.shodan, apiKey: cleanKey(form.shodan.apiKey) },
+      telegago: { ...form.telegago, apiKey: cleanKey(form.telegago.apiKey) },
+      censys: { ...form.censys, apiKey: cleanKey(form.censys.apiKey) },
+      zoomeye: { ...form.zoomeye, apiKey: cleanKey(form.zoomeye.apiKey) },
+      onyphe: { ...form.onyphe, apiKey: cleanKey(form.onyphe.apiKey) },
     });
-    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkBinaryedgeStatus()]);
+    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkZoomeyeStatus(), checkOnypheStatus()]);
   } catch (err) {
     console.error('Failed to save plugin settings:', err);
   } finally {
@@ -603,6 +604,10 @@ onMounted(load);
 .plugin-status--inactive {
   background: rgba(248, 113, 113, 0.1);
   color: #f87171;
+}
+.plugin-status--warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
 }
 .plugin-fields {
   display: flex;

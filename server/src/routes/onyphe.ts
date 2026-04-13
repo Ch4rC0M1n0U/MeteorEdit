@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { getBinaryEdgeStatus, binaryedgeSearch, binaryedgeHostInfo } from '../controllers/binaryedgeController';
+import { getOnypheStatus, onypheSearch, onypheHostInfo } from '../controllers/onypheController';
 
 const router = Router();
 
@@ -8,23 +8,23 @@ router.use(authenticate);
 
 /**
  * @swagger
- * /api/binaryedge/status:
+ * /api/onyphe/status:
  *   get:
- *     tags: [BinaryEdge]
- *     summary: Check BinaryEdge availability and subscription info
+ *     tags: [Onyphe]
+ *     summary: Check Onyphe availability and quota
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: BinaryEdge status and remaining credits
+ *         description: Onyphe status and remaining credits
  */
-router.get('/status', getBinaryEdgeStatus);
+router.get('/status', getOnypheStatus);
 
 /**
  * @swagger
- * /api/binaryedge/search:
+ * /api/onyphe/search:
  *   post:
- *     tags: [BinaryEdge]
+ *     tags: [Onyphe]
  *     summary: Search hosts by geographic location
  *     security:
  *       - bearerAuth: []
@@ -45,14 +45,14 @@ router.get('/status', getBinaryEdgeStatus);
  *       200:
  *         description: Search results with matches
  */
-router.post('/search', binaryedgeSearch);
+router.post('/search', onypheSearch);
 
 /**
  * @swagger
- * /api/binaryedge/host/{ip}:
+ * /api/onyphe/host/{ip}:
  *   get:
- *     tags: [BinaryEdge]
- *     summary: Get detailed host information
+ *     tags: [Onyphe]
+ *     summary: Get host summary information
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -64,6 +64,6 @@ router.post('/search', binaryedgeSearch);
  *       200:
  *         description: Host details
  */
-router.get('/host/:ip', binaryedgeHostInfo);
+router.get('/host/:ip', onypheHostInfo);
 
 export default router;
