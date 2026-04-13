@@ -1129,6 +1129,7 @@
     "centerLatitude": "Centrum (breedtegraad)",
     "zoom": "Zoom",
     "notConfigured": "Niet geconfigureerd",
+    "connectionError": "Verbindingsfout",
     "backupAndRestore": "Back-up & Herstel",
     "backupSubtitle": "Database-export en -import",
     "exportBackup": "Back-up exporteren",

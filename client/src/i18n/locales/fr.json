@@ -1142,6 +1142,7 @@
     "centerLatitude": "Centre (latitude)",
     "zoom": "Zoom",
     "notConfigured": "Non configuré",
+    "connectionError": "Erreur de connexion",
     "backupAndRestore": "Sauvegarde & Restauration",
     "backupSubtitle": "Export et import de la base de données",
     "exportBackup": "Exporter une sauvegarde",
