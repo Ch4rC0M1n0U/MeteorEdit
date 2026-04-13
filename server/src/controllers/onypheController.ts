@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import PluginSettings from '../models/PluginSettings';
 import { logActivity } from '../utils/activityLogger';
 
-const ONYPHE_API = 'https://search.onyphe.io/api/v2';
+const ONYPHE_API = 'https://www.onyphe.io/api/v2';
 
 async function getOnypheKey(): Promise<string | null> {
   const settings = await PluginSettings.findOne();
