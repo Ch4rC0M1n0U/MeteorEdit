@@ -49,29 +49,29 @@
           </div>
 
           <div class="ssm-platform-actions">
-            <button
+            <Button
               v-if="!isConnected(p.key)"
-              class="ssm-btn ssm-btn--connect"
+              :label="$t('social.session.openSite')"
+              icon="mdi mdi-open-in-new"
+              size="small"
               @click="openPlatformSite(p)"
-              :title="$t('social.session.openSite')"
-            >
-              <span class="mdi mdi-open-in-new mr-1" style="font-size: 14px"></span>
-              {{ $t('social.session.openSite') }}
-            </button>
-            <button
-              class="ssm-btn ssm-btn--import"
+            />
+            <Button
+              icon="mdi mdi-cookie"
+              size="small"
+              severity="secondary"
+              outlined
               @click="openImportView(p)"
               :title="$t('social.session.importCookies')"
-            >
-              <span class="mdi mdi-cookie" style="font-size: 14px"></span>
-            </button>
-            <button
+            />
+            <Button
               v-if="isConnected(p.key)"
-              class="ssm-btn ssm-btn--disconnect"
+              :label="$t('social.session.disconnect')"
+              size="small"
+              severity="danger"
+              text
               @click="openDisconnectView(p)"
-            >
-              {{ $t('social.session.disconnect') }}
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -119,17 +119,13 @@
         </div>
 
         <div class="ssm-view-actions">
-          <button
-            class="ssm-btn ssm-btn--primary"
+          <Button
+            :label="importing ? $t('social.session.importing') : $t('social.session.importAction')"
+            icon="mdi mdi-import"
             :disabled="importing || !importJson.trim()"
             @click="doImportCookies"
-          >
-            <span class="mdi mdi-import mr-1" style="font-size: 14px"></span>
-            {{ importing ? $t('social.session.importing') : $t('social.session.importAction') }}
-          </button>
-          <button class="ssm-btn ssm-btn--ghost" @click="currentView = 'list'" :disabled="importing">
-            {{ $t('common.cancel') }}
-          </button>
+          />
+          <Button :label="$t('common.cancel')" severity="secondary" text :disabled="importing" @click="currentView = 'list'" />
         </div>
       </div>
     </div>
@@ -186,21 +182,19 @@
         </div>
 
         <div class="ssm-view-actions">
-          <button
+          <Button
             v-if="loginResult === 'error' || loginResult === 'timeout'"
-            class="ssm-btn ssm-btn--primary"
+            :label="$t('social.session.retry')"
+            icon="pi pi-refresh"
             @click="retryLogin"
-          >
-            <i class="pi pi-refresh mr-1" style="font-size: 14px"></i>
-            {{ $t('social.session.retry') }}
-          </button>
-          <button
+          />
+          <Button
             v-if="!loginLoading"
-            class="ssm-btn ssm-btn--ghost"
+            :label="$t('common.close')"
+            severity="secondary"
+            text
             @click="currentView = 'list'"
-          >
-            {{ $t('common.close') }}
-          </button>
+          />
         </div>
       </div>
     </div>
@@ -225,17 +219,14 @@
         </div>
 
         <div class="ssm-view-actions">
-          <button class="ssm-btn ssm-btn--ghost" @click="currentView = 'list'" :disabled="disconnecting">
-            {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="ssm-btn ssm-btn--danger"
+          <Button :label="$t('common.cancel')" severity="secondary" text :disabled="disconnecting" @click="currentView = 'list'" />
+          <Button
+            :label="disconnecting ? $t('social.session.disconnecting') : $t('social.session.disconnect')"
+            icon="pi pi-trash"
+            severity="danger"
             :disabled="disconnecting"
             @click="doDisconnect"
-          >
-            <i class="pi pi-trash mr-1" style="font-size: 14px"></i>
-            {{ disconnecting ? $t('social.session.disconnecting') : $t('social.session.disconnect') }}
-          </button>
+          />
         </div>
       </div>
     </div>
@@ -246,6 +237,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
+import Button from 'primevue/button';
 import ProgressBar from 'primevue/progressbar';
 import ProgressSpinner from 'primevue/progressspinner';
 import Textarea from 'primevue/textarea';
@@ -657,75 +649,6 @@ onUnmounted(() => {
   opacity: 0.5;
 }
 
-/* Buttons */
-.ssm-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 7px 16px;
-  border-radius: var(--me-radius-xs);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-  white-space: nowrap;
-  gap: 4px;
-}
-.ssm-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.ssm-btn--connect {
-  background: var(--me-accent);
-  color: var(--me-bg-deep);
-  font-weight: 600;
-}
-.ssm-btn--connect:hover:not(:disabled) {
-  filter: brightness(1.1);
-  box-shadow: 0 2px 12px var(--me-accent-glow);
-}
-.ssm-btn--disconnect {
-  background: none;
-  border: 1px solid var(--me-border);
-  color: var(--me-text-muted);
-  font-size: 12px;
-  padding: 6px 12px;
-}
-.ssm-btn--disconnect:hover:not(:disabled) {
-  border-color: #f87171;
-  color: #f87171;
-  background: rgba(248, 113, 113, 0.08);
-}
-.ssm-btn--primary {
-  background: var(--me-accent);
-  color: var(--me-bg-deep);
-  font-weight: 600;
-}
-.ssm-btn--primary:hover:not(:disabled) {
-  filter: brightness(1.1);
-  box-shadow: 0 2px 12px var(--me-accent-glow);
-}
-.ssm-btn--danger {
-  background: #f87171;
-  color: #fff;
-  font-weight: 600;
-}
-.ssm-btn--danger:hover:not(:disabled) {
-  filter: brightness(1.1);
-  box-shadow: 0 2px 12px rgba(248, 113, 113, 0.3);
-}
-.ssm-btn--ghost {
-  background: none;
-  border: 1px solid var(--me-border);
-  color: var(--me-text-secondary);
-}
-.ssm-btn--ghost:hover:not(:disabled) {
-  border-color: var(--me-border-hover);
-  color: var(--me-text-primary);
-  background: var(--me-bg-elevated);
-}
-
 /* Close button */
 .ssm-close-btn {
   width: 28px;
@@ -752,20 +675,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-/* Import button */
-.ssm-btn--import {
-  background: none;
-  border: 1px solid var(--me-border);
-  color: var(--me-text-muted);
-  padding: 6px 8px;
-  border-radius: var(--me-radius-xs);
-}
-.ssm-btn--import:hover:not(:disabled) {
-  border-color: var(--me-accent);
-  color: var(--me-accent);
-  background: var(--me-accent-glow);
 }
 
 /* ═══ Inline views (replace nested v-dialogs) ═══ */
