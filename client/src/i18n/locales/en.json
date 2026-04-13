@@ -1918,6 +1918,20 @@
     "shodanLocation": "Location",
     "shodanOpenShodan": "Open on Shodan",
     "shodanAddMarker": "Add as marker",
-    "shodanPlacePin": "Place search pin"
+    "shodanPlacePin": "Place search pin",
+    "onypheUnavailable": "Onyphe unavailable. Check configuration in settings.",
+    "onypheFilters": "Filters",
+    "onypheCustomFilter": "Custom filter (e.g. protocol:http)",
+    "onypheRadius": "Radius",
+    "onypheSearch": "Search",
+    "onypheSearching": "Searching...",
+    "onypheResults": "results",
+    "onypheClear": "Clear",
+    "onypheLoadMore": "Load more",
+    "onypheOpenOnyphe": "Open in Onyphe",
+    "onypheAddMarker": "Add as marker",
+    "onypheHostDetail": "Host details",
+    "onypheLocation": "Location",
+    "onyphePlacePin": "Place Onyphe search pin"
   }
 }

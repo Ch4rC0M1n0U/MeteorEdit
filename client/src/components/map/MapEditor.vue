@@ -167,6 +167,27 @@
         </button>
       </div>
 
+      <div class="me-toolbar-group">
+        <button
+          class="me-btn me-btn-onyphe"
+          :class="{ active: showOnyphe }"
+          @click="showOnyphe = !showOnyphe"
+          title="Onyphe Geo Search"
+        >
+          <span class="mdi mdi-earth-plus" style="font-size: 16px"></span>
+          <span v-if="onypheMarkerCount" class="me-marker-badge" style="background: #8b5cf6;">{{ onypheMarkerCount }}</span>
+        </button>
+        <button
+          v-if="showOnyphe"
+          class="me-btn"
+          :class="{ active: onyphePinMode }"
+          @click="toggleOnyphePinMode"
+          :title="$t('map.onyphePlacePin')"
+        >
+          <span class="mdi mdi-crosshairs-gps" style="font-size: 16px"></span>
+        </button>
+      </div>
+
       <div class="me-toolbar-spacer" />
 
       <!-- Presence -->
@@ -304,6 +325,17 @@
         @host-detail="onShodanHostDetail"
         @add-marker="onShodanAddMarker"
         @clear="clearShodanMarkers"
+      />
+
+      <OnyphePanel
+        ref="onyphePanelRef"
+        v-model="showOnyphe"
+        :map-center="mapCenter"
+        @results="onOnypheResults"
+        @fly-to="onOnypheFlyTo"
+        @host-detail="onOnypheHostDetail"
+        @add-marker="onOnypheAddMarker"
+        @clear="clearOnypheMarkers"
       />
     </div>
 
@@ -456,6 +488,8 @@ import type { Socket } from 'socket.io-client';
 import CommentSidebar from '../editor/CommentSidebar.vue';
 import ShodanPanel from './ShodanPanel.vue';
 import type { ShodanResult } from './ShodanPanel.vue';
+import OnyphePanel from './OnyphePanel.vue';
+import type { OnypheResult } from './OnyphePanel.vue';
 import Popover from 'primevue/popover';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -540,9 +574,13 @@ const showSidebar = ref(false);
 const showComments = ref(false);
 const showShodan = ref(false);
 const shodanPinMode = ref(false);
+const showOnyphe = ref(false);
+const onyphePinMode = ref(false);
 let shodanSearchPin: mapboxgl.Marker | null = null;
 const shodanPanelRef = ref<InstanceType<typeof ShodanPanel> | null>(null);
 const shodanMarkerCount = ref(0);
+const onyphePanelRef = ref<InstanceType<typeof OnyphePanel> | null>(null);
+const onypheMarkerCount = ref(0);
 const commentCount = ref(0);
 const searchQuery = ref('');
 const searchResults = ref<Array<{ id: string; text: string; place_name: string; center: [number, number] }>>([]);
@@ -564,6 +602,8 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let mouseMoveHandler: ((e: mapboxgl.MapMouseEvent) => void) | null = null;
 let entityDomMarkers: Map<string, mapboxgl.Marker> = new Map();
 let shodanDomMarkers: mapboxgl.Marker[] = [];
+let onypheDomMarkers: mapboxgl.Marker[] = [];
+let onypheSearchPin: mapboxgl.Marker | null = null;
 
 const markerColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'];
 
@@ -1940,6 +1980,99 @@ function clearShodanMarkers() {
   }
 }
 
+// --- Onyphe ---
+
+function toggleOnyphePinMode() {
+  onyphePinMode.value = !onyphePinMode.value;
+  if (onyphePinMode.value && map) {
+    map.getCanvas().style.cursor = 'crosshair';
+  } else if (map) {
+    map.getCanvas().style.cursor = '';
+  }
+}
+
+function onOnyphePinClick(e: mapboxgl.MapMouseEvent) {
+  if (!onyphePinMode.value || !map) return;
+  const { lng, lat } = e.lngLat;
+  mapCenter.value = [lng, lat];
+  if (onypheSearchPin) {
+    onypheSearchPin.remove();
+    onypheSearchPin = null;
+  }
+  const el = document.createElement('div');
+  el.className = 'onyphe-search-pin';
+  el.innerHTML = '<span class="mdi mdi-crosshairs-gps" style="font-size: 22px; color: #8b5cf6;"></span>';
+  onypheSearchPin = new mapboxgl.Marker({ element: el })
+    .setLngLat([lng, lat])
+    .addTo(map);
+  onyphePinMode.value = false;
+  map.getCanvas().style.cursor = '';
+}
+
+function onOnypheResults(items: OnypheResult[]) {
+  clearOnypheMarkers();
+  if (!map) return;
+  for (const r of items) {
+    if (r.location.lat == null || r.location.lng == null) continue;
+    const el = document.createElement('div');
+    el.className = 'onyphe-map-marker';
+    el.innerHTML = `<span class="mdi mdi-earth" style="font-size: 16px; color: #8b5cf6;"></span>`;
+    el.title = `${r.ip}${r.port ? ':' + r.port : ''} — ${r.product || r.organization || 'unknown'}`;
+
+    const marker = new mapboxgl.Marker({ element: el })
+      .setLngLat([r.location.lng, r.location.lat])
+      .setPopup(
+        new mapboxgl.Popup({ offset: 12, maxWidth: '280px' }).setHTML(`
+          <div style="font-family: var(--me-font-mono); font-size: 12px;">
+            <strong>${r.ip}${r.port ? ':' + r.port : ''}</strong>
+            ${r.product ? `<br/>${r.product} ${r.version || ''}` : ''}
+            ${r.organization ? `<br/><span style="color:#888;">${r.organization}</span>` : ''}
+            ${r.protocol ? `<br/><span style="color:#8b5cf6;">${r.protocol}</span>` : ''}
+            ${r.hostname ? `<br/>${r.hostname}` : ''}
+            <br/><a href="https://www.onyphe.io/summary/ip/${r.ip}" target="_blank" rel="noopener" style="color:#8b5cf6; text-decoration:none; font-size:11px;">Onyphe ↗</a>
+          </div>
+        `)
+      )
+      .addTo(map);
+    onypheDomMarkers.push(marker);
+  }
+  onypheMarkerCount.value = onypheDomMarkers.length;
+}
+
+function onOnypheFlyTo(r: OnypheResult) {
+  if (!map || r.location.lat == null || r.location.lng == null) return;
+  map.flyTo({ center: [r.location.lng, r.location.lat], zoom: 15, duration: 1200 });
+}
+
+function onOnypheHostDetail(ip: string) {
+  onyphePanelRef.value?.fetchHostDetail(ip);
+}
+
+function onOnypheAddMarker(r: OnypheResult) {
+  if (!r.location.lat || !r.location.lng) return;
+  const newMarker: MapMarker = {
+    id: `onyphe-${r.ip}-${Date.now()}`,
+    lngLat: [r.location.lng, r.location.lat],
+    title: `${r.ip}${r.port ? ':' + r.port : ''}`,
+    description: [r.product, r.organization, r.location.city, r.location.country].filter(Boolean).join(' — '),
+    color: '#8b5cf6',
+  };
+  markers.value.push(newMarker);
+  addMapboxMarker(newMarker);
+  emitMarkerAdd(newMarker);
+  scheduleSave();
+}
+
+function clearOnypheMarkers() {
+  for (const m of onypheDomMarkers) m.remove();
+  onypheDomMarkers = [];
+  onypheMarkerCount.value = 0;
+  if (onypheSearchPin) {
+    onypheSearchPin.remove();
+    onypheSearchPin = null;
+  }
+}
+
 // --- Socket.io ---
 
 function emitMarkerAdd(marker: MapMarker) {
@@ -2075,6 +2208,7 @@ async function initMap() {
 
   map.on('click', handleMapClick);
   map.on('click', onShodanPinClick);
+  map.on('click', onOnyphePinClick);
   map.on('dblclick', handleDblClick);
 
   mouseMoveHandler = handleMouseMove;
@@ -2179,6 +2313,7 @@ onBeforeUnmount(() => {
   socket?.off('map-presence-left', onRemotePresenceLeft);
   removeSearchPin();
   clearShodanMarkers();
+  clearOnypheMarkers();
   if (drawingMode.value === 'line' && map) map.doubleClickZoom.enable();
   textboxMarkers.forEach(m => m.remove());
   textboxMarkers.clear();
@@ -2775,6 +2910,11 @@ watch(() => props.nodeId, (_newId, oldId) => {
   color: #ef4444;
   background: rgba(239, 68, 68, 0.12);
 }
+/* Onyphe markers */
+.me-btn-onyphe.active {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.12);
+}
 </style>
 <style>
 /* Shodan map marker (global, non-scoped — used by DOM markers) */
@@ -2814,5 +2954,43 @@ watch(() => props.nodeId, (_newId, oldId) => {
 @keyframes shodan-pin-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
   50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+/* Onyphe map marker (global, non-scoped — used by DOM markers) */
+.onyphe-map-marker {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 15, 20, 0.85);
+  border: 2px solid #8b5cf6;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  animation: onyphe-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.onyphe-map-marker:hover {
+  transform: scale(1.25);
+  z-index: 10;
+}
+@keyframes onyphe-pop {
+  from { opacity: 0; transform: scale(0.3); }
+  to { opacity: 1; transform: scale(1); }
+}
+.onyphe-search-pin {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 92, 246, 0.15);
+  border: 2px dashed #8b5cf6;
+  border-radius: 50%;
+  cursor: default;
+  animation: onyphe-pin-pulse 1.5s ease-in-out infinite;
+}
+@keyframes onyphe-pin-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(139, 92, 246, 0); }
 }
 </style>

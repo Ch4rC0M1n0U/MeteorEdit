@@ -48,17 +48,6 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
     if (!obj.telegago) obj.telegago = {};
     obj.telegago.hasKey = false;
   }
-  // Mask Censys API ID + Secret
-  if (!obj.censys) obj.censys = {};
-  if (obj.censys.apiId && obj.censys.apiSecret) {
-    const id = obj.censys.apiId;
-    const secret = obj.censys.apiSecret;
-    obj.censys.apiId = id.length > 4 ? '•'.repeat(id.length - 4) + id.slice(-4) : id;
-    obj.censys.apiSecret = secret.length > 4 ? '•'.repeat(secret.length - 4) + secret.slice(-4) : secret;
-    obj.censys.hasKey = true;
-  } else {
-    obj.censys.hasKey = false;
-  }
   // Mask Onyphe API key
   if (obj.onyphe?.apiKey) {
     const key = obj.onyphe.apiKey;
@@ -73,7 +62,7 @@ export async function getPluginSettings(req: AuthRequest, res: Response) {
 
 export async function updatePluginSettings(req: AuthRequest, res: Response) {
   const settings = await getOrCreate();
-  const { mapbox, shodan, telegago, censys, onyphe } = req.body;
+  const { mapbox, shodan, telegago, onyphe } = req.body;
   const updatedPlugins: string[] = [];
 
   if (mapbox) {
@@ -96,12 +85,6 @@ export async function updatePluginSettings(req: AuthRequest, res: Response) {
     updatedPlugins.push('telegago');
   }
 
-  if (censys) {
-    if (censys.apiId !== undefined) settings.censys.apiId = censys.apiId;
-    if (censys.apiSecret !== undefined) settings.censys.apiSecret = censys.apiSecret;
-    if (censys.enabled !== undefined) settings.censys.enabled = censys.enabled;
-    updatedPlugins.push('censys');
-  }
 
 
   if (onyphe) {

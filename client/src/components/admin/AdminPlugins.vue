@@ -166,66 +166,6 @@
           </div>
         </div>
       </div>
-      <!-- Censys -->
-      <div class="plugin-card glass-card">
-        <div class="plugin-card-header">
-          <div class="plugin-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
-            <span class="mdi mdi-shield-search" style="font-size: 24px;"></span>
-          </div>
-          <div>
-            <h3 class="plugin-card-title mono">Censys</h3>
-            <p class="plugin-card-desc">{{ $t('admin.censysDesc') }}</p>
-          </div>
-          <span :class="['plugin-status', censysStatus.available ? 'plugin-status--active' : censysStatus.hasKey ? 'plugin-status--warning' : 'plugin-status--inactive']">
-            {{ censysStatus.available ? `${censysStatus.quota.remaining}/${censysStatus.quota.allowance} credits` : censysStatus.hasKey ? $t('admin.connectionError') : $t('admin.notConfigured') }}
-          </span>
-        </div>
-
-        <div class="plugin-fields">
-          <div class="plugin-field">
-            <label class="plugin-label mono">API ID</label>
-            <div class="api-key-row">
-              <InputText v-model="form.censys.apiId"
-                :type="showCensysKey ? 'text' : 'password'"
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="flex: 1;" />
-              <button class="plugin-toggle-btn" @click="showCensysKey = !showCensysKey" :title="showCensysKey ? $t('admin.hide') : $t('admin.show')">
-                <span :class="['mdi', showCensysKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline']" style="font-size: 16px;"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="plugin-field">
-            <label class="plugin-label mono">API Secret</label>
-            <div class="api-key-row">
-              <InputText v-model="form.censys.apiSecret"
-                :type="showCensysKey ? 'text' : 'password'"
-                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="flex: 1;" />
-              <button class="plugin-toggle-btn" @click="testCensys" :title="$t('admin.testConnection')">
-                <span :class="['mdi', testingCensys ? 'mdi-loading mdi-spin' : 'mdi-connection']" style="font-size: 16px;"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="plugin-field">
-            <label class="shodan-toggle-row">
-              <input type="checkbox" v-model="form.censys.enabled" class="shodan-checkbox" />
-              <span class="plugin-label mono">{{ $t('admin.censysEnabled') }}</span>
-            </label>
-          </div>
-
-          <div v-if="censysStatus.available" class="shodan-info">
-            <div class="shodan-info-row">
-              <span class="shodan-info-label">{{ $t('admin.quotaUsed') }}</span>
-              <span class="shodan-info-value">{{ censysStatus.quota.used }} / {{ censysStatus.quota.allowance }}</span>
-            </div>
-            <div class="shodan-info-row">
-              <span class="shodan-info-label">{{ $t('admin.quotaRemaining') }}</span>
-              <span class="shodan-info-value">{{ censysStatus.quota.remaining }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Onyphe -->
       <div class="plugin-card glass-card">
         <div class="plugin-card-header">
@@ -300,13 +240,10 @@ const saving = ref(false);
 const showApiKey = ref(false);
 const showShodanKey = ref(false);
 const showTelegagoKey = ref(false);
-const showCensysKey = ref(false);
 const showOnypheKey = ref(false);
 const testingShodan = ref(false);
-const testingCensys = ref(false);
 const testingOnyphe = ref(false);
 const shodanStatus = reactive({ available: false, hasKey: false, plan: '', queryCredits: 0, scanCredits: 0 });
-const censysStatus = reactive({ available: false, hasKey: false, quota: { used: 0, allowance: 0, remaining: 0 } });
 const onypheStatus = reactive({ available: false, hasKey: false, plan: '', quota: { used: 0, remaining: 0, total: 0 } });
 
 const form = reactive({
@@ -323,9 +260,6 @@ const form = reactive({
   telegago: {
     apiKey: '',
     enabled: true,
-  },
-  censys: { apiId: '', apiSecret: '',
-    enabled: false,
   },
   onyphe: {
     apiKey: '',
@@ -360,18 +294,12 @@ async function load() {
       form.telegago.apiKey = data.telegago.hasKey ? data.telegago.apiKey : '';
       form.telegago.enabled = data.telegago.enabled !== false;
     }
-    if (data.censys) {
-      form.censys.apiId = data.censys.hasKey ? data.censys.apiId : '';
-      form.censys.apiSecret = data.censys.hasKey ? data.censys.apiSecret : '';
-      form.censys.enabled = data.censys.enabled || false;
-      censysStatus.hasKey = !!data.censys.hasKey;
-    }
     if (data.onyphe) {
       form.onyphe.apiKey = data.onyphe.hasKey ? data.onyphe.apiKey : '';
       form.onyphe.enabled = data.onyphe.enabled || false;
       onypheStatus.hasKey = !!data.onyphe.hasKey;
     }
-    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkOnypheStatus()]);
+    await Promise.all([checkShodanStatus(), checkOnypheStatus()]);
   } catch (err) {
     console.error('Failed to load plugin settings:', err);
   }
@@ -398,24 +326,6 @@ async function testShodan() {
   }
 }
 
-async function checkCensysStatus() {
-  try {
-    const { data } = await api.get('/censys/status');
-    censysStatus.available = data.available;
-    if (data.quota) {
-      censysStatus.quota.used = data.quota.used || 0;
-      censysStatus.quota.allowance = data.quota.allowance || 0;
-      censysStatus.quota.remaining = data.quota.remaining || 0;
-    }
-  } catch {
-    censysStatus.available = false;
-  }
-}
-
-async function testCensys() {
-  testingCensys.value = true;
-  try { await checkCensysStatus(); } finally { testingCensys.value = false; }
-}
 
 
 async function checkOnypheStatus() {
@@ -451,10 +361,9 @@ async function save() {
       mapbox: { ...form.mapbox, apiKey: cleanKey(form.mapbox.apiKey) ?? form.mapbox.apiKey },
       shodan: { ...form.shodan, apiKey: cleanKey(form.shodan.apiKey) },
       telegago: { ...form.telegago, apiKey: cleanKey(form.telegago.apiKey) },
-      censys: { apiId: cleanKey(form.censys.apiId), apiSecret: cleanKey(form.censys.apiSecret), enabled: form.censys.enabled },
       onyphe: { ...form.onyphe, apiKey: cleanKey(form.onyphe.apiKey) },
     });
-    await Promise.all([checkShodanStatus(), checkCensysStatus(), checkOnypheStatus()]);
+    await Promise.all([checkShodanStatus(), checkOnypheStatus()]);
   } catch (err) {
     console.error('Failed to save plugin settings:', err);
   } finally {

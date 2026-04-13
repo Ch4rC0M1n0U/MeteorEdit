@@ -1917,6 +1917,20 @@
     "shodanLocation": "Locatie",
     "shodanOpenShodan": "Openen op Shodan",
     "shodanAddMarker": "Toevoegen als markering",
-    "shodanPlacePin": "Zoekpin plaatsen"
+    "shodanPlacePin": "Zoekpin plaatsen",
+    "onypheUnavailable": "Onyphe niet beschikbaar. Controleer de configuratie in de instellingen.",
+    "onypheFilters": "Filters",
+    "onypheCustomFilter": "Aangepast filter (bijv. protocol:http)",
+    "onypheRadius": "Straal",
+    "onypheSearch": "Zoeken",
+    "onypheSearching": "Zoeken...",
+    "onypheResults": "resultaten",
+    "onypheClear": "Wissen",
+    "onypheLoadMore": "Meer laden",
+    "onypheOpenOnyphe": "Openen in Onyphe",
+    "onypheAddMarker": "Toevoegen als markering",
+    "onypheHostDetail": "Hostdetails",
+    "onypheLocation": "Locatie",
+    "onyphePlacePin": "Onyphe zoekpin plaatsen"
   }
 }

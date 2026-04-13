@@ -40,8 +40,6 @@ import apiKeyRoutes from './routes/apiKeys';
 import webcheckRoutes from './routes/webcheck';
 import telegramRoutes from './routes/telegram';
 import shodanRoutes from './routes/shodan';
-import censysRoutes from './routes/censys';
-// ZoomEye removed — API blocked by JSL anti-bot layer (server-to-server not supported)
 import onypheRoutes from './routes/onyphe';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
@@ -153,8 +151,6 @@ app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api', webcheckRoutes);
 app.use('/api/telegram', telegramRoutes);
 app.use('/api/shodan', shodanRoutes);
-app.use('/api/censys', censysRoutes);
-// app.use('/api/zoomeye', zoomeyeRoutes); // ZoomEye disabled
 app.use('/api/onyphe', onypheRoutes);
 
 setupSocket(httpServer);
