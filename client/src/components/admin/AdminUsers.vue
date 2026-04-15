@@ -81,7 +81,7 @@
             <InputText v-model="editForm.lastName" :label="$t('admin.lastName')" />
           </div>
           <InputText v-model="editForm.email" :label="$t('common.email')" type="email" class="mt-3" />
-          <Select v-model="editForm.role" :options="roleOptions" :label="$t('admin.role')" class="mt-3" />
+          <Select v-model="editForm.role" :options="roleOptions" option-label="label" option-value="value" class="mt-3" />
           <ToggleSwitch v-model="editForm.isActive" class="mt-3" />
 
           <Message v-if="editError" severity="error" closable @close="editError = ''" style="margin-top: 12px;">{{ editError }}</Message>
@@ -181,8 +181,8 @@ const editForm = reactive({
 });
 
 const roleOptions = computed(() => [
-  { title: t('admin.userRole'), value: 'user' },
-  { title: t('admin.adminRole'), value: 'admin' },
+  { label: t('admin.userRole'), value: 'user' },
+  { label: t('admin.adminRole'), value: 'admin' },
 ]);
 
 async function fetchUsers() {
