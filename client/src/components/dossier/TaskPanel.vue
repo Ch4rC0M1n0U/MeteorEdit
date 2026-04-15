@@ -1,125 +1,180 @@
 <template>
   <div class="task-panel">
+
+    <!-- En-tête -->
     <div class="tp-header">
-      <h3 class="tp-title mono">
-        <span class="mdi mdi-checkbox-marked-outline" style="font-size: 18px; margin-right: 8px;"></span>
-        {{ $t('tasks.title') }}
-      </h3>
-      <div class="tp-stats mono">
-        <span class="tp-stat">{{ doneCount }}/{{ tasks.length }}</span>
+      <div class="tp-header-left">
+        <span class="mdi mdi-checkbox-marked-outline tp-header-icon"></span>
+        <span class="tp-header-title">{{ $t('tasks.title') }}</span>
+        <Tag :value="`${doneCount}/${tasks.length}`" severity="secondary" rounded class="tp-count-tag" />
       </div>
-      <button class="tp-add-btn" @click="showCreate = true">
-        <i class="pi pi-plus" style="font-size: 16px;"></i> {{ $t('tasks.newTask') }}
-      </button>
+      <Button
+        icon="pi pi-plus"
+        :label="$t('tasks.newTask')"
+        size="small"
+        @click="showCreate = true"
+      />
     </div>
 
-    <!-- Filters -->
-    <div class="tp-filters">
-      <button
-        v-for="f in statusFilters" :key="f.value"
-        class="tp-filter-btn" :class="{ active: filterStatus === f.value }"
-        @click="filterStatus = filterStatus === f.value ? null : f.value"
-      >
-        {{ f.label }}
-      </button>
+    <!-- Barre de progression -->
+    <ProgressBar
+      v-if="tasks.length"
+      :value="progressPct"
+      :show-value="false"
+      class="tp-progress"
+    />
+
+    <!-- Filtres -->
+    <SelectButton
+      v-model="filterStatus"
+      :options="statusFilters"
+      option-label="label"
+      option-value="value"
+      :allow-empty="true"
+      class="tp-filters"
+      size="small"
+    >
+      <template #option="{ option }">
+        <span class="tp-filter-option">
+          <span :class="'tp-filter-dot tp-filter-dot--' + option.value"></span>
+          {{ option.label }}
+          <span class="tp-filter-count">{{ countByStatus(option.value) }}</span>
+        </span>
+      </template>
+    </SelectButton>
+
+    <!-- Spinner -->
+    <div v-if="loading" class="tp-loading">
+      <ProgressSpinner style="width: 24px; height: 24px;" />
     </div>
 
-    <!-- Progress bar -->
-    <div class="tp-progress" v-if="tasks.length">
-      <div class="tp-progress-bar" :style="{ width: progressPct + '%' }" />
-    </div>
-
-    <div v-if="loading" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;"><ProgressSpinner style="width: 20px; height: 20px;" /></div>
-
-    <!-- Task list -->
+    <!-- Liste des tâches -->
     <div class="tp-list">
       <div
-        v-for="task in filteredTasks" :key="task._id"
-        class="tp-task glass-card"
-        :class="{ 'tp-task--done': task.status === 'done' }"
+        v-for="task in filteredTasks"
+        :key="task._id"
+        class="tp-task"
+        :class="'tp-task--' + task.status"
       >
-        <button class="tp-check" :class="'tp-check--' + task.status" @click="cycleStatus(task)">
-          <span :class="'mdi ' + (task.status === 'done' ? 'mdi-checkbox-marked' : task.status === 'in_progress' ? 'mdi-progress-check' : 'mdi-checkbox-blank-outline')" style="font-size: 18px;"></span>
+        <!-- Indicateur statut -->
+        <button class="tp-check" @click="cycleStatus(task)" :title="$t('tasks.cycleStatus')">
+          <span :class="'mdi ' + statusIcon(task.status)" class="tp-check-icon"></span>
         </button>
 
+        <!-- Corps -->
         <div class="tp-task-body" @click="editTask(task)">
           <div class="tp-task-title">{{ task.title }}</div>
+          <div v-if="task.description" class="tp-task-desc">{{ task.description }}</div>
           <div class="tp-task-meta">
-            <span v-if="task.assigneeId" class="tp-assignee">
-              <i class="pi pi-user" style="font-size: 12px;"></i>
-              {{ task.assigneeId.firstName }} {{ task.assigneeId.lastName }}
+            <Tag
+              :value="priorityLabel(task.priority)"
+              :severity="prioritySeverity(task.priority)"
+              rounded
+              class="tp-priority-tag"
+            />
+            <span v-if="task.assigneeId" class="tp-meta-chip">
+              <i class="pi pi-user"></i>
+              {{ task.assigneeId.firstName }}
             </span>
-            <span v-if="task.dueDate" class="tp-due" :class="{ 'tp-due--late': isOverdue(task) }">
-              <i class="pi pi-calendar" style="font-size: 12px;"></i>
+            <span v-if="task.dueDate" class="tp-meta-chip" :class="{ 'tp-meta-chip--late': isOverdue(task) }">
+              <i class="pi pi-calendar"></i>
               {{ formatDate(task.dueDate) }}
             </span>
-            <span :class="'tp-priority tp-priority--' + task.priority">{{ priorityLabel(task.priority) }}</span>
           </div>
         </div>
 
-        <button class="tp-delete-btn" @click="handleDelete(task)" :title="$t('common.delete')">
-          <i class="pi pi-trash" style="font-size: 14px;"></i>
-        </button>
+        <!-- Supprimer -->
+        <Button
+          icon="pi pi-trash"
+          text
+          rounded
+          severity="danger"
+          size="small"
+          class="tp-delete-btn"
+          @click.stop="handleDelete(task)"
+          :title="$t('common.delete')"
+        />
       </div>
 
       <div v-if="!loading && filteredTasks.length === 0" class="tp-empty">
-        {{ filterStatus ? $t('tasks.noTasksFiltered') : $t('tasks.noTasks') }}
+        <span class="mdi mdi-check-all tp-empty-icon"></span>
+        <p>{{ filterStatus ? $t('tasks.noTasksFiltered') : $t('tasks.noTasks') }}</p>
       </div>
     </div>
 
-    <!-- Create / Edit Dialog -->
-    <Dialog v-model:visible="showCreate" modal :style="{ width: '440px' }" :closable="false">
-      <template #container>
-      <div class="tp-dialog glass-card">
-        <div class="tp-dialog-header">
-          <span class="mdi mdi-checkbox-marked-outline tp-dialog-icon" style="font-size: 20px;"></span>
-          <span>{{ editingTask ? $t('tasks.editTask') : $t('tasks.newTask') }}</span>
-          <button class="tp-dialog-close" @click="closeDialog">
-            <i class="pi pi-times" style="font-size: 18px;"></i>
-          </button>
+    <!-- Dialog création / édition -->
+    <Dialog
+      v-model:visible="showCreate"
+      modal
+      :header="editingTask ? $t('tasks.editTask') : $t('tasks.newTask')"
+      :style="{ width: '440px' }"
+      :closable="true"
+      @hide="closeDialog"
+    >
+      <div class="tp-form">
+        <div class="tp-field">
+          <label class="tp-label">{{ $t('tasks.taskTitle') }} *</label>
+          <InputText
+            v-model="form.title"
+            :placeholder="$t('tasks.taskTitlePlaceholder')"
+            class="w-full"
+            autofocus
+          />
         </div>
 
-        <div class="tp-dialog-body">
+        <div class="tp-field">
+          <label class="tp-label">{{ $t('tasks.description') }}</label>
+          <Textarea
+            v-model="form.description"
+            :placeholder="$t('tasks.descPlaceholder')"
+            :rows="3"
+            class="w-full"
+            auto-resize
+          />
+        </div>
+
+        <div class="tp-field-row">
           <div class="tp-field">
-            <label class="tp-field-label">{{ $t('tasks.taskTitle') }}</label>
-            <input v-model="form.title" class="tp-input" :placeholder="$t('tasks.taskTitlePlaceholder')" />
+            <label class="tp-label">{{ $t('tasks.priority') }}</label>
+            <Select
+              v-model="form.priority"
+              :options="priorityOptions"
+              option-label="label"
+              option-value="value"
+              class="w-full"
+            />
           </div>
           <div class="tp-field">
-            <label class="tp-field-label">{{ $t('tasks.description') }}</label>
-            <textarea v-model="form.description" class="tp-input tp-textarea" rows="3" :placeholder="$t('tasks.descPlaceholder')" />
-          </div>
-          <div class="tp-field-row">
-            <div class="tp-field">
-              <label class="tp-field-label">{{ $t('tasks.priority') }}</label>
-              <select v-model="form.priority" class="tp-input">
-                <option value="low">{{ $t('tasks.priorityLow') }}</option>
-                <option value="medium">{{ $t('tasks.priorityMedium') }}</option>
-                <option value="high">{{ $t('tasks.priorityHigh') }}</option>
-              </select>
-            </div>
-            <div class="tp-field">
-              <label class="tp-field-label">{{ $t('tasks.dueDate') }}</label>
-              <input v-model="form.dueDate" type="date" class="tp-input mono" />
-            </div>
-          </div>
-          <div class="tp-field">
-            <label class="tp-field-label">{{ $t('tasks.assignTo') }}</label>
-            <select v-model="form.assigneeId" class="tp-input">
-              <option value="">{{ $t('tasks.unassigned') }}</option>
-              <option v-for="u in assignableUsers" :key="u._id" :value="u._id">
-                {{ u.firstName }} {{ u.lastName }}
-              </option>
-            </select>
+            <label class="tp-label">{{ $t('tasks.dueDate') }}</label>
+            <DatePicker
+              v-model="form.dueDateObj"
+              date-format="dd/mm/yy"
+              :show-icon="true"
+              class="w-full"
+            />
           </div>
         </div>
 
-        <div class="tp-dialog-footer">
-          <button class="tp-btn tp-btn--cancel" @click="closeDialog">{{ $t('common.cancel') }}</button>
-          <button class="tp-btn tp-btn--save" @click="saveTask" :disabled="!form.title.trim()">
-            {{ editingTask ? $t('tasks.modify') : $t('common.create') }}
-          </button>
+        <div class="tp-field">
+          <label class="tp-label">{{ $t('tasks.assignTo') }}</label>
+          <Select
+            v-model="form.assigneeId"
+            :options="assigneeOptions"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
         </div>
       </div>
+
+      <template #footer>
+        <Button :label="$t('common.cancel')" text severity="secondary" @click="closeDialog" />
+        <Button
+          :label="editingTask ? $t('tasks.modify') : $t('common.create')"
+          icon="pi pi-check"
+          @click="saveTask"
+          :disabled="!form.title.trim()"
+        />
       </template>
     </Dialog>
   </div>
@@ -129,7 +184,15 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import Select from 'primevue/select';
+import DatePicker from 'primevue/datepicker';
+import SelectButton from 'primevue/selectbutton';
+import ProgressBar from 'primevue/progressbar';
 import ProgressSpinner from 'primevue/progressspinner';
+import Tag from 'primevue/tag';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import { useConfirm } from '../../composables/useConfirm';
@@ -152,42 +215,61 @@ const statusFilters = computed(() => [
   { label: t('tasks.done'), value: 'done' },
 ]);
 
+const priorityOptions = computed(() => [
+  { label: t('tasks.priorityLow'), value: 'low' },
+  { label: t('tasks.priorityMedium'), value: 'medium' },
+  { label: t('tasks.priorityHigh'), value: 'high' },
+]);
+
+const assigneeOptions = computed(() => [
+  { label: t('tasks.unassigned'), value: '' },
+  ...assignableUsers.value.map(u => ({ label: `${u.firstName} ${u.lastName}`, value: u._id })),
+]);
+
 const form = ref({
   title: '',
   description: '',
   priority: 'medium' as string,
-  dueDate: '',
+  dueDateObj: null as Date | null,
   assigneeId: '',
 });
 
 const doneCount = computed(() => tasks.value.filter(t => t.status === 'done').length);
-const progressPct = computed(() => tasks.value.length ? (doneCount.value / tasks.value.length) * 100 : 0);
+const progressPct = computed(() => tasks.value.length ? Math.round((doneCount.value / tasks.value.length) * 100) : 0);
+
 const filteredTasks = computed(() => {
   let list = tasks.value;
   if (filterStatus.value) list = list.filter(t => t.status === filterStatus.value);
-  return list.sort((a, b) => {
-    const statusOrder = { todo: 0, in_progress: 1, done: 2 };
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    if (statusOrder[a.status] !== statusOrder[b.status]) return statusOrder[a.status] - statusOrder[b.status];
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
+  return [...list].sort((a, b) => {
+    const so: Record<string, number> = { todo: 0, in_progress: 1, done: 2 };
+    const po: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    if (so[a.status] !== so[b.status]) return so[a.status]! - so[b.status]!;
+    return po[a.priority]! - po[b.priority]!;
   });
 });
 
-function priorityLabel(priority: string): string {
-  const map: Record<string, string> = {
-    low: t('tasks.priorityLow'),
-    medium: t('tasks.priorityMedium'),
-    high: t('tasks.priorityHigh'),
-  };
-  return map[priority] || priority;
+function countByStatus(status: string) {
+  return tasks.value.filter(t => t.status === status).length;
 }
 
-function isOverdue(task: Task): boolean {
+function statusIcon(status: string) {
+  return { todo: 'mdi-checkbox-blank-outline', in_progress: 'mdi-progress-check', done: 'mdi-checkbox-marked' }[status] ?? 'mdi-checkbox-blank-outline';
+}
+
+function priorityLabel(priority: string) {
+  return { low: t('tasks.priorityLow'), medium: t('tasks.priorityMedium'), high: t('tasks.priorityHigh') }[priority] ?? priority;
+}
+
+function prioritySeverity(priority: string): 'success' | 'warn' | 'danger' | 'secondary' {
+  return { high: 'danger', medium: 'warn', low: 'success' }[priority] as any ?? 'secondary';
+}
+
+function isOverdue(task: Task) {
   if (!task.dueDate || task.status === 'done') return false;
   return new Date(task.dueDate) < new Date();
 }
 
-function formatDate(d: string): string {
+function formatDate(d: string) {
   return new Date(d).toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit' });
 }
 
@@ -206,24 +288,16 @@ async function fetchAssignableUsers() {
   if (!dossierStore.currentDossier) return;
   const dossier = dossierStore.currentDossier;
   const users: CollaboratorUser[] = [];
-  // Add owner and collaborators
-  const collabs = dossier.collaborators || [];
-  for (const c of collabs) {
+  for (const c of (dossier.collaborators || [])) {
     if (typeof c === 'object' && c._id) users.push(c as CollaboratorUser);
   }
-  // Also fetch owner info if not in collaborators
   try {
     const { data } = await api.get(`/dossiers/${dossier._id}`);
-    if (data.owner && typeof data.owner === 'object') {
-      const ownerInList = users.some(u => u._id === data.owner._id);
-      if (!ownerInList) users.unshift(data.owner);
+    if (data.owner && typeof data.owner === 'object' && !users.some((u: any) => u._id === data.owner._id)) {
+      users.unshift(data.owner);
     }
-    if (data.collaborators) {
-      for (const c of data.collaborators) {
-        if (typeof c === 'object' && c._id && !users.some(u => u._id === c._id)) {
-          users.push(c);
-        }
-      }
+    for (const c of (data.collaborators || [])) {
+      if (typeof c === 'object' && c._id && !users.some((u: any) => u._id === c._id)) users.push(c);
     }
   } catch { /* use what we have */ }
   assignableUsers.value = users;
@@ -235,7 +309,7 @@ function editTask(task: Task) {
     title: task.title,
     description: task.description,
     priority: task.priority,
-    dueDate: task.dueDate ? task.dueDate.split('T')[0]! : '',
+    dueDateObj: task.dueDate ? new Date(task.dueDate) : null,
     assigneeId: task.assigneeId?._id || '',
   };
   showCreate.value = true;
@@ -244,7 +318,7 @@ function editTask(task: Task) {
 function closeDialog() {
   showCreate.value = false;
   editingTask.value = null;
-  form.value = { title: '', description: '', priority: 'medium', dueDate: '', assigneeId: '' };
+  form.value = { title: '', description: '', priority: 'medium', dueDateObj: null, assigneeId: '' };
 }
 
 async function saveTask() {
@@ -253,7 +327,7 @@ async function saveTask() {
     title: form.value.title.trim(),
     description: form.value.description.trim(),
     priority: form.value.priority,
-    dueDate: form.value.dueDate || null,
+    dueDate: form.value.dueDateObj ? form.value.dueDateObj.toISOString() : null,
     assigneeId: form.value.assigneeId || null,
   };
   try {
@@ -310,102 +384,227 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.task-panel { padding: 24px; }
-.tp-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.tp-title { font-size: 16px; font-weight: 700; color: var(--me-text-primary); display: flex; align-items: center; }
-.tp-stats { font-size: 13px; color: var(--me-text-muted); }
-.tp-add-btn {
-  margin-left: auto;
-  display: flex; align-items: center; gap: 4px;
-  padding: 6px 14px; border-radius: 8px;
-  background: var(--me-accent); color: #fff;
-  border: none; font-size: 13px; font-weight: 500; cursor: pointer;
-  transition: filter 0.15s;
+.task-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 12px;
 }
-.tp-add-btn:hover { filter: brightness(1.15); }
 
-.tp-filters { display: flex; gap: 6px; margin-bottom: 12px; }
-.tp-filter-btn {
-  padding: 4px 12px; border-radius: 6px;
-  background: none; border: 1px solid var(--me-border);
-  color: var(--me-text-muted); font-size: 12px; cursor: pointer;
-  transition: all 0.15s;
+/* Header */
+.tp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
-.tp-filter-btn:hover { border-color: var(--me-accent); color: var(--me-text-primary); }
-.tp-filter-btn.active { background: var(--me-accent-glow); border-color: var(--me-accent); color: var(--me-accent); }
+.tp-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tp-header-icon {
+  font-size: 18px;
+  color: var(--me-accent);
+}
+.tp-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+}
+.tp-count-tag {
+  font-size: 11px;
+}
 
-.tp-progress { height: 4px; background: var(--me-bg-elevated); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
-.tp-progress-bar { height: 100%; background: var(--me-accent); border-radius: 2px; transition: width 0.3s; }
+/* Progress */
+.tp-progress {
+  height: 4px;
+  border-radius: 2px;
+}
+:deep(.tp-progress .p-progressbar-value) {
+  background: var(--me-accent);
+  border-radius: 2px;
+}
+:deep(.tp-progress.p-progressbar) {
+  background: var(--me-bg-elevated);
+  border-radius: 2px;
+}
 
-.tp-list { display: flex; flex-direction: column; gap: 6px; }
+/* Filters */
+.tp-filters {
+  width: 100%;
+}
+:deep(.tp-filters.p-selectbutton) {
+  display: flex;
+  width: 100%;
+}
+:deep(.tp-filters .p-togglebutton) {
+  flex: 1;
+  font-size: 12px;
+  padding: 5px 8px;
+  justify-content: center;
+}
+.tp-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tp-filter-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tp-filter-dot--todo { background: var(--me-text-muted); }
+.tp-filter-dot--in_progress { background: #facc15; }
+.tp-filter-dot--done { background: #22c55e; }
+.tp-filter-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--me-bg-elevated);
+  border-radius: 9px;
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 16px;
+}
+
+/* Loading */
+.tp-loading {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
+
+/* Task list */
+.tp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 .tp-task {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 12px; border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--me-border);
+  background: var(--me-bg-surface);
   transition: all 0.15s;
+  border-left: 3px solid transparent;
 }
-.tp-task:hover { background: var(--me-accent-glow); }
-.tp-task--done { opacity: 0.55; }
-.tp-task--done .tp-task-title { text-decoration: line-through; }
+.tp-task:hover {
+  background: var(--me-bg-elevated);
+  border-color: var(--me-border);
+}
+.tp-task--todo { border-left-color: var(--me-text-muted); }
+.tp-task--in_progress { border-left-color: #facc15; }
+.tp-task--done { border-left-color: #22c55e; opacity: 0.6; }
+.tp-task--done .tp-task-title { text-decoration: line-through; color: var(--me-text-muted); }
 
 .tp-check {
-  background: none; border: none; cursor: pointer;
-  color: var(--me-text-muted); padding: 2px; flex-shrink: 0;
-  transition: color 0.15s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border-radius: 4px;
+  transition: all 0.15s;
 }
-.tp-check--done { color: var(--me-accent); }
-.tp-check--in_progress { color: #facc15; }
-
-.tp-task-body { flex: 1; min-width: 0; cursor: pointer; }
-.tp-task-title { font-size: 13px; font-weight: 500; color: var(--me-text-primary); margin-bottom: 4px; }
-.tp-task-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.tp-assignee { font-size: 11px; color: var(--me-text-muted); display: flex; align-items: center; gap: 3px; }
-.tp-due { font-size: 11px; color: var(--me-text-muted); display: flex; align-items: center; gap: 3px; }
-.tp-due--late { color: var(--me-error, #ef4444); }
-
-.tp-priority {
-  font-size: 10px; font-weight: 600; text-transform: uppercase;
-  padding: 1px 6px; border-radius: 4px; font-family: var(--me-font-mono);
+.tp-check:hover { background: var(--me-accent-glow); }
+.tp-check-icon {
+  font-size: 18px;
+  display: block;
+  color: var(--me-text-muted);
 }
-.tp-priority--high { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
-.tp-priority--medium { background: rgba(250, 204, 21, 0.12); color: #facc15; }
-.tp-priority--low { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+.tp-task--in_progress .tp-check-icon { color: #facc15; }
+.tp-task--done .tp-check-icon { color: #22c55e; }
+
+.tp-task-body {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.tp-task-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--me-text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.tp-task-desc {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-task-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tp-priority-tag {
+  font-size: 10px;
+  padding: 1px 6px;
+}
+.tp-meta-chip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--me-text-muted);
+  background: var(--me-bg-elevated);
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+.tp-meta-chip i { font-size: 10px; }
+.tp-meta-chip--late { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
 
 .tp-delete-btn {
-  background: none; border: none; cursor: pointer;
-  color: var(--me-text-muted); padding: 4px; border-radius: 4px;
-  opacity: 0; transition: all 0.15s; flex-shrink: 0;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
 }
 .tp-task:hover .tp-delete-btn { opacity: 1; }
-.tp-delete-btn:hover { color: var(--me-error, #ef4444); background: rgba(239, 68, 68, 0.1); }
 
-.tp-empty { text-align: center; padding: 32px; color: var(--me-text-muted); font-size: 13px; }
-
-/* Dialog */
-.tp-dialog { padding: 0; border-radius: 12px; overflow: hidden; background: var(--me-bg-surface); border: 1px solid var(--me-border); }
-.tp-dialog-header { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--me-border); font-size: 14px; font-weight: 600; color: var(--me-text-primary); }
-.tp-dialog-icon { color: var(--me-accent); }
-.tp-dialog-close { margin-left: auto; background: none; border: none; color: var(--me-text-muted); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; transition: all 0.15s; }
-.tp-dialog-close:hover { background: rgba(255,255,255,0.08); color: var(--me-text-primary); }
-.tp-dialog-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
-.tp-field { display: flex; flex-direction: column; gap: 4px; }
-.tp-field-label { font-size: 12px; color: var(--me-text-secondary); font-weight: 500; }
-.tp-field-row { display: flex; gap: 12px; }
-.tp-field-row .tp-field { flex: 1; }
-.tp-input {
-  padding: 8px 12px; border-radius: 8px; border: 1px solid var(--me-border);
-  background: var(--me-bg-deep); color: var(--me-text-primary); font-size: 13px;
-  outline: none; transition: border-color 0.15s; font-family: inherit;
+.tp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: var(--me-text-muted);
+  gap: 8px;
 }
-.tp-input:focus { border-color: var(--me-accent); }
-.tp-textarea { resize: vertical; min-height: 60px; }
-.tp-dialog-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--me-border); }
-.tp-btn { padding: 7px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-.tp-btn--cancel { background: none; color: var(--me-text-muted); }
-.tp-btn--cancel:hover { background: rgba(255,255,255,0.06); color: var(--me-text-primary); }
-.tp-btn--save { background: var(--me-accent); color: #fff; }
-.tp-btn--save:hover { filter: brightness(1.15); }
-.tp-btn--save:disabled { opacity: 0.5; cursor: not-allowed; }
+.tp-empty-icon { font-size: 32px; opacity: 0.4; }
+.tp-empty p { font-size: 13px; margin: 0; }
 
-.mr-2 { margin-right: 8px; }
-.mb-2 { margin-bottom: 8px; }
+/* Form */
+.tp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0 8px;
+}
+.tp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.tp-field-row {
+  display: flex;
+  gap: 12px;
+}
+.tp-field-row .tp-field { flex: 1; }
+.tp-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--me-text-secondary);
+}
+.w-full { width: 100%; }
 </style>
