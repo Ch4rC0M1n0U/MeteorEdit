@@ -3,19 +3,7 @@
     <!-- Left panel: sidebar with tabs -->
     <aside v-show="!focusMode" class="dv-sidebar">
       <div class="dv-sidebar-header">
-        <!-- Ligne 1 : icône + titre -->
-        <div class="dv-header-title-row">
-          <div class="dv-sidebar-icon-wrap">
-            <img v-if="dossierLogoUrl" :src="dossierLogoUrl" class="dv-sidebar-logo" />
-            <span v-else-if="dossierStore.currentDossier?.icon" :class="'mdi ' + dossierStore.currentDossier.icon" style="font-size: 20px;"></span>
-            <span v-else class="mdi mdi-folder-outline dv-sidebar-icon-default" style="font-size: 20px;"></span>
-          </div>
-          <h3 class="dv-sidebar-title" :title="dossierStore.currentDossier?.title">
-            {{ dossierStore.currentDossier?.title }}
-          </h3>
-        </div>
-
-        <!-- Ligne 2 : toolbar d'actions -->
+        <!-- Toolbar d'actions -->
         <div class="dv-header-toolbar">
           <!-- Groupe contenu -->
           <ButtonGroup>
@@ -1721,17 +1709,11 @@ function downloadBlob(blob: Blob, filename: string) {
   overflow: hidden;
 }
 .dv-sidebar-header {
-  padding: 14px 14px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-bottom: 1px solid var(--me-border);
-}
-.dv-header-title-row {
+  padding: 8px 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
+  gap: 4px;
+  border-bottom: 1px solid var(--me-border);
 }
 .dv-header-toolbar {
   display: flex;
@@ -1762,26 +1744,6 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 .dv-header-toolbar .p-buttongroup .p-button:last-child {
   border-right: none;
-}
-/* supprimé: dv-sidebar-title-row et dv-sidebar-actions (remplacés) */
-.dv-sidebar-icon-wrap {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--me-bg-elevated);
-  border: 1px solid var(--me-border);
-  flex-shrink: 0;
-  color: var(--me-accent);
-}
-.dv-sidebar-icon-default { color: var(--me-text-muted); }
-.dv-sidebar-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  object-fit: cover;
 }
 /* Online collaborators bar */
 .dv-collab-bar {
@@ -1896,15 +1858,6 @@ function downloadBlob(blob: Blob, filename: string) {
   margin-left: auto;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-.dv-sidebar-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1.3;
 }
 
 /* Nav items (replaces tabs) */

@@ -2,6 +2,9 @@
   <header class="topbar">
     <div class="topbar-left">
       <Button icon="pi pi-bars" text rounded severity="secondary" class="topbar-menu-btn" @click="$emit('toggle-sidebar')" />
+      <div v-if="dossierIcon" class="topbar-dossier-icon">
+        <span :class="'mdi ' + dossierIcon" style="font-size: 18px;"></span>
+      </div>
       <h1 class="page-title">{{ title }}</h1>
       <Tag v-if="subtitle" :value="subtitle" severity="secondary" rounded class="page-tag" />
     </div>
@@ -39,7 +42,7 @@ import NotificationBell from './NotificationBell.vue';
 import WhatsNew from './WhatsNew.vue';
 import api from '../../services/api';
 
-defineProps<{ title: string; subtitle?: string }>();
+defineProps<{ title: string; subtitle?: string; dossierIcon?: string }>();
 defineEmits<{ 'toggle-sidebar': [] }>();
 
 const whatsNewOpen = ref(false);
@@ -62,6 +65,18 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .topbar-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.topbar-dossier-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  color: var(--me-accent);
+  flex-shrink: 0;
+}
 .topbar-menu-btn { display: none; }
 .page-title { font-size: 16px; font-weight: 700; color: var(--me-text-primary); }
 .page-tag { font-size: 11px; }

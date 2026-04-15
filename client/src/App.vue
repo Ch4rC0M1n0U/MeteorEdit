@@ -9,6 +9,7 @@
       <AppTopbar
         :title="pageTitle"
         :subtitle="pageSubtitle"
+        :dossier-icon="(route.path === '/' || route.path === '/home') && dossierStore.currentDossier ? (dossierStore.currentDossier.icon || 'mdi-folder-outline') : undefined"
         @toggle-sidebar="sidebarCollapsed = !sidebarCollapsed"
       />
       <div
