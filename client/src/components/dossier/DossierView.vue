@@ -3,7 +3,8 @@
     <!-- Left panel: sidebar with tabs -->
     <aside v-show="!focusMode" class="dv-sidebar">
       <div class="dv-sidebar-header">
-        <div class="dv-sidebar-title-row">
+        <!-- Ligne 1 : icône + titre -->
+        <div class="dv-header-title-row">
           <div class="dv-sidebar-icon-wrap">
             <img v-if="dossierLogoUrl" :src="dossierLogoUrl" class="dv-sidebar-logo" />
             <span v-else-if="dossierStore.currentDossier?.icon" :class="'mdi ' + dossierStore.currentDossier.icon" style="font-size: 20px;"></span>
@@ -13,131 +14,140 @@
             {{ dossierStore.currentDossier?.title }}
           </h3>
         </div>
-        <div class="dv-sidebar-actions">
-          <!-- Nouveau -->
-          <button class="dv-action-btn" :title="$t('tree.newElement')" @click="newMenuRef?.toggle($event)">
-            <span class="mdi mdi-plus" style="font-size: 16px;"></span>
-          </button>
-          <Popover ref="newMenuRef">
-            <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="handleCreateNode('folder', null); newMenuRef?.hide()">
-                <span class="mdi mdi-folder-plus-outline" style="font-size: 16px;"></span>
-                <span>{{ $t('tree.folder') }}</span>
-              </button>
-              <button class="dv-export-option" @click="handleCreateNode('note', null); newMenuRef?.hide()">
-                <span class="mdi mdi-note-plus-outline" style="font-size: 16px;"></span>
-                <span>{{ $t('tree.note') }}</span>
-              </button>
-              <button class="dv-export-option" @click="handleCreateNode('mindmap', null); newMenuRef?.hide()">
-                <span class="mdi mdi-vector-polyline" style="font-size: 16px;"></span>
-                <span>{{ $t('tree.mindmap') }}</span>
-              </button>
-              <button class="dv-export-option" @click="handleCreateNode('map', null); newMenuRef?.hide()">
-                <span class="mdi mdi-map-outline" style="font-size: 16px;"></span>
-                <span>{{ $t('tree.map') }}</span>
-              </button>
-              <button class="dv-export-option" @click="handleCreateNode('dataset', null); newMenuRef?.hide()">
-                <span class="mdi mdi-table" style="font-size: 16px;"></span>
-                <span>{{ $t('tree.dataset') }}</span>
-              </button>
-              <button class="dv-export-option" @click="handleCreateNode('media', null); newMenuRef?.hide()">
-                <span class="mdi mdi-play-circle-outline" style="font-size: 16px;"></span>
-                <span>{{ $t('tree.media') }}</span>
-              </button>
-            </div>
-          </Popover>
-          <!-- Outils -->
-          <button class="dv-action-btn" :title="$t('tree.tools')" @click="toolsMenuRef?.toggle($event)">
-            <span class="mdi mdi-toolbox-outline" style="font-size: 16px;"></span>
-          </button>
-          <Popover ref="toolsMenuRef">
-            <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="webClipperOpen = true; toolsMenuRef?.hide()">
-                <span class="mdi mdi-web" style="font-size: 16px;"></span>
-                <span>Web Clipper</span>
-              </button>
-              <button class="dv-export-option" @click="profileAnalyzerOpen = true; toolsMenuRef?.hide()">
-                <span class="mdi mdi-account-search-outline" style="font-size: 16px;"></span>
-                <span>{{ $t('social.profile.title') }}</span>
-              </button>
-              <button class="dv-export-option" @click="osintDorkingOpen = true; toolsMenuRef?.hide()">
-                <span class="mdi mdi-search-web" style="font-size: 16px;"></span>
-                <span>OSINT Dorking</span>
-              </button>
-              <button class="dv-export-option" @click="reverseImageOpen = true; toolsMenuRef?.hide()">
-                <span class="mdi mdi-image-search-outline" style="font-size: 16px;"></span>
-                <span>{{ $t('dossier.reverseImageTitle') }}</span>
-              </button>
-              <button class="dv-export-option" @click="usernameScanOpen = true; toolsMenuRef?.hide()">
-                <span class="mdi mdi-radar" style="font-size: 16px;"></span>
-                <span>{{ $t('dossier.scanTitle') }}</span>
-              </button>
-              <button class="dv-export-option" @click="openLeaksSearch(); toolsMenuRef?.hide()">
-                <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
-                <span>{{ $t('osint.leaksSearch') }}</span>
-              </button>
-            </div>
-          </Popover>
-          <!-- Export -->
-          <button class="dv-action-btn" :title="$t('dossier.export')" @click="exportMenuRef?.toggle($event)">
-            <span class="mdi mdi-download-outline" style="font-size: 16px;"></span>
-          </button>
-          <Popover ref="exportMenuRef">
-            <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="exportJSON(); exportMenuRef?.hide()">
-                <span class="mdi mdi-code-json" style="font-size: 16px;"></span>
-                <span>Export JSON</span>
-              </button>
-              <button class="dv-export-option" @click="exportSelectOpen = true; exportMenuRef?.hide()">
-                <span class="mdi mdi-file-word-box" style="font-size: 16px;"></span>
-                <span>{{ $t('dossier.exportDocx') }}</span>
-              </button>
-              <div v-if="aiEnabled" class="dv-export-divider" />
-              <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect(); exportMenuRef?.hide()">
-                <span class="mdi mdi-robot-outline" style="font-size: 16px;"></span>
-                <span>{{ $t('dossier.generateAiReport') }}</span>
-              </button>
-            </div>
-          </Popover>
-          <!-- Import -->
-          <button class="dv-action-btn" :title="$t('dossier.import')" @click="importMenuRef?.toggle($event)">
-            <span class="mdi mdi-upload-outline" style="font-size: 16px;"></span>
-          </button>
-          <Popover ref="importMenuRef">
-            <div class="glass-card dv-export-menu">
-              <button class="dv-export-option" @click="elephantasticOpen = true; importMenuRef?.hide()">
-                <span class="mdi mdi-elephant" style="font-size: 16px;"></span>
-                <span>{{ $t('elephantastic.title') }}</span>
-              </button>
-              <button class="dv-export-option" @click="webCheckOpen = true; importMenuRef?.hide()">
-                <span class="mdi mdi-web-check" style="font-size: 16px;"></span>
-                <span>{{ $t('webcheck.title') }}</span>
-              </button>
-              <button class="dv-export-option" @click="osintIndustriesOpen = true; importMenuRef?.hide()">
-                <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
-                <span>{{ $t('osintIndustries.title') }}</span>
-              </button>
-              <button class="dv-export-option" disabled>
-                <span class="mdi mdi-graph-outline" style="font-size: 16px;"></span>
-                <span>Import Tangles</span>
-                <span class="dv-soon-badge mono">{{ $t('common.soon') }}</span>
-              </button>
-            </div>
-          </Popover>
-          <!-- Historique -->
-          <button
-            v-if="dossierStore.selectedNode && ['note', 'mindmap', 'map'].includes(dossierStore.selectedNode.type)"
-            class="dv-action-btn"
-            @click="openSnapshots"
-            :title="$t('dossier.versionHistory')"
-          >
-            <span class="mdi mdi-history" style="font-size: 16px;"></span>
-          </button>
-          <!-- Corbeille -->
-          <button class="dv-action-btn" @click="scrollToTrash" :title="$t('tree.trash')">
-            <span class="mdi mdi-delete-outline" style="font-size: 16px;"></span>
-          </button>
+
+        <!-- Ligne 2 : toolbar d'actions -->
+        <div class="dv-header-toolbar">
+          <!-- Groupe contenu -->
+          <ButtonGroup>
+            <Button text severity="secondary" size="small" :title="$t('tree.newElement')" @click="newMenuRef?.toggle($event)">
+              <span class="mdi mdi-plus" style="font-size: 16px;"></span>
+            </Button>
+            <Button text severity="secondary" size="small" :title="$t('tree.tools')" @click="toolsMenuRef?.toggle($event)">
+              <span class="mdi mdi-toolbox-outline" style="font-size: 16px;"></span>
+            </Button>
+          </ButtonGroup>
+
+          <!-- Groupe import/export -->
+          <ButtonGroup>
+            <Button text severity="secondary" size="small" :title="$t('dossier.export')" @click="exportMenuRef?.toggle($event)">
+              <span class="mdi mdi-download-outline" style="font-size: 16px;"></span>
+            </Button>
+            <Button text severity="secondary" size="small" :title="$t('dossier.import')" @click="importMenuRef?.toggle($event)">
+              <span class="mdi mdi-upload-outline" style="font-size: 16px;"></span>
+            </Button>
+          </ButtonGroup>
+
+          <!-- Groupe historique / corbeille -->
+          <ButtonGroup>
+            <Button
+              v-if="dossierStore.selectedNode && ['note', 'mindmap', 'map'].includes(dossierStore.selectedNode.type)"
+              text severity="secondary" size="small"
+              @click="openSnapshots"
+              :title="$t('dossier.versionHistory')"
+            >
+              <span class="mdi mdi-history" style="font-size: 16px;"></span>
+            </Button>
+            <Button text severity="secondary" size="small" @click="scrollToTrash" :title="$t('tree.trash')">
+              <span class="mdi mdi-delete-outline" style="font-size: 16px;"></span>
+            </Button>
+          </ButtonGroup>
         </div>
+
+        <!-- Popovers -->
+        <Popover ref="newMenuRef">
+          <div class="glass-card dv-export-menu">
+            <button class="dv-export-option" @click="handleCreateNode('folder', null); newMenuRef?.hide()">
+              <span class="mdi mdi-folder-plus-outline" style="font-size: 16px;"></span>
+              <span>{{ $t('tree.folder') }}</span>
+            </button>
+            <button class="dv-export-option" @click="handleCreateNode('note', null); newMenuRef?.hide()">
+              <span class="mdi mdi-note-plus-outline" style="font-size: 16px;"></span>
+              <span>{{ $t('tree.note') }}</span>
+            </button>
+            <button class="dv-export-option" @click="handleCreateNode('mindmap', null); newMenuRef?.hide()">
+              <span class="mdi mdi-vector-polyline" style="font-size: 16px;"></span>
+              <span>{{ $t('tree.mindmap') }}</span>
+            </button>
+            <button class="dv-export-option" @click="handleCreateNode('map', null); newMenuRef?.hide()">
+              <span class="mdi mdi-map-outline" style="font-size: 16px;"></span>
+              <span>{{ $t('tree.map') }}</span>
+            </button>
+            <button class="dv-export-option" @click="handleCreateNode('dataset', null); newMenuRef?.hide()">
+              <span class="mdi mdi-table" style="font-size: 16px;"></span>
+              <span>{{ $t('tree.dataset') }}</span>
+            </button>
+            <button class="dv-export-option" @click="handleCreateNode('media', null); newMenuRef?.hide()">
+              <span class="mdi mdi-play-circle-outline" style="font-size: 16px;"></span>
+              <span>{{ $t('tree.media') }}</span>
+            </button>
+          </div>
+        </Popover>
+        <Popover ref="toolsMenuRef">
+          <div class="glass-card dv-export-menu">
+            <button class="dv-export-option" @click="webClipperOpen = true; toolsMenuRef?.hide()">
+              <span class="mdi mdi-web" style="font-size: 16px;"></span>
+              <span>Web Clipper</span>
+            </button>
+            <button class="dv-export-option" @click="profileAnalyzerOpen = true; toolsMenuRef?.hide()">
+              <span class="mdi mdi-account-search-outline" style="font-size: 16px;"></span>
+              <span>{{ $t('social.profile.title') }}</span>
+            </button>
+            <button class="dv-export-option" @click="osintDorkingOpen = true; toolsMenuRef?.hide()">
+              <span class="mdi mdi-search-web" style="font-size: 16px;"></span>
+              <span>OSINT Dorking</span>
+            </button>
+            <button class="dv-export-option" @click="reverseImageOpen = true; toolsMenuRef?.hide()">
+              <span class="mdi mdi-image-search-outline" style="font-size: 16px;"></span>
+              <span>{{ $t('dossier.reverseImageTitle') }}</span>
+            </button>
+            <button class="dv-export-option" @click="usernameScanOpen = true; toolsMenuRef?.hide()">
+              <span class="mdi mdi-radar" style="font-size: 16px;"></span>
+              <span>{{ $t('dossier.scanTitle') }}</span>
+            </button>
+            <button class="dv-export-option" @click="openLeaksSearch(); toolsMenuRef?.hide()">
+              <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
+              <span>{{ $t('osint.leaksSearch') }}</span>
+            </button>
+          </div>
+        </Popover>
+        <Popover ref="exportMenuRef">
+          <div class="glass-card dv-export-menu">
+            <button class="dv-export-option" @click="exportJSON(); exportMenuRef?.hide()">
+              <span class="mdi mdi-code-json" style="font-size: 16px;"></span>
+              <span>Export JSON</span>
+            </button>
+            <button class="dv-export-option" @click="exportSelectOpen = true; exportMenuRef?.hide()">
+              <span class="mdi mdi-file-word-box" style="font-size: 16px;"></span>
+              <span>{{ $t('dossier.exportDocx') }}</span>
+            </button>
+            <div v-if="aiEnabled" class="dv-export-divider" />
+            <button v-if="aiEnabled" class="dv-export-option dv-export-ai" @click="openAiReportTemplateSelect(); exportMenuRef?.hide()">
+              <span class="mdi mdi-robot-outline" style="font-size: 16px;"></span>
+              <span>{{ $t('dossier.generateAiReport') }}</span>
+            </button>
+          </div>
+        </Popover>
+        <Popover ref="importMenuRef">
+          <div class="glass-card dv-export-menu">
+            <button class="dv-export-option" @click="elephantasticOpen = true; importMenuRef?.hide()">
+              <span class="mdi mdi-elephant" style="font-size: 16px;"></span>
+              <span>{{ $t('elephantastic.title') }}</span>
+            </button>
+            <button class="dv-export-option" @click="webCheckOpen = true; importMenuRef?.hide()">
+              <span class="mdi mdi-web-check" style="font-size: 16px;"></span>
+              <span>{{ $t('webcheck.title') }}</span>
+            </button>
+            <button class="dv-export-option" @click="osintIndustriesOpen = true; importMenuRef?.hide()">
+              <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
+              <span>{{ $t('osintIndustries.title') }}</span>
+            </button>
+            <button class="dv-export-option" disabled>
+              <span class="mdi mdi-graph-outline" style="font-size: 16px;"></span>
+              <span>Import Tangles</span>
+              <span class="dv-soon-badge mono">{{ $t('common.soon') }}</span>
+            </button>
+          </div>
+        </Popover>
       </div>
 
       <!-- Online collaborators -->
@@ -636,6 +646,8 @@ import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent, nex
 import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
 import Popover from 'primevue/popover';
+import Button from 'primevue/button';
+import ButtonGroup from 'primevue/buttongroup';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import { useDossierStore } from '../../stores/dossier';
@@ -1709,19 +1721,49 @@ function downloadBlob(blob: Blob, filename: string) {
   overflow: hidden;
 }
 .dv-sidebar-header {
-  padding: 16px 18px 12px;
+  padding: 14px 14px 10px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 8px;
+  border-bottom: 1px solid var(--me-border);
 }
-.dv-sidebar-title-row {
+.dv-header-title-row {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
-  flex: 1;
 }
+.dv-header-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dv-header-toolbar .p-button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+  color: var(--me-text-muted);
+}
+.dv-header-toolbar .p-button:hover {
+  color: var(--me-accent);
+  background: var(--me-accent-glow);
+}
+.dv-header-toolbar .p-buttongroup {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--me-border);
+}
+.dv-header-toolbar .p-buttongroup .p-button {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid var(--me-border);
+}
+.dv-header-toolbar .p-buttongroup .p-button:last-child {
+  border-right: none;
+}
+/* supprimé: dv-sidebar-title-row et dv-sidebar-actions (remplacés) */
 .dv-sidebar-icon-wrap {
   width: 32px;
   height: 32px;
@@ -1740,11 +1782,6 @@ function downloadBlob(blob: Blob, filename: string) {
   height: 32px;
   border-radius: 8px;
   object-fit: cover;
-}
-.dv-sidebar-actions {
-  display: flex;
-  gap: 2px;
-  flex-shrink: 0;
 }
 /* Online collaborators bar */
 .dv-collab-bar {
