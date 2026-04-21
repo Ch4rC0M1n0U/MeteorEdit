@@ -1539,6 +1539,17 @@ function walkTreeDocx(
         mediaFormat,
       });
       walkTreeDocx(allNodes, node._id, depth + 1, sections, sectionNum, mediaFormat);
+    } else if (node.type === 'timeline' && node.content) {
+      try {
+        const parsed = typeof node.content === 'string' ? JSON.parse(node.content) : node.content;
+        sections.push({
+          title: sectionTitle,
+          level: hl,
+          paragraphs: [],
+          timelineData: parsed,
+        });
+      } catch { /* ignore malformed timeline content */ }
+      walkTreeDocx(allNodes, node._id, depth + 1, sections, sectionNum, mediaFormat);
     }
   }
 }
@@ -1569,6 +1580,16 @@ function buildDocxSections(_dossier: any, nodes: any[], mediaFormat: 'table' | '
         mediaData: node.mediaData,
         mediaFormat,
       });
+    } else if (node.type === 'timeline' && node.content) {
+      try {
+        const parsed = typeof node.content === 'string' ? JSON.parse(node.content) : node.content;
+        sections.push({
+          title: `${num} ${node.title}`,
+          level: 'h1',
+          paragraphs: [],
+          timelineData: parsed,
+        });
+      } catch { /* ignore malformed timeline content */ }
     }
   }
 

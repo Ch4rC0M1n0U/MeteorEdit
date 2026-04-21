@@ -1186,6 +1186,19 @@ export interface DocxExportData {
     blocks?: ContentBlock[];  // Rich content blocks — preferred over paragraphs/content
     mediaData?: any;  // MediaData for media nodes
     mediaFormat?: 'table' | 'sequential';
+    timelineData?: {
+      events: Array<{
+        id: string
+        dateType: 'exact' | 'approximate'
+        date: string
+        time?: string
+        title: string
+        description?: string
+        category: string
+        source?: string
+      }>
+      customCategories: string[]
+    };
   }>;
   closingDate: string;
   closingCity?: string;
@@ -1201,6 +1214,95 @@ export interface DocxExportData {
   signatureImagePath?: string;
   serverUrl: string;
   dossierId?: string;
+}
+
+// ── Timeline Rendering ───────────────────────────────────────────────
+
+function renderTimelineDocx(
+  timelineData: {
+    events: Array<{
+      id: string
+      dateType: string
+      date: string
+      time?: string
+      title: string
+      description?: string
+      category: string
+      source?: string
+    }>
+  },
+): (Paragraph | Table)[] {
+  const CATEGORY_LABELS: Record<string, string> = {
+    travel: 'DÉPLACEMENT',
+    transaction: 'TRANSACTION',
+    digital: 'NUMÉRIQUE',
+    contact: 'CONTACT',
+    legal: 'JUDICIAIRE',
+    other: 'AUTRE',
+  }
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    travel: '3B82F6',
+    transaction: '22C55E',
+    digital: 'A855F7',
+    contact: 'F97316',
+    legal: 'EF4444',
+    other: '64748B',
+  }
+
+  const rows = timelineData.events.map((event) => {
+    const catLabel = CATEGORY_LABELS[event.category] ?? event.category.toUpperCase()
+    const catColor = CATEGORY_COLORS[event.category] ?? '6366F1'
+
+    const dateStr =
+      event.dateType === 'approximate'
+        ? event.date
+        : (() => {
+            const d = new Date(event.date)
+            const base = isNaN(d.getTime()) ? event.date : d.toLocaleDateString('fr-FR')
+            return event.time ? `${base} ${event.time}` : base
+          })()
+
+    return new TableRow({
+      children: [
+        new TableCell({
+          width: { size: 25, type: WidthType.PERCENTAGE },
+          shading: { type: ShadingType.CLEAR, fill: catColor + '22' },
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: dateStr, bold: true, size: 20 })],
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: catLabel, color: catColor, size: 16 })],
+            }),
+          ],
+        }),
+        new TableCell({
+          width: { size: 75, type: WidthType.PERCENTAGE },
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: event.title, bold: true, size: 22 })],
+            }),
+            ...(event.description
+              ? [new Paragraph({ children: [new TextRun({ text: event.description, size: 20 })] })]
+              : []),
+            ...(event.source
+              ? [new Paragraph({ children: [new TextRun({ text: `Source : ${event.source}`, italics: true, size: 18, color: '94A3B8' })] })]
+              : []),
+          ],
+        }),
+      ],
+    })
+  })
+
+  if (!rows.length) return []
+
+  return [
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows,
+    }),
+  ]
 }
 
 // ── Document Generation ─────────────────────────────────────────────
@@ -1377,6 +1479,13 @@ export async function generateDocx(data: DocxExportData): Promise<void> {
   for (const section of data.sections) {
     if (section.title) {
       docChildren.push(sectionHeading(section.title, tpl, section.level));
+    }
+
+    // Timeline node rendering
+    if (section.timelineData && section.timelineData.events.length > 0) {
+      const timelineElements = renderTimelineDocx(section.timelineData)
+      docChildren.push(...timelineElements)
+      continue
     }
 
     // Media node rendering
