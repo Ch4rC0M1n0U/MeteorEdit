@@ -1953,5 +1953,27 @@
     "insertEntity": "Insérer sur le canvas",
     "noEntities": "Aucune entité dans ce dossier",
     "noNotes": "Aucune note dans ce dossier"
+  },
+  "timeline": {
+    "newTimeline": "Ligne du temps",
+    "addEvent": "Ajouter un événement",
+    "editEvent": "Modifier l'événement",
+    "sortByDate": "Trier par date",
+    "events": "événements",
+    "noEvents": "Aucun événement — cliquez sur \"Ajouter\" pour commencer",
+    "eventTitle": "Titre",
+    "dateType": "Type de date",
+    "exact": "Exacte",
+    "approximate": "Approximative",
+    "date": "Date",
+    "time": "Heure",
+    "optional": "optionnel",
+    "approximateDate": "Date approximative",
+    "approximatePlaceholder": "ex: vers mars 2024, début 2023...",
+    "category": "Catégorie",
+    "customCategory": "+ Catégorie personnalisée",
+    "customCategoryPlaceholder": "Nom de la catégorie",
+    "description": "Description",
+    "source": "Source / Référence"
   }
 }

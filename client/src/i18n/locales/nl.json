@@ -1940,5 +1940,27 @@
     "insertEntity": "Invoegen op canvas",
     "noEntities": "Geen entiteiten in dit dossier",
     "noNotes": "Geen notities in dit dossier"
+  },
+  "timeline": {
+    "newTimeline": "Tijdlijn",
+    "addEvent": "Gebeurtenis toevoegen",
+    "editEvent": "Gebeurtenis bewerken",
+    "sortByDate": "Sorteren op datum",
+    "events": "gebeurtenissen",
+    "noEvents": "Geen gebeurtenissen — klik op \"Toevoegen\" om te beginnen",
+    "eventTitle": "Titel",
+    "dateType": "Datumtype",
+    "exact": "Exact",
+    "approximate": "Approximatief",
+    "date": "Datum",
+    "time": "Tijd",
+    "optional": "optioneel",
+    "approximateDate": "Geschatte datum",
+    "approximatePlaceholder": "bijv. rond maart 2024, begin 2023...",
+    "category": "Categorie",
+    "customCategory": "+ Aangepaste categorie",
+    "customCategoryPlaceholder": "Categorienaam",
+    "description": "Beschrijving",
+    "source": "Bron / Referentie"
   }
 }

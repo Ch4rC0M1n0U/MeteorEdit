@@ -1941,5 +1941,27 @@
     "insertEntity": "Insert on canvas",
     "noEntities": "No entities in this dossier",
     "noNotes": "No notes in this dossier"
+  },
+  "timeline": {
+    "newTimeline": "Timeline",
+    "addEvent": "Add event",
+    "editEvent": "Edit event",
+    "sortByDate": "Sort by date",
+    "events": "events",
+    "noEvents": "No events — click \"Add\" to start",
+    "eventTitle": "Title",
+    "dateType": "Date type",
+    "exact": "Exact",
+    "approximate": "Approximate",
+    "date": "Date",
+    "time": "Time",
+    "optional": "optional",
+    "approximateDate": "Approximate date",
+    "approximatePlaceholder": "e.g. around March 2024, early 2023...",
+    "category": "Category",
+    "customCategory": "+ Custom category",
+    "customCategoryPlaceholder": "Category name",
+    "description": "Description",
+    "source": "Source / Reference"
   }
 }
