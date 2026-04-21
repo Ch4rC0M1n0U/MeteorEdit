@@ -6,7 +6,7 @@ const dossierNodeSchema = new Schema<IDossierNode>(
   {
     dossierId: { type: Schema.Types.ObjectId, ref: 'Dossier', required: true, index: true },
     parentId: { type: Schema.Types.ObjectId, ref: 'DossierNode', default: null },
-    type: { type: String, enum: ['folder', 'note', 'mindmap', 'document', 'map', 'dataset', 'media'], required: true },
+    type: { type: String, enum: ['folder', 'note', 'mindmap', 'document', 'map', 'dataset', 'media', 'timeline'], required: true },
     title: { type: String, required: true, trim: true },
     order: { type: Number, default: 0 },
     content: { type: Schema.Types.Mixed, default: null },

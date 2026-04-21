@@ -149,7 +149,7 @@ export interface DossierNode {
   _id: string;
   dossierId: string;
   parentId: string | null;
-  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset' | 'media';
+  type: 'folder' | 'note' | 'mindmap' | 'document' | 'map' | 'dataset' | 'media' | 'timeline';
   title: string;
   order: number;
   content: any | null;
@@ -165,6 +165,31 @@ export interface DossierNode {
   updatedAt: string;
   children?: DossierNode[];
 }
+
+export interface TimelineEvent {
+  id: string
+  dateType: 'exact' | 'approximate'
+  date: string
+  time?: string
+  title: string
+  description?: string
+  category: string
+  source?: string
+}
+
+export interface TimelineData {
+  events: TimelineEvent[]
+  customCategories: string[]
+}
+
+export const TIMELINE_CATEGORIES = [
+  { key: 'travel',      label: 'Déplacement',  color: '#3b82f6', icon: 'mdi-airplane' },
+  { key: 'transaction', label: 'Transaction',   color: '#22c55e', icon: 'mdi-currency-eur' },
+  { key: 'digital',     label: 'Numérique',     color: '#a855f7', icon: 'mdi-laptop' },
+  { key: 'contact',     label: 'Contact',       color: '#f97316', icon: 'mdi-phone' },
+  { key: 'legal',       label: 'Judiciaire',    color: '#ef4444', icon: 'mdi-gavel' },
+  { key: 'other',       label: 'Autre',         color: '#64748b', icon: 'mdi-dots-horizontal' },
+] as const
 
 export interface TaskAssignee {
   _id: string;
