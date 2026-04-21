@@ -68,6 +68,10 @@
               <span class="mdi mdi-play-circle-outline" style="font-size: 16px;"></span>
               <span>{{ $t('tree.media') }}</span>
             </button>
+            <button class="dv-export-option" @click="handleCreateNode('timeline', null); newMenuRef?.hide()">
+              <span class="mdi mdi-timeline-clock-outline" style="font-size: 16px; margin-right: 8px;"></span>
+              {{ $t('timeline.newTimeline') }}
+            </button>
           </div>
         </Popover>
         <Popover ref="toolsMenuRef">
@@ -267,6 +271,10 @@
 
       <div v-else-if="dossierStore.selectedNode.type === 'media'" class="dv-editor-wrap">
         <MediaEditor :node="dossierStore.selectedNode" :initial-download-url="pendingDownloadUrl" @download-started="pendingDownloadUrl = ''" />
+      </div>
+
+      <div v-else-if="dossierStore.selectedNode.type === 'timeline'" class="dv-editor-wrap">
+        <TimelineEditor :node="dossierStore.selectedNode" />
       </div>
 
       <div v-else-if="dossierStore.selectedNode.type === 'document'" class="dv-content-panel dv-document-panel">
@@ -670,6 +678,9 @@ const DatasetEditor = defineAsyncComponent(() =>
 );
 const MediaEditor = defineAsyncComponent(() =>
   import('../media/MediaEditor.vue')
+);
+const TimelineEditor = defineAsyncComponent(() =>
+  import('../timeline/TimelineEditor.vue')
 );
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';

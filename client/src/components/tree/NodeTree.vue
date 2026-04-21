@@ -312,6 +312,7 @@ function trashIcon(type: string) {
     case 'document': return 'mdi-file-document-outline';
     case 'dataset': return 'mdi-table';
     case 'media': return 'mdi-play-circle-outline';
+    case 'timeline': return 'mdi-timeline-clock-outline';
     default: return 'mdi-file-outline';
   }
 }
