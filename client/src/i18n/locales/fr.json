@@ -1945,5 +1945,13 @@
     "onypheHostDetail": "Détails de l'hôte",
     "onypheLocation": "Localisation",
     "onyphePlacePin": "Placer un repère de recherche Onyphe"
+  },
+  "mindmap": {
+    "entityPanel": "Entités & Notes",
+    "entityPanelEntities": "Entités",
+    "entityPanelNotes": "Notes",
+    "insertEntity": "Insérer sur le canvas",
+    "noEntities": "Aucune entité dans ce dossier",
+    "noNotes": "Aucune note dans ce dossier"
   }
 }

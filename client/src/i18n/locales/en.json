@@ -1933,5 +1933,13 @@
     "onypheHostDetail": "Host details",
     "onypheLocation": "Location",
     "onyphePlacePin": "Place Onyphe search pin"
+  },
+  "mindmap": {
+    "entityPanel": "Entities & Notes",
+    "entityPanelEntities": "Entities",
+    "entityPanelNotes": "Notes",
+    "insertEntity": "Insert on canvas",
+    "noEntities": "No entities in this dossier",
+    "noNotes": "No notes in this dossier"
   }
 }

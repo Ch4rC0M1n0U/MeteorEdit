@@ -1932,5 +1932,13 @@
     "onypheHostDetail": "Hostdetails",
     "onypheLocation": "Locatie",
     "onyphePlacePin": "Onyphe zoekpin plaatsen"
+  },
+  "mindmap": {
+    "entityPanel": "Entiteiten & Notities",
+    "entityPanelEntities": "Entiteiten",
+    "entityPanelNotes": "Notities",
+    "insertEntity": "Invoegen op canvas",
+    "noEntities": "Geen entiteiten in dit dossier",
+    "noNotes": "Geen notities in dit dossier"
   }
 }

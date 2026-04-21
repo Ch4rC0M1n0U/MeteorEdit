@@ -11,6 +11,9 @@
       </div>
       <div class="ex-toolbar-spacer" />
       <slot name="toolbar-end" />
+      <button class="ex-tb-btn" :class="{ active: showEntityPanel }" @click="showEntityPanel = !showEntityPanel" :disabled="!excalidrawApi" title="Entités &amp; Notes">
+        <span class="mdi mdi-account-multiple-plus" style="font-size: 16px"></span>
+      </button>
       <button class="ex-tb-btn" @click="copyAsImage" :disabled="!excalidrawApi" :title="copyMsg || 'Copier comme image'">
         <span :class="['mdi', copyMsg ? 'mdi-check' : 'mdi-camera']" style="font-size: 16px"></span>
       </button>
@@ -26,6 +29,11 @@
         :node-id="props.nodeId"
         @count-change="commentCount = $event"
       />
+      <ExcalidrawEntityPanel
+        v-model:visible="showEntityPanel"
+        :get-viewport-center="getViewportCenter"
+        @insert-elements="handleInsertElements"
+      />
     </div>
   </div>
 </template>
@@ -39,6 +47,7 @@ import { WebsocketProvider } from 'y-websocket';
 import api, { SERVER_URL } from '../../services/api';
 import { useAuthStore } from '../../stores/auth';
 import CommentSidebar from '../editor/CommentSidebar.vue';
+import ExcalidrawEntityPanel from './ExcalidrawEntityPanel.vue';
 
 const props = defineProps<{ data: any; nodeId: string }>();
 const emit = defineEmits<{ 'update:data': [value: any] }>();
@@ -46,6 +55,7 @@ const containerRef = ref<HTMLElement | null>(null);
 const copyMsg = ref('');
 const showComments = ref(false);
 const commentCount = ref(0);
+const showEntityPanel = ref(false);
 const awarenessUsers = ref<Array<{ name: string; color: string; initials: string; avatarUrl: string | null }>>([]);
 let root: Root | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -166,6 +176,25 @@ function scheduleSave(data: any, immediate = false) {
     lastData = null;
     saveTimeout = null;
   }, 3000);
+}
+
+function getViewportCenter(): { x: number; y: number } {
+  if (!excalidrawApi) return { x: 0, y: 0 };
+  const appState = excalidrawApi.getAppState();
+  return {
+    x: -appState.scrollX + appState.width / 2,
+    y: -appState.scrollY + appState.height / 2,
+  };
+}
+
+function handleInsertElements(elements: unknown[], files?: unknown[]) {
+  if (!excalidrawApi) return;
+  excalidrawApi.updateScene({
+    elements: [...excalidrawApi.getSceneElements(), ...elements],
+  });
+  if (files && files.length) {
+    excalidrawApi.addFiles(files);
+  }
 }
 
 async function copyAsImage() {
