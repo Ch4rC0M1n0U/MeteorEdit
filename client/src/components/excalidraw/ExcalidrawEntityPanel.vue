@@ -411,8 +411,8 @@ function insertCustom() {
 .eep-header-title {
   flex: 1;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--me-text-primary);
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .eep-close-btn {
@@ -499,15 +499,15 @@ function insertCustom() {
 
 .eep-item-type {
   font-size: 10px;
-  color: var(--me-text-muted);
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .eep-item-name {
   font-size: 13px;
-  color: var(--me-text-primary);
-  font-weight: 500;
+  color: #0f172a;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
