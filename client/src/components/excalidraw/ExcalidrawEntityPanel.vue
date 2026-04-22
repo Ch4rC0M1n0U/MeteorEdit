@@ -412,7 +412,7 @@ function insertCustom() {
   flex: 1;
   font-size: 13px;
   font-weight: 600;
-  color: var(--me-text, #e2e8f0);
+  color: var(--me-text-primary);
 }
 
 .eep-close-btn {
@@ -499,14 +499,14 @@ function insertCustom() {
 
 .eep-item-type {
   font-size: 10px;
-  color: var(--me-text-muted, #94a3b8);
+  color: var(--me-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .eep-item-name {
   font-size: 13px;
-  color: var(--me-text, #e2e8f0);
+  color: var(--me-text-primary);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -539,7 +539,7 @@ function insertCustom() {
   background: var(--me-bg-surface, #161b27);
   border: 1px solid var(--me-border, #2d3348);
   border-radius: 6px;
-  color: var(--me-text, #e2e8f0);
+  color: var(--me-text-primary);
   font-size: 13px;
   padding: 6px 8px;
   outline: none;
