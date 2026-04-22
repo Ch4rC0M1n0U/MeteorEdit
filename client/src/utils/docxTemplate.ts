@@ -1267,7 +1267,7 @@ function renderTimelineDocx(
       children: [
         new TableCell({
           width: { size: 25, type: WidthType.PERCENTAGE },
-          shading: { type: ShadingType.CLEAR, fill: catColor + '22' },
+          shading: { type: ShadingType.CLEAR, fill: 'F1F5F9' },
           children: [
             new Paragraph({
               children: [new TextRun({ text: dateStr, bold: true, size: 20 })],

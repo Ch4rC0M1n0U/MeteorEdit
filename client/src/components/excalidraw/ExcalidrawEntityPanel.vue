@@ -83,7 +83,7 @@
         </TabPanel>
 
         <!-- Onglet Personnalisé -->
-        <TabPanel :header="t('mindmap.entityPanelCustom')">
+        <TabPanel header="＋ Custom">
           <div class="eep-custom">
             <div class="eep-custom-row">
               <label class="eep-custom-label">{{ t('mindmap.customType') }}</label>
@@ -157,7 +157,7 @@ const customType = ref<string>('other')
 const customLabel = ref<string>('')
 
 // Draggable state
-const panelX = ref(window.innerWidth - 290)
+const panelX = ref(window.innerWidth - 316)
 const panelY = ref(60)
 let dragStartX = 0
 let dragStartY = 0
@@ -376,8 +376,8 @@ function insertCustom() {
 .eep-panel {
   position: fixed;
   z-index: 10000;
-  width: 270px;
-  max-height: 440px;
+  width: 300px;
+  max-height: 480px;
   background: var(--me-bg-elevated, #1e2330);
   border: 1px solid var(--me-border, #2d3348);
   border-radius: 10px;
@@ -429,16 +429,20 @@ function insertCustom() {
 }
 
 .eep-tabs :deep(.p-tabview-nav) {
-  padding: 0 8px;
+  padding: 0 4px;
   background: transparent;
   border-bottom: 1px solid var(--me-border, #2d3348);
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: hidden;
 }
 
 .eep-tabs :deep(.p-tabview-nav li .p-tabview-nav-link) {
-  font-size: 12px;
-  padding: 6px 10px;
+  font-size: 11px;
+  padding: 6px 8px;
   background: transparent;
   color: var(--me-text-muted, #94a3b8);
+  white-space: nowrap;
 }
 
 .eep-tabs :deep(.p-tabview-nav li.p-highlight .p-tabview-nav-link) {
@@ -449,7 +453,7 @@ function insertCustom() {
 .eep-tabs :deep(.p-tabview-panels) {
   padding: 0;
   overflow-y: auto;
-  max-height: 330px;
+  max-height: 370px;
   background: transparent;
 }
 
