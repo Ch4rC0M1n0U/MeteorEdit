@@ -22,7 +22,7 @@
 
       <!-- Platform badge -->
       <div v-if="detectedPlatform" class="pa-platform-badge" :style="{ borderColor: platformColor }">
-        <span :class="['mdi', platformIcon]" style="font-size: 16px; color: platformColor"></span>
+        <SocialIcon :platform="detectedPlatform" :size="16" :color="platformColor" />
         <span class="pa-platform-name" :style="{ color: platformColor }">{{ platformLabel }}</span>
         <span class="mdi mdi-check-circle" style="font-size: 14px; color: var(--me-accent)"></span>
       </div>
@@ -82,6 +82,7 @@ import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import FolderPicker from '../common/FolderPicker.vue';
+import SocialIcon from '../common/SocialIcon.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();

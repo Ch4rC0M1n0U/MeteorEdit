@@ -255,7 +255,8 @@
           </div>
           <div v-for="(entity, i) in form.entities" :key="i" class="di-entity-row">
             <span class="di-el-col-type">
-              <span :class="'mdi ' + entityIcon(entity.type) + ' di-el-type-icon'" :title="entityTypeLabel(entity.type)" style="font-size: 16px;"></span>
+              <SocialIcon v-if="isSocialType(entity.type)" :platform="normalizeEntityType(entity.type)" :size="16" class="di-el-type-icon" :title="entityTypeLabel(entity.type)" />
+              <span v-else :class="'mdi ' + entityIcon(entity.type) + ' di-el-type-icon'" :title="entityTypeLabel(entity.type)" style="font-size: 16px;"></span>
               <span class="di-el-type-label mono">{{ entityTypeLabel(entity.type) }}</span>
             </span>
             <span class="di-el-col-name">
@@ -912,6 +913,7 @@ import { useEncryptionStore } from '../../stores/encryption';
 import api, { SERVER_URL } from '../../services/api';
 import { getSocket } from '../../services/socket';
 import AiDisclaimerModal from '../AiDisclaimerModal.vue';
+import SocialIcon from '../common/SocialIcon.vue';
 import type { CollaboratorUser } from '../../types';
 import { DOSSIER_ICONS } from '../../constants/dossierIcons';
 import { useConfirm } from '../../composables/useConfirm';
@@ -1757,6 +1759,16 @@ const legacyTypeToKey: Record<string, string> = {
   'Pseudo': 'pseudo', 'Username': 'pseudo',
   'Autre': 'other', 'Other': 'other',
 };
+
+const SOCIAL_TYPES = new Set(['snapchat','facebook','instagram','twitter','tiktok','discord','telegram','linkedin','whatsapp','youtube','reddit'])
+
+function normalizeEntityType(type: string): string {
+  return legacyTypeToKey[type] || type.toLowerCase()
+}
+
+function isSocialType(type: string): boolean {
+  return SOCIAL_TYPES.has(normalizeEntityType(type))
+}
 
 function entityIcon(type: string): string {
   const key = legacyTypeToKey[type] || type;

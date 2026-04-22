@@ -95,7 +95,7 @@
             @click="entry.selected = !entry.selected"
           >
             <div class="oi-entry-header">
-              <span :class="'mdi ' + getGroupIcon(entry.name)" :style="{ fontSize: '16px', color: getGroupColor(entry.name) }"></span>
+              <SocialIcon :platform="entry.name.toLowerCase()" :size="16" :color="getGroupColor(entry.name)" />
               <span class="oi-entry-name">{{ entry.name }}</span>
               <Tag style="font-size: 10px; background: transparent; border: 1px solid var(--me-border);">{{ entry.items.length }} {{ $t('osintIndustries.activities') }}</Tag>
               <span :class="'mdi ' + (entry.selected ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline') + ' oi-check'" :style="{ fontSize: '16px', color: entry.selected ? 'var(--me-accent)' : 'var(--me-text-muted)' }"></span>
@@ -154,6 +154,7 @@ import Tag from 'primevue/tag';
 import api from '../../services/api';
 import { useDossierStore } from '../../stores/dossier';
 import FolderPicker from '../common/FolderPicker.vue';
+import SocialIcon from '../common/SocialIcon.vue';
 
 const { t } = useI18n();
 const dossierStore = useDossierStore();

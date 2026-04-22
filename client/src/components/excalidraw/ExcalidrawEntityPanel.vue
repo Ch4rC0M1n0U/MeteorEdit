@@ -32,8 +32,8 @@
               :key="entity._id ?? entity.name"
               class="eep-item"
             >
-              <span class="eep-item-icon" :style="{ color: entityColor(entity) }">
-                {{ entityIcon(entity) }}
+              <span class="eep-item-icon">
+                <SocialIcon :platform="normalizeType(entity.type || 'other')" :size="18" />
               </span>
               <div class="eep-item-info">
                 <span class="eep-item-type">{{ entity.type }}</span>
@@ -63,7 +63,9 @@
               :key="node._id"
               class="eep-item"
             >
-              <span class="eep-item-icon" style="color: #64748b">📝</span>
+              <span class="eep-item-icon">
+                <SocialIcon platform="other" :size="18" color="#64748b" />
+              </span>
               <div class="eep-item-info">
                 <span class="eep-item-type">Note</span>
                 <span class="eep-item-name">{{ truncate(node.title || t('mindmap.noNotes'), 22) }}</span>
@@ -85,11 +87,18 @@
           <div class="eep-custom">
             <div class="eep-custom-row">
               <label class="eep-custom-label">{{ t('mindmap.customType') }}</label>
-              <select v-model="customType" class="eep-custom-select">
-                <option v-for="(val, key) in TYPE_ICONS" :key="key" :value="key">
-                  {{ val }} {{ key }}
-                </option>
-              </select>
+              <div class="eep-type-grid">
+                <button
+                  v-for="key in Object.keys(SOCIAL_ICON_MAP)"
+                  :key="key"
+                  class="eep-type-btn"
+                  :class="{ 'eep-type-btn--active': customType === key }"
+                  :title="key"
+                  @click="customType = key"
+                >
+                  <SocialIcon :platform="key" :size="16" />
+                </button>
+              </div>
             </div>
             <div class="eep-custom-row">
               <label class="eep-custom-label">{{ t('mindmap.customLabel') }}</label>
@@ -127,6 +136,8 @@ import { buildEntityElements, buildNoteElements } from './entityElementsBuilder'
 import { renderIdentityCard } from './identityCardRenderer'
 import type { IEntity } from '../../types'
 import type { DossierNode } from '../../types'
+import SocialIcon from '../common/SocialIcon.vue'
+import { SOCIAL_ICON_MAP } from '../common/socialIconMap'
 
 const props = defineProps<{
   visible: boolean
@@ -140,26 +151,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const dossierStore = useDossierStore()
-
-const TYPE_ICONS: Record<string, string> = {
-  identity: '👤',
-  phone: '📞',
-  email: '✉️',
-  snapchat: '👻',
-  facebook: '📘',
-  instagram: '📷',
-  twitter: '🐦',
-  tiktok: '🎵',
-  discord: '💬',
-  telegram: '✈️',
-  linkedin: '💼',
-  ip: '🌐',
-  address: '📍',
-  vehicle: '🚗',
-  iban: '🏦',
-  pseudo: '🎭',
-  other: '📌',
-}
 
 // Custom entity form state
 const customType = ref<string>('other')
@@ -559,5 +550,33 @@ function insertCustom() {
 .eep-custom-btn {
   width: 100%;
   margin-top: 2px;
+}
+
+.eep-type-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.eep-type-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--me-border, #2d3348);
+  border-radius: 5px;
+  background: var(--me-bg-surface, #161b27);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.eep-type-btn:hover {
+  border-color: var(--me-accent, #6366f1);
+}
+
+.eep-type-btn--active {
+  border-color: var(--me-accent, #6366f1);
+  background: rgba(99, 102, 241, 0.15);
 }
 </style>

@@ -35,7 +35,7 @@
         >
           <div class="ssm-platform-left">
             <div class="ssm-platform-icon" :style="iconStyle(p, isConnected(p.key))">
-              <span :class="['mdi', p.icon]" style="font-size: 20px; color: isConnected(p.key) ? '#fff' : p.color"></span>
+              <SocialIcon :platform="p.key" :size="20" :color="isConnected(p.key) ? '#fff' : p.color" />
             </div>
             <div class="ssm-platform-details">
               <span class="ssm-platform-name">{{ p.name }}</span>
@@ -138,7 +138,7 @@
             <span class="mdi mdi-arrow-left" style="font-size: 16px"></span>
           </button>
           <div class="ssm-view-header-icon" :style="loginPlatform ? iconStyle(loginPlatform, true) : {}">
-            <span :class="['mdi', loginPlatform?.icon]" style="font-size: 18px; color: #fff"></span>
+            <SocialIcon v-if="loginPlatform" :platform="loginPlatform.key" :size="18" color="#fff" />
           </div>
           <span class="ssm-view-title">
             {{ $t('social.session.connectTo', { platform: loginPlatform?.name }) }}
@@ -238,6 +238,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import api from '../../services/api';
 import Button from 'primevue/button';
+import SocialIcon from '../common/SocialIcon.vue';
 import ProgressBar from 'primevue/progressbar';
 import ProgressSpinner from 'primevue/progressspinner';
 import Textarea from 'primevue/textarea';

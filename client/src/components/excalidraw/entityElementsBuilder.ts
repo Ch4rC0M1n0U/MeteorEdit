@@ -1,27 +1,12 @@
 import type { IEntity } from '../../types'
+import { SOCIAL_COLOR_MAP } from '../common/socialIconMap'
 
 type ExcalidrawElement = Record<string, unknown>
 
-const CATEGORY_COLORS: Record<string, string> = {
-  identity: '#3b82f6',
-  phone: '#22c55e',
-  email: '#22c55e',
-  snapchat: '#a855f7',
-  facebook: '#a855f7',
-  instagram: '#a855f7',
-  twitter: '#a855f7',
-  tiktok: '#a855f7',
-  discord: '#a855f7',
-  telegram: '#a855f7',
-  linkedin: '#a855f7',
-  ip: '#f97316',
-  address: '#f97316',
-  vehicle: '#f97316',
-  iban: '#f97316',
-  pseudo: '#a855f7',
-  other: '#6b7280',
-}
+// Couleurs issues du mapping centralisé
+const CATEGORY_COLORS: Record<string, string> = SOCIAL_COLOR_MAP
 
+// Emojis utilisés comme labels texte dans les éléments Excalidraw (pas de SVG possible sur canvas)
 const TYPE_ICONS: Record<string, string> = {
   identity: '👤',
   phone: '📞',

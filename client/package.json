@@ -13,6 +13,7 @@
     "@excalidraw/excalidraw": "^0.18.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
+    "@iconify/vue": "^5.0.0",
     "@mdi/font": "^7.4.47",
     "@primevue/themes": "^4.5.4",
     "@tiptap/extension-code-block-lowlight": "^3.20.0",

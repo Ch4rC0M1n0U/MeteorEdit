@@ -50,7 +50,7 @@
           <div class="us-platform-grid">
             <label v-for="p in availablePlatforms" :key="p.id" class="us-platform" :class="{ 'us-platform--on': platformSelection[p.id] }">
               <input type="checkbox" v-model="platformSelection[p.id]" class="us-check" />
-              <span class="us-platform-emoji">{{ p.emoji }}</span>
+              <SocialIcon :platform="p.id" :size="18" class="us-platform-emoji" />
               <span>{{ p.label }}</span>
             </label>
           </div>
@@ -82,7 +82,7 @@
         <!-- Results -->
         <div v-if="results.length > 0" class="us-results">
           <div v-for="r in sortedResults" :key="r.platform" class="us-result" :class="{ 'us-result--found': r.found, 'us-result--notfound': !r.found }">
-            <span class="us-result-emoji">{{ r.emoji }}</span>
+            <SocialIcon :platform="r.platform" :size="18" class="us-result-emoji" />
             <span class="us-result-label">{{ r.label }}</span>
             <span v-if="r.found && r.displayName" class="us-result-name">{{ r.displayName }}</span>
             <span class="us-result-status">
@@ -112,6 +112,7 @@ import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
 import { useDossierStore } from '../../stores/dossier';
 import { SERVER_URL } from '../../services/api';
+import SocialIcon from '../common/SocialIcon.vue';
 
 const { t } = useI18n();
 const model = defineModel<boolean>({ default: false });

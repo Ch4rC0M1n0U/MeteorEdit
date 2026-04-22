@@ -20,7 +20,7 @@
         />
         <!-- Platform badge -->
         <div v-if="detectedPlatform" class="mdl-platform-badge" :class="`mdl-platform--${detectedPlatform.key}`">
-          <span :class="['mdi', detectedPlatform.icon]" style="font-size: 14px"></span>
+          <SocialIcon :platform="detectedPlatform.key" :size="14" />
           <span>{{ detectedPlatform.label }}</span>
         </div>
       </div>
@@ -100,6 +100,7 @@ import { useI18n } from 'vue-i18n';
 import api, { SERVER_URL } from '../../services/api';
 import { useEncryptionStore } from '../../stores/encryption';
 import { encryptFile } from '../../utils/encryption';
+import SocialIcon from '../common/SocialIcon.vue';
 
 const { t } = useI18n();
 const encryptionStore = useEncryptionStore();

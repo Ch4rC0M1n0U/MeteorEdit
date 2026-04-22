@@ -115,7 +115,7 @@
         <div class="platforms-list">
           <div v-for="platform in platforms" :key="platform.key" class="platform-row">
             <div class="platform-info">
-              <span class="mdi {{ platform.icon }}" :style="{ fontSize: '20px' }"></span>
+              <SocialIcon :platform="platform.key" :size="20" />
               <span class="platform-name">{{ platform.name }}</span>
             </div>
             <ToggleSwitch :model-value="isPlatformEnabled(platform.key)"
@@ -171,6 +171,7 @@ import InputText from 'primevue/inputtext';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Slider from 'primevue/slider';
 import Tag from 'primevue/tag';
+import SocialIcon from '../common/SocialIcon.vue';
 
 const { t } = useI18n();
 
