@@ -69,8 +69,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { TIMELINE_CATEGORIES } from '@/types'
-import type { TimelineEvent } from '@/types'
+import { TIMELINE_CATEGORIES } from '../../types'
+import type { TimelineEvent } from '../../types'
 
 const props = defineProps<{
   events: TimelineEvent[]

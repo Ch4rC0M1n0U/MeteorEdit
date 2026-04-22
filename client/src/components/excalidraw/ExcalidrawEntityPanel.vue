@@ -90,11 +90,11 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
-import { useDossierStore } from '@/stores/dossier'
+import { useDossierStore } from '../../stores/dossier'
 import { buildEntityElements, buildNoteElements } from './entityElementsBuilder'
 import { renderIdentityCard } from './identityCardRenderer'
-import type { IEntity } from '@/types'
-import type { DossierNode } from '@/types'
+import type { IEntity } from '../../types'
+import type { DossierNode } from '../../types'
 
 const props = defineProps<{
   visible: boolean

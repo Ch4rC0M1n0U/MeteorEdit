@@ -90,8 +90,8 @@ import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
-import { TIMELINE_CATEGORIES } from '@/types'
-import type { TimelineEvent } from '@/types'
+import { TIMELINE_CATEGORIES } from '../../types'
+import type { TimelineEvent } from '../../types'
 
 const props = defineProps<{
   visible: boolean

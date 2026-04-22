@@ -44,8 +44,8 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import TimelineView from './TimelineView.vue'
 import TimelineEventForm from './TimelineEventForm.vue'
-import { useDossierStore } from '@/stores/dossier'
-import type { DossierNode, TimelineEvent, TimelineData } from '@/types'
+import { useDossierStore } from '../../stores/dossier'
+import type { DossierNode, TimelineEvent, TimelineData } from '../../types'
 
 const props = defineProps<{ node: DossierNode }>()
 const { t } = useI18n()
