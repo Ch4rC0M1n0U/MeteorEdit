@@ -373,28 +373,54 @@ function insertCustom() {
 </script>
 
 <style scoped>
+/* Local tokens: derived from app theme vars, with safe light/dark fallbacks */
 .eep-panel {
+  --eep-surface: #ffffff;
+  --eep-surface-2: #f8fafc;
+  --eep-border: #e2e8f0;
+  --eep-text: #0f172a;
+  --eep-text-soft: #475569;
+  --eep-text-dim: #64748b;
+  --eep-accent: #4f46e5;
+  --eep-accent-soft: rgba(79, 70, 229, 0.1);
+  --eep-hover: rgba(15, 23, 42, 0.04);
+
   position: fixed;
   z-index: 10000;
   width: 300px;
   max-height: 480px;
-  background: var(--me-bg-elevated, #1e2330);
-  border: 1px solid var(--me-border, #2d3348);
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: var(--eep-surface);
+  border: 1px solid var(--eep-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   user-select: none;
+  color: var(--eep-text);
+}
+
+/* Dark mode overrides */
+:global(html.dark) .eep-panel,
+:global(.dark) .eep-panel {
+  --eep-surface: #1a2332;
+  --eep-surface-2: #111827;
+  --eep-border: #334155;
+  --eep-text: #f1f5f9;
+  --eep-text-soft: #cbd5e1;
+  --eep-text-dim: #94a3b8;
+  --eep-accent: #818cf8;
+  --eep-accent-soft: rgba(129, 140, 248, 0.16);
+  --eep-hover: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .eep-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
-  background: #4f46e5;
-  border-bottom: none;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   cursor: grab;
   flex-shrink: 0;
 }
@@ -404,8 +430,9 @@ function insertCustom() {
 }
 
 .eep-header-icon {
-  font-size: 15px;
+  font-size: 16px;
   color: #ffffff;
+  opacity: 0.95;
 }
 
 .eep-header-title {
@@ -413,14 +440,21 @@ function insertCustom() {
   font-size: 13px;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: 0.01em;
 }
 
 .eep-close-btn {
   flex-shrink: 0;
-  width: 22px !important;
-  height: 22px !important;
+  width: 24px !important;
+  height: 24px !important;
+  color: #ffffff !important;
 }
 
+.eep-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Tabs */
 .eep-tabs {
   flex: 1;
   overflow: hidden;
@@ -429,25 +463,40 @@ function insertCustom() {
 }
 
 .eep-tabs :deep(.p-tabview-nav) {
-  padding: 0 4px;
-  background: transparent;
-  border-bottom: 1px solid var(--me-border, #2d3348);
+  padding: 0 6px;
+  background: var(--eep-surface-2);
+  border-bottom: 1px solid var(--eep-border);
   display: flex;
   flex-wrap: nowrap;
   overflow-x: hidden;
 }
 
+.eep-tabs :deep(.p-tabview-nav li) {
+  margin: 0;
+}
+
 .eep-tabs :deep(.p-tabview-nav li .p-tabview-nav-link) {
   font-size: 11px;
-  padding: 6px 8px;
+  font-weight: 600;
+  padding: 8px 10px;
   background: transparent;
-  color: var(--me-text-secondary);
+  color: var(--eep-text-soft);
   white-space: nowrap;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.eep-tabs :deep(.p-tabview-nav li:not(.p-highlight):not(.p-disabled) .p-tabview-nav-link:hover) {
+  color: var(--eep-text);
+  border-bottom-color: var(--eep-border);
+  background: transparent;
 }
 
 .eep-tabs :deep(.p-tabview-nav li.p-highlight .p-tabview-nav-link) {
-  color: var(--me-accent, #6366f1);
-  border-bottom-color: var(--me-accent, #6366f1);
+  color: var(--eep-accent);
+  border-bottom-color: var(--eep-accent);
+  background: transparent;
 }
 
 .eep-tabs :deep(.p-tabview-panels) {
@@ -455,38 +504,43 @@ function insertCustom() {
   overflow-y: auto;
   max-height: 370px;
   background: transparent;
+  color: var(--eep-text);
 }
 
+/* List items */
 .eep-list {
-  padding: 4px 0;
+  padding: 6px 0;
 }
 
 .eep-empty {
   text-align: center;
   font-size: 12px;
-  color: var(--me-text-muted);
-  padding: 20px 12px;
+  color: var(--eep-text-dim);
+  padding: 24px 12px;
 }
 
 .eep-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
-  border-radius: 6px;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
   margin: 2px 6px;
   transition: background 0.15s;
 }
 
 .eep-item:hover {
-  background: var(--me-bg-hover, rgba(99, 102, 241, 0.08));
+  background: var(--eep-hover);
 }
 
 .eep-item-icon {
   font-size: 16px;
   flex-shrink: 0;
-  width: 22px;
+  width: 24px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .eep-item-info {
@@ -494,93 +548,103 @@ function insertCustom() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .eep-item-type {
   font-size: 10px;
-  color: var(--me-text-muted);
+  color: var(--eep-text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 
 .eep-item-name {
   font-size: 13px;
-  color: var(--me-text-primary);
+  color: var(--eep-text);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Custom tab */
 .eep-custom {
-  padding: 10px 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .eep-custom-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .eep-custom-label {
-  font-size: 11px;
-  color: var(--me-text-secondary);
+  font-size: 10px;
+  color: var(--eep-text-soft);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 
 .eep-custom-select,
 .eep-custom-input {
   width: 100%;
-  background: var(--me-bg-surface);
-  border: 1px solid var(--me-border);
+  background: var(--eep-surface-2);
+  border: 1px solid var(--eep-border);
   border-radius: 6px;
-  color: var(--me-text-primary);
+  color: var(--eep-text);
   font-size: 13px;
-  padding: 6px 8px;
+  padding: 7px 9px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .eep-custom-select:focus,
 .eep-custom-input:focus {
-  border-color: var(--me-accent, #6366f1);
+  border-color: var(--eep-accent);
+  box-shadow: 0 0 0 3px var(--eep-accent-soft);
+}
+
+.eep-custom-input::placeholder {
+  color: var(--eep-text-dim);
 }
 
 .eep-custom-btn {
   width: 100%;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
+/* Type grid */
 .eep-type-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
 }
 
 .eep-type-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--me-border, #2d3348);
-  border-radius: 5px;
-  background: var(--me-bg-surface, #161b27);
+  border: 1px solid var(--eep-border);
+  border-radius: 6px;
+  background: var(--eep-surface-2);
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.12s, background 0.12s, transform 0.1s;
 }
 
 .eep-type-btn:hover {
-  border-color: var(--me-accent, #6366f1);
+  border-color: var(--eep-accent);
+  transform: translateY(-1px);
 }
 
 .eep-type-btn--active {
-  border-color: var(--me-accent, #6366f1);
-  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--eep-accent);
+  background: var(--eep-accent-soft);
 }
 </style>
