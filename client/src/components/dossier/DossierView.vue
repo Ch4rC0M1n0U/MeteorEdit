@@ -679,8 +679,6 @@ const DatasetEditor = defineAsyncComponent(() =>
 const MediaEditor = defineAsyncComponent(() =>
   import('../media/MediaEditor.vue')
 );
-const TimelineEditor = defineAsyncComponent(() =>
-  import('../timeline/TimelineEditor.vue')
 );
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';
@@ -688,6 +686,7 @@ import ElephantasticImportDialog from './ElephantasticImportDialog.vue';
 import OsintIndustriesImportDialog from './OsintIndustriesImportDialog.vue';
 import WebCheckImportDialog from './WebCheckImportDialog.vue';
 import AiDisclaimerModal from '../AiDisclaimerModal.vue';
+import TimelineEditor from '../timeline/TimelineEditor.vue';
 import type { MediaData } from '../../types';
 import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import { useEncryptedUpload } from '../../composables/useEncryptedUpload';
