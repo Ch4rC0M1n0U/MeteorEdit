@@ -441,7 +441,7 @@ function insertCustom() {
   font-size: 11px;
   padding: 6px 8px;
   background: transparent;
-  color: #475569;
+  color: var(--me-text-secondary);
   white-space: nowrap;
 }
 
@@ -464,7 +464,7 @@ function insertCustom() {
 .eep-empty {
   text-align: center;
   font-size: 12px;
-  color: #64748b;
+  color: var(--me-text-muted);
   padding: 20px 12px;
 }
 
@@ -499,14 +499,14 @@ function insertCustom() {
 
 .eep-item-type {
   font-size: 10px;
-  color: #64748b;
+  color: var(--me-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .eep-item-name {
   font-size: 13px;
-  color: #0f172a;
+  color: var(--me-text-primary);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -528,7 +528,7 @@ function insertCustom() {
 
 .eep-custom-label {
   font-size: 11px;
-  color: #475569;
+  color: var(--me-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -536,10 +536,10 @@ function insertCustom() {
 .eep-custom-select,
 .eep-custom-input {
   width: 100%;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-border);
   border-radius: 6px;
-  color: #0f172a;
+  color: var(--me-text-primary);
   font-size: 13px;
   padding: 6px 8px;
   outline: none;
