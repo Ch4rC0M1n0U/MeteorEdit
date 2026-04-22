@@ -1952,7 +1952,11 @@
     "entityPanelNotes": "Notes",
     "insertEntity": "Insérer sur le canvas",
     "noEntities": "Aucune entité dans ce dossier",
-    "noNotes": "Aucune note dans ce dossier"
+    "noNotes": "Aucune note dans ce dossier",
+    "entityPanelCustom": "Personnalisé",
+    "customType": "Type",
+    "customLabel": "Texte",
+    "customLabelPlaceholder": "Ex: Jean Dupont, 192.168.1.1…"
   },
   "timeline": {
     "newTimeline": "Ligne du temps",

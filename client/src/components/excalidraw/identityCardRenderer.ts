@@ -11,7 +11,7 @@ export interface IdentityCardResult {
   fileId: string
 }
 
-const CARD_WIDTH = 280
+const CARD_WIDTH = 300
 const CARD_HEIGHT = 110
 
 function uid(): string {
@@ -63,10 +63,10 @@ export async function renderIdentityCard(
   ctx.roundRect(0, 0, 5, CARD_HEIGHT, [10, 0, 0, 10])
   ctx.fill()
 
-  // Avatar area
-  const avatarX = 28
+  // Avatar area — centré verticalement avec marge suffisante à gauche
+  const avatarX = 46
   const avatarY = CARD_HEIGHT / 2
-  const avatarR = 32
+  const avatarR = 34
 
   let photoLoaded = false
 
@@ -91,7 +91,7 @@ export async function renderIdentityCard(
     ctx.fill()
 
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 20px sans-serif'
+    ctx.font = 'bold 18px Arial, sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(getInitials(input.name), avatarX, avatarY)
@@ -104,35 +104,35 @@ export async function renderIdentityCard(
   ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2)
   ctx.stroke()
 
-  // Text area
-  const textX = avatarX + avatarR + 14
+  // Text area — commence après l'avatar avec marge
+  const textX = avatarX + avatarR + 16
+  const nameMaxWidth = CARD_WIDTH - textX - 12
 
   // IDENTITÉ badge
   ctx.fillStyle = '#3b82f6'
   ctx.beginPath()
-  ctx.roundRect(textX, 14, 62, 16, 4)
+  ctx.roundRect(textX, 14, 68, 17, 4)
   ctx.fill()
   ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 10px sans-serif'
+  ctx.font = 'bold 10px Arial, sans-serif'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText('IDENTITÉ', textX + 6, 22)
+  ctx.fillText('IDENTITÉ', textX + 7, 22.5)
 
   // Name
-  const nameMaxWidth = CARD_WIDTH - textX - 14
   ctx.fillStyle = '#f8fafc'
-  ctx.font = 'bold 17px sans-serif'
+  ctx.font = 'bold 16px Arial, sans-serif'
   ctx.textBaseline = 'top'
-  const name = input.name.length > 24 ? input.name.slice(0, 22) + '…' : input.name
+  const name = input.name.length > 28 ? input.name.slice(0, 26) + '…' : input.name
   ctx.fillText(name, textX, 38, nameMaxWidth)
 
-  // Description (date of birth or other info)
+  // Description (date de naissance ou autre info)
   if (input.description) {
     ctx.fillStyle = '#94a3b8'
-    ctx.font = '13px sans-serif'
+    ctx.font = '13px Arial, sans-serif'
     const desc =
-      input.description.length > 30
-        ? input.description.slice(0, 28) + '…'
+      input.description.length > 34
+        ? input.description.slice(0, 32) + '…'
         : input.description
     ctx.fillText(desc, textX, 62, nameMaxWidth)
   }

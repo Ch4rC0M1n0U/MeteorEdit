@@ -1,4 +1,4 @@
-import type { IEntity } from '@/types'
+import type { IEntity } from '../../types'
 
 type ExcalidrawElement = Record<string, unknown>
 
@@ -90,16 +90,18 @@ export function buildEntityElements(
   const textTypeId = uid()
   const textNameId = uid()
 
-  const x = cx - 100
-  const y = cy - 32
+  const W = 280
+  const H = 76
+  const x = cx - W / 2
+  const y = cy - H / 2
 
   const rect: ExcalidrawElement = {
     id: rectId,
     type: 'rectangle',
     x,
     y,
-    width: 200,
-    height: 65,
+    width: W,
+    height: H,
     angle: 0,
     strokeColor: color,
     backgroundColor: color + '18',
@@ -124,10 +126,10 @@ export function buildEntityElements(
   const textType: ExcalidrawElement = {
     id: textTypeId,
     type: 'text',
-    x: x + 10,
-    y: y + 8,
-    width: 180,
-    height: 18,
+    x: x + 12,
+    y: y + 10,
+    width: W - 24,
+    height: 20,
     angle: 0,
     strokeColor: color,
     backgroundColor: 'transparent',
@@ -148,25 +150,25 @@ export function buildEntityElements(
     link: null,
     locked: false,
     text: typeLabel,
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 1,
     textAlign: 'left',
     verticalAlign: 'top',
     containerId: null,
     originalText: typeLabel,
-    lineHeight: 1.3,
+    lineHeight: 1.25,
   }
 
-  const truncatedLabel = label.length > 28 ? label.slice(0, 25) + '...' : label
+  const truncatedLabel = label.length > 36 ? label.slice(0, 34) + '…' : label
   const textName: ExcalidrawElement = {
     id: textNameId,
     type: 'text',
-    x: x + 10,
-    y: y + 30,
-    width: 180,
-    height: 22,
+    x: x + 12,
+    y: y + 36,
+    width: W - 24,
+    height: 26,
     angle: 0,
-    strokeColor: '#1e293b',
+    strokeColor: '#e2e8f0',
     backgroundColor: 'transparent',
     fillStyle: 'solid',
     strokeWidth: 1,
@@ -185,13 +187,13 @@ export function buildEntityElements(
     link: null,
     locked: false,
     text: truncatedLabel,
-    fontSize: 16,
-    fontFamily: 3,
+    fontSize: 18,
+    fontFamily: 1,
     textAlign: 'left',
     verticalAlign: 'top',
     containerId: null,
     originalText: truncatedLabel,
-    lineHeight: 1.3,
+    lineHeight: 1.25,
   }
 
   return [rect, textType, textName]
@@ -208,16 +210,18 @@ export function buildNoteElements(
   const textTypeId = uid()
   const textNameId = uid()
 
-  const x = cx - 100
-  const y = cy - 32
+  const W = 280
+  const H = 76
+  const x = cx - W / 2
+  const y = cy - H / 2
 
   const rect: ExcalidrawElement = {
     id: rectId,
     type: 'rectangle',
     x,
     y,
-    width: 200,
-    height: 65,
+    width: W,
+    height: H,
     angle: 0,
     strokeColor: color,
     backgroundColor: color + '18',
@@ -243,10 +247,10 @@ export function buildNoteElements(
   const textType: ExcalidrawElement = {
     id: textTypeId,
     type: 'text',
-    x: x + 10,
-    y: y + 8,
-    width: 180,
-    height: 18,
+    x: x + 12,
+    y: y + 10,
+    width: W - 24,
+    height: 20,
     angle: 0,
     strokeColor: color,
     backgroundColor: 'transparent',
@@ -267,25 +271,25 @@ export function buildNoteElements(
     link: null,
     locked: false,
     text: typeLabel,
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 1,
     textAlign: 'left',
     verticalAlign: 'top',
     containerId: null,
     originalText: typeLabel,
-    lineHeight: 1.3,
+    lineHeight: 1.25,
   }
 
-  const truncatedTitle = title.length > 28 ? title.slice(0, 25) + '...' : title
+  const truncatedTitle = title.length > 36 ? title.slice(0, 34) + '…' : title
   const textName: ExcalidrawElement = {
     id: textNameId,
     type: 'text',
-    x: x + 10,
-    y: y + 30,
-    width: 180,
-    height: 22,
+    x: x + 12,
+    y: y + 36,
+    width: W - 24,
+    height: 26,
     angle: 0,
-    strokeColor: '#1e293b',
+    strokeColor: '#e2e8f0',
     backgroundColor: 'transparent',
     fillStyle: 'solid',
     strokeWidth: 1,
@@ -304,13 +308,13 @@ export function buildNoteElements(
     link: null,
     locked: false,
     text: truncatedTitle,
-    fontSize: 16,
-    fontFamily: 3,
+    fontSize: 18,
+    fontFamily: 1,
     textAlign: 'left',
     verticalAlign: 'top',
     containerId: null,
     originalText: truncatedTitle,
-    lineHeight: 1.3,
+    lineHeight: 1.25,
   }
 
   return [rect, textType, textName]

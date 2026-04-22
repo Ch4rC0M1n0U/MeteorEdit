@@ -1940,7 +1940,11 @@
     "entityPanelNotes": "Notes",
     "insertEntity": "Insert on canvas",
     "noEntities": "No entities in this dossier",
-    "noNotes": "No notes in this dossier"
+    "noNotes": "No notes in this dossier",
+    "entityPanelCustom": "Custom",
+    "customType": "Type",
+    "customLabel": "Text",
+    "customLabelPlaceholder": "E.g. John Doe, 192.168.1.1…"
   },
   "timeline": {
     "newTimeline": "Timeline",

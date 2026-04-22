@@ -79,6 +79,38 @@
             </div>
           </div>
         </TabPanel>
+
+        <!-- Onglet Personnalisé -->
+        <TabPanel :header="t('mindmap.entityPanelCustom')">
+          <div class="eep-custom">
+            <div class="eep-custom-row">
+              <label class="eep-custom-label">{{ t('mindmap.customType') }}</label>
+              <select v-model="customType" class="eep-custom-select">
+                <option v-for="(val, key) in TYPE_ICONS" :key="key" :value="key">
+                  {{ val }} {{ key }}
+                </option>
+              </select>
+            </div>
+            <div class="eep-custom-row">
+              <label class="eep-custom-label">{{ t('mindmap.customLabel') }}</label>
+              <input
+                v-model="customLabel"
+                class="eep-custom-input"
+                :placeholder="t('mindmap.customLabelPlaceholder')"
+                maxlength="60"
+                @keydown.enter="insertCustom"
+              />
+            </div>
+            <Button
+              :label="t('mindmap.insertEntity')"
+              icon="mdi mdi-plus"
+              size="small"
+              class="eep-custom-btn"
+              :disabled="!customLabel.trim()"
+              @click="insertCustom"
+            />
+          </div>
+        </TabPanel>
       </TabView>
     </div>
   </Teleport>
@@ -108,6 +140,30 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const dossierStore = useDossierStore()
+
+const TYPE_ICONS: Record<string, string> = {
+  identity: '👤',
+  phone: '📞',
+  email: '✉️',
+  snapchat: '👻',
+  facebook: '📘',
+  instagram: '📷',
+  twitter: '🐦',
+  tiktok: '🎵',
+  discord: '💬',
+  telegram: '✈️',
+  linkedin: '💼',
+  ip: '🌐',
+  address: '📍',
+  vehicle: '🚗',
+  iban: '🏦',
+  pseudo: '🎭',
+  other: '📌',
+}
+
+// Custom entity form state
+const customType = ref<string>('other')
+const customLabel = ref<string>('')
 
 // Draggable state
 const panelX = ref(window.innerWidth - 290)
@@ -307,6 +363,22 @@ function insertNote(node: DossierNode) {
   const elements = buildNoteElements(node.title || 'Note', cx, cy)
   emit('insert-elements', elements)
 }
+
+function insertCustom() {
+  const label = customLabel.value.trim()
+  if (!label) return
+  const { x, y } = props.getViewportCenter()
+  const cx = x + randomOffset()
+  const cy = y + randomOffset()
+  const fakeEntity: IEntity = {
+    type: customType.value,
+    name: label,
+    value: label,
+  }
+  const elements = buildEntityElements(fakeEntity, cx, cy)
+  emit('insert-elements', elements)
+  customLabel.value = ''
+}
 </script>
 
 <style scoped>
@@ -444,5 +516,48 @@ function insertNote(node: DossierNode) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.eep-custom {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eep-custom-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eep-custom-label {
+  font-size: 11px;
+  color: var(--me-text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.eep-custom-select,
+.eep-custom-input {
+  width: 100%;
+  background: var(--me-bg-surface, #161b27);
+  border: 1px solid var(--me-border, #2d3348);
+  border-radius: 6px;
+  color: var(--me-text, #e2e8f0);
+  font-size: 13px;
+  padding: 6px 8px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.eep-custom-select:focus,
+.eep-custom-input:focus {
+  border-color: var(--me-accent, #6366f1);
+}
+
+.eep-custom-btn {
+  width: 100%;
+  margin-top: 2px;
 }
 </style>

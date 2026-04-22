@@ -1939,7 +1939,11 @@
     "entityPanelNotes": "Notities",
     "insertEntity": "Invoegen op canvas",
     "noEntities": "Geen entiteiten in dit dossier",
-    "noNotes": "Geen notities in dit dossier"
+    "noNotes": "Geen notities in dit dossier",
+    "entityPanelCustom": "Aangepast",
+    "customType": "Type",
+    "customLabel": "Tekst",
+    "customLabelPlaceholder": "Bijv. Jan Jansen, 192.168.1.1…"
   },
   "timeline": {
     "newTimeline": "Tijdlijn",

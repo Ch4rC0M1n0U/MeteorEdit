@@ -1605,6 +1605,7 @@ async function exportDOCX(selectedNodeIds?: string[], includeToc = false, mediaF
     // Nodes loaded in lightweight mode don't have content/mediaData
     const nodesToLoad = filteredNodes.filter(n =>
       (n.type === 'note' && n.content === undefined) ||
+      (n.type === 'timeline' && n.content === undefined) ||
       (n.type === 'media' && n.mediaData === undefined)
     );
     if (nodesToLoad.length > 0) {

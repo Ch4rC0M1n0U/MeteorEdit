@@ -73,6 +73,16 @@ export interface Entity {
   description: string;
 }
 
+// Extended entity with optional fields used in dossier entities panel
+export interface IEntity {
+  _id?: string;
+  name: string;
+  type: string;
+  value?: string;
+  description?: string;
+  photos?: string[];
+}
+
 export interface Investigator {
   name: string;
   service: string;
