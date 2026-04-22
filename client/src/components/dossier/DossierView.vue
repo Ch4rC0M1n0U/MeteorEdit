@@ -679,7 +679,6 @@ const DatasetEditor = defineAsyncComponent(() =>
 const MediaEditor = defineAsyncComponent(() =>
   import('../media/MediaEditor.vue')
 );
-);
 import MediaCreateDialog from '../media/MediaCreateDialog.vue';
 import ProfileAnalyzer from '../media/ProfileAnalyzer.vue';
 import ElephantasticImportDialog from './ElephantasticImportDialog.vue';
