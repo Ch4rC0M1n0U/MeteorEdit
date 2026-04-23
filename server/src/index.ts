@@ -271,6 +271,23 @@ async function seedChangelog() {
         { type: 'improvement', message: 'Recherche OSINT retir\u00e9e du menu principal' },
       ],
     },
+    {
+      version: '3.11.0',
+      entries: [
+        { type: 'feature', message: 'Ic\u00f4nes de r\u00e9seaux sociaux @iconify/vue : vraies ic\u00f4nes de marque via composant centralis\u00e9 SocialIcon (Facebook, Instagram, Snapchat, LinkedIn, TikTok, etc.)' },
+        { type: 'feature', message: 'Nouvel onglet Custom dans le panneau Entit\u00e9s Excalidraw pour cr\u00e9er des entit\u00e9s personnalis\u00e9es avec s\u00e9lection de type et libell\u00e9 libre' },
+        { type: 'feature', message: 'Carte d\'identit\u00e9 enrichie sur Excalidraw : avatar mieux positionn\u00e9, police Arial coh\u00e9rente, texte agrandi et lisible' },
+        { type: 'feature', message: 'Vignettes d\'entit\u00e9s et de notes agrandies sur le canvas Excalidraw (280x76) avec texte 18px et police sans-serif' },
+        { type: 'fix', message: 'Export Word : correction du crash Invalid hex value sur la section timeline' },
+        { type: 'fix', message: 'Export Word : les n\u0153uds timeline sont d\u00e9sormais inclus dans le pr\u00e9-chargement, \u00e9vitant les exports vides' },
+        { type: 'fix', message: 'Ic\u00f4ne manquante pour les n\u0153uds timeline dans l\'arborescence (affichait Time sans ic\u00f4ne)' },
+        { type: 'fix', message: 'Double pr\u00e9fixe mdi- corrig\u00e9 pour l\'ic\u00f4ne Note du TimelineEditor' },
+        { type: 'improvement', message: 'Panneau Entit\u00e9s Excalidraw enti\u00e8rement repens\u00e9 : header indigo d\u00e9grad\u00e9, typographie lisible en mode clair ET sombre, inputs avec focus ring, layout \u00e9largi \u00e0 300px' },
+        { type: 'improvement', message: 'Couleur du texte des vignettes sur canvas Excalidraw corrig\u00e9e pour \u00eatre lisible sur fond blanc' },
+        { type: 'improvement', message: 'Consolidation de 17 composants utilisant des d\u00e9finitions de plateformes sociales dupliqu\u00e9es vers une source unique (socialIconMap.ts)' },
+        { type: 'improvement', message: 'Migration de 6 composants (SocialSessionManager, AdminOsint, ProfileAnalyzer, MediaDownloader, OsintIndustriesImportDialog, UsernameScanDialog) vers le composant SocialIcon centralis\u00e9' },
+      ],
+    },
   ];
   for (const v of versions) {
     const exists = await Changelog.findOne({ version: v.version });
