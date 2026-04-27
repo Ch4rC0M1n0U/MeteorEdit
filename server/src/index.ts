@@ -295,6 +295,23 @@ async function seedChangelog() {
         { type: 'improvement', message: 'Migration de 6 composants (SocialSessionManager, AdminOsint, ProfileAnalyzer, MediaDownloader, OsintIndustriesImportDialog, UsernameScanDialog) vers le composant SocialIcon centralis\u00e9' },
       ],
     },
+    {
+      version: '3.12.0',
+      entries: [
+        { type: 'feature', message: 'Phone Scanner : nouvel outil OSINT pour d\u00e9tecter les comptes WhatsApp depuis un num\u00e9ro complet ou partiel (avec masques ?)' },
+        { type: 'feature', message: 'G\u00e9n\u00e9ration automatique de combinaisons depuis un masque (?), avec seuils anti-explosion (50/200) configurables' },
+        { type: 'feature', message: 'Pairage WhatsApp Web par utilisateur via QR code (whatsapp-web.js multi-user) — sessions stock\u00e9es par profil dans Sessions sociales' },
+        { type: 'feature', message: 'Approche hybride A+B : v\u00e9rification rapide via wa.me (Phase B) puis enrichissement profil (nom, photo, about) via WA Web (Phase A)' },
+        { type: 'feature', message: 'Cr\u00e9ation automatique d\'entit\u00e9 dans le dossier depuis un r\u00e9sultat de scan' },
+        { type: 'feature', message: 'Historique des scans persistant par dossier, consultable et r\u00e9utilisable' },
+        { type: 'feature', message: 'Rate limiting anti-ban : quotas quotidiens globaux et par utilisateur, d\u00e9lais al\u00e9atoires gaussiens entre requ\u00e8tes (45-90s)' },
+        { type: 'feature', message: 'Page admin Phone Scanner : configuration des limites, statistiques live, top utilisateurs' },
+        { type: 'feature', message: 'Section Sessions sociales d\u00e9sormais accessible depuis le profil utilisateur (le menu manquait)' },
+        { type: 'fix', message: '3 bugs critiques du SocialSessionManager corrig\u00e9s : enum SocialCookie align\u00e9 (10 plateformes au lieu de 7), defaults coh\u00e9rents, auto-d\u00e9tection cookie file \u00e9tendue' },
+        { type: 'improvement', message: 'Mod\u00e8le SocialCookie \u00e9tendu avec sessionMode et whatsappWebSession par utilisateur' },
+        { type: 'improvement', message: 'Audit logging sur toutes les actions Phone Scanner (start, complete, cancel, entity.create, settings.update, pairing)' },
+      ],
+    },
   ];
   for (const v of versions) {
     const exists = await Changelog.findOne({ version: v.version });

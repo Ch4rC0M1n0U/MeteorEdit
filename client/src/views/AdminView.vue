@@ -42,6 +42,7 @@
       <AdminEncryptionStatus v-else-if="activeSection === 'encryption'" />
       <AdminOsint v-else-if="activeSection === 'osint'" />
       <AdminLanguageTool v-else-if="activeSection === 'languagetool'" />
+      <AdminPhoneScanner v-else-if="activeSection === 'phone-scanner'" />
       <ProfileApiKeys v-else-if="activeSection === 'api-keys'" />
     </main>
   </div>
@@ -66,6 +67,7 @@ import AdminAI from '../components/admin/AdminAI.vue';
 import AdminEncryptionStatus from '../components/admin/AdminEncryptionStatus.vue';
 import AdminOsint from '../components/admin/AdminOsint.vue';
 import AdminLanguageTool from '../components/admin/AdminLanguageTool.vue';
+import AdminPhoneScanner from '../components/admin/AdminPhoneScanner.vue';
 import ProfileApiKeys from '../components/profile/ProfileApiKeys.vue';
 
 const { t } = useI18n();
@@ -87,6 +89,7 @@ const navItems = computed(() => [
   { type: 'group' as const, label: t('admin.services') },
   { type: 'item' as const, id: 'ai', label: t('admin.ai'), icon: 'mdi-robot-outline' },
   { type: 'item' as const, id: 'osint', label: 'OSINT', icon: 'mdi-earth-arrow-right' },
+  { type: 'item' as const, id: 'phone-scanner', label: 'Phone Scanner', icon: 'mdi-cellphone-text' },
   { type: 'item' as const, id: 'languagetool', label: t('admin.languageTool'), icon: 'mdi-spellcheck' },
   { type: 'item' as const, id: 'email', label: t('admin.emailSmtp'), icon: 'mdi-email-outline' },
   { type: 'item' as const, id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi-key-variant' },

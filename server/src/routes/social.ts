@@ -334,7 +334,13 @@ router.post('/scan-username', authenticate, scanUsername);
 
 /* ──── WhatsApp Web pairing (for Phone Scanner) ──── */
 router.post('/whatsapp/pair', authenticate, whatsappPair);
-router.get('/whatsapp/qr', authenticate, whatsappQrStream);
+// SSE: EventSource cannot send custom headers, so accept token via query string
+router.get('/whatsapp/qr', (req, _res, next) => {
+  if (!req.headers.authorization && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+}, authenticate, whatsappQrStream);
 router.get('/whatsapp/status', authenticate, whatsappStatus);
 router.delete('/whatsapp/session', authenticate, whatsappLogout);
 
