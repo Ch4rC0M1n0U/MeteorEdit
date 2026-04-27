@@ -9,6 +9,8 @@ import '@excalidraw/excalidraw/index.css';
 
 // PrimeVue
 import PrimeVue from 'primevue/config';
+import ToastService from 'primevue/toastservice';
+import ConfirmationService from 'primevue/confirmationservice';
 import { definePreset } from '@primevue/themes';
 import Aura from '@primevue/themes/aura';
 import 'primeicons/primeicons.css';
@@ -43,6 +45,8 @@ app.use(PrimeVue, {
     },
   },
 });
+app.use(ToastService);
+app.use(ConfirmationService);
 app.use(i18n);
 app.use(router);
 app.mount('#app');

@@ -27,6 +27,7 @@
     <ConfirmDialog />
     <CommandPalette />
     <PwaUpdatePrompt />
+    <Toast position="top-right" />
     <PhoneScannerDialog
       :visible="toolsUI.phoneScannerOpen"
       :dossier-id="dossierStore.currentDossier?._id ?? null"
@@ -55,6 +56,7 @@ import ConfirmDialog from './components/common/ConfirmDialog.vue';
 import CommandPalette from './components/common/CommandPalette.vue';
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue';
 import PhoneScannerDialog from './components/tools/PhoneScannerDialog.vue';
+import Toast from 'primevue/toast';
 import { useToolsUIStore } from './stores/toolsUI';
 
 const { t } = useI18n();

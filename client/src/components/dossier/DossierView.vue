@@ -100,6 +100,10 @@
               <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
               <span>{{ $t('osint.leaksSearch') }}</span>
             </button>
+            <button class="dv-export-option" @click="toolsUI.openPhoneScanner(); toolsMenuRef?.hide()">
+              <span class="mdi mdi-cellphone-text" style="font-size: 16px;"></span>
+              <span>Phone Scanner</span>
+            </button>
           </div>
         </Popover>
         <Popover ref="exportMenuRef">
@@ -649,6 +653,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import { useDossierStore } from '../../stores/dossier';
 import { useAuthStore } from '../../stores/auth';
 import { useTemplateStore } from '../../stores/template';
+import { useToolsUIStore } from '../../stores/toolsUI';
 import TemplateWizard from '../template/TemplateWizard.vue';
 import { useEncryptionStore } from '../../stores/encryption';
 import { useConfirm } from '../../composables/useConfirm';
@@ -723,6 +728,7 @@ const mediaCreateParentId = ref<string | null>(null);
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
 const templateStore = useTemplateStore();
+const toolsUI = useToolsUIStore();
 templateStore.fetchTemplates();
 const createDialog = ref(false);
 const snapshotDialog = ref(false);
