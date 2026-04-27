@@ -1289,6 +1289,97 @@ const categories: Category[] = [
 </ul>
 <p><em>Note : yt-dlp doit être installé sur le serveur pour que les fonctionnalités de téléchargement vidéo soient disponibles.</em></p>`,
       },
+      {
+        id: 'osint-phone-scanner',
+        title: 'Phone Scanner (WhatsApp)',
+        keywords: ['phone', 'scanner', 'whatsapp', 'numero', 'téléphone', 'osint', 'wa', 'qr', 'pairage'],
+        content: `<h2>Phone Scanner</h2>
+<p>Outil OSINT permettant de détecter les comptes WhatsApp à partir d'un numéro de téléphone, complet ou partiel. Accessible depuis la sidebar gauche, section <strong>Outils</strong> → <strong>Phone Scanner</strong>.</p>
+
+<h3>Principe de fonctionnement</h3>
+<p>Le scanner utilise une approche hybride en deux phases :</p>
+<ul>
+  <li><strong>Phase B</strong> — vérification rapide via <code>wa.me</code> (Puppeteer headless) : détecte si un numéro existe sur WhatsApp.</li>
+  <li><strong>Phase A</strong> — enrichissement profil via WhatsApp Web (whatsapp-web.js) : récupère le nom public, la photo de profil, le statut "à propos" et le type de compte (personnel ou business).</li>
+</ul>
+<p>La Phase A est exécutée uniquement sur les numéros validés par la Phase B, et nécessite que l'utilisateur ait pairé son WhatsApp depuis son profil.</p>
+
+<h3>Pairage WhatsApp Web (par utilisateur)</h3>
+<p>Avant de pouvoir extraire des profils enrichis, chaque utilisateur doit pairer son téléphone une fois :</p>
+<ol>
+  <li>Aller dans <strong>Profil</strong> → <strong>Sessions sociales</strong></li>
+  <li>Cliquer sur <strong>Pairer mon téléphone</strong> dans le bloc WhatsApp Web</li>
+  <li>Scanner le QR code affiché avec votre WhatsApp (Réglages → Appareils connectés → Connecter un appareil)</li>
+  <li>La session reste active tant que votre téléphone est connecté à internet et que vous ne déconnectez pas l'appareil depuis WhatsApp</li>
+</ol>
+<p><strong>⚠ Important :</strong> utilisez un compte WhatsApp <em>dédié</em> (jamais votre compte personnel), idéalement avec un numéro/SIM dédié à l'OSINT. Le risque de bannissement par WhatsApp augmente avec le volume de requêtes.</p>
+
+<h3>Lancer un scan</h3>
+<ol>
+  <li>Sélectionner le pays dans le menu déroulant (Belgique, France, etc.)</li>
+  <li>Saisir le numéro avec masques optionnels :
+    <ul>
+      <li>Numéro complet : <code>+32 490 22 38 13</code></li>
+      <li>Avec inconnu : <code>+32 49? 22 38 13</code> (10 combinaisons)</li>
+      <li>Plusieurs inconnus : <code>+32 49? 22 38 1?</code> (100 combinaisons)</li>
+    </ul>
+  </li>
+  <li>Le panneau affiche en temps réel le nombre de combinaisons et la durée estimée</li>
+  <li>Cliquer sur <strong>Lancer le scan</strong></li>
+</ol>
+
+<h3>Seuils de combinaisons</h3>
+<table style="border-collapse:collapse;width:100%;">
+  <tr style="background:#f1f5f9;"><th style="padding:6px;border:1px solid #cbd5e1;">Combinaisons</th><th style="padding:6px;border:1px solid #cbd5e1;">Statut</th><th style="padding:6px;border:1px solid #cbd5e1;">Action</th></tr>
+  <tr><td style="padding:6px;border:1px solid #cbd5e1;">0 — 49</td><td style="padding:6px;border:1px solid #cbd5e1;">🟢 OK</td><td style="padding:6px;border:1px solid #cbd5e1;">Scan autorisé</td></tr>
+  <tr><td style="padding:6px;border:1px solid #cbd5e1;">50 — 199</td><td style="padding:6px;border:1px solid #cbd5e1;">🟠 Avertissement</td><td style="padding:6px;border:1px solid #cbd5e1;">Scan long, confirmer</td></tr>
+  <tr><td style="padding:6px;border:1px solid #cbd5e1;">≥ 200</td><td style="padding:6px;border:1px solid #cbd5e1;">🔴 Bloqué</td><td style="padding:6px;border:1px solid #cbd5e1;">Réduire les inconnus</td></tr>
+</table>
+<p><em>Les seuils sont configurables par l'admin dans Administration → Phone Scanner.</em></p>
+
+<h3>Anti-ban : limites quotidiennes</h3>
+<ul>
+  <li><strong>Limite par utilisateur</strong> : 50 numéros / jour (par défaut)</li>
+  <li><strong>Limite globale</strong> : 200 numéros / jour tous utilisateurs confondus</li>
+  <li><strong>Délai entre numéros</strong> : 45-90 secondes aléatoire (distribution gaussienne)</li>
+  <li>Si un quota est atteint, le scan en cours s'arrête avec le statut <code>rate_limited</code></li>
+</ul>
+<p>Ces limites sont conçues pour éviter d'être banni par WhatsApp. Adaptez-les avec prudence.</p>
+
+<h3>Résultats</h3>
+<p>Pour chaque numéro testé, le résultat affiche :</p>
+<ul>
+  <li><strong>Statut</strong> : Actif / Inactif / Erreur / Limité</li>
+  <li><strong>Profil</strong> (si compte actif et session WA Web pairée) : nom, photo, à propos, badge business</li>
+  <li><strong>Actions</strong> :
+    <ul>
+      <li>Ouvrir dans WhatsApp (lien wa.me)</li>
+      <li>Ajouter au dossier (crée automatiquement une note dans un dossier <em>Phone Scanner</em>)</li>
+    </ul>
+  </li>
+</ul>
+<p>Les résultats sont filtrables (Tous / Actifs / Inactifs / Erreurs) et conservés en base de données par dossier (TTL configurable, 30 jours par défaut).</p>
+
+<h3>Historique</h3>
+<p>L'onglet <strong>Historique</strong> affiche les scans précédents pour le dossier courant. Cliquer sur un scan recharge ses résultats dans l'onglet principal.</p>
+
+<h3>Audit</h3>
+<p>Toutes les actions sont loggées dans le journal d'activité administrateur :</p>
+<ul>
+  <li><code>phone-scanner.scan.start</code> / <code>.complete</code> / <code>.cancel</code></li>
+  <li><code>phone-scanner.entity.create</code></li>
+  <li><code>phone-scanner.settings.update</code></li>
+  <li><code>social-session.whatsapp.pair-init</code> / <code>.unpair</code></li>
+</ul>
+
+<h3>Bonnes pratiques</h3>
+<ul>
+  <li>Utiliser une SIM dédiée pour le compte WhatsApp d'OSINT</li>
+  <li>Ne pas dépasser les limites quotidiennes</li>
+  <li>Si une session est révoquée, re-pairer immédiatement depuis le profil</li>
+  <li>En cas de doute sur un résultat (Phase B uniquement, sans profil), confirmer manuellement</li>
+</ul>`,
+      },
     ],
   },
   {
