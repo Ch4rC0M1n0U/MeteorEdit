@@ -54,6 +54,9 @@ class WhatsappService {
       this.clients.delete(userId);
     }
 
+    // Clean any stale Chrome locks for this user's profile before launching
+    this.cleanStaleLocks(this.authPathFor(userId));
+
     const emitter = new EventEmitter();
     const client = this.buildClient(userId);
     const state: ClientState = {
@@ -114,9 +117,23 @@ class WhatsappService {
       this.destroySession(userId).catch(() => {});
     });
 
+    // Catch any uncaught errors from the client (Puppeteer crashes etc.) so they
+    // don't propagate as unhandledRejection / uncaughtException and crash the server.
+    client.on('error' as any, (err: unknown) => {
+      console.error('[whatsappService] client error:', err);
+      emitter.emit('error', err);
+    });
+
     client.initialize().catch((err: unknown) => {
       console.error('[whatsappService] initialize error:', err);
       emitter.emit('error', err);
+      // Schedule cleanup so a retry can re-init cleanly
+      this.clients.delete(userId);
+      try {
+        client.destroy().catch(() => {});
+      } catch {
+        // ignore
+      }
     });
 
     return emitter;
@@ -326,8 +343,37 @@ class WhatsappService {
       if (!fs.existsSync(WA_AUTH_PATH)) {
         fs.mkdirSync(WA_AUTH_PATH, { recursive: true });
       }
+      // Clean up stale Chrome SingletonLock files left by previous container instances.
+      // Without this, whatsapp-web.js fails to launch with "profile appears to be in use".
+      this.cleanStaleLocks(WA_AUTH_PATH);
     } catch (err) {
       console.warn('[whatsappService] could not create auth dir:', err);
+    }
+  }
+
+  private cleanStaleLocks(dir: string): void {
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          this.cleanStaleLocks(full);
+        } else if (
+          entry.name === 'SingletonLock' ||
+          entry.name === 'SingletonCookie' ||
+          entry.name === 'SingletonSocket' ||
+          entry.name === 'lockfile'
+        ) {
+          try {
+            fs.unlinkSync(full);
+            console.log('[whatsappService] removed stale lock:', full);
+          } catch {
+            // ignore
+          }
+        }
+      }
+    } catch {
+      // ignore — not fatal
     }
   }
 

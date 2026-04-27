@@ -162,6 +162,14 @@ setupSocket(httpServer);
 const io = getIO();
 if (io) phoneScannerQueue.setSocketServer(io);
 
+// Don't crash the server on unhandled rejections from whatsapp-web.js / Puppeteer
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] unhandledRejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[server] uncaughtException:', err);
+});
+
 async function detectOsintTools() {
   try {
     const settings = await SiteSettings.findOne();
