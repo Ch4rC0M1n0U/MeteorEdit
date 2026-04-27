@@ -582,6 +582,7 @@
     "security": "Security",
     "passwordAnd2FA": "Password & 2FA",
     "sessionsAndScore": "Sessions & score",
+    "socialSessions": "Social sessions",
     "settings": "Settings",
     "preferences": "Preferences",
     "notifications": "Notifications",

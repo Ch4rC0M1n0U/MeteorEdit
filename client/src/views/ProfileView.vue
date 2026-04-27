@@ -25,6 +25,7 @@
       <ProfileInfo v-if="activeSection === 'info'" />
       <ProfileSecurity v-else-if="activeSection === 'security'" />
       <ProfileSecurityAdvanced v-else-if="activeSection === 'security-advanced'" />
+      <ProfileSocialSessions v-else-if="activeSection === 'social-sessions'" />
       <ProfileTemplate v-else-if="activeSection === 'template'" />
       <ProfilePreferences v-else-if="activeSection === 'preferences'" />
       <NotificationPreferences v-else-if="activeSection === 'notifications'" />
@@ -46,6 +47,7 @@ import { useI18n } from 'vue-i18n';
 import ProfileInfo from '../components/profile/ProfileInfo.vue';
 import ProfileSecurity from '../components/profile/ProfileSecurity.vue';
 import ProfileSecurityAdvanced from '../components/profile/ProfileSecurityAdvanced.vue';
+import ProfileSocialSessions from '../components/profile/ProfileSocialSessions.vue';
 import ProfilePreferences from '../components/profile/ProfilePreferences.vue';
 import ProfileTemplate from '../components/profile/ProfileTemplate.vue';
 import NotificationPreferences from '../components/profile/NotificationPreferences.vue';
@@ -78,6 +80,7 @@ const navItems = computed<NavItem[]>(() => [
   { type: 'group', label: t('profile.security') },
   { id: 'security', label: t('profile.passwordAnd2FA'), icon: 'mdi mdi-shield-lock-outline' },
   { id: 'security-advanced', label: t('profile.sessionsAndScore'), icon: 'mdi mdi-shield-check-outline' },
+  { id: 'social-sessions', label: t('profile.socialSessions'), icon: 'mdi mdi-shield-account-outline' },
   { id: 'encryption', label: t('profile.encryption.title'), icon: 'mdi mdi-shield-key-outline' },
 
   { type: 'group', label: t('profile.settings') },

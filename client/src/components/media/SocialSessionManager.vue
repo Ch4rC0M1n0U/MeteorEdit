@@ -17,7 +17,7 @@
           <span class="ssm-counter-sep">/</span>
           <span class="ssm-counter-total">{{ platformList.length }}</span>
         </span>
-        <button class="ssm-close-btn" @click="$emit('close')">
+        <button v-if="!embedded" class="ssm-close-btn" @click="$emit('close')">
           <i class="pi pi-times" style="font-size: 16px"></i>
         </button>
       </div>
@@ -256,6 +256,7 @@ interface CookieRecord {
 }
 
 defineEmits<{ close: [] }>();
+defineProps<{ embedded?: boolean }>();
 const { t, locale } = useI18n();
 
 const PLATFORM_URLS: Record<string, string> = {
