@@ -23,7 +23,7 @@ export interface WASessionInfo {
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
 const WA_AUTH_PATH = process.env.WA_AUTH_PATH || path.resolve(__dirname, '..', '..', '.wwebjs_auth');
-const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium';
+const CHROMIUM_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROMIUM_PATH || '/usr/bin/chromium';
 
 type ClientState = {
   client: WAClient;

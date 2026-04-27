@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 
 export default defineConfig({
   plugins: [
@@ -93,6 +96,7 @@ export default defineConfig({
   ],
   define: {
     'process.env': {},
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   resolve: {
     alias: {

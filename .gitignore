@@ -73,3 +73,9 @@ Rapport_OSINT_-_template.docx
 
 # Root dev assets
 logo.png
+
+# whatsapp-web.js LocalAuth sessions (per-user QR pairings — sensitive)
+.wwebjs_auth/
+.wwebjs_cache/
+server/.wwebjs_auth/
+server/.wwebjs_cache/

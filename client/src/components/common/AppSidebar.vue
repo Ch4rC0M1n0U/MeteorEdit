@@ -9,7 +9,7 @@
           <div v-if="!collapsed" class="brand-text">
             <span class="brand-name">{{ brandingStore.appName }}</span>
             <div class="brand-meta">
-              <span class="brand-version mono">v3.9.0</span>
+              <span class="brand-version mono">v{{ appVersion }}</span>
               <span
                 class="connection-dot"
                 :class="backendConnected ? 'connection-dot--ok' : 'connection-dot--err'"
@@ -138,6 +138,7 @@ const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const dossierStore = useDossierStore();
 const toolsUI = useToolsUIStore();
+const appVersion = __APP_VERSION__;
 const brandingStore = useBrandingStore();
 
 const backendConnected = ref(true);

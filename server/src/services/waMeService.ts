@@ -3,7 +3,7 @@ import type { Browser, Page } from 'puppeteer-core';
 import { toWhatsappId } from './phoneScannerHelpers';
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
-const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium';
+const CHROMIUM_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROMIUM_PATH || '/usr/bin/chromium';
 
 class WaMeService {
   private browser: Browser | null = null;

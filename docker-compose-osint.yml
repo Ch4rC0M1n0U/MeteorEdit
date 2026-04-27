@@ -33,12 +33,15 @@ services:
       - COOKIE_ENCRYPTION_KEY=${COOKIE_ENCRYPTION_KEY:?COOKIE_ENCRYPTION_KEY is required}
       - LANGUAGETOOL_URL=http://languagetool:8010
       - OLLAMA_URL=http://ollama:11434
+      - WA_AUTH_PATH=/app/.wwebjs_auth
+      - CHROMIUM_PATH=${CHROMIUM_PATH:-/usr/bin/chromium}
     depends_on:
       mongodb:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads
       - yjs-data:/app/yjs-docs
+      - wa-auth:/app/.wwebjs_auth
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
       interval: 15s
@@ -100,6 +103,7 @@ volumes:
   uploads:
   yjs-data:
   ollama-data:
+  wa-auth:
 
 networks:
   internal:
