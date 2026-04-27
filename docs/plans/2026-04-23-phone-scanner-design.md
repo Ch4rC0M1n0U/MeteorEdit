@@ -92,19 +92,33 @@ interface PhoneScanResult {
   testedAt: Date;
 }
 
-// PhoneScannerSettings : config admin (singleton)
+// PhoneScannerSettings : config admin (singleton, limites globales)
 interface PhoneScannerSettings {
-  maxDailyChecks: number;        // défaut 50
+  maxDailyChecksGlobal: number;  // défaut 200 (somme tous users)
+  maxDailyChecksPerUser: number; // défaut 50
   minDelayMs: number;            // défaut 45000
   maxDelayMs: number;            // défaut 90000
   combinationsWarnThreshold: number;  // 50
   combinationsBlockThreshold: number; // 200
-  whatsappSession?: {
+  resultsTtlDays: number;        // défaut 30
+  globalDailyCounter: { date: string; count: number };
+}
+
+// SocialCookie étendu (existant) : ajout du mode session WA web.js
+interface SocialCookie {
+  userId: ObjectId;
+  platform: string;
+  // Champs existants : cookies, expiresAt, etc.
+  sessionMode: 'cookies' | 'wa-web' | 'both'; // NOUVEAU
+  whatsappWebSession?: {                       // NOUVEAU
     isActive: boolean;
     pairedAt?: Date;
+    authPath: string;             // ex. /app/server/.wwebjs_auth/<userId>
     accountInfo?: { phone?: string; name?: string };
+    lastUsedAt?: Date;
   };
-  dailyCounter: { date: string; count: number }; // reset auto
+  // Compteur quotidien par user
+  dailyScanCounter?: { date: string; count: number };
 }
 ```
 
@@ -118,12 +132,15 @@ DELETE /api/phone-scanner/scans/:id      → annuler un scan en cours
 GET    /api/phone-scanner/dossiers/:id/history → historique par dossier
 POST   /api/phone-scanner/results/:id/to-entity → créer entité dans dossier
 
-# Admin
+# User (pairing WA dans son profil via SocialSessionManager)
+POST   /api/social-sessions/whatsapp/pair          → init QR (par user)
+GET    /api/social-sessions/whatsapp/qr            → flux SSE QR code
+DELETE /api/social-sessions/whatsapp/session       → logout session
+
+# Admin (limites globales seulement, pas de session)
 GET    /api/phone-scanner/admin/settings
 PUT    /api/phone-scanner/admin/settings
-POST   /api/phone-scanner/admin/whatsapp/pair      → init QR
-GET    /api/phone-scanner/admin/whatsapp/qr        → flux SSE QR code
-DELETE /api/phone-scanner/admin/whatsapp/session   → logout session
+GET    /api/phone-scanner/admin/stats              → quotas globaux + par user
 ```
 
 ### 3.5 Flux d'extraction
@@ -132,18 +149,28 @@ DELETE /api/phone-scanner/admin/whatsapp/session   → logout session
 [Frontend modal]
   ├─ Préparation : génère combinaisons côté client (preview)
   ├─ POST /scans → backend valide + crée job en DB
+  ├─ Si user n'a pas de session WA pairée → 412 + redirect SocialSessionManager
   └─ Connexion Socket.io room `scan:<id>` pour updates live
 
 [Backend queue]
   ├─ Pour chaque numéro :
-  │   ├─ Phase B (wa.me) → HEAD request, parse response
-  │   ├─ Si exists, Phase A → whatsapp-web.js → getProfilePicUrl + getStatus
+  │   ├─ Vérifier dailyScanCounter user ET globalDailyCounter
+  │   │   └─ Si dépassement → status: rate_limited, abort
+  │   ├─ Phase B (wa.me Puppeteer partagé) → HEAD request
+  │   ├─ Si exists, Phase A → instance whatsapp-web.js du user
+  │   │   ├─ Charger client si pas déjà actif (LocalAuth from .wwebjs_auth/<userId>)
+  │   │   ├─ getProfilePicUrl + getStatus + getName
+  │   │   └─ Marquer lastUsedAt
   │   ├─ Délai aléatoire gaussien minDelay..maxDelay
   │   ├─ Insert PhoneScanResult
-  │   ├─ Increment dailyCounter
-  │   ├─ Emit `scan:progress` via Socket.io
-  │   └─ Si dailyCounter >= max → pause job (status: rate_limited)
+  │   ├─ Increment user.dailyScanCounter + globalDailyCounter
+  │   └─ Emit `scan:progress` via Socket.io
   └─ Audit : logActivity('phone-scanner.scan.complete', {...})
+
+[Lifecycle clients WA]
+  ├─ Map<userId, WAClient> en mémoire serveur
+  ├─ Inactivité 30 min → destroy() + retire de la map
+  └─ Au démarrage serveur : Map vide, recharge à la 1re demande
 ```
 
 ### 3.6 Génération de combinaisons

@@ -25,11 +25,53 @@
 2. Vérifier dans `client/package.json` que `libphonenumber-js` est présent (sinon `cd client && npm i libphonenumber-js`)
 3. Commit : `chore(deps): add whatsapp-web.js + libphonenumber-js`
 
+### Task 0.2 : Audit du SocialSessionManager existant
+
+**Files (lecture seule) :**
+- `client/src/components/media/SocialSessionManager.vue`
+- `client/src/components/common/AppBar.vue` (point d'ouverture)
+- `server/src/controllers/socialAuthController.ts`
+- `server/src/models/SocialCookie.ts`
+- `server/src/routes/*.ts` (router socialAuth)
+
+**Objectif :** identifier ce qui marche, ce qui est cassé, ce qui est utilisé en aval (scrapeController, MediaDownloader, ProfileAnalyzer).
+
+**Livrable :** rapport `docs/plans/2026-04-23-social-session-audit.md` avec :
+- État actuel par plateforme (cookies / login Puppeteer)
+- Endpoints actifs vs morts
+- Liste des consommateurs côté backend
+- Verdict : OK / besoin de réactivation / refacto recommandée
+
+### Task 0.3 : Étendre le modèle SocialCookie
+
+**Files:**
+- Modify: `server/src/models/SocialCookie.ts`
+
+**Ajouter :**
+```typescript
+sessionMode: { type: String, enum: ['cookies', 'wa-web', 'both'], default: 'cookies' },
+whatsappWebSession: {
+  isActive: { type: Boolean, default: false },
+  pairedAt: Date,
+  authPath: String,
+  accountInfo: { phone: String, name: String },
+  lastUsedAt: Date,
+},
+dailyScanCounter: {
+  date: { type: String, default: '' },
+  count: { type: Number, default: 0 },
+},
+```
+
+**Migration :** rétro-compat — les records existants gardent `sessionMode: 'cookies'` par défaut.
+
+**Tests :** créer record avec/sans whatsappWebSession, vérifier defaults.
+
 ---
 
 ## Phase 1 — Backend foundation
 
-### Task 1.1 : Modèle PhoneScannerSettings (singleton)
+### Task 1.1 : Modèle PhoneScannerSettings (singleton, limites globales)
 
 **Files:**
 - Create: `server/src/models/PhoneScannerSettings.ts`
@@ -37,23 +79,21 @@
 **Schema :**
 ```typescript
 {
-  maxDailyChecks: { type: Number, default: 50 },
+  maxDailyChecksGlobal: { type: Number, default: 200 },
+  maxDailyChecksPerUser: { type: Number, default: 50 },
   minDelayMs: { type: Number, default: 45000 },
   maxDelayMs: { type: Number, default: 90000 },
   combinationsWarnThreshold: { type: Number, default: 50 },
   combinationsBlockThreshold: { type: Number, default: 200 },
   resultsTtlDays: { type: Number, default: 30 },
-  whatsappSession: {
-    isActive: { type: Boolean, default: false },
-    pairedAt: Date,
-    accountInfo: { phone: String, name: String }
-  },
-  dailyCounter: {
-    date: { type: String, default: '' }, // YYYY-MM-DD
+  globalDailyCounter: {
+    date: { type: String, default: '' },
     count: { type: Number, default: 0 }
   }
 }
 ```
+
+Note : la session WA est stockée dans `SocialCookie` (par user), pas ici.
 
 **Test :** créer doc, recharger, vérifier defaults.
 
@@ -86,7 +126,7 @@ Voir design doc §3.3.
 - `validateE164('+32490223813', 'BE').isValid === true`
 - `validateE164('1234', 'BE').isValid === false`
 
-### Task 1.4 : Service WhatsApp singleton (squelette)
+### Task 1.4 : Service WhatsApp multi-user
 
 **Files:**
 - Create: `server/src/services/whatsappService.ts`
@@ -94,24 +134,28 @@ Voir design doc §3.3.
 **API publique :**
 ```typescript
 export const whatsappService = {
-  initialize(): Promise<void>;
-  pairNewSession(): EventEmitter; // emits 'qr', 'ready', 'auth_failure'
-  isReady(): boolean;
-  getSessionInfo(): { phone?: string; name?: string } | null;
-  destroy(): Promise<void>;
+  // Pairing (1 par user)
+  pairNewSession(userId: string): EventEmitter; // emits 'qr', 'ready', 'auth_failure'
+  destroySession(userId: string): Promise<void>;
+  getSessionInfo(userId: string): { phone?: string; name?: string; pairedAt?: Date } | null;
 
   // Lookups
-  checkNumberExists(phoneE164: string): Promise<boolean>;
-  getProfile(phoneE164: string): Promise<{ name?: string; about?: string; avatarUrl?: string; isBusiness?: boolean } | null>;
+  isReady(userId: string): boolean;
+  checkNumberExists(userId: string, phoneE164: string): Promise<boolean>;
+  getProfile(userId: string, phoneE164: string): Promise<{ name?: string; about?: string; avatarUrl?: string; isBusiness?: boolean } | null>;
+
+  // Lifecycle
+  shutdown(): Promise<void>; // ferme tous les clients
 };
 ```
 
 **Implémentation :**
-- Lazy init au premier appel
-- LocalAuth avec dossier `server/.wwebjs_auth`
-- Exposer events via EventEmitter
+- `Map<userId, { client: WAClient; lastUsedAt: number }>` en mémoire
+- Lazy init : 1re demande pour un userId → instancie client avec `LocalAuth({ clientId: userId, dataPath: WA_AUTH_PATH })`
+- Inactivité 30 min → setInterval qui ferme et retire de la Map
+- `shutdown()` au SIGTERM Express
 
-**Tests :** mocker whatsapp-web.js pour ne pas pairer en CI.
+**Tests :** mocker whatsapp-web.js, vérifier que 2 userIds différents → 2 clients distincts.
 
 ### Task 1.5 : Service Phase B (Puppeteer wa.me)
 
@@ -175,7 +219,7 @@ Toutes les routes sont protégées par `authMiddleware`. Vérifier que le user a
 
 Audit : `logActivity()` à chaque action.
 
-### Task 2.2 : Routes admin
+### Task 2.2 : Routes admin (limites globales seulement)
 
 **Files:**
 - Modify: `server/src/controllers/phoneScannerController.ts`
@@ -184,10 +228,23 @@ Audit : `logActivity()` à chaque action.
 **Endpoints admin (`requireAdmin`) :**
 - `GET /api/phone-scanner/admin/settings`
 - `PUT /api/phone-scanner/admin/settings`
-- `POST /api/phone-scanner/admin/whatsapp/pair` → init Whatsapp pairing, renvoie `{ status: 'awaiting_qr' }`
-- `GET /api/phone-scanner/admin/whatsapp/qr` (SSE) → stream du QR code base64
-- `DELETE /api/phone-scanner/admin/whatsapp/session`
-- `GET /api/phone-scanner/admin/stats` → daily counter, sessions, scans actifs
+- `GET /api/phone-scanner/admin/stats` → globalDailyCounter, top users, scans actifs
+
+Pas de pairing dans l'admin — ça se passe dans le profil utilisateur (Task 4.1).
+
+### Task 2.3 : Routes user pairing WhatsApp
+
+**Files:**
+- Modify: `server/src/controllers/socialAuthController.ts` (existant)
+- Modify: `server/src/routes/socialAuth.ts` (existant)
+
+**Nouveaux endpoints :**
+- `POST /api/social-sessions/whatsapp/pair` → instancie client WA pour le user, renvoie `{ status: 'awaiting_qr' }`
+- `GET /api/social-sessions/whatsapp/qr` (SSE) → stream events `{ type: 'qr' | 'ready' | 'auth_failure', data }`
+- `GET /api/social-sessions/whatsapp/status` → état actuel `{ isActive, pairedAt, accountInfo }`
+- `DELETE /api/social-sessions/whatsapp/session` → destroy + flush DB
+
+Audit : `social-session.whatsapp.pair`, `social-session.whatsapp.unpair`.
 
 ### Task 2.3 : Socket.io rooms
 
@@ -299,32 +356,44 @@ OU plus simple : bouton qui ouvre la modal directement depuis n'importe quelle p
 
 ---
 
-## Phase 4 — Admin UI
+## Phase 4 — Pairing WhatsApp dans le profil utilisateur
 
-### Task 4.1 : Page admin Phone Scanner
+### Task 4.1 : Étendre SocialSessionManager pour le pairing WA
+
+**Files:**
+- Modify: `client/src/components/media/SocialSessionManager.vue`
+- Create: `client/src/components/media/WhatsappPairingDialog.vue`
+
+**Modification SocialSessionManager :**
+- Sur la tuile WhatsApp, le bouton "Connecter" propose un menu :
+  1. Importer cookies (méthode existante)
+  2. Pairer mon téléphone (nouveau, pour Phone Scanner)
+- Si déjà pairé via WA Web → badge "🟢 Pairé via WA Web" + bouton "Déconnecter" qui appelle DELETE /whatsapp/session
+
+### Task 4.2 : Composant pairing QR
+
+**Files:**
+- Create: `client/src/components/media/WhatsappPairingDialog.vue`
+
+**Flow :**
+- Click "Pairer" → POST `/api/social-sessions/whatsapp/pair`
+- EventSource `/api/social-sessions/whatsapp/qr` → reçoit events `{type, data}`
+- Affiche QR (base64) + instructions de scan
+- Sur event `ready` → ferme dialog, refresh état parent
+
+### Task 4.3 : Page admin Phone Scanner (settings + stats)
 
 **Files:**
 - Create: `client/src/components/admin/AdminPhoneScanner.vue`
 - Modify: `client/src/views/AdminView.vue` (ajouter section sidebar)
 
 **Sections :**
-1. **Settings** : éditer maxDailyChecks, minDelay, maxDelay, thresholds, TTL
-2. **Session WhatsApp** :
-   - Si pas de session : bouton "Pairer un compte"
-   - Modal pairing avec QR live (via SSE ou polling)
-   - Si session : info compte + bouton "Déconnecter"
-3. **Stats** : compteur quotidien, scans 24h, top dossiers
-
-### Task 4.2 : Composant pairing QR
-
-**Files:**
-- Create: `client/src/components/admin/WhatsappPairingDialog.vue`
-
-**Flow :**
-- Click "Pairer" → POST `/api/phone-scanner/admin/whatsapp/pair`
-- EventSource `/api/phone-scanner/admin/whatsapp/qr` → reçoit base64 QR
-- Affiche QR + instructions
-- Sur event `ready` → ferme dialog, refresh état
+1. **Settings** : éditer maxDailyChecksGlobal, maxDailyChecksPerUser, minDelay, maxDelay, thresholds, TTL
+2. **Stats** :
+   - Compteur global du jour (X/200)
+   - Top users du jour
+   - Scans actifs (live)
+3. **Sessions actives** : tableau read-only des users ayant une session WA (sans accès, juste pour audit)
 
 ---
 
