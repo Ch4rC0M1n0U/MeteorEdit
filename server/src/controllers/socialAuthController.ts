@@ -531,3 +531,144 @@ export async function uploadCookiesFile(req: AuthRequest, res: Response): Promis
     res.status(500).json({ message: 'Failed to import cookies file' });
   }
 }
+
+/* ───────────── WhatsApp Web pairing (Phone Scanner) ───────────── */
+
+import { whatsappService } from '../services/whatsappService';
+
+const waPairEmitters = new Map<string, ReturnType<typeof whatsappService.pairNewSession>>();
+
+/**
+ * POST /api/social/whatsapp/pair
+ * Initialize a new WhatsApp Web pairing session for the current user.
+ */
+export async function whatsappPair(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    // If a pairing is already in progress, reuse the emitter
+    if (!waPairEmitters.has(userId)) {
+      const emitter = whatsappService.pairNewSession(userId);
+      waPairEmitters.set(userId, emitter);
+      // Auto-cleanup after 5 minutes if not consumed
+      setTimeout(() => {
+        if (waPairEmitters.get(userId) === emitter) {
+          waPairEmitters.delete(userId);
+        }
+      }, 5 * 60 * 1000);
+    }
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'social-session.whatsapp.pair-init', 'system', null, {}, ip, ua);
+
+    res.json({ status: 'awaiting_qr' });
+  } catch (err: any) {
+    console.error('[SocialAuth] whatsapp pair error:', err);
+    res.status(500).json({ message: err.message || 'Failed to initialize pairing' });
+  }
+}
+
+/**
+ * GET /api/social/whatsapp/qr (SSE)
+ * Streams pairing events: { type: 'qr' | 'ready' | 'auth_failure' | 'error', data }
+ */
+export function whatsappQrStream(req: AuthRequest, res: Response): void {
+  const userId = req.user!.userId;
+  const emitter = waPairEmitters.get(userId);
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  if (!emitter) {
+    res.write(`event: error\ndata: ${JSON.stringify({ message: 'No pairing session active. Call /pair first.' })}\n\n`);
+    res.end();
+    return;
+  }
+
+  const send = (event: string, payload: unknown) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`);
+  };
+
+  const onQr = (qr: string) => send('qr', { qr });
+  const onReady = (info: unknown) => {
+    send('ready', info);
+    waPairEmitters.delete(userId);
+    cleanup();
+    res.end();
+  };
+  const onAuthFailure = (msg: string) => {
+    send('auth_failure', { message: msg });
+    waPairEmitters.delete(userId);
+    cleanup();
+    res.end();
+  };
+  const onDisconnected = (reason: string) => {
+    send('disconnected', { reason });
+    cleanup();
+    res.end();
+  };
+  const onError = (err: unknown) => {
+    send('error', { message: err instanceof Error ? err.message : 'Unknown error' });
+  };
+
+  emitter.on('qr', onQr);
+  emitter.on('ready', onReady);
+  emitter.on('auth_failure', onAuthFailure);
+  emitter.on('disconnected', onDisconnected);
+  emitter.on('error', onError);
+
+  const cleanup = () => {
+    emitter.off('qr', onQr);
+    emitter.off('ready', onReady);
+    emitter.off('auth_failure', onAuthFailure);
+    emitter.off('disconnected', onDisconnected);
+    emitter.off('error', onError);
+  };
+
+  req.on('close', () => {
+    cleanup();
+  });
+}
+
+/**
+ * GET /api/social/whatsapp/status
+ */
+export async function whatsappStatus(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const record = await SocialCookie.findOne({ userId, platform: 'whatsapp' }).lean();
+    const session = record?.whatsappWebSession;
+
+    res.json({
+      isActive: !!session?.isActive,
+      pairedAt: session?.pairedAt,
+      accountInfo: session?.accountInfo,
+      lastUsedAt: session?.lastUsedAt,
+      isClientReady: whatsappService.isReady(userId),
+    });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+}
+
+/**
+ * DELETE /api/social/whatsapp/session
+ */
+export async function whatsappLogout(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    await whatsappService.destroySession(userId);
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    const ua = req.headers['user-agent'] || '';
+    await logActivity(userId, 'social-session.whatsapp.unpair', 'system', null, {}, ip, ua);
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Server error' });
+  }
+}
+

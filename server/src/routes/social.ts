@@ -2,7 +2,7 @@ import { Router } from 'express';
 import path from 'path';
 import multer from 'multer';
 import { authenticate } from '../middleware/auth';
-import { socialLogin, listCookies, deleteCookies, importCookies, generateBridgeToken, uploadCookiesFile } from '../controllers/socialAuthController';
+import { socialLogin, listCookies, deleteCookies, importCookies, generateBridgeToken, uploadCookiesFile, whatsappPair, whatsappQrStream, whatsappStatus, whatsappLogout } from '../controllers/socialAuthController';
 import { scrapeProfile, scanUsername } from '../controllers/scrapeController';
 
 const router = Router();
@@ -331,5 +331,11 @@ router.post('/cookies-file', authenticate, upload.single('cookiesFile'), uploadC
  */
 router.post('/scrape-profile', authenticate, scrapeProfile);
 router.post('/scan-username', authenticate, scanUsername);
+
+/* ──── WhatsApp Web pairing (for Phone Scanner) ──── */
+router.post('/whatsapp/pair', authenticate, whatsappPair);
+router.get('/whatsapp/qr', authenticate, whatsappQrStream);
+router.get('/whatsapp/status', authenticate, whatsappStatus);
+router.delete('/whatsapp/session', authenticate, whatsappLogout);
 
 export default router;

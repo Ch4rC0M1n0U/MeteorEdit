@@ -14,7 +14,8 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { authLimiter, refreshLimiter, apiLimiter, heavyLimiter } from './middleware/rateLimit';
 import { connectDB } from './config/database';
-import { setupSocket } from './socket';
+import { setupSocket, getIO } from './socket';
+import { phoneScannerQueue } from './services/phoneScannerQueue';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import dossierRoutes from './routes/dossiers';
@@ -41,6 +42,7 @@ import webcheckRoutes from './routes/webcheck';
 import telegramRoutes from './routes/telegram';
 import shodanRoutes from './routes/shodan';
 import onypheRoutes from './routes/onyphe';
+import phoneScannerRoutes from './routes/phoneScanner';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
 import { startYjsServer } from './yjs-server';
@@ -152,8 +154,13 @@ app.use('/api', webcheckRoutes);
 app.use('/api/telegram', telegramRoutes);
 app.use('/api/shodan', shodanRoutes);
 app.use('/api/onyphe', onypheRoutes);
+app.use('/api/phone-scanner', phoneScannerRoutes);
 
 setupSocket(httpServer);
+
+// Wire Socket.io into the Phone Scanner queue for live progress events
+const io = getIO();
+if (io) phoneScannerQueue.setSocketServer(io);
 
 async function detectOsintTools() {
   try {

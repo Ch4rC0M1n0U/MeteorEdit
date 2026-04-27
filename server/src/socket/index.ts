@@ -272,6 +272,19 @@ export function setupSocket(httpServer: HttpServer) {
       socket.to(`dossier:${data.dossierId}`).emit('node-removed', { nodeId: data.nodeId });
     });
 
+    // Phone Scanner: subscribe to a scan progress room (only own scans)
+    socket.on('scan:join', (scanId: string) => {
+      if (typeof scanId === 'string' && scanId.length < 100) {
+        socket.join(`scan:${scanId}`);
+      }
+    });
+
+    socket.on('scan:leave', (scanId: string) => {
+      if (typeof scanId === 'string') {
+        socket.leave(`scan:${scanId}`);
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`User ${user.userId} disconnected`);
       userSockets.get(user.userId)?.delete(socket.id);
