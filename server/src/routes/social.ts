@@ -334,13 +334,25 @@ router.post('/scan-username', authenticate, scanUsername);
 
 /* ──── WhatsApp Web pairing (for Phone Scanner) ──── */
 router.post('/whatsapp/pair', authenticate, whatsappPair);
-// SSE: EventSource cannot send custom headers, so accept token via query string
-router.get('/whatsapp/qr', (req, _res, next) => {
-  if (!req.headers.authorization && req.query.token) {
-    req.headers.authorization = `Bearer ${req.query.token}`;
+
+// SSE: EventSource cannot send custom headers, so accept token via query string.
+// Inline auth middleware that verifies the JWT directly from req.query.token.
+import jwtLib from 'jsonwebtoken';
+router.get('/whatsapp/qr', (req: any, res, next) => {
+  const token = typeof req.query.token === 'string' ? req.query.token : null;
+  if (!token) {
+    res.status(401).json({ message: 'Token required' });
+    return;
   }
-  next();
-}, authenticate, whatsappQrStream);
+  try {
+    const decoded = jwtLib.verify(token, process.env.JWT_SECRET!) as any;
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+}, whatsappQrStream);
+
 router.get('/whatsapp/status', authenticate, whatsappStatus);
 router.delete('/whatsapp/session', authenticate, whatsappLogout);
 
