@@ -503,6 +503,8 @@ export async function uploadCookiesFile(req: AuthRequest, res: Response): Promis
       else if (domains.includes('snapchat.com')) platform = 'snapchat';
       else if (domains.includes('facebook.com')) platform = 'facebook';
       else if (domains.includes('twitter.com') || domains.includes('x.com')) platform = 'x';
+      else if (domains.includes('whatsapp.com')) platform = 'whatsapp';
+      else if (domains.includes('threads.net')) platform = 'threads';
       else if (domains.includes('linkedin.com')) platform = 'linkedin';
       else if (domains.includes('strava.com')) platform = 'strava';
     }
