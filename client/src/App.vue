@@ -27,6 +27,11 @@
     <ConfirmDialog />
     <CommandPalette />
     <PwaUpdatePrompt />
+    <PhoneScannerDialog
+      :visible="toolsUI.phoneScannerOpen"
+      :dossier-id="dossierStore.currentDossier?._id ?? null"
+      @update:visible="(v: boolean) => v ? toolsUI.openPhoneScanner() : toolsUI.closePhoneScanner()"
+    />
   </div>
 
   <!-- Non-authenticated views (login, register, setup, maintenance) -->
@@ -49,6 +54,8 @@ import AppTopbar from './components/common/AppTopbar.vue';
 import ConfirmDialog from './components/common/ConfirmDialog.vue';
 import CommandPalette from './components/common/CommandPalette.vue';
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue';
+import PhoneScannerDialog from './components/tools/PhoneScannerDialog.vue';
+import { useToolsUIStore } from './stores/toolsUI';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -57,6 +64,7 @@ const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const brandingStore = useBrandingStore();
 const dossierStore = useDossierStore();
+const toolsUI = useToolsUIStore();
 
 const sidebarCollapsed = ref(false);
 

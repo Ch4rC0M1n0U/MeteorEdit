@@ -57,6 +57,16 @@
 
       <div class="nav-section">
         <span v-if="!collapsed" class="nav-label">{{ t('nav.tools') }}</span>
+        <button
+          class="nav-item"
+          :title="collapsed ? t('nav.phoneScanner') : undefined"
+          @click="toolsUI.openPhoneScanner()"
+        >
+          <i class="mdi mdi-cellphone-text nav-icon" />
+          <transition name="fade-text">
+            <span v-if="!collapsed" class="nav-text">{{ t('nav.phoneScanner') }}</span>
+          </transition>
+        </button>
         <router-link
           v-for="item in toolNavItems"
           :key="item.key"
@@ -113,6 +123,7 @@ import Badge from 'primevue/badge';
 import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
+import { useToolsUIStore } from '../../stores/toolsUI';
 import { useBrandingStore } from '../../stores/branding';
 import { SERVER_URL } from '../../services/api';
 import api from '../../services/api';
@@ -126,6 +137,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const dossierStore = useDossierStore();
+const toolsUI = useToolsUIStore();
 const brandingStore = useBrandingStore();
 
 const backendConnected = ref(true);
