@@ -48,6 +48,7 @@
     "docx": "^9.6.0",
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
+    "libphonenumber-js": "^1.12.42",
     "lowlight": "^3.3.0",
     "mapbox-gl": "^3.19.1",
     "pinia": "^3.0.4",
