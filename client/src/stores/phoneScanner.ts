@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '../services/api';
 import { getSocket } from '../services/socket';
+import { useDossierStore } from './dossier';
+import type { DossierNode } from '../types';
 
 export interface PhoneScanProgress {
   tested: number;
@@ -150,11 +152,31 @@ export const usePhoneScannerStore = defineStore('phoneScanner', () => {
   async function createEntityFromResult(
     resultId: string,
     options?: { dossierId?: string; customName?: string; customDescription?: string }
-  ): Promise<{ nodeId: string; folderId: string }> {
-    const { data } = await api.post<{ nodeId: string; folderId: string }>(
+  ): Promise<{ nodeId: string; folderId: string; node?: DossierNode; folder?: DossierNode | null }> {
+    const { data } = await api.post<{
+      nodeId: string;
+      folderId: string;
+      node?: DossierNode;
+      folder?: DossierNode | null;
+    }>(
       `/phone-scanner/results/${resultId}/to-entity`,
       options ?? {}
     );
+
+    // Push new nodes into the dossier tree for instant UI update + notify other clients
+    const dossierStore = useDossierStore();
+    const dossierId = options?.dossierId ?? dossierStore.currentDossier?._id;
+    const socket = getSocket();
+
+    if (data.folder && !dossierStore.nodes.find(n => n._id === data.folder!._id)) {
+      dossierStore.nodes.push(data.folder);
+      if (dossierId) socket?.emit('node-created', { dossierId, node: data.folder });
+    }
+    if (data.node && !dossierStore.nodes.find(n => n._id === data.node!._id)) {
+      dossierStore.nodes.push(data.node);
+      if (dossierId) socket?.emit('node-created', { dossierId, node: data.node });
+    }
+
     return data;
   }
 

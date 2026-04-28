@@ -271,6 +271,7 @@ export async function resultToEntity(req: AuthRequest, res: Response): Promise<v
       type: 'folder',
       title: 'Phone Scanner',
     });
+    const folderIsNew = !existingFolder;
     const folder = existingFolder ?? await DossierNode.create({
       dossierId: targetDossierId,
       parentId: null,
@@ -287,52 +288,72 @@ export async function resultToEntity(req: AuthRequest, res: Response): Promise<v
       || profile.about
       || `${result.platform.toUpperCase()} — ${result.status}`;
 
-    const noteContent = JSON.stringify({
+    const platformLabel = result.platform.charAt(0).toUpperCase() + result.platform.slice(1);
+    const headingText = profile.name
+      ? `${profile.name} — ${platformLabel}`
+      : `${result.phoneE164} — ${platformLabel}`;
+
+    const tiptapContent: { type: 'doc'; content: any[] } = {
       type: 'doc',
       content: [
         {
-          type: 'paragraph',
-          content: [
-            { type: 'text', text: `Numéro : ${result.phoneE164}` },
-          ],
-        },
-        {
-          type: 'paragraph',
-          content: [
-            { type: 'text', text: `Plateforme : ${result.platform}` },
-          ],
-        },
-        ...(profile.name ? [{
-          type: 'paragraph',
-          content: [{ type: 'text', text: `Nom : ${profile.name}` }],
-        }] : []),
-        ...(profile.about ? [{
-          type: 'paragraph',
-          content: [{ type: 'text', text: `À propos : ${profile.about}` }],
-        }] : []),
-        ...(profile.isBusiness ? [{
-          type: 'paragraph',
-          content: [{ type: 'text', text: 'Type : compte business' }],
-        }] : []),
-        ...(profile.avatarUrl ? [{
-          type: 'image',
-          attrs: { src: profile.avatarUrl, alt: 'Photo de profil' },
-        }] : []),
-        {
-          type: 'paragraph',
-          content: [
-            { type: 'text', text: description },
-          ],
+          type: 'heading',
+          attrs: { level: 2 },
+          content: [{ type: 'text', text: headingText }],
         },
       ],
-    });
+    };
+
+    if (profile.avatarUrl) {
+      tiptapContent.content.push({
+        type: 'paragraph',
+        content: [
+          {
+            type: 'image',
+            attrs: {
+              src: profile.avatarUrl,
+              alt: profile.name ? `Photo de profil — ${profile.name}` : 'Photo de profil',
+            },
+          },
+        ],
+      });
+    }
+
+    const infoRows: Array<[string, string]> = [
+      ['Numéro', result.phoneE164],
+      ['Plateforme', platformLabel],
+      ['Statut', result.status],
+    ];
+    if (profile.name) infoRows.push(['Nom', profile.name]);
+    if (profile.about) infoRows.push(['À propos', profile.about]);
+    if (profile.isBusiness) infoRows.push(['Type', 'Compte business']);
+
+    for (const [label, value] of infoRows) {
+      tiptapContent.content.push({
+        type: 'paragraph',
+        content: [
+          { type: 'text', marks: [{ type: 'bold' }], text: `${label} : ` },
+          { type: 'text', text: value },
+        ],
+      });
+    }
+
+    if (description && description !== profile.about) {
+      tiptapContent.content.push({
+        type: 'paragraph',
+        content: [{ type: 'text', text: description }],
+      });
+    }
+
+    const contentText = infoRows.map(([k, v]) => `${k}: ${v}`).join('\n');
 
     const node = await DossierNode.create({
       dossierId: targetDossierId,
       parentId: folder._id,
       type: 'note',
       title: baseName,
-      content: noteContent,
+      content: tiptapContent,
+      contentText,
       order: 0,
     });
 
@@ -344,7 +365,12 @@ export async function resultToEntity(req: AuthRequest, res: Response): Promise<v
       platform: result.platform,
     }, ip, ua);
 
-    res.status(201).json({ nodeId: String(node._id), folderId: String(folder._id) });
+    res.status(201).json({
+      nodeId: String(node._id),
+      folderId: String(folder._id),
+      node: node.toObject(),
+      folder: folderIsNew ? folder.toObject() : null,
+    });
   } catch (err: unknown) {
     console.error('[phoneScanner.resultToEntity] error:', err);
     res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
