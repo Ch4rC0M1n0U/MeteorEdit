@@ -2,7 +2,7 @@ import { Router } from 'express';
 import path from 'path';
 import multer from 'multer';
 import { authenticate } from '../middleware/auth';
-import { socialLogin, listCookies, deleteCookies, importCookies, generateBridgeToken, uploadCookiesFile, whatsappPair, whatsappQrStream, whatsappStatus, whatsappLogout } from '../controllers/socialAuthController';
+import { socialLogin, listCookies, deleteCookies, importCookies, generateBridgeToken, uploadCookiesFile, whatsappPair, whatsappPairStatus, whatsappStatus, whatsappLogout } from '../controllers/socialAuthController';
 import { scrapeProfile, scanUsername } from '../controllers/scrapeController';
 
 const router = Router();
@@ -334,28 +334,8 @@ router.post('/scan-username', authenticate, scanUsername);
 
 /* ──── WhatsApp Web pairing (for Phone Scanner) ──── */
 router.post('/whatsapp/pair', authenticate, whatsappPair);
-
-// SSE: EventSource cannot send custom headers, so accept token via query string.
-// Inline auth middleware that verifies the JWT directly from req.query.token.
-import jwtLib from 'jsonwebtoken';
-router.get('/whatsapp/qr', (req: any, res, next) => {
-  // DECISIVE TEST: unique error messages to confirm this middleware is reached
-  console.error('[whatsapp/qr] ENTERED MIDDLEWARE');
-  process.stdout.write('[whatsapp/qr] STDOUT WRITE\n');
-  const token = typeof req.query.token === 'string' ? req.query.token : null;
-  if (!token) {
-    res.status(401).json({ message: 'WAQR_NO_TOKEN' });
-    return;
-  }
-  try {
-    const decoded = jwtLib.verify(token, process.env.JWT_SECRET!) as any;
-    req.user = decoded;
-    next();
-  } catch (err: any) {
-    res.status(401).json({ message: 'WAQR_INVALID_TOKEN', err: err?.name });
-  }
-}, whatsappQrStream);
-
+// Polling endpoint (replaces SSE — auth via standard Bearer header)
+router.get('/whatsapp/pair-status', authenticate, whatsappPairStatus);
 router.get('/whatsapp/status', authenticate, whatsappStatus);
 router.delete('/whatsapp/session', authenticate, whatsappLogout);
 

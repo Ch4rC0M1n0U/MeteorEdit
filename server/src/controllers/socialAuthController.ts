@@ -538,24 +538,60 @@ import { whatsappService } from '../services/whatsappService';
 
 const waPairEmitters = new Map<string, ReturnType<typeof whatsappService.pairNewSession>>();
 
+// Polling state per user: latest QR string + status
+type WaPairState = {
+  state: 'awaiting_qr' | 'connecting' | 'ready' | 'error';
+  qr?: string;
+  accountInfo?: { phone?: string; name?: string };
+  errorMessage?: string;
+  updatedAt: number;
+};
+const waPairStates = new Map<string, WaPairState>();
+
 /**
  * POST /api/social/whatsapp/pair
  * Initialize a new WhatsApp Web pairing session for the current user.
+ * The latest QR code and pairing status are stored in waPairStates and
+ * retrievable via GET /api/social/whatsapp/pair-status.
  */
 export async function whatsappPair(req: AuthRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
-    // If a pairing is already in progress, reuse the emitter
-    if (!waPairEmitters.has(userId)) {
-      const emitter = whatsappService.pairNewSession(userId);
-      waPairEmitters.set(userId, emitter);
-      // Auto-cleanup after 5 minutes if not consumed
-      setTimeout(() => {
-        if (waPairEmitters.get(userId) === emitter) {
-          waPairEmitters.delete(userId);
-        }
-      }, 5 * 60 * 1000);
-    }
+    // Reset state
+    waPairStates.set(userId, { state: 'awaiting_qr', updatedAt: Date.now() });
+
+    // Always re-init (destroys any existing client + cleans locks)
+    const emitter = whatsappService.pairNewSession(userId);
+    waPairEmitters.set(userId, emitter);
+
+    // Wire emitter events to polling state
+    emitter.on('qr', (qr: string) => {
+      waPairStates.set(userId, { state: 'awaiting_qr', qr, updatedAt: Date.now() });
+    });
+    emitter.on('ready', (info: { phone?: string; name?: string }) => {
+      waPairStates.set(userId, { state: 'ready', accountInfo: info, updatedAt: Date.now() });
+    });
+    emitter.on('auth_failure', (msg: string) => {
+      waPairStates.set(userId, { state: 'error', errorMessage: msg || 'Auth failed', updatedAt: Date.now() });
+    });
+    emitter.on('disconnected', (reason: string) => {
+      const cur = waPairStates.get(userId);
+      if (cur?.state !== 'ready') {
+        waPairStates.set(userId, { state: 'error', errorMessage: reason || 'Disconnected', updatedAt: Date.now() });
+      }
+    });
+    emitter.on('error', (err: unknown) => {
+      const message = err instanceof Error ? err.message : (typeof err === 'string' ? err : 'Internal error');
+      waPairStates.set(userId, { state: 'error', errorMessage: message, updatedAt: Date.now() });
+    });
+
+    // Auto-cleanup after 10 minutes
+    setTimeout(() => {
+      if (waPairEmitters.get(userId) === emitter) {
+        waPairEmitters.delete(userId);
+        waPairStates.delete(userId);
+      }
+    }, 10 * 60 * 1000);
 
     const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
     const ua = req.headers['user-agent'] || '';
@@ -566,6 +602,20 @@ export async function whatsappPair(req: AuthRequest, res: Response): Promise<voi
     console.error('[SocialAuth] whatsapp pair error:', err);
     res.status(500).json({ message: err.message || 'Failed to initialize pairing' });
   }
+}
+
+/**
+ * GET /api/social/whatsapp/pair-status
+ * Polling endpoint: returns the current pairing state + latest QR.
+ */
+export function whatsappPairStatus(req: AuthRequest, res: Response): void {
+  const userId = req.user!.userId;
+  const state = waPairStates.get(userId);
+  if (!state) {
+    res.json({ state: 'idle' });
+    return;
+  }
+  res.json(state);
 }
 
 /**

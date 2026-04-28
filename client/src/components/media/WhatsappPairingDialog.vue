@@ -103,17 +103,19 @@ const qrPng = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const accountInfo = ref<{ phone?: string; name?: string } | null>(null);
 const pairing = ref(false);
-let eventSource: EventSource | null = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+let lastQrString: string | null = null;
 
 async function startPairing(): Promise<void> {
   state.value = 'loading';
   errorMessage.value = null;
   qrPng.value = null;
+  lastQrString = null;
   pairing.value = true;
 
   try {
     await api.post('/social/whatsapp/pair');
-    await openQrStream();
+    startPolling();
   } catch (err: unknown) {
     state.value = 'error';
     const e = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
@@ -128,92 +130,67 @@ async function startPairing(): Promise<void> {
   }
 }
 
-async function openQrStream(): Promise<void> {
-  closeStream();
-
-  // Force token refresh by hitting an authenticated endpoint via axios.
-  // The axios interceptor will silently refresh if needed and update
-  // localStorage with the fresh accessToken before we read it.
-  try {
-    await api.get('/auth/me');
-  } catch {
-    state.value = 'error';
-    errorMessage.value = 'Session expirée. Reconnectez-vous puis réessayez.';
-    pairing.value = false;
-    return;
-  }
-
-  // Build URL with fresh token for SSE auth (EventSource doesn't support custom headers)
-  const token = localStorage.getItem('accessToken') || '';
-  if (!token) {
-    state.value = 'error';
-    errorMessage.value = 'Session expirée. Reconnectez-vous puis réessayez.';
-    pairing.value = false;
-    return;
-  }
-  const baseUrl = api.defaults.baseURL || '';
-  const url = `${baseUrl}/social/whatsapp/qr?_t=${Date.now()}`;
-
-  eventSource = new EventSource(`${url}&token=${encodeURIComponent(token)}`, {
-    withCredentials: true,
-  });
-
-  eventSource.addEventListener('qr', async (event) => {
-    const { qr } = JSON.parse((event as MessageEvent).data);
-    try {
-      qrPng.value = await QRCode.toDataURL(qr, { width: 256, margin: 2 });
-      state.value = 'awaiting_qr';
-    } catch (err) {
-      console.error('QR generation failed:', err);
-    }
-  });
-
-  eventSource.addEventListener('ready', (event) => {
-    const info = JSON.parse((event as MessageEvent).data);
-    accountInfo.value = info;
-    state.value = 'ready';
-    pairing.value = false;
-    emit('paired', info);
-    closeStream();
-  });
-
-  eventSource.addEventListener('auth_failure', (event) => {
-    const { message } = JSON.parse((event as MessageEvent).data);
-    state.value = 'error';
-    errorMessage.value = message || 'Authentication failed';
-    pairing.value = false;
-    closeStream();
-  });
-
-  eventSource.addEventListener('disconnected', () => {
-    if (state.value !== 'ready') {
-      state.value = 'error';
-      errorMessage.value = 'Disconnected before pairing completed';
-    }
-    pairing.value = false;
-    closeStream();
-  });
-
-  eventSource.addEventListener('error', () => {
-    if (state.value === 'awaiting_qr' || state.value === 'connecting') {
-      // Could be transient, let EventSource retry
-      return;
-    }
-    state.value = 'error';
-    errorMessage.value = errorMessage.value || 'Stream error';
-    pairing.value = false;
-  });
+function startPolling(): void {
+  stopPolling();
+  pollOnce(); // first poll immediately
+  pollTimer = setInterval(pollOnce, 1500);
 }
 
-function closeStream(): void {
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
+function stopPolling(): void {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+interface PairStatusResponse {
+  state: 'idle' | 'awaiting_qr' | 'connecting' | 'ready' | 'error';
+  qr?: string;
+  accountInfo?: { phone?: string; name?: string };
+  errorMessage?: string;
+}
+
+async function pollOnce(): Promise<void> {
+  try {
+    const { data } = await api.get<PairStatusResponse>('/social/whatsapp/pair-status');
+    if (data.state === 'ready') {
+      accountInfo.value = data.accountInfo ?? null;
+      state.value = 'ready';
+      pairing.value = false;
+      emit('paired', data.accountInfo ?? {});
+      stopPolling();
+      return;
+    }
+    if (data.state === 'error') {
+      state.value = 'error';
+      errorMessage.value = data.errorMessage || 'Échec du pairage';
+      pairing.value = false;
+      stopPolling();
+      return;
+    }
+    if (data.state === 'awaiting_qr' && data.qr && data.qr !== lastQrString) {
+      lastQrString = data.qr;
+      try {
+        qrPng.value = await QRCode.toDataURL(data.qr, { width: 256, margin: 2 });
+        state.value = 'awaiting_qr';
+      } catch (err) {
+        console.error('QR generation failed:', err);
+      }
+    }
+  } catch (err: unknown) {
+    const e = err as { response?: { status?: number } };
+    if (e.response?.status === 401) {
+      state.value = 'error';
+      errorMessage.value = 'Session expirée. Reconnectez-vous puis réessayez.';
+      pairing.value = false;
+      stopPolling();
+    }
+    // For transient errors, keep polling
   }
 }
 
 async function onCancel(): Promise<void> {
-  closeStream();
+  stopPolling();
   if (state.value !== 'idle') {
     try {
       await api.delete('/social/whatsapp/session');
@@ -230,16 +207,17 @@ watch(() => props.visible, (v) => {
   if (v && state.value === 'idle') {
     startPairing();
   } else if (!v) {
-    closeStream();
+    stopPolling();
     state.value = 'idle';
     qrPng.value = null;
+    lastQrString = null;
     errorMessage.value = null;
     accountInfo.value = null;
     pairing.value = false;
   }
 });
 
-onUnmounted(() => closeStream());
+onUnmounted(() => stopPolling());
 </script>
 
 <style scoped>
