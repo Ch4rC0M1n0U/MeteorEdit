@@ -21,6 +21,7 @@
 .pop-content { padding: 14px; flex: 1; }
 
 .pop-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0; }
+[hidden] { display: none !important; }
 .pop-msg { margin: 0; text-align: center; color: var(--me-text-secondary); font-size: 13px; }
 .pop-msg--err { color: var(--me-danger); }
 

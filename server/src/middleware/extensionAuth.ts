@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import ApiToken from '../models/ApiToken';
+import ApiKey from '../models/ApiKey';
+import { hashApiKey } from './auth';
 
 export interface ExtensionRequest extends Request {
   user?: { userId: string; tokenId: string };
@@ -8,7 +10,10 @@ export interface ExtensionRequest extends Request {
 
 /**
  * Bearer token auth for browser extension endpoints.
- * Header: Authorization: Bearer mext_xxx
+ * Accepts either:
+ *  - mext_xxx — extension-specific tokens (ApiToken model)
+ *  - mk_xxx   — generic MeteorEdit API keys (ApiKey model)
+ * Header: Authorization: Bearer <token>
  */
 export async function extensionAuth(
   req: ExtensionRequest,
@@ -22,32 +27,40 @@ export async function extensionAuth(
     return;
   }
   const token = match[1].trim();
-  if (!token.startsWith('mext_')) {
-    res.status(401).json({ message: 'Invalid token format' });
-    return;
-  }
+  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
 
-  const prefix = token.slice(0, 12);
-  const candidates = await ApiToken.find({ prefix, revokedAt: null });
-  let matched: typeof candidates[number] | null = null;
-  for (const candidate of candidates) {
-    if (await bcrypt.compare(token, candidate.tokenHash)) {
-      matched = candidate;
-      break;
+  // 1. Extension-specific tokens (mext_)
+  if (token.startsWith('mext_')) {
+    const prefix = token.slice(0, 12);
+    const candidates = await ApiToken.find({ prefix, revokedAt: null });
+    for (const candidate of candidates) {
+      if (await bcrypt.compare(token, candidate.tokenHash)) {
+        ApiToken.updateOne(
+          { _id: candidate._id },
+          { $set: { lastUsedAt: new Date(), lastUsedIp: ip } }
+        ).catch(() => { /* best effort */ });
+        req.user = { userId: String(candidate.userId), tokenId: String(candidate._id) };
+        return next();
+      }
     }
   }
-  if (!matched) {
-    res.status(401).json({ message: 'Invalid or revoked token' });
-    return;
+
+  // 2. Generic API keys (mk_)
+  if (token.startsWith('mk_')) {
+    const apiKey = await ApiKey.findOne({ keyHash: hashApiKey(token), isActive: true });
+    if (apiKey) {
+      if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+        res.status(401).json({ message: 'API key expired' });
+        return;
+      }
+      ApiKey.updateOne(
+        { _id: apiKey._id },
+        { $set: { lastUsedAt: new Date(), lastUsedIp: ip } }
+      ).exec().catch(() => { /* best effort */ });
+      req.user = { userId: String(apiKey.userId), tokenId: String(apiKey._id) };
+      return next();
+    }
   }
 
-  // Update last-used asynchronously (do not block the request)
-  const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
-  ApiToken.updateOne(
-    { _id: matched._id },
-    { $set: { lastUsedAt: new Date(), lastUsedIp: ip } }
-  ).catch(() => { /* best effort */ });
-
-  req.user = { userId: String(matched.userId), tokenId: String(matched._id) };
-  next();
+  res.status(401).json({ message: 'Invalid or revoked token' });
 }
