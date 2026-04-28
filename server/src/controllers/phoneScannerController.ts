@@ -214,6 +214,61 @@ export async function cancelScan(req: AuthRequest, res: Response): Promise<void>
 }
 
 /**
+ * POST /api/phone-scanner/scans/:id/resume
+ * Resume a scan that was stopped (rate_limited, cancelled, or failed).
+ * The queue will skip already-tested numbers via PhoneScanResult lookup.
+ */
+export async function resumeScan(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const scan = await PhoneScan.findById(req.params.id);
+    if (!scan) {
+      res.status(404).json({ message: 'Scan not found' });
+      return;
+    }
+    if (String(scan.userId) !== userId && req.user!.role !== 'admin') {
+      res.status(403).json({ message: 'Access denied' });
+      return;
+    }
+    if (scan.status === 'running' || scan.status === 'queued') {
+      res.status(400).json({ message: `Scan is already ${scan.status}` });
+      return;
+    }
+    if (scan.status === 'completed') {
+      res.status(400).json({ message: 'Scan is already completed — nothing to resume' });
+      return;
+    }
+
+    // Check daily quotas before resuming
+    const settings = await getPhoneScannerSettings();
+    const today = new Date().toISOString().slice(0, 10);
+    if (settings.globalDailyCounter.date === today
+        && settings.globalDailyCounter.count >= settings.maxDailyChecksGlobal) {
+      res.status(429).json({
+        message: `Quota global atteint (${settings.globalDailyCounter.count}/${settings.maxDailyChecksGlobal}). Réessayez demain.`,
+      });
+      return;
+    }
+
+    // Re-queue the scan (queue will filter already-tested numbers internally)
+    scan.status = 'queued';
+    scan.errorMessage = undefined;
+    await scan.save();
+
+    phoneScannerQueue.enqueue(scan);
+
+    const { ip, ua } = getRequestMeta(req);
+    await logActivity(userId, 'phone-scanner.scan.resume', 'system', String(scan._id), {
+      previousProgress: scan.progress,
+    }, ip, ua);
+
+    res.json({ success: true, scanId: String(scan._id) });
+  } catch (err: unknown) {
+    res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
+  }
+}
+
+/**
  * GET /api/phone-scanner/dossiers/:dossierId/history?limit=20
  */
 export async function getDossierHistory(req: AuthRequest, res: Response): Promise<void> {

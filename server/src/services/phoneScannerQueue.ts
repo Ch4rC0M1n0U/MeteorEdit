@@ -61,13 +61,24 @@ class PhoneScannerQueue {
 
     try {
       const settings = await getPhoneScannerSettings();
-      const numbers = expandPattern(scan.pattern, settings.combinationsBlockThreshold);
+      const allNumbers = expandPattern(scan.pattern, settings.combinationsBlockThreshold);
 
-      // Mark scan as running
+      // Resume support: skip numbers already recorded for this scan
+      const alreadyTested = await PhoneScanResult.distinct('phoneE164', { scanId: scan._id });
+      const alreadyTestedSet = new Set<string>(alreadyTested as string[]);
+      const numbers = allNumbers.filter((n) => !alreadyTestedSet.has(n));
+
+      // Mark scan as running, preserve existing progress on resume
       scan.status = 'running';
       scan.startedAt = new Date();
+      scan.errorMessage = undefined;
       await scan.save();
-      this.emit(scanId, 'progress', { tested: 0, found: 0, errors: 0, status: 'running' });
+      this.emit(scanId, 'progress', {
+        tested: scan.progress.tested,
+        found: scan.progress.found,
+        errors: scan.progress.errors,
+        status: 'running',
+      });
 
       // Restore WA session if needed (only if whatsapp is in platforms)
       const needsWA = scan.platforms.includes('whatsapp');
@@ -78,11 +89,13 @@ class PhoneScannerQueue {
           : await whatsappService.restoreSession(userId);
       }
 
-      let tested = 0;
-      let found = 0;
-      let errors = 0;
+      let tested = scan.progress.tested ?? 0;
+      let found = scan.progress.found ?? 0;
+      let errors = scan.progress.errors ?? 0;
+      let iter = 0;
 
       for (const phoneE164 of numbers) {
+        iter++;
         if (state.cancelled) {
           scan.status = 'cancelled';
           break;
@@ -115,7 +128,7 @@ class PhoneScannerQueue {
           tested,
           found,
           errors,
-          total: numbers.length,
+          total: allNumbers.length,
           lastResult: { phoneE164, status: result.status },
         });
 
@@ -123,7 +136,7 @@ class PhoneScannerQueue {
         await this.incrementDailyCounters(userId, settings);
 
         // Random delay before next number (skip on last)
-        if (tested < numbers.length && !state.cancelled) {
+        if (iter < numbers.length && !state.cancelled) {
           const delay = randomDelayMs(settings.minDelayMs, settings.maxDelayMs);
           await this.sleep(delay);
         }

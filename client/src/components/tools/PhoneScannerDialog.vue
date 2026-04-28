@@ -122,6 +122,14 @@
                 outlined
                 @click="onCancel"
               />
+              <Button
+                v-if="canResume"
+                :label="$t('phoneScanner.resume')"
+                icon="pi pi-play"
+                severity="warn"
+                :loading="resuming"
+                @click="onResume"
+              />
             </div>
 
             <div v-if="!hasWaSession" class="ps-session-warn">
@@ -244,8 +252,16 @@ const countryCode = ref('BE');
 const pattern = ref('');
 const selectedPlatforms = ref<string[]>(['whatsapp']);
 const launching = ref(false);
+const resuming = ref(false);
 const hasWaSession = ref(false);
 const creatingResultId = ref<string | null>(null);
+
+const canResume = computed(() => {
+  const s = store.currentScan;
+  if (!s) return false;
+  if (store.isScanning) return false;
+  return s.status === 'rate_limited' || s.status === 'cancelled' || s.status === 'failed';
+});
 const resultFilter = ref<'all' | 'exists' | 'not_found' | 'error'>('all');
 
 const resultFilters = computed(() => [
@@ -396,6 +412,28 @@ async function onCancel(): Promise<void> {
       detail: err.message,
       life: 5000,
     });
+  }
+}
+
+async function onResume(): Promise<void> {
+  if (!store.currentScan) return;
+  resuming.value = true;
+  try {
+    await store.resumeScan(store.currentScan._id);
+    toast.add({
+      severity: 'success',
+      summary: t('phoneScanner.resumeStarted'),
+      life: 3000,
+    });
+  } catch (err: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('phoneScanner.resumeFailed'),
+      detail: err.response?.data?.message ?? err.message,
+      life: 6000,
+    });
+  } finally {
+    resuming.value = false;
   }
 }
 

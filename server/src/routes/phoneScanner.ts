@@ -5,6 +5,7 @@ import {
   getScan,
   getScanResults,
   cancelScan,
+  resumeScan,
   getDossierHistory,
   resultToEntity,
   getAdminSettings,
@@ -21,6 +22,7 @@ router.post('/scans', createScan);
 router.get('/scans/:id', getScan);
 router.get('/scans/:id/results', getScanResults);
 router.delete('/scans/:id', cancelScan);
+router.post('/scans/:id/resume', resumeScan);
 router.get('/dossiers/:dossierId/history', getDossierHistory);
 router.post('/results/:id/to-entity', resultToEntity);
 

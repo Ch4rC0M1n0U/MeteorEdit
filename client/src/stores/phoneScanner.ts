@@ -141,6 +141,13 @@ export const usePhoneScannerStore = defineStore('phoneScanner', () => {
     }
   }
 
+  async function resumeScan(scanId: string): Promise<void> {
+    await api.post(`/phone-scanner/scans/${scanId}/resume`);
+    // Reload scan + subscribe to live progress
+    await loadScan(scanId);
+    subscribeToScan(scanId);
+  }
+
   async function loadHistory(dossierId: string, limit = 20): Promise<void> {
     const { data } = await api.get<{ scans: PhoneScan[] }>(
       `/phone-scanner/dossiers/${dossierId}/history`,
@@ -270,6 +277,7 @@ export const usePhoneScannerStore = defineStore('phoneScanner', () => {
     loadScan,
     loadResults,
     cancelScan,
+    resumeScan,
     loadHistory,
     createEntityFromResult,
     subscribeToScan,
