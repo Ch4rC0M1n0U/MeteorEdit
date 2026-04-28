@@ -35,6 +35,34 @@
       </a>
     </div>
 
+    <ul v-else class="esc-list">
+      <li v-for="s in sessions" :key="s.platform" class="esc-item">
+        <div class="esc-item-icon">
+          <SocialIcon :platform="s.platform" :size="22" />
+        </div>
+        <div class="esc-item-main">
+          <div class="esc-item-name">{{ platformLabel(s.platform) }}</div>
+          <div class="esc-item-meta">
+            <span>{{ s.cookieCount }} cookies</span>
+            <span class="esc-dot">·</span>
+            <span>{{ $t('extension.sessions.updated') }} {{ formatDate(s.updatedAt) }}</span>
+            <span v-if="s.updatedVia === 'extension'" class="esc-via">
+              <i class="mdi mdi-puzzle" /> {{ $t('extension.sessions.viaExtension') }}
+            </span>
+          </div>
+        </div>
+        <Button
+          icon="pi pi-trash"
+          severity="danger"
+          text
+          rounded
+          :title="$t('extension.sessions.clear')"
+          :loading="clearing === s.platform"
+          @click="onClear(s.platform)"
+        />
+      </li>
+    </ul>
+
     <Dialog
       v-model:visible="installOpen"
       modal
@@ -72,34 +100,6 @@
         </div>
       </div>
     </Dialog>
-
-    <ul v-else class="esc-list">
-      <li v-for="s in sessions" :key="s.platform" class="esc-item">
-        <div class="esc-item-icon">
-          <SocialIcon :platform="s.platform" :size="22" />
-        </div>
-        <div class="esc-item-main">
-          <div class="esc-item-name">{{ platformLabel(s.platform) }}</div>
-          <div class="esc-item-meta">
-            <span>{{ s.cookieCount }} cookies</span>
-            <span class="esc-dot">·</span>
-            <span>{{ $t('extension.sessions.updated') }} {{ formatDate(s.updatedAt) }}</span>
-            <span v-if="s.updatedVia === 'extension'" class="esc-via">
-              <i class="mdi mdi-puzzle" /> {{ $t('extension.sessions.viaExtension') }}
-            </span>
-          </div>
-        </div>
-        <Button
-          icon="pi pi-trash"
-          severity="danger"
-          text
-          rounded
-          :title="$t('extension.sessions.clear')"
-          :loading="clearing === s.platform"
-          @click="onClear(s.platform)"
-        />
-      </li>
-    </ul>
   </div>
 </template>
 
