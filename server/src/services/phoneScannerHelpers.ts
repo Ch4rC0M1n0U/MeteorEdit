@@ -115,10 +115,11 @@ export function normalizePattern(pattern: string): string {
  */
 export function estimateDurationMs(combinations: number, minDelayMs: number, maxDelayMs: number): number {
   const avgDelay = (minDelayMs + maxDelayMs) / 2;
-  // Rough: 5s for Phase B + avgDelay for Phase A on hits (assume 10% hit rate)
-  const phaseB = combinations * 5000;
-  const phaseA = combinations * 0.1 * avgDelay;
-  return Math.round(phaseB + phaseA);
+  // Phase A only: getNumberId(~1.5s) + random delay between requests
+  // For the last number, no trailing delay
+  const phaseA = combinations * 1500;
+  const delays = Math.max(0, combinations - 1) * avgDelay;
+  return Math.round(phaseA + delays);
 }
 
 /**

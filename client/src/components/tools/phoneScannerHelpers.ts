@@ -173,12 +173,13 @@ export function previewCombinations(
   else if (count >= thresholds.warn) warnLevel = 'warn';
 
   const avgDelay = (delays.minMs + delays.maxMs) / 2;
-  const phaseB = count * 5000;
-  const phaseA = count * 0.1 * avgDelay;
+  // Phase A only (Phase B is unreliable since WA wa.me UI changes)
+  const phaseA = count * 1500;
+  const delaysTotal = Math.max(0, count - 1) * avgDelay;
   return {
     count,
     warnLevel,
-    estimatedDurationMs: Math.round(phaseB + phaseA),
+    estimatedDurationMs: Math.round(phaseA + delaysTotal),
   };
 }
 

@@ -5,7 +5,6 @@ import PhoneScanResult from '../models/PhoneScanResult';
 import SocialCookie from '../models/SocialCookie';
 import { getPhoneScannerSettings } from '../models/PhoneScannerSettings';
 import { whatsappService } from './whatsappService';
-import { waMeService } from './waMeService';
 import {
   expandPattern,
   randomDelayMs,
@@ -167,10 +166,24 @@ class PhoneScannerQueue {
     waReady: boolean
   ): Promise<{ status: 'exists' | 'not_found' | 'error' | 'rate_limited' }> {
     try {
-      // Phase B: wa.me filter
-      const waMeStatus = await waMeService.checkWaMe(phoneE164);
+      // Phase A only: wa.me scraping is unreliable (returns same /send page for any number)
+      // Use whatsapp-web.js getNumberId() which queries WA's internal API.
+      if (!waReady) {
+        await PhoneScanResult.create({
+          scanId,
+          dossierId,
+          userId,
+          phoneE164,
+          platform: 'whatsapp',
+          status: 'error',
+          errorMessage: 'No WhatsApp Web session paired. Pair your phone in Profile > Social sessions.',
+        });
+        return { status: 'error' };
+      }
 
-      if (waMeStatus === 'not_found') {
+      // Check existence
+      const exists = await whatsappService.checkNumberExists(userId, phoneE164);
+      if (!exists) {
         await PhoneScanResult.create({
           scanId,
           dossierId,
@@ -182,46 +195,8 @@ class PhoneScannerQueue {
         return { status: 'not_found' };
       }
 
-      if (waMeStatus === 'error') {
-        await PhoneScanResult.create({
-          scanId,
-          dossierId,
-          userId,
-          phoneE164,
-          platform: 'whatsapp',
-          status: 'error',
-          errorMessage: 'wa.me check failed',
-        });
-        return { status: 'error' };
-      }
-
-      // Phase A: enrich via whatsapp-web.js (only if user has session)
-      if (!waReady) {
-        await PhoneScanResult.create({
-          scanId,
-          dossierId,
-          userId,
-          phoneE164,
-          platform: 'whatsapp',
-          status: 'exists',
-          // No profile data without session
-        });
-        return { status: 'exists' };
-      }
-
+      // Fetch profile
       const profile = await whatsappService.getProfile(userId, phoneE164);
-      if (!profile) {
-        await PhoneScanResult.create({
-          scanId,
-          dossierId,
-          userId,
-          phoneE164,
-          platform: 'whatsapp',
-          status: 'exists',
-        });
-        return { status: 'exists' };
-      }
-
       await PhoneScanResult.create({
         scanId,
         dossierId,
@@ -229,7 +204,7 @@ class PhoneScannerQueue {
         phoneE164,
         platform: 'whatsapp',
         status: 'exists',
-        profile,
+        ...(profile ? { profile } : {}),
       });
       return { status: 'exists' };
     } catch (err) {
