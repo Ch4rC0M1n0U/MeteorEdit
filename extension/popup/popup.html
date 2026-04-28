@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MeteorEdit</title>
+  <link rel="stylesheet" href="../common/theme.css" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="pop">
+    <header class="pop-header">
+      <img id="brandLogo" src="../icons/icon48.png" alt="" class="pop-logo" />
+      <div class="pop-brand">
+        <div id="brandName" class="pop-brand-name">MeteorEdit</div>
+        <div id="brandHost" class="pop-brand-host">— non configuré —</div>
+      </div>
+      <button id="optsBtn" class="me-btn me-btn--ghost pop-cog" title="Options">
+        <span class="mdi-icon">⚙</span>
+      </button>
+    </header>
+
+    <main id="content" class="pop-content">
+      <!-- Loading skeleton -->
+      <div id="state-loading" class="pop-state">
+        <div class="pop-spinner"></div>
+        <p>Chargement…</p>
+      </div>
+
+      <!-- Not configured -->
+      <div id="state-config" class="pop-state" hidden>
+        <p class="pop-msg">Configurez l'URL de votre instance et un token API pour commencer.</p>
+        <button id="goOptsBtn" class="me-btn me-btn--primary">Ouvrir les options</button>
+      </div>
+
+      <!-- Auth error -->
+      <div id="state-auth" class="pop-state" hidden>
+        <p class="pop-msg pop-msg--err">Authentification échouée. Vérifiez votre token API.</p>
+        <button id="goOptsBtn2" class="me-btn me-btn--secondary">Vérifier les options</button>
+      </div>
+
+      <!-- Unsupported platform -->
+      <div id="state-unsupported" class="pop-state" hidden>
+        <p class="pop-msg">Aucune plateforme supportée détectée sur cet onglet.</p>
+        <p class="me-hint" id="currentHost"></p>
+      </div>
+
+      <!-- Ready to export -->
+      <div id="state-ready" class="pop-state" hidden>
+        <div class="pop-platform">
+          <div class="pop-platform-icon" id="platformIcon">●</div>
+          <div>
+            <div class="pop-platform-name" id="platformName"></div>
+            <div class="pop-platform-meta" id="platformMeta">— cookies détectés —</div>
+          </div>
+        </div>
+
+        <label class="me-label" for="dossierSel">Dossier de destination</label>
+        <select id="dossierSel" class="me-input"></select>
+
+        <button id="exportBtn" class="me-btn me-btn--primary pop-export">
+          <span>Exporter vers MeteorEdit</span>
+        </button>
+
+        <div id="exportStatus" class="me-status" style="display:none; margin-top: 10px; align-self: stretch; justify-content: center;"></div>
+      </div>
+    </main>
+
+    <footer class="pop-footer">
+      <span class="me-hint">v<span id="extVer">1.0.0</span></span>
+      <a href="#" id="optsLink" class="pop-link">Options</a>
+    </footer>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

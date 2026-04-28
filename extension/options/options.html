@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MeteorEdit — Options</title>
+  <link rel="stylesheet" href="../common/theme.css" />
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main class="opt-shell">
+    <header class="opt-header">
+      <div class="opt-brand">
+        <img id="brandLogo" src="../icons/icon48.png" alt="MeteorEdit" />
+        <div>
+          <h1 id="brandName">MeteorEdit Cookie Bridge</h1>
+          <p class="opt-subtitle">Configuration de la connexion à votre instance</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="me-card opt-section">
+      <h2>Connexion</h2>
+      <p class="me-hint" style="margin-bottom: 16px;">
+        Renseignez l'URL de votre instance MeteorEdit (HTTPS recommandé) et un token API généré
+        depuis <em>Profile &gt; Tokens API</em> sur le site.
+      </p>
+
+      <label class="me-label" for="apiUrl">URL de l'instance</label>
+      <input id="apiUrl" type="url" class="me-input" placeholder="https://meteoredit.local" />
+      <p class="me-hint">Acceptez l'avertissement HTTPS auto-signé dans votre navigateur si nécessaire.</p>
+
+      <label class="me-label" for="apiToken" style="margin-top: 16px;">Token API</label>
+      <input id="apiToken" type="password" class="me-input" placeholder="mext_..." autocomplete="off" />
+      <p class="me-hint">Le token est conservé localement dans votre navigateur. Il peut être révoqué à tout moment depuis le site.</p>
+
+      <div class="opt-actions">
+        <button id="saveBtn" class="me-btn me-btn--primary">Enregistrer</button>
+        <button id="testBtn" class="me-btn me-btn--secondary">Tester la connexion</button>
+        <span id="status" class="me-status" style="display: none;"></span>
+      </div>
+    </section>
+
+    <section class="me-card opt-section">
+      <h2>Comment ça marche ?</h2>
+      <ol class="opt-steps">
+        <li>Connectez-vous à une plateforme supportée (Facebook, Instagram, LinkedIn, X…).</li>
+        <li>Cliquez sur l'icône MeteorEdit dans la barre d'extensions.</li>
+        <li>Sélectionnez le dossier de destination et confirmez l'import.</li>
+        <li>Les cookies sont chiffrés <strong>localement</strong> avec la clé publique du dossier avant envoi.</li>
+        <li>Seul vous, avec votre mot de passe E2E, pouvez les déchiffrer côté MeteorEdit.</li>
+      </ol>
+    </section>
+  </main>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

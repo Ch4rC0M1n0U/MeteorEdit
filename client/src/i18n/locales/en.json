@@ -17,6 +17,8 @@
     "saved": "Saved",
     "refresh": "Refresh",
     "user": "User",
+    "copy": "Copy",
+    "done": "Done",
     "noResults": "No results",
     "yes": "Yes",
     "no": "No",
@@ -781,7 +783,29 @@
       "privacyItem3": "Data sent via the API is not used to train models",
       "privacyFooter": "For highly sensitive data, prefer Ollama which processes everything locally on your server."
     },
-    "telegram": "Telegram"
+    "telegram": "Telegram",
+    "apiTokens": {
+      "navLabel": "API Tokens",
+      "title": "API Tokens",
+      "subtitle": "Generate tokens to authenticate the browser extension or external integrations. Each token is tied to your account and can be revoked at any time.",
+      "activeTokens": "Active tokens",
+      "create": "Create token",
+      "createTitle": "New API token",
+      "nameLabel": "Token name",
+      "namePlaceholder": "E.g.: Chrome Extension — Office desktop",
+      "nameHint": "Use a descriptive name to identify where this token is used.",
+      "copyWarn": "Copy this token now. For security reasons, it will never be shown again.",
+      "copied": "Token copied to clipboard",
+      "copyFailed": "Copy failed — select and copy manually.",
+      "createFailed": "Creation failed",
+      "empty": "No tokens yet. Click 'Create token' to get started.",
+      "created": "created on",
+      "lastUsed": "last used",
+      "neverUsed": "never used",
+      "revoke": "Revoke",
+      "revoked": "Token revoked",
+      "revokeConfirm": "Revoke token \"{name}\"? Any extension or integration using this token will stop working immediately."
+    }
   },
   "telegram": {
     "connectionTitle": "Telegram Connection",

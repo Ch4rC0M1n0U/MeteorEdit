@@ -43,6 +43,8 @@ import telegramRoutes from './routes/telegram';
 import shodanRoutes from './routes/shodan';
 import onypheRoutes from './routes/onyphe';
 import phoneScannerRoutes from './routes/phoneScanner';
+import apiTokenRoutes from './routes/apiTokens';
+import extensionRoutes from './routes/extension';
 import SiteSettings from './models/SiteSettings';
 import User from './models/User';
 import { startYjsServer } from './yjs-server';
@@ -75,7 +77,17 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   : undefined;
 
 app.use(cors({
-  origin: allowedOrigins || true,
+  origin: (origin, callback) => {
+    // Allow no-origin (curl, server-to-server) and any chrome-extension://*
+    if (!origin) return callback(null, true);
+    if (origin.startsWith('chrome-extension://') || origin.startsWith('moz-extension://')) {
+      return callback(null, true);
+    }
+    if (!allowedOrigins || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
 }));
@@ -155,6 +167,8 @@ app.use('/api/telegram', telegramRoutes);
 app.use('/api/shodan', shodanRoutes);
 app.use('/api/onyphe', onypheRoutes);
 app.use('/api/phone-scanner', phoneScannerRoutes);
+app.use('/api/auth/api-tokens', apiTokenRoutes);
+app.use('/api/extension', extensionRoutes);
 
 setupSocket(httpServer);
 

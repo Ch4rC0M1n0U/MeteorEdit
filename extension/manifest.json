@@ -1,24 +1,39 @@
 {
   "manifest_version": 3,
   "name": "MeteorEdit Cookie Bridge",
-  "description": "Export social media cookies to MeteorEdit for OSINT investigations",
   "version": "1.0.0",
-  "permissions": ["cookies", "storage"],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-  "options_page": "options.html",
+  "description": "Exporte les cookies des plateformes OSINT directement vers votre instance MeteorEdit, chiffrés de bout en bout.",
+  "default_locale": "fr",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "MeteorEdit"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "cookies",
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ]
 }

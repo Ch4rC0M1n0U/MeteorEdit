@@ -17,6 +17,8 @@
     "saved": "Sauvegardé",
     "refresh": "Actualiser",
     "user": "Utilisateur",
+    "copy": "Copier",
+    "done": "Terminé",
     "noResults": "Aucun résultat",
     "yes": "Oui",
     "no": "Non",
@@ -793,7 +795,29 @@
       "privacyItem3": "Les données envoyées via l'API ne sont pas utilisées pour entraîner les modèles",
       "privacyFooter": "Pour les données hautement sensibles, préférez Ollama qui traite tout localement sur votre serveur."
     },
-    "telegram": "Telegram"
+    "telegram": "Telegram",
+    "apiTokens": {
+      "navLabel": "Tokens API",
+      "title": "Tokens API",
+      "subtitle": "Générez des tokens pour authentifier l'extension navigateur ou des intégrations externes. Chaque token est lié à votre compte et peut être révoqué à tout moment.",
+      "activeTokens": "Tokens actifs",
+      "create": "Créer un token",
+      "createTitle": "Nouveau token API",
+      "nameLabel": "Nom du token",
+      "namePlaceholder": "Ex : Extension Chrome — PC bureau",
+      "nameHint": "Donnez un nom explicite pour identifier où ce token est utilisé.",
+      "copyWarn": "Copiez ce token maintenant. Pour des raisons de sécurité, il ne sera plus jamais affiché.",
+      "copied": "Token copié dans le presse-papier",
+      "copyFailed": "Impossible de copier — sélectionnez et copiez manuellement.",
+      "createFailed": "Création impossible",
+      "empty": "Aucun token créé. Cliquez sur 'Créer un token' pour commencer.",
+      "created": "créé le",
+      "lastUsed": "dernière utilisation",
+      "neverUsed": "jamais utilisé",
+      "revoke": "Révoquer",
+      "revoked": "Token révoqué",
+      "revokeConfirm": "Révoquer le token \"{name}\" ? Toute extension ou intégration utilisant ce token cessera de fonctionner immédiatement."
+    }
   },
   "telegram": {
     "connectionTitle": "Connexion Telegram",

@@ -1,0 +1,77 @@
+.pop {
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: var(--me-bg-app);
+  min-height: 220px;
+}
+.pop-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--me-border);
+}
+.pop-logo { width: 28px; height: 28px; border-radius: 6px; }
+.pop-brand { flex: 1; min-width: 0; }
+.pop-brand-name { font-size: 14px; font-weight: 700; }
+.pop-brand-host { font-size: 11px; color: var(--me-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pop-cog { width: 32px; height: 32px; padding: 0; font-size: 16px; }
+
+.pop-content { padding: 14px; flex: 1; }
+
+.pop-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0; }
+.pop-msg { margin: 0; text-align: center; color: var(--me-text-secondary); font-size: 13px; }
+.pop-msg--err { color: var(--me-danger); }
+
+.pop-platform {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-md);
+  margin-bottom: 14px;
+  width: 100%;
+  align-self: stretch;
+}
+.pop-platform-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--me-accent-glow);
+  color: var(--me-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.pop-platform-name { font-size: 14px; font-weight: 600; }
+.pop-platform-meta { font-size: 11px; color: var(--me-text-muted); }
+
+#dossierSel { margin-bottom: 12px; }
+.pop-export { width: 100%; padding: 10px 14px; }
+
+.pop-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--me-border);
+  border-top-color: var(--me-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.pop-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-top: 1px solid var(--me-border);
+  background: var(--me-bg-surface);
+}
+.pop-link { color: var(--me-accent); font-size: 12px; text-decoration: none; }
+.pop-link:hover { text-decoration: underline; }

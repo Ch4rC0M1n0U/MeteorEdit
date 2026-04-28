@@ -17,6 +17,8 @@
     "saved": "Opgeslagen",
     "refresh": "Vernieuwen",
     "user": "Gebruiker",
+    "copy": "Kopiëren",
+    "done": "Klaar",
     "noResults": "Geen resultaten",
     "yes": "Ja",
     "no": "Nee",
@@ -780,7 +782,29 @@
       "privacyItem3": "Via de API verzonden gegevens worden niet gebruikt om modellen te trainen",
       "privacyFooter": "Voor zeer gevoelige gegevens kiest u best voor Ollama, dat alles lokaal op uw server verwerkt."
     },
-    "telegram": "Telegram"
+    "telegram": "Telegram",
+    "apiTokens": {
+      "navLabel": "API-tokens",
+      "title": "API-tokens",
+      "subtitle": "Genereer tokens om de browserextensie of externe integraties te authenticeren. Elke token is gekoppeld aan uw account en kan op elk moment worden ingetrokken.",
+      "activeTokens": "Actieve tokens",
+      "create": "Token aanmaken",
+      "createTitle": "Nieuwe API-token",
+      "nameLabel": "Tokennaam",
+      "namePlaceholder": "Bijv.: Chrome-extensie — Bureau-pc",
+      "nameHint": "Gebruik een beschrijvende naam om te identificeren waar deze token wordt gebruikt.",
+      "copyWarn": "Kopieer deze token nu. Om veiligheidsredenen wordt hij nooit meer getoond.",
+      "copied": "Token gekopieerd naar klembord",
+      "copyFailed": "Kopiëren mislukt — selecteer en kopieer handmatig.",
+      "createFailed": "Aanmaken mislukt",
+      "empty": "Nog geen tokens. Klik op 'Token aanmaken' om te beginnen.",
+      "created": "aangemaakt op",
+      "lastUsed": "laatst gebruikt",
+      "neverUsed": "nooit gebruikt",
+      "revoke": "Intrekken",
+      "revoked": "Token ingetrokken",
+      "revokeConfirm": "Token \"{name}\" intrekken? Alle extensies of integraties die deze token gebruiken, stoppen onmiddellijk met werken."
+    }
   },
   "telegram": {
     "connectionTitle": "Telegram Verbinding",

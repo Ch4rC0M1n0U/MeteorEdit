@@ -1,0 +1,15 @@
+.opt-shell {
+  max-width: 720px;
+  margin: 32px auto;
+  padding: 0 24px;
+}
+.opt-header { margin-bottom: 24px; }
+.opt-brand { display: flex; align-items: center; gap: 14px; }
+.opt-brand img { width: 48px; height: 48px; border-radius: var(--me-radius-md); }
+.opt-brand h1 { margin: 0; font-size: 20px; font-weight: 700; }
+.opt-subtitle { margin: 2px 0 0; color: var(--me-text-muted); font-size: 13px; }
+.opt-section { margin-bottom: 18px; }
+.opt-section h2 { font-size: 14px; font-weight: 700; margin: 0 0 6px; color: var(--me-text-primary); }
+.opt-actions { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.opt-steps { margin: 8px 0 0 18px; padding: 0; color: var(--me-text-secondary); font-size: 13px; }
+.opt-steps li { margin-bottom: 6px; }

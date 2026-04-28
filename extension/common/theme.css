@@ -1,0 +1,124 @@
+/* MeteorEdit extension theme — aligned with the web app design tokens. */
+:root {
+  --me-bg-app: #0f1115;
+  --me-bg-surface: #161922;
+  --me-bg-elevated: #1d212c;
+  --me-text-primary: #e6e8ef;
+  --me-text-secondary: #a8acba;
+  --me-text-muted: #71768a;
+  --me-border: #2a2f3d;
+  --me-accent: #6366f1;
+  --me-accent-hover: #7d80ff;
+  --me-accent-glow: rgba(99, 102, 241, 0.14);
+  --me-success: #10b981;
+  --me-warn: #f59e0b;
+  --me-danger: #ef4444;
+  --me-radius-sm: 6px;
+  --me-radius-md: 10px;
+  --me-radius-lg: 14px;
+  --me-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --me-bg-app: #f7f8fb;
+    --me-bg-surface: #ffffff;
+    --me-bg-elevated: #ffffff;
+    --me-text-primary: #14161c;
+    --me-text-secondary: #4b5063;
+    --me-text-muted: #8a8f9f;
+    --me-border: #e2e5ee;
+    --me-accent-glow: rgba(99, 102, 241, 0.1);
+    --me-shadow-md: 0 8px 24px rgba(15, 17, 21, 0.08);
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--me-bg-app);
+  color: var(--me-text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; cursor: pointer; }
+input, select { font-family: inherit; }
+
+.me-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--me-radius-sm);
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.me-btn--primary {
+  background: var(--me-accent);
+  color: #fff;
+}
+.me-btn--primary:hover:not(:disabled) { background: var(--me-accent-hover); }
+.me-btn--secondary {
+  background: var(--me-bg-elevated);
+  color: var(--me-text-primary);
+  border-color: var(--me-border);
+}
+.me-btn--secondary:hover:not(:disabled) { border-color: var(--me-accent); }
+.me-btn--ghost {
+  background: transparent;
+  color: var(--me-text-secondary);
+}
+.me-btn--ghost:hover:not(:disabled) { color: var(--me-text-primary); background: var(--me-accent-glow); }
+.me-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.me-input {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-sm);
+  color: var(--me-text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.me-input:focus { border-color: var(--me-accent); }
+
+.me-card {
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-md);
+  padding: 16px;
+}
+
+.me-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--me-text-muted);
+  margin-bottom: 6px;
+}
+
+.me-hint { font-size: 11px; color: var(--me-text-muted); margin-top: 4px; }
+
+.me-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.me-status--ok { color: var(--me-success); background: rgba(16, 185, 129, 0.12); }
+.me-status--warn { color: var(--me-warn); background: rgba(245, 158, 11, 0.12); }
+.me-status--err { color: var(--me-danger); background: rgba(239, 68, 68, 0.12); }
