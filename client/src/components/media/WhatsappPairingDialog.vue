@@ -113,25 +113,47 @@ async function startPairing(): Promise<void> {
 
   try {
     await api.post('/social/whatsapp/pair');
-    openQrStream();
+    await openQrStream();
   } catch (err: unknown) {
     state.value = 'error';
-    errorMessage.value = err instanceof Error ? err.message : 'Failed to start pairing';
+    const e = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+    if (e.response?.status === 401) {
+      errorMessage.value = 'Session expirée. Reconnectez-vous puis réessayez.';
+    } else if (e.response?.status === 502 || e.response?.status === 503) {
+      errorMessage.value = 'Le serveur WhatsApp Web est indisponible. Réessayez dans quelques instants.';
+    } else {
+      errorMessage.value = e.response?.data?.message || e.message || 'Échec de l\'initialisation';
+    }
     pairing.value = false;
   }
 }
 
-function openQrStream(): void {
+async function openQrStream(): Promise<void> {
   closeStream();
 
-  // Build URL with token for SSE auth (EventSource doesn't support custom headers)
+  // Force token refresh by hitting an authenticated endpoint via axios.
+  // The axios interceptor will silently refresh if needed and update
+  // localStorage with the fresh accessToken before we read it.
+  try {
+    await api.get('/auth/me');
+  } catch {
+    state.value = 'error';
+    errorMessage.value = 'Session expirée. Reconnectez-vous puis réessayez.';
+    pairing.value = false;
+    return;
+  }
+
+  // Build URL with fresh token for SSE auth (EventSource doesn't support custom headers)
   const token = localStorage.getItem('accessToken') || '';
+  if (!token) {
+    state.value = 'error';
+    errorMessage.value = 'Session expirée. Reconnectez-vous puis réessayez.';
+    pairing.value = false;
+    return;
+  }
   const baseUrl = api.defaults.baseURL || '';
   const url = `${baseUrl}/social/whatsapp/qr?_t=${Date.now()}`;
 
-  // EventSource doesn't allow custom headers; we rely on cookie-based auth
-  // OR pass token via querystring (less secure but works for short-lived stream)
-  // Server middleware reads ?token= as fallback for SSE
   eventSource = new EventSource(`${url}&token=${encodeURIComponent(token)}`, {
     withCredentials: true,
   });
