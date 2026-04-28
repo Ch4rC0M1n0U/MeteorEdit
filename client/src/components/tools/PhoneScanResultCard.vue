@@ -2,11 +2,13 @@
   <div class="psr-card" :class="`psr-card--${result.status}`">
     <div class="psr-avatar-wrap">
       <img
-        v-if="result.profile?.avatarUrl"
+        v-if="result.profile?.avatarUrl && !avatarFailed"
         :src="result.profile.avatarUrl"
         :alt="result.profile.name || result.phoneE164"
-        class="psr-avatar"
+        class="psr-avatar psr-avatar--clickable"
+        :title="$t('phoneScanner.viewAvatar')"
         @error="onAvatarError"
+        @click="previewOpen = true"
       />
       <div v-else class="psr-avatar psr-avatar--fallback">
         <SocialIcon :platform="result.platform" :size="28" />
@@ -15,6 +17,33 @@
         <i class="pi pi-briefcase" />
       </span>
     </div>
+
+    <Dialog
+      v-model:visible="previewOpen"
+      modal
+      dismissable-mask
+      :header="result.profile?.name || formatPhone(result.phoneE164)"
+      :style="{ width: 'min(90vw, 480px)' }"
+    >
+      <div class="psr-preview">
+        <img
+          v-if="result.profile?.avatarUrl"
+          :src="result.profile.avatarUrl"
+          :alt="result.profile.name || result.phoneE164"
+          class="psr-preview-img"
+        />
+        <div v-if="result.profile?.about" class="psr-preview-about">
+          <span class="psr-preview-label">{{ $t('phoneScanner.about') }}</span>
+          <p>{{ result.profile.about }}</p>
+        </div>
+        <div class="psr-preview-meta">
+          <div class="mono">{{ formatPhone(result.phoneE164) }}</div>
+          <span v-if="result.profile?.isBusiness" class="psr-preview-business">
+            <i class="pi pi-briefcase" /> {{ $t('phoneScanner.business') }}
+          </span>
+        </div>
+      </div>
+    </Dialog>
 
     <div class="psr-body">
       <div class="psr-phone mono">{{ formatPhone(result.phoneE164) }}</div>
@@ -58,6 +87,7 @@
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 import SocialIcon from '../common/SocialIcon.vue';
 import { formatPhone, buildWaMeUrl } from './phoneScannerHelpers';
 import type { PhoneScanResult } from '../../stores/phoneScanner';
@@ -87,6 +117,7 @@ function openWaMe(): void {
 }
 
 const avatarFailed = ref(false);
+const previewOpen = ref(false);
 function onAvatarError(): void {
   avatarFailed.value = true;
 }
@@ -122,10 +153,74 @@ function onAvatarError(): void {
   background: var(--me-bg-surface);
   border: 1px solid var(--me-border);
 }
+.psr-avatar--clickable {
+  cursor: zoom-in;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.psr-avatar--clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px var(--me-accent, #6366f1);
+}
 .psr-avatar--fallback {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Preview dialog */
+.psr-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+.psr-preview-img {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #000;
+}
+.psr-preview-about {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.psr-preview-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--me-text-secondary);
+  font-weight: 600;
+}
+.psr-preview-about p {
+  margin: 0;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--me-text-primary);
+}
+.psr-preview-meta {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--me-text-secondary);
+}
+.psr-preview-business {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
 }
 .psr-business-badge {
   position: absolute;

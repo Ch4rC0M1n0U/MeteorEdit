@@ -16,8 +16,8 @@ export interface IPhoneScannerSettings extends Document {
 const phoneScannerSettingsSchema = new Schema<IPhoneScannerSettings>({
   maxDailyChecksGlobal: { type: Number, default: 200 },
   maxDailyChecksPerUser: { type: Number, default: 50 },
-  minDelayMs: { type: Number, default: 45000 },
-  maxDelayMs: { type: Number, default: 90000 },
+  minDelayMs: { type: Number, default: 30000 },
+  maxDelayMs: { type: Number, default: 60000 },
   combinationsWarnThreshold: { type: Number, default: 50 },
   combinationsBlockThreshold: { type: Number, default: 200 },
   resultsTtlDays: { type: Number, default: 30 },
