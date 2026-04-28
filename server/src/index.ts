@@ -143,6 +143,7 @@ app.use('/api/setup', setupRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api', checkMaintenance);
 app.use('/api/auth', authRoutes);
+app.use('/api/extension', extensionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dossiers', dossierRoutes);
 app.use('/api', nodeRoutes);
@@ -168,7 +169,6 @@ app.use('/api/shodan', shodanRoutes);
 app.use('/api/onyphe', onypheRoutes);
 app.use('/api/phone-scanner', phoneScannerRoutes);
 app.use('/api/auth/api-tokens', apiTokenRoutes);
-app.use('/api/extension', extensionRoutes);
 
 setupSocket(httpServer);
 
