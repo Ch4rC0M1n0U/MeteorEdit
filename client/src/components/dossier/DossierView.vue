@@ -81,10 +81,7 @@
               <span class="mdi mdi-account-search-outline" style="font-size: 16px;"></span>
               <span>{{ $t('social.profile.title') }}</span>
             </button>
-            <button class="dv-export-option" @click="usernameScanOpen = true; toolsMenuRef?.hide()">
-              <span class="mdi mdi-radar" style="font-size: 16px;"></span>
-              <span>{{ $t('dossier.scanTitle') }}</span>
-            </button>
+            <!-- Scanner multi-plateforme: désactivé temporairement, à retravailler -->
             <button class="dv-export-option" @click="toolsUI.openPhoneScanner(); toolsMenuRef?.hide()">
               <span class="mdi mdi-cellphone-text" style="font-size: 16px;"></span>
               <span>Phone Scanner</span>
