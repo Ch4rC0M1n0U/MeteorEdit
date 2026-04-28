@@ -1,11 +1,10 @@
-import { getConfig, getBranding, setBranding, getLastDossierId, setLastDossierId } from '../common/storage.js';
+import { getConfig, getBranding } from '../common/storage.js';
 import { detectPlatform, getCookieDomains } from '../common/platforms.js';
+import { filterAuthCookies } from '../common/cookieWhitelist.js';
 import { api, ApiError } from '../common/api.js';
-import { encryptForDossier } from '../common/crypto.js';
 
 const $ = (id) => document.getElementById(id);
-
-const state = { platform: null, tab: null, dossiers: [] };
+const state = { platform: null, tab: null };
 
 function show(id) {
   ['state-loading', 'state-config', 'state-auth', 'state-unsupported', 'state-ready']
@@ -41,10 +40,7 @@ async function init() {
   $('goOptsBtn2')?.addEventListener('click', openOptions);
 
   const cfg = await getConfig();
-  if (!cfg.apiUrl || !cfg.apiToken) {
-    show('state-config');
-    return;
-  }
+  if (!cfg.apiUrl || !cfg.apiToken) { show('state-config'); return; }
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   state.tab = tab;
@@ -59,58 +55,37 @@ async function init() {
   $('platformIcon').textContent = state.platform.label.charAt(0);
   $('platformName').textContent = state.platform.label;
 
-  // Verify auth + load dossiers
+  // Pre-flight auth check
   try {
-    const dossiers = await api.dossiers();
-    state.dossiers = dossiers?.dossiers ?? dossiers ?? [];
+    await api.verify();
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
       show('state-auth');
       return;
     }
     setStatus('err', err.message);
-    show('state-ready');
-    return;
   }
 
-  const sel = $('dossierSel');
-  sel.innerHTML = '';
-  if (state.dossiers.length === 0) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = '— Aucun dossier —';
-    opt.disabled = true;
-    sel.appendChild(opt);
-    $('exportBtn').disabled = true;
-  } else {
-    state.dossiers.forEach((d) => {
-      const opt = document.createElement('option');
-      opt.value = d._id;
-      opt.textContent = d.title || d.name || d._id;
-      sel.appendChild(opt);
-    });
-    const last = await getLastDossierId();
-    if (last && state.dossiers.find((d) => d._id === last)) sel.value = last;
-  }
-
-  // Cookie count
+  // Cookie count (filtered to auth cookies only)
   try {
-    const cookies = await collectCookies(state.platform.id);
-    $('platformMeta').textContent = `${cookies.length} cookies disponibles`;
-    if (cookies.length === 0) $('exportBtn').disabled = true;
+    const cookies = await collectAuthCookies(state.platform.id);
+    $('platformMeta').textContent = `${cookies.length} cookies d'authentification détectés`;
+    if (cookies.length === 0) {
+      $('platformMeta').textContent = 'Aucune session active — connectez-vous d\'abord';
+      $('exportBtn').disabled = true;
+    }
   } catch (err) {
     $('platformMeta').textContent = 'Erreur lecture cookies';
+    $('exportBtn').disabled = true;
   }
 
   $('exportBtn').addEventListener('click', onExport);
   show('state-ready');
 }
 
-function openOptions() {
-  chrome.runtime.openOptionsPage();
-}
+function openOptions() { chrome.runtime.openOptionsPage(); }
 
-async function collectCookies(platformId) {
+async function collectAuthCookies(platformId) {
   const domains = getCookieDomains(platformId);
   const all = [];
   for (const domain of domains) {
@@ -119,31 +94,25 @@ async function collectCookies(platformId) {
   }
   // Dedupe by name+domain+path
   const seen = new Set();
-  return all.filter((c) => {
+  const uniq = all.filter((c) => {
     const key = `${c.name}|${c.domain}|${c.path}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+  return filterAuthCookies(platformId, uniq);
 }
 
 async function onExport() {
-  const dossierId = $('dossierSel').value;
-  if (!dossierId) return;
   $('exportBtn').disabled = true;
-  setStatus('warn', 'Chiffrement et envoi…');
+  setStatus('warn', 'Envoi en cours…');
 
   try {
-    const cookies = await collectCookies(state.platform.id);
-    if (cookies.length === 0) throw new Error('Aucun cookie à exporter');
+    const cookies = await collectAuthCookies(state.platform.id);
+    if (cookies.length === 0) throw new Error('Aucun cookie d\'authentification à exporter');
 
-    const { publicKey } = await api.myPubKey();
-    if (!publicKey) throw new Error('Aucune clé publique E2E sur votre compte. Activez le chiffrement dans Profile > Chiffrement.');
-
-    const encrypted = await encryptForDossier(publicKey, {
+    await api.importCookies({
       platform: state.platform.id,
-      capturedAt: new Date().toISOString(),
-      tabUrl: state.tab?.url ?? null,
       cookies: cookies.map((c) => ({
         name: c.name,
         value: c.value,
@@ -156,16 +125,8 @@ async function onExport() {
       })),
     });
 
-    await api.importCookies({
-      dossierId,
-      platform: state.platform.id,
-      payload: encrypted,
-      cookieCount: cookies.length,
-    });
-
-    await setLastDossierId(dossierId);
-    setStatus('ok', `${cookies.length} cookies exportés`);
-    setTimeout(() => window.close(), 1500);
+    setStatus('ok', `${cookies.length} cookies envoyés. La session est désormais utilisable côté MeteorEdit.`);
+    setTimeout(() => window.close(), 1800);
   } catch (err) {
     setStatus('err', err.message ?? 'Erreur');
     $('exportBtn').disabled = false;

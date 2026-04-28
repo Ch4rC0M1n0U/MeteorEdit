@@ -1,8 +1,8 @@
 # MeteorEdit Cookie Bridge
 
-Browser extension (Chrome / Edge / Brave / Opera) that exports the cookies of supported OSINT
-platforms directly into your MeteorEdit instance, **end-to-end encrypted** with your account's
-RSA public key.
+Browser extension (Chrome / Edge / Brave / Opera) that exports the **authentication cookies** of
+supported OSINT platforms to your MeteorEdit instance, so the server-side tools (Web Clipper,
+Profile Analyzer, OSINT Dorking…) can scrape **as you**, authenticated.
 
 ## Supported platforms
 
@@ -22,26 +22,27 @@ Telegram · WhatsApp · Mastodon · Linktree · PayPal · Strava
    Copy the token (shown only once — `mext_...`)
 2. Open the extension's options page (gear icon in popup, or right-click extension → Options)
 3. Paste your instance URL (e.g. `https://meteoredit.local`) and the token
-4. Click **Test connection**. You should see ✓ Connected as `your-email@…`
+4. Click **Test connection** → ✓ Connected as `your-email@…`
 
 ## Usage
 
-1. Visit a supported platform (e.g. `https://www.instagram.com`)
+1. Log into a supported platform in your browser (e.g. `https://www.instagram.com`)
 2. Click the MeteorEdit extension icon
-3. Choose the destination dossier
-4. Click **Export to MeteorEdit**
+3. Click **Import session to MeteorEdit**
 
-The cookies are encrypted **locally** in your browser with your account's RSA-OAEP-4096 public
-key. Only you, with your E2E password unlocked on the website, can decrypt them.
+The extension extracts only the **whitelisted authentication cookies** (no analytics, no A/B
+testing junk) and uploads them over HTTPS. The server stores them encrypted at-rest with
+AES-256-GCM (`COOKIE_ENCRYPTION_KEY`). When MeteorEdit's scrapers run, they apply these cookies
+to Puppeteer so the requests are authenticated as you.
 
 ## Security
 
 - Token is stored in `chrome.storage.local` (per-Chrome-profile encryption)
-- Cookies never leave your browser in clear text
-- Server stores only the encrypted blob — neither your MeteorEdit admins nor a server compromise
-  can read your cookies
+- Only **whitelisted** auth cookie names are extracted (per-platform list)
+- Server stores cookies AES-256-GCM encrypted with a 32-byte master key — DB compromise alone
+  is insufficient to read them
 - HTTPS is strongly recommended; the extension allows `http://` only on `localhost` / `*.local`
-  domains for development convenience
+  for development
 
 ## Architecture
 
@@ -51,8 +52,8 @@ extension/
 ├── icons/                     PNG icons
 ├── common/
 │   ├── api.js                 Fetch wrapper (Bearer auth)
-│   ├── crypto.js              Web Crypto E2E encryption
 │   ├── platforms.js           Platform detection (synced with server)
+│   ├── cookieWhitelist.js     Per-platform allowed cookie names
 │   ├── storage.js             chrome.storage.local helpers
 │   └── theme.css              Shared styles aligned with MeteorEdit
 ├── background/

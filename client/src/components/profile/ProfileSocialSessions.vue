@@ -64,6 +64,11 @@
 
     <hr class="pss-divider" />
 
+    <!-- Browser-extension sessions -->
+    <ExtensionSessionsCard />
+
+    <hr class="pss-divider" />
+
     <!-- Existing cookies-based session manager -->
     <SocialSessionManager embedded />
 
@@ -81,6 +86,7 @@ import Button from 'primevue/button';
 import api from '../../services/api';
 import SocialIcon from '../common/SocialIcon.vue';
 import SocialSessionManager from '../media/SocialSessionManager.vue';
+import ExtensionSessionsCard from './ExtensionSessionsCard.vue';
 import WhatsappPairingDialog from '../media/WhatsappPairingDialog.vue';
 
 interface WaStatus {

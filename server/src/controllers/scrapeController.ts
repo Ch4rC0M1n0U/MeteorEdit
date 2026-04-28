@@ -901,10 +901,33 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
     let cookies: any[] = [];
     const cookieRecord = await SocialCookie.findOne({ userId, platform });
     if (cookieRecord) {
-      try {
-        cookies = decryptCookies(cookieRecord.cookies) as any[];
-      } catch (err) {
-        console.warn(`[ScrapeProfile] Failed to decrypt cookies for ${platform}:`, err);
+      // Legacy CDP-format cookies (pre-extension)
+      if (cookieRecord.cookies) {
+        try {
+          cookies = decryptCookies(cookieRecord.cookies) as any[];
+        } catch (err) {
+          console.warn(`[ScrapeProfile] Failed to decrypt legacy cookies for ${platform}:`, err);
+        }
+      }
+      // New web-extension cookies (preferred when present)
+      if (cookieRecord.webCookiesEncrypted) {
+        try {
+          const { decryptCookieList } = await import('../utils/cookieEncryption');
+          const webCookies = decryptCookieList(cookieRecord.webCookiesEncrypted);
+          // Map StoredCookie → CDP cookie shape used downstream
+          cookies = webCookies.map((c) => ({
+            name: c.name,
+            value: c.value,
+            domain: c.domain,
+            path: c.path || '/',
+            expires: c.expirationDate ?? undefined,
+            httpOnly: !!c.httpOnly,
+            secure: !!c.secure,
+            sameSite: c.sameSite,
+          }));
+        } catch (err) {
+          console.warn(`[ScrapeProfile] Failed to decrypt extension cookies for ${platform}:`, err);
+        }
       }
     }
 

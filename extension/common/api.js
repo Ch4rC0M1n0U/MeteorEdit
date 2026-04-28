@@ -43,8 +43,6 @@ async function request(path, { method = 'GET', body, requireAuth = true } = {}) 
 export const api = {
   verify:        () => request('/api/extension/auth/verify'),
   branding:      () => request('/api/branding', { requireAuth: false }),
-  dossiers:      () => request('/api/extension/dossiers'),
-  myPubKey:      () => request('/api/extension/me/pubkey'),
   importCookies: (payload) => request('/api/extension/cookies/import', { method: 'POST', body: payload }),
 };
 

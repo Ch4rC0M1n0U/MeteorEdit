@@ -806,6 +806,19 @@
       "revokeConfirm": "Token \"{name}\" intrekken? Alle extensies of integraties die deze token gebruiken, stoppen onmiddellijk met werken."
     }
   },
+  "extension": {
+    "sessions": {
+      "title": "Sessies geïmporteerd via de extensie",
+      "subtitle": "Authenticatie-cookies gesynchroniseerd vanuit uw browser. MeteorEdit-tools (Web Clipper, Profile Analyzer…) gebruiken ze om geauthenticeerd in uw naam te handelen.",
+      "empty": "Nog geen geïmporteerde sessie.",
+      "installHint": "Installeer de browserextensie en genereer een API-token om te beginnen.",
+      "updated": "bijgewerkt",
+      "viaExtension": "Extensie",
+      "clear": "Verwijderen",
+      "cleared": "Sessie verwijderd",
+      "clearConfirm": "De {platform}-sessie verwijderen? Tools kunnen niet langer geauthenticeerd handelen op dit platform."
+    }
+  },
   "telegram": {
     "connectionTitle": "Telegram Verbinding",
     "connectionDesc": "Verbind uw Telegram-account voor directe zoekopdrachten",

@@ -1,16 +1,9 @@
 import { Response } from 'express';
-import { Types } from 'mongoose';
 import type { ExtensionRequest } from '../middleware/extensionAuth';
 import User from '../models/User';
-import Dossier from '../models/Dossier';
-import ExtensionImport from '../models/ExtensionImport';
+import SocialCookie, { SUPPORTED_PLATFORMS, SocialPlatform } from '../models/SocialCookie';
+import { encryptCookieList, type StoredCookie } from '../utils/cookieEncryption';
 import { logActivity } from '../utils/activityLogger';
-
-const SUPPORTED_PLATFORMS = new Set([
-  'instagram', 'facebook', 'threads', 'x', 'tiktok', 'linkedin', 'youtube',
-  'reddit', 'snapchat', 'telegram', 'whatsapp', 'mastodon', 'linktree',
-  'paypal', 'strava',
-]);
 
 function getRequestMeta(req: ExtensionRequest): { ip: string; ua: string } {
   const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
@@ -39,136 +32,137 @@ export async function verify(req: ExtensionRequest, res: Response): Promise<void
 }
 
 /**
- * GET /api/extension/dossiers
- * Lists dossiers the user can write to (owner or collaborator).
- */
-export async function listDossiers(req: ExtensionRequest, res: Response): Promise<void> {
-  try {
-    const userId = req.user!.userId;
-    const dossiers = await Dossier.find({
-      $or: [{ owner: userId }, { collaborators: userId }],
-    })
-      .sort({ updatedAt: -1 })
-      .select('_id title')
-      .lean();
-    res.json({
-      dossiers: dossiers.map((d) => ({ _id: String(d._id), title: d.title })),
-    });
-  } catch (err: unknown) {
-    res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
-  }
-}
-
-/**
- * GET /api/extension/me/pubkey
- * Returns the user's RSA public key for E2E encryption.
- */
-export async function getMyPublicKey(req: ExtensionRequest, res: Response): Promise<void> {
-  try {
-    const user = await User.findById(req.user!.userId).select('encryptionPublicKey').lean();
-    if (!user) {
-      res.status(404).json({ message: 'User not found' });
-      return;
-    }
-    res.json({ publicKey: user.encryptionPublicKey || null });
-  } catch (err: unknown) {
-    res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
-  }
-}
-
-/**
  * POST /api/extension/cookies/import
- * body: { dossierId, platform, payload: { encryptedKey, iv, ciphertext, ... }, cookieCount }
+ * body: { platform, cookies: StoredCookie[] }
+ *
+ * Cookies are encrypted at-rest with the server master key (COOKIE_ENCRYPTION_KEY).
+ * They replace any existing webCookies for that user/platform pair.
  */
 export async function importCookies(req: ExtensionRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
     const tokenId = req.user!.tokenId;
-    const { dossierId, platform, payload, cookieCount } = req.body ?? {};
+    const { platform, cookies } = req.body ?? {};
 
-    if (!dossierId || !Types.ObjectId.isValid(dossierId)) {
-      res.status(400).json({ message: 'Invalid dossierId' });
-      return;
-    }
-    if (!SUPPORTED_PLATFORMS.has(platform)) {
+    if (!SUPPORTED_PLATFORMS.includes(platform as SocialPlatform)) {
       res.status(400).json({ message: `Unsupported platform: ${platform}` });
       return;
     }
-    if (!payload?.encryptedKey || !payload.iv || !payload.ciphertext) {
-      res.status(400).json({ message: 'Encrypted payload incomplete' });
+    if (!Array.isArray(cookies) || cookies.length === 0) {
+      res.status(400).json({ message: 'Cookies array is required and non-empty' });
       return;
     }
 
-    const dossier = await Dossier.findOne({
-      _id: dossierId,
-      $or: [{ owner: userId }, { collaborators: userId }],
-    }).select('_id').lean();
-    if (!dossier) {
-      res.status(403).json({ message: 'Access denied to this dossier' });
+    // Sanitize incoming cookies to known fields only
+    const clean: StoredCookie[] = cookies.map((c: any) => ({
+      name: String(c.name ?? '').slice(0, 256),
+      value: String(c.value ?? '').slice(0, 8192),
+      domain: String(c.domain ?? '').slice(0, 256),
+      path: String(c.path ?? '/').slice(0, 256),
+      secure: !!c.secure,
+      httpOnly: !!c.httpOnly,
+      sameSite: typeof c.sameSite === 'string' ? c.sameSite : undefined,
+      expirationDate: typeof c.expirationDate === 'number' ? c.expirationDate : null,
+    })).filter((c) => c.name && c.value);
+
+    if (clean.length === 0) {
+      res.status(400).json({ message: 'No valid cookies in payload' });
       return;
     }
 
-    const imported = await ExtensionImport.create({
-      userId,
-      dossierId,
-      tokenId,
-      platform,
-      cookieCount: Number.isFinite(cookieCount) ? Math.max(0, Math.floor(cookieCount)) : 0,
-      encryptedPayload: {
-        version: payload.version ?? 1,
-        algorithm: payload.algorithm ?? 'RSA-OAEP-4096+AES-256-GCM',
-        encryptedKey: payload.encryptedKey,
-        iv: payload.iv,
-        ciphertext: payload.ciphertext,
+    const encrypted = encryptCookieList(clean);
+
+    await SocialCookie.findOneAndUpdate(
+      { userId, platform },
+      {
+        $set: {
+          webCookiesEncrypted: encrypted,
+          webCookiesCount: clean.length,
+          webCookiesUpdatedAt: new Date(),
+          webCookiesUpdatedVia: 'extension',
+        },
+        $setOnInsert: {
+          userId,
+          platform,
+          sessionMode: 'cookies',
+        },
       },
-    });
+      { upsert: true, new: true }
+    );
 
     const { ip, ua } = getRequestMeta(req);
-    await logActivity(userId, 'extension.cookies.import', 'dossier', String(dossierId), {
+    await logActivity(userId, 'extension.cookies.import', 'system', String(tokenId), {
       platform,
-      cookieCount: imported.cookieCount,
-      tokenId: String(tokenId),
+      cookieCount: clean.length,
     }, ip, ua);
 
-    res.status(201).json({ success: true, importId: String(imported._id) });
+    res.status(201).json({
+      success: true,
+      platform,
+      cookieCount: clean.length,
+    });
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
   }
 }
 
 /**
- * GET /api/extension/dossiers/:dossierId/imports
- * Lists encrypted imports for a dossier (used by the web app to show/decrypt them).
- * NOTE: This route uses the regular session auth, not extension bearer auth.
+ * GET /api/extension/sessions
+ * Lists all platforms with stored web cookies for the current user.
+ * Used by the web UI (Profile > Sessions sociales) — session-auth.
  */
-export async function listDossierImports(req: any, res: Response): Promise<void> {
+export async function listMySessions(req: any, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { dossierId } = req.params;
-    if (!Types.ObjectId.isValid(dossierId)) {
-      res.status(400).json({ message: 'Invalid dossierId' });
-      return;
-    }
-    const dossier = await Dossier.findOne({
-      _id: dossierId,
-      $or: [{ owner: userId }, { collaborators: userId }],
-    }).select('_id').lean();
-    if (!dossier) {
-      res.status(403).json({ message: 'Access denied' });
-      return;
-    }
-    const imports = await ExtensionImport.find({ dossierId })
-      .sort({ createdAt: -1 })
+    const sessions = await SocialCookie.find({
+      userId,
+      webCookiesEncrypted: { $ne: null },
+    })
+      .sort({ webCookiesUpdatedAt: -1 })
+      .select('platform webCookiesCount webCookiesUpdatedAt webCookiesUpdatedVia')
       .lean();
+
     res.json({
-      imports: imports.map((i) => ({
-        _id: String(i._id),
-        platform: i.platform,
-        cookieCount: i.cookieCount,
-        createdAt: i.createdAt,
-        encryptedPayload: i.encryptedPayload,
+      sessions: sessions.map((s) => ({
+        platform: s.platform,
+        cookieCount: s.webCookiesCount ?? 0,
+        updatedAt: s.webCookiesUpdatedAt,
+        updatedVia: s.webCookiesUpdatedVia,
       })),
     });
+  } catch (err: unknown) {
+    res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
+  }
+}
+
+/**
+ * DELETE /api/extension/sessions/:platform
+ * Clears stored web cookies for the given platform — session-auth.
+ */
+export async function clearMySession(req: any, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const { platform } = req.params;
+    if (!SUPPORTED_PLATFORMS.includes(platform as SocialPlatform)) {
+      res.status(400).json({ message: 'Unsupported platform' });
+      return;
+    }
+    await SocialCookie.updateOne(
+      { userId, platform },
+      {
+        $set: {
+          webCookiesEncrypted: null,
+          webCookiesCount: 0,
+          webCookiesUpdatedAt: null,
+          webCookiesUpdatedVia: null,
+        },
+      }
+    );
+
+    const { ip, ua } = getRequestMeta(req);
+    await logActivity(userId, 'extension.cookies.clear', 'system', null, { platform }, ip, ua);
+
+    res.json({ success: true });
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
   }

@@ -383,7 +383,7 @@ async function dismissCookieBanners(page: any): Promise<void> {
   }
 }
 
-async function captureScreenshot(url: string, filename: string): Promise<string | null> {
+async function captureScreenshot(url: string, filename: string, userId?: string): Promise<string | null> {
   let browser: any = null;
   try {
     const puppeteer = await import('puppeteer-core');
@@ -448,6 +448,20 @@ async function captureScreenshot(url: string, filename: string): Promise<string 
       Object.defineProperty(navigator, 'languages', { get: () => ['fr-BE', 'fr', 'en'] });
       window.chrome = { runtime: {} };
     })()`);
+
+    // --- Apply stored auth cookies from browser extension (if user is known) ---
+    if (userId && bypassRule?.allowCookies !== false) {
+      try {
+        const { detectPlatformFromUrl } = await import('../utils/platformDetect');
+        const platform = detectPlatformFromUrl(url);
+        if (platform) {
+          const { applyStoredCookies } = await import('../utils/applyStoredCookies');
+          await applyStoredCookies(page, userId, platform);
+        }
+      } catch (err) {
+        console.warn('[clipper] applyStoredCookies failed:', err instanceof Error ? err.message : err);
+      }
+    }
 
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 45000 });
 
@@ -834,7 +848,7 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
     // Capture screenshot BEFORE creating node
     const filename = `clip-${Date.now()}.png`;
     console.log(`[Clipper] url="${url}", title="${title}", will capture screenshot: ${!!url}`);
-    const screenshotPath = url ? await captureScreenshot(url, filename) : null;
+    const screenshotPath = url ? await captureScreenshot(url, filename, userId) : null;
     console.log(`[Clipper] screenshotPath=${screenshotPath}`);
     const baseUrl = getBaseUrl(req);
 

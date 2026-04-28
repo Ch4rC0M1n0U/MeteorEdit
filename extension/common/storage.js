@@ -3,7 +3,6 @@ const KEYS = {
   apiUrl: 'meteoredit:apiUrl',
   apiToken: 'meteoredit:apiToken',
   branding: 'meteoredit:branding',
-  lastDossierId: 'meteoredit:lastDossierId',
 };
 
 export async function getConfig() {
@@ -30,11 +29,3 @@ export async function setBranding(branding) {
   await chrome.storage.local.set({ [KEYS.branding]: branding });
 }
 
-export async function getLastDossierId() {
-  const data = await chrome.storage.local.get([KEYS.lastDossierId]);
-  return data[KEYS.lastDossierId] ?? null;
-}
-
-export async function setLastDossierId(id) {
-  await chrome.storage.local.set({ [KEYS.lastDossierId]: id });
-}

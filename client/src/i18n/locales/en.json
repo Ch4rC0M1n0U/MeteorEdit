@@ -807,6 +807,19 @@
       "revokeConfirm": "Revoke token \"{name}\"? Any extension or integration using this token will stop working immediately."
     }
   },
+  "extension": {
+    "sessions": {
+      "title": "Sessions imported via the extension",
+      "subtitle": "Auth cookies synced from your browser. MeteorEdit tools (Web Clipper, Profile Analyzer…) use them to act authenticated on your behalf.",
+      "empty": "No imported session yet.",
+      "installHint": "Install the browser extension and generate an API token to get started.",
+      "updated": "updated",
+      "viaExtension": "Extension",
+      "clear": "Remove",
+      "cleared": "Session removed",
+      "clearConfirm": "Remove the {platform} session? Tools will no longer be able to act authenticated on this platform."
+    }
+  },
   "telegram": {
     "connectionTitle": "Telegram Connection",
     "connectionDesc": "Connect your Telegram account for direct searches",
