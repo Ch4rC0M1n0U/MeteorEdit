@@ -340,15 +340,19 @@ router.post('/whatsapp/pair', authenticate, whatsappPair);
 import jwtLib from 'jsonwebtoken';
 router.get('/whatsapp/qr', (req: any, res, next) => {
   const token = typeof req.query.token === 'string' ? req.query.token : null;
+  console.log('[whatsapp/qr] token present:', !!token, 'len:', token?.length, 'queryKeys:', Object.keys(req.query));
   if (!token) {
+    console.log('[whatsapp/qr] REJECTED: no token in query');
     res.status(401).json({ message: 'Token required' });
     return;
   }
   try {
     const decoded = jwtLib.verify(token, process.env.JWT_SECRET!) as any;
+    console.log('[whatsapp/qr] JWT verified, userId:', decoded.userId);
     req.user = decoded;
     next();
-  } catch {
+  } catch (err: any) {
+    console.log('[whatsapp/qr] REJECTED: JWT verify failed:', err?.name, err?.message);
     res.status(401).json({ message: 'Invalid token' });
   }
 }, whatsappQrStream);
