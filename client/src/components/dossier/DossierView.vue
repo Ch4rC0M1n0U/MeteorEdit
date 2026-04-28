@@ -76,14 +76,22 @@
         </Popover>
         <Popover ref="toolsMenuRef">
           <div class="glass-card dv-export-menu">
-            <button class="dv-export-option" @click="webClipperOpen = true; toolsMenuRef?.hide()">
-              <span class="mdi mdi-web" style="font-size: 16px;"></span>
-              <span>Web Clipper</span>
-            </button>
+            <div class="dv-tools-group-header">{{ $t('tools.groups.identitySearch') }}</div>
             <button class="dv-export-option" @click="profileAnalyzerOpen = true; toolsMenuRef?.hide()">
               <span class="mdi mdi-account-search-outline" style="font-size: 16px;"></span>
               <span>{{ $t('social.profile.title') }}</span>
             </button>
+            <button class="dv-export-option" @click="usernameScanOpen = true; toolsMenuRef?.hide()">
+              <span class="mdi mdi-radar" style="font-size: 16px;"></span>
+              <span>{{ $t('dossier.scanTitle') }}</span>
+            </button>
+            <button class="dv-export-option" @click="toolsUI.openPhoneScanner(); toolsMenuRef?.hide()">
+              <span class="mdi mdi-cellphone-text" style="font-size: 16px;"></span>
+              <span>Phone Scanner</span>
+            </button>
+
+            <div class="dv-tools-group-sep"></div>
+            <div class="dv-tools-group-header">{{ $t('tools.groups.webResearch') }}</div>
             <button class="dv-export-option" @click="osintDorkingOpen = true; toolsMenuRef?.hide()">
               <span class="mdi mdi-search-web" style="font-size: 16px;"></span>
               <span>OSINT Dorking</span>
@@ -92,17 +100,16 @@
               <span class="mdi mdi-image-search-outline" style="font-size: 16px;"></span>
               <span>{{ $t('dossier.reverseImageTitle') }}</span>
             </button>
-            <button class="dv-export-option" @click="usernameScanOpen = true; toolsMenuRef?.hide()">
-              <span class="mdi mdi-radar" style="font-size: 16px;"></span>
-              <span>{{ $t('dossier.scanTitle') }}</span>
-            </button>
             <button class="dv-export-option" @click="openLeaksSearch(); toolsMenuRef?.hide()">
               <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
               <span>{{ $t('osint.leaksSearch') }}</span>
             </button>
-            <button class="dv-export-option" @click="toolsUI.openPhoneScanner(); toolsMenuRef?.hide()">
-              <span class="mdi mdi-cellphone-text" style="font-size: 16px;"></span>
-              <span>Phone Scanner</span>
+
+            <div class="dv-tools-group-sep"></div>
+            <div class="dv-tools-group-header">{{ $t('tools.groups.contentCapture') }}</div>
+            <button class="dv-export-option" @click="webClipperOpen = true; toolsMenuRef?.hide()">
+              <span class="mdi mdi-web" style="font-size: 16px;"></span>
+              <span>Web Clipper</span>
             </button>
           </div>
         </Popover>
@@ -1858,7 +1865,21 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 .dv-export-menu {
   padding: 6px;
-  min-width: 160px;
+  min-width: 200px;
+}
+.dv-tools-group-header {
+  padding: 6px 10px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--me-text-muted);
+  user-select: none;
+}
+.dv-tools-group-sep {
+  height: 1px;
+  background: var(--me-border);
+  margin: 6px 8px;
 }
 .dv-export-option {
   display: flex;

@@ -680,6 +680,13 @@
     "inProgress": "In progress",
     "done": "Done"
   },
+  "tools": {
+    "groups": {
+      "identitySearch": "Identity lookup",
+      "webResearch": "Web & OSINT research",
+      "contentCapture": "Content capture"
+    }
+  },
   "profile": {
     "myAccount": "My account",
     "myProfile": "My profile",

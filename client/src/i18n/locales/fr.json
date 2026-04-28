@@ -692,6 +692,13 @@
     "inProgress": "En cours",
     "done": "Terminé"
   },
+  "tools": {
+    "groups": {
+      "identitySearch": "Recherche d'identités",
+      "webResearch": "Recherche web & OSINT",
+      "contentCapture": "Capture de contenu"
+    }
+  },
   "profile": {
     "myAccount": "Mon compte",
     "myProfile": "Mon profil",

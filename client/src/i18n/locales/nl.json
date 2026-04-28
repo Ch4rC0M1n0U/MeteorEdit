@@ -679,6 +679,13 @@
     "inProgress": "In behandeling",
     "done": "Voltooid"
   },
+  "tools": {
+    "groups": {
+      "identitySearch": "Identiteit opzoeken",
+      "webResearch": "Web & OSINT-onderzoek",
+      "contentCapture": "Inhoud vastleggen"
+    }
+  },
   "profile": {
     "myAccount": "Mijn account",
     "myProfile": "Mijn profiel",
