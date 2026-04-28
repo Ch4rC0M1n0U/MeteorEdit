@@ -1,4 +1,5 @@
-import { parsePhoneNumberFromString, getCountries, getCountryCallingCode } from 'libphonenumber-js';
+import { parsePhoneNumberFromString, getCountries, getCountryCallingCode, getExampleNumber } from 'libphonenumber-js';
+import examples from 'libphonenumber-js/mobile/examples';
 import type { CountryCode } from 'libphonenumber-js';
 
 export type WarnLevel = 'ok' | 'warn' | 'block';
@@ -64,11 +65,97 @@ export function getCountryList(): CountryEntry[] {
 }
 
 /**
+ * Normalize wildcards: accept both ? and * (treat * as ?).
+ */
+export function normalizeWildcards(pattern: string): string {
+  return pattern.replace(/\*/g, '?');
+}
+
+/**
  * Count combinations the pattern would generate.
  */
 export function countCombinations(pattern: string): number {
-  const masks = (pattern.match(/\?/g) ?? []).length;
+  const normalized = normalizeWildcards(pattern);
+  const masks = (normalized.match(/\?/g) ?? []).length;
   return Math.pow(10, masks);
+}
+
+/**
+ * Detect country from a pattern starting with +CC.
+ * Returns the ISO-2 country code or null.
+ */
+export function detectCountryFromPattern(pattern: string): string | null {
+  const cleaned = pattern.replace(/[\s\-.]/g, '');
+  if (!cleaned.startsWith('+')) return null;
+
+  // Try parsing — libphonenumber will identify the country from the dial code
+  try {
+    const parsed = parsePhoneNumberFromString(cleaned.replace(/[?*]/g, '0'));
+    if (parsed?.country) return parsed.country;
+  } catch {
+    // ignore
+  }
+
+  // Fallback: match against known dial codes (longest first)
+  const digits = cleaned.slice(1).replace(/[^0-9]/g, '');
+  for (let len = 4; len >= 1; len--) {
+    const prefix = digits.slice(0, len);
+    if (!prefix) continue;
+    const countries = getCountries();
+    for (const c of countries) {
+      try {
+        if (getCountryCallingCode(c as CountryCode) === prefix) {
+          return c;
+        }
+      } catch { /* ignore */ }
+    }
+  }
+  return null;
+}
+
+/**
+ * Get the expected national number length for a country.
+ * Returns null if unable to determine.
+ */
+export function getExpectedLength(country: string): number | null {
+  try {
+    const example = getExampleNumber(country as CountryCode, examples);
+    if (example) return example.nationalNumber.length;
+  } catch { /* ignore */ }
+  return null;
+}
+
+/**
+ * Validate the pattern length against the expected country length.
+ * Returns { valid, expected, actual } where actual is the count of digits + ?
+ * after the dial code.
+ */
+export interface LengthValidation {
+  valid: boolean;
+  expected: number | null;
+  actual: number;
+}
+
+export function validateLength(pattern: string, country: string): LengthValidation {
+  const cleaned = normalizeWildcards(pattern).replace(/[\s\-.]/g, '');
+  const expected = getExpectedLength(country);
+  if (!expected) return { valid: true, expected: null, actual: 0 };
+
+  // Strip dial code if present
+  let national = cleaned;
+  if (cleaned.startsWith('+')) {
+    try {
+      const dial = getCountryCallingCode(country as CountryCode);
+      if (cleaned.startsWith('+' + dial)) {
+        national = cleaned.slice(1 + dial.length);
+      }
+    } catch { /* ignore */ }
+  }
+  // Strip leading zeros (national prefix)
+  national = national.replace(/^0+/, '');
+  // Count digits and wildcards
+  const actual = (national.match(/[0-9?]/g) ?? []).length;
+  return { valid: actual === expected, expected, actual };
 }
 
 /**
@@ -79,7 +166,7 @@ export function previewCombinations(
   thresholds: { warn: number; block: number },
   delays: { minMs: number; maxMs: number }
 ): CombinationsPreview {
-  const cleaned = pattern.replace(/\s+/g, '');
+  const cleaned = normalizeWildcards(pattern.replace(/\s+/g, ''));
   const count = countCombinations(cleaned);
   let warnLevel: WarnLevel = 'ok';
   if (count >= thresholds.block) warnLevel = 'block';

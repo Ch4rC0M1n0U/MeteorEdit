@@ -79,7 +79,7 @@
               </div>
             </div>
 
-            <div v-if="preview" :class="['ps-preview', `ps-preview--${preview.warnLevel}`]">
+            <div v-if="preview" :class="['ps-preview', `ps-preview--${effectiveWarnLevel}`]">
               <div class="ps-preview-row">
                 <span class="ps-preview-label">{{ $t('phoneScanner.combinations') }}</span>
                 <span class="ps-preview-value mono">{{ preview.count }}</span>
@@ -88,10 +88,20 @@
                 <span class="ps-preview-label">{{ $t('phoneScanner.estimatedDuration') }}</span>
                 <span class="ps-preview-value mono">{{ formatDuration(preview.estimatedDurationMs) }}</span>
               </div>
-              <div v-if="preview.warnLevel === 'warn'" class="ps-preview-msg">
+              <div v-if="lengthCheck && lengthCheck.expected" class="ps-preview-row">
+                <span class="ps-preview-label">Longueur</span>
+                <span :class="['ps-preview-value', 'mono', { 'ps-length-bad': !lengthCheck.valid }]">
+                  {{ lengthCheck.actual }} / {{ lengthCheck.expected }}
+                </span>
+              </div>
+              <div v-if="lengthCheck && lengthCheck.expected && !lengthCheck.valid" class="ps-preview-msg">
+                Le numéro doit avoir {{ lengthCheck.expected }} chiffres pour {{ getCountryName(countryCode) }}.
+                Actuellement : {{ lengthCheck.actual }}.
+              </div>
+              <div v-else-if="preview.warnLevel === 'warn'" class="ps-preview-msg">
                 {{ $t('phoneScanner.warnMessage', { count: preview.count }) }}
               </div>
-              <div v-if="preview.warnLevel === 'block'" class="ps-preview-msg">
+              <div v-else-if="preview.warnLevel === 'block'" class="ps-preview-msg">
                 {{ $t('phoneScanner.blockMessage', { count: preview.count }) }}
               </div>
             </div>
@@ -215,7 +225,9 @@ import {
   getCountryList,
   previewCombinations,
   formatDuration,
-  type WarnLevel,
+  detectCountryFromPattern,
+  validateLength,
+  normalizeWildcards,
 } from './phoneScannerHelpers';
 
 const props = defineProps<{ visible: boolean; dossierId?: string | null }>();
@@ -261,13 +273,41 @@ const preview = computed(() => {
   });
 });
 
+const lengthCheck = computed(() => {
+  if (!pattern.value || !countryCode.value) return null;
+  return validateLength(pattern.value, countryCode.value);
+});
+
+const effectiveWarnLevel = computed(() => {
+  if (lengthCheck.value && lengthCheck.value.expected && !lengthCheck.value.valid) return 'block';
+  return preview.value?.warnLevel || 'ok';
+});
+
 const canLaunch = computed(() => {
   if (!pattern.value || !countryCode.value) return false;
   if (selectedPlatforms.value.length === 0) return false;
   if (preview.value?.warnLevel === 'block') return false;
   if (store.isScanning) return false;
   if (!effectiveDossierId.value) return false;
+  if (lengthCheck.value && lengthCheck.value.expected && !lengthCheck.value.valid) return false;
   return true;
+});
+
+// Auto-detect country when pattern starts with +CC
+watch(pattern, (newVal) => {
+  // Auto-replace * with ?
+  const normalized = normalizeWildcards(newVal);
+  if (normalized !== newVal) {
+    pattern.value = normalized;
+    return;
+  }
+  // Detect country from +CC prefix
+  if (newVal.startsWith('+')) {
+    const detected = detectCountryFromPattern(newVal);
+    if (detected && detected !== countryCode.value) {
+      countryCode.value = detected;
+    }
+  }
 });
 
 const effectiveDossierId = computed(
@@ -548,6 +588,7 @@ onUnmounted(() => {
 }
 .ps-preview-label { color: var(--me-text-secondary); }
 .ps-preview-value { color: var(--me-text-primary); font-weight: 600; }
+.ps-length-bad { color: #ef4444 !important; }
 .ps-preview-msg { font-size: 12px; margin-top: 4px; color: var(--me-text-secondary); }
 
 .ps-actions {

@@ -26,7 +26,7 @@ async function userOwnsDossier(userId: string, dossierId: string): Promise<boole
   if (!Types.ObjectId.isValid(dossierId)) return false;
   const dossier = await Dossier.findOne({
     _id: dossierId,
-    $or: [{ ownerId: userId }, { collaborators: userId }],
+    $or: [{ owner: userId }, { collaborators: userId }],
   }).select('_id').lean();
   return !!dossier;
 }
