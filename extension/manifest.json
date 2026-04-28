@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MeteorEdit Cookie Bridge",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Exporte les cookies des plateformes OSINT vers votre instance MeteorEdit pour permettre aux outils de scraper authentifiés en votre nom.",
   "icons": {
     "16": "icons/icon16.png",
