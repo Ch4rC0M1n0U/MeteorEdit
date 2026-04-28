@@ -6,9 +6,13 @@ import {
   importCookies,
   listMySessions,
   clearMySession,
+  downloadExtension,
 } from '../controllers/extensionController';
 
 const router = Router();
+
+// Public download — no auth (the ZIP is just the source already in the repo)
+router.get('/download', downloadExtension);
 
 // Bearer-token auth: used by the browser extension
 router.get('/auth/verify', extensionAuth, verify);

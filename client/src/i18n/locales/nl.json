@@ -817,6 +817,20 @@
       "clear": "Verwijderen",
       "cleared": "Sessie verwijderd",
       "clearConfirm": "De {platform}-sessie verwijderen? Tools kunnen niet langer geauthenticeerd handelen op dit platform."
+    },
+    "install": {
+      "button": "Extensie installeren",
+      "title": "Installeer de browserextensie",
+      "intro": "Met de extensie kunt u authenticatie-cookies (Instagram, Facebook, X, LinkedIn, enz.) naar uw MeteorEdit-instantie sturen, zodat de tools geauthenticeerd in uw naam kunnen scrapen.",
+      "step1": "Download het ZIP-archief van de extensie:",
+      "step2": "Pak het uit in een map die u bewaart — de extensie wordt vanuit die map geladen.",
+      "step3": "Open chrome://extensions (of edge://extensions, brave://extensions) en schakel 'Ontwikkelaarsmodus' in rechtsboven.",
+      "step4": "Klik op 'Uitgepakte extensie laden' en selecteer de uitgepakte map.",
+      "step5": "Genereer een API-token vanaf ",
+      "tokensLink": "Profile > API-tokens",
+      "step6": "Open de extensie-opties (tandwiel in de popup), plak uw instantie-URL + de token en klik op 'Verbinding testen'.",
+      "devWarn": "Ontwikkelaarsmodus is vereist omdat de extensie (nog) niet in de Chrome Web Store staat. Het is veilig: de broncode is open en maakt deel uit van de MeteorEdit-repository.",
+      "download": "Extensie downloaden (.zip)"
     }
   },
   "telegram": {

@@ -830,6 +830,20 @@
       "clear": "Supprimer",
       "cleared": "Session supprimée",
       "clearConfirm": "Supprimer la session {platform} ? Les outils ne pourront plus agir authentifiés sur cette plateforme."
+    },
+    "install": {
+      "button": "Installer l'extension",
+      "title": "Installer l'extension navigateur",
+      "intro": "L'extension permet d'envoyer vos cookies d'authentification (Instagram, Facebook, X, LinkedIn, etc.) vers votre instance MeteorEdit, afin que les outils puissent scraper authentifié en votre nom.",
+      "step1": "Téléchargez l'archive ZIP de l'extension :",
+      "step2": "Décompressez l'archive dans un dossier de votre choix (à conserver — l'extension reste chargée depuis ce dossier).",
+      "step3": "Ouvrez chrome://extensions (ou edge://extensions, brave://extensions) et activez le « Mode développeur » en haut à droite.",
+      "step4": "Cliquez sur « Charger l'extension non empaquetée » et sélectionnez le dossier décompressé.",
+      "step5": "Générez un token API depuis ",
+      "tokensLink": "Profile > Tokens API",
+      "step6": "Ouvrez les options de l'extension (icône ⚙ dans le popup) et collez votre URL d'instance + le token. Cliquez sur « Tester la connexion ».",
+      "devWarn": "Le mode développeur est nécessaire car l'extension n'est pas (encore) sur le Chrome Web Store. C'est sans danger : le code est ouvert et fait partie du dépôt MeteorEdit.",
+      "download": "Télécharger l'extension (.zip)"
     }
   },
   "telegram": {

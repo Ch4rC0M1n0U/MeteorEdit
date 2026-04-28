@@ -818,6 +818,20 @@
       "clear": "Remove",
       "cleared": "Session removed",
       "clearConfirm": "Remove the {platform} session? Tools will no longer be able to act authenticated on this platform."
+    },
+    "install": {
+      "button": "Install extension",
+      "title": "Install the browser extension",
+      "intro": "The extension lets you send authentication cookies (Instagram, Facebook, X, LinkedIn, etc.) to your MeteorEdit instance so that the tools can scrape authenticated on your behalf.",
+      "step1": "Download the extension ZIP archive:",
+      "step2": "Unzip it into a folder you'll keep — the extension is loaded from there.",
+      "step3": "Open chrome://extensions (or edge://extensions, brave://extensions) and enable Developer mode in the top right.",
+      "step4": "Click 'Load unpacked' and select the unzipped folder.",
+      "step5": "Generate an API token from ",
+      "tokensLink": "Profile > API Tokens",
+      "step6": "Open the extension options (gear icon in the popup), paste your instance URL + the token, then click 'Test connection'.",
+      "devWarn": "Developer mode is required because the extension isn't (yet) on the Chrome Web Store. It's safe: the source is open and part of the MeteorEdit repository.",
+      "download": "Download extension (.zip)"
     }
   },
   "telegram": {

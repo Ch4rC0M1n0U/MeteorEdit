@@ -7,6 +7,13 @@
         <p>{{ $t('extension.sessions.subtitle') }}</p>
       </div>
       <Button
+        icon="pi pi-download"
+        size="small"
+        outlined
+        :label="$t('extension.install.button')"
+        @click="installOpen = true"
+      />
+      <Button
         icon="pi pi-refresh"
         size="small"
         text
@@ -27,6 +34,44 @@
         {{ $t('extension.sessions.installHint') }}
       </a>
     </div>
+
+    <Dialog
+      v-model:visible="installOpen"
+      modal
+      dismissable-mask
+      :header="$t('extension.install.title')"
+      :style="{ width: 'min(92vw, 620px)' }"
+    >
+      <div class="esc-install">
+        <p>{{ $t('extension.install.intro') }}</p>
+
+        <ol class="esc-steps">
+          <li>
+            <strong>{{ $t('extension.install.step1') }}</strong>
+            <Button
+              :label="$t('extension.install.download')"
+              icon="pi pi-download"
+              size="small"
+              :loading="downloading"
+              @click="onDownload"
+            />
+          </li>
+          <li>{{ $t('extension.install.step2') }}</li>
+          <li>{{ $t('extension.install.step3') }}</li>
+          <li>{{ $t('extension.install.step4') }}</li>
+          <li>
+            {{ $t('extension.install.step5') }}
+            <a href="#" @click.prevent="goToTokens" class="esc-empty-link">{{ $t('extension.install.tokensLink') }}</a>
+          </li>
+          <li>{{ $t('extension.install.step6') }}</li>
+        </ol>
+
+        <div class="esc-install-warn">
+          <i class="pi pi-info-circle" />
+          <span>{{ $t('extension.install.devWarn') }}</span>
+        </div>
+      </div>
+    </Dialog>
 
     <ul v-else class="esc-list">
       <li v-for="s in sessions" :key="s.platform" class="esc-item">
@@ -65,8 +110,9 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 import SocialIcon from '../common/SocialIcon.vue';
-import api from '../../services/api';
+import api, { SERVER_URL } from '../../services/api';
 
 interface ExtensionSession {
   platform: string;
@@ -83,6 +129,31 @@ const router = useRouter();
 const sessions = ref<ExtensionSession[]>([]);
 const loading = ref(false);
 const clearing = ref<string | null>(null);
+const installOpen = ref(false);
+const downloading = ref(false);
+
+async function onDownload(): Promise<void> {
+  downloading.value = true;
+  try {
+    const url = `${SERVER_URL.replace(/\/$/, '')}/api/extension/download`;
+    // Trigger the browser to download the ZIP
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'meteoredit-extension.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (err: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('common.error'),
+      detail: err.message,
+      life: 5000,
+    });
+  } finally {
+    downloading.value = false;
+  }
+}
 
 const PLATFORM_LABELS: Record<string, string> = {
   instagram: 'Instagram',
@@ -197,4 +268,12 @@ onMounted(load);
 .esc-item-meta { font-size: 11px; color: var(--me-text-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .esc-dot { color: var(--me-text-muted); }
 .esc-via { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 8px; background: var(--me-accent-glow); color: var(--me-accent); font-weight: 600; }
+
+.esc-install { display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
+.esc-install p { margin: 0; color: var(--me-text-secondary); font-size: 13px; }
+.esc-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; color: var(--me-text-secondary); font-size: 13px; line-height: 1.55; }
+.esc-steps li { padding-left: 4px; }
+.esc-steps li strong { display: block; margin-bottom: 4px; color: var(--me-text-primary); }
+.esc-install-warn { display: flex; gap: 8px; padding: 10px 12px; border-radius: var(--me-radius-sm); background: rgba(245, 158, 11, 0.12); color: #b45309; font-size: 12px; }
+.esc-install-warn i { font-size: 16px; flex-shrink: 0; }
 </style>

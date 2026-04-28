@@ -1,4 +1,7 @@
 import { Response } from 'express';
+import path from 'path';
+import fs from 'fs';
+import archiver from 'archiver';
 import type { ExtensionRequest } from '../middleware/extensionAuth';
 import User from '../models/User';
 import SocialCookie, { SUPPORTED_PLATFORMS, SocialPlatform } from '../models/SocialCookie';
@@ -132,6 +135,39 @@ export async function listMySessions(req: any, res: Response): Promise<void> {
     });
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
+  }
+}
+
+/**
+ * GET /api/extension/download
+ * Public endpoint that streams the extension folder as a ZIP, ready to be
+ * loaded as an unpacked extension (Chrome/Edge/Brave).
+ */
+export async function downloadExtension(_req: any, res: Response): Promise<void> {
+  try {
+    // From server/dist/controllers/extensionController.js → up to /app
+    const extensionRoot = path.resolve(__dirname, '..', '..', 'extension');
+    if (!fs.existsSync(extensionRoot)) {
+      res.status(500).json({ message: 'Extension folder not found on server' });
+      return;
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="meteoredit-extension.zip"');
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('error', (err) => {
+      console.error('[extension.download] archive error:', err);
+      try { res.end(); } catch { /* already closed */ }
+    });
+    archive.pipe(res);
+    archive.directory(extensionRoot, false);
+    await archive.finalize();
+  } catch (err: unknown) {
+    console.error('[extension.download] error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
+    }
   }
 }
 
