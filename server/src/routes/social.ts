@@ -339,21 +339,20 @@ router.post('/whatsapp/pair', authenticate, whatsappPair);
 // Inline auth middleware that verifies the JWT directly from req.query.token.
 import jwtLib from 'jsonwebtoken';
 router.get('/whatsapp/qr', (req: any, res, next) => {
+  // DECISIVE TEST: unique error messages to confirm this middleware is reached
+  console.error('[whatsapp/qr] ENTERED MIDDLEWARE');
+  process.stdout.write('[whatsapp/qr] STDOUT WRITE\n');
   const token = typeof req.query.token === 'string' ? req.query.token : null;
-  console.log('[whatsapp/qr] token present:', !!token, 'len:', token?.length, 'queryKeys:', Object.keys(req.query));
   if (!token) {
-    console.log('[whatsapp/qr] REJECTED: no token in query');
-    res.status(401).json({ message: 'Token required' });
+    res.status(401).json({ message: 'WAQR_NO_TOKEN' });
     return;
   }
   try {
     const decoded = jwtLib.verify(token, process.env.JWT_SECRET!) as any;
-    console.log('[whatsapp/qr] JWT verified, userId:', decoded.userId);
     req.user = decoded;
     next();
   } catch (err: any) {
-    console.log('[whatsapp/qr] REJECTED: JWT verify failed:', err?.name, err?.message);
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'WAQR_INVALID_TOKEN', err: err?.name });
   }
 }, whatsappQrStream);
 
