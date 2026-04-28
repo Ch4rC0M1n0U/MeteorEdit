@@ -122,6 +122,7 @@
     "scanStarted": "Scan gestart",
     "scanFailed": "Scan mislukt",
     "scanCancelled": "Scan geannuleerd",
+    "quotaExceeded": "Dagelijkse quota bereikt. Probeer het morgen opnieuw of vraag een beheerder de limiet te verhogen.",
     "results": "Resultaten",
     "found": "Gevonden",
     "errors": "Fouten",

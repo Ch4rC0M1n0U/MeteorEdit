@@ -231,6 +231,7 @@ export const usePhoneScannerStore = defineStore('phoneScanner', () => {
     found: number;
     errors: number;
     status: PhoneScan['status'];
+    errorMessage?: string;
   }): void {
     if (!currentScan.value) return;
     currentScan.value.progress = {
@@ -239,6 +240,9 @@ export const usePhoneScannerStore = defineStore('phoneScanner', () => {
       errors: payload.errors,
     };
     currentScan.value.status = payload.status;
+    if (payload.errorMessage) {
+      currentScan.value.errorMessage = payload.errorMessage;
+    }
     if (currentScan.value._id) loadResults(currentScan.value._id).catch(() => {});
   }
 

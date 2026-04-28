@@ -438,6 +438,29 @@ watch(() => props.visible, async (v) => {
   }
 });
 
+// Notify the user when a scan ends abnormally (rate-limit / failure)
+watch(
+  () => store.currentScan?.status,
+  (newStatus, oldStatus) => {
+    if (!newStatus || newStatus === oldStatus) return;
+    if (newStatus === 'rate_limited') {
+      toast.add({
+        severity: 'warn',
+        summary: t('phoneScanner.scanStatus.rate_limited'),
+        detail: store.currentScan?.errorMessage || t('phoneScanner.quotaExceeded'),
+        life: 8000,
+      });
+    } else if (newStatus === 'failed') {
+      toast.add({
+        severity: 'error',
+        summary: t('phoneScanner.scanStatus.failed'),
+        detail: store.currentScan?.errorMessage || t('phoneScanner.scanFailed'),
+        life: 8000,
+      });
+    }
+  }
+);
+
 onMounted(() => {
   if (props.visible) {
     store.loadSettings();

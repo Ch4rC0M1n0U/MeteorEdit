@@ -122,6 +122,7 @@
     "scanStarted": "Scan lancé",
     "scanFailed": "Échec du scan",
     "scanCancelled": "Scan annulé",
+    "quotaExceeded": "Quota quotidien atteint. Réessayez demain ou demandez à un administrateur d'augmenter la limite.",
     "results": "Résultats",
     "found": "Trouvés",
     "errors": "Erreurs",

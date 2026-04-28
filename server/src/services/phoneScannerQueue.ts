@@ -89,8 +89,10 @@ class PhoneScannerQueue {
         }
 
         // Check daily quotas
-        if (await this.isQuotaExceeded(userId, settings)) {
+        const quotaReason = await this.getQuotaExceededReason(userId, settings);
+        if (quotaReason) {
           scan.status = 'rate_limited';
+          scan.errorMessage = quotaReason;
           break;
         }
 
@@ -139,6 +141,7 @@ class PhoneScannerQueue {
         errors,
         total: numbers.length,
         status: scan.status,
+        errorMessage: scan.errorMessage,
       });
 
       await logActivity(
@@ -222,26 +225,26 @@ class PhoneScannerQueue {
     }
   }
 
-  private async isQuotaExceeded(
+  private async getQuotaExceededReason(
     userId: string,
     settings: { maxDailyChecksGlobal: number; maxDailyChecksPerUser: number; globalDailyCounter: { date: string; count: number } }
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     const today = todayDateKey();
 
     // Global counter
     if (settings.globalDailyCounter.date === today
         && settings.globalDailyCounter.count >= settings.maxDailyChecksGlobal) {
-      return true;
+      return `Quota global atteint (${settings.globalDailyCounter.count}/${settings.maxDailyChecksGlobal} numéros/jour)`;
     }
 
     // User counter
     const record = await SocialCookie.findOne({ userId, platform: 'whatsapp' });
     const userCounter = record?.dailyScanCounter;
     if (userCounter?.date === today && userCounter.count >= settings.maxDailyChecksPerUser) {
-      return true;
+      return `Quota personnel atteint (${userCounter.count}/${settings.maxDailyChecksPerUser} numéros/jour). Réinitialisation à minuit.`;
     }
 
-    return false;
+    return null;
   }
 
   private async incrementDailyCounters(
