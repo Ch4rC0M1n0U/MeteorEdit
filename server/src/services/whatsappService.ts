@@ -238,28 +238,49 @@ class WhatsappService {
       const contactId = numberId._serialized;
       const profile: WAProfile = {};
 
-      try {
-        const contact = await state.client.getContactById(contactId);
-        profile.name = contact.pushname || contact.name || contact.shortName || undefined;
-        profile.isBusiness = contact.isBusiness ?? false;
+      // Detect self-lookup: WA Web's getContactById/getProfilePicUrl return
+      // mostly nothing for the account that is currently connected. We must
+      // read from client.info instead.
+      const selfWid: string | undefined = (state.client as any).info?.wid?._serialized;
+      const isSelf = !!selfWid && selfWid === contactId;
+
+      if (isSelf) {
+        const info: any = (state.client as any).info;
+        profile.name = info?.pushname || undefined;
         try {
-          const about = await contact.getAbout();
-          if (about) profile.about = about;
-        } catch {
-          // about may be private
+          const aboutRes = await (state.client as any).getStatus?.(contactId);
+          if (aboutRes?.status) profile.about = aboutRes.status;
+        } catch { /* about may be unavailable */ }
+        try {
+          const avatarUrl = await state.client.getProfilePicUrl(contactId);
+          if (avatarUrl) profile.avatarUrl = avatarUrl;
+        } catch { /* avatar may be unavailable */ }
+        profile.isBusiness = !!info?.platform && info.platform === 'business';
+      } else {
+        try {
+          const contact = await state.client.getContactById(contactId);
+          profile.name = contact.pushname || contact.name || contact.shortName || undefined;
+          profile.isBusiness = contact.isBusiness ?? false;
+          try {
+            const about = await contact.getAbout();
+            if (about) profile.about = about;
+          } catch { /* about may be private */ }
+        } catch (err) {
+          console.warn('[whatsappService] getContactById failed:', err);
         }
-      } catch (err) {
-        console.warn('[whatsappService] getContactById failed:', err);
+        try {
+          const avatarUrl = await state.client.getProfilePicUrl(contactId);
+          if (avatarUrl) profile.avatarUrl = avatarUrl;
+        } catch { /* avatar may be private */ }
       }
 
-      try {
-        const avatarUrl = await state.client.getProfilePicUrl(contactId);
-        if (avatarUrl) profile.avatarUrl = avatarUrl;
-      } catch {
-        // avatar may be private
-      }
+      console.log('[whatsappService.getProfile]', phoneE164, {
+        isSelf,
+        hasName: !!profile.name,
+        hasAvatar: !!profile.avatarUrl,
+        hasAbout: !!profile.about,
+      });
 
-      // Persist last used timestamp
       await SocialCookie.updateOne(
         { userId, platform: 'whatsapp' },
         { $set: { 'whatsappWebSession.lastUsedAt': new Date() } }
