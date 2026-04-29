@@ -897,6 +897,57 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
+    // ── WhatsApp short-circuit: use WA Web (whatsapp-web.js) ──
+    // wa.me is not scrapable via Puppeteer (no profile HTML). The user's
+    // paired WA Web session returns name + photo + about + business badge.
+    if (platform === 'whatsapp') {
+      try {
+        const { scrapeWhatsAppFromWeb } = await import('../scrapers/whatsappFromWeb');
+        const profileData = await scrapeWhatsAppFromWeb(userId, url);
+        const tiptapContent = buildTipTapContent(profileData, platform, url);
+        const platformLabel = 'Whatsapp';
+        const nodeTitle = `${profileData.displayName} — Profil ${platformLabel}`;
+
+        const node = await DossierNode.create({
+          dossierId,
+          parentId: parentId || null,
+          type: 'note',
+          title: nodeTitle,
+          content: tiptapContent,
+        });
+
+        await logActivity(userId, 'social.scrape', 'node', node._id.toString(), {
+          dossierId, platform, url, username: profileData.username, source: 'wa-web',
+        }, ip, ua);
+
+        res.json({
+          message: 'Profil WhatsApp extrait avec succès',
+          node: {
+            _id: node._id,
+            dossierId: node.dossierId,
+            parentId: node.parentId,
+            type: node.type,
+            title: node.title,
+            content: node.content,
+            createdAt: (node as any).createdAt,
+          },
+          profile: {
+            platform: profileData.platform,
+            username: profileData.username,
+            displayName: profileData.displayName,
+            stats: profileData.stats,
+          },
+        });
+      } catch (err: any) {
+        const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+        const status = /n'est pas enregistré/.test(msg) ? 404
+          : /session WhatsApp Web/.test(msg) ? 412
+          : 500;
+        res.status(status).json({ message: msg });
+      }
+      return;
+    }
+
     // ── Load encrypted cookies ──
     let cookies: any[] = [];
     const cookieRecord = await SocialCookie.findOne({ userId, platform });
