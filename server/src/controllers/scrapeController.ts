@@ -904,6 +904,14 @@ export async function scrapeProfile(req: AuthRequest, res: Response): Promise<vo
       try {
         const { scrapeWhatsAppFromWeb } = await import('../scrapers/whatsappFromWeb');
         const profileData = await scrapeWhatsAppFromWeb(userId, url);
+
+        // Download the avatar locally (WA URLs expire and are blocked by the
+        // client-side ImageGuard). Replace the remote URL with the local one.
+        if (profileData.profileImageUrl?.startsWith('http')) {
+          const localPath = await downloadImageNodeFetch(profileData.profileImageUrl, 'profile');
+          if (localPath) profileData.profileImageUrl = localPath;
+        }
+
         const tiptapContent = buildTipTapContent(profileData, platform, url);
         const platformLabel = 'Whatsapp';
         const nodeTitle = `${profileData.displayName} — Profil ${platformLabel}`;

@@ -60,18 +60,28 @@ export async function scrapeWhatsAppFromWeb(
   const profile = await whatsappService.getProfile(userId, phoneE164);
 
   const username = phoneE164.replace(/^\+/, '');
+  const hasAnyData = !!(profile?.name || profile?.about || profile?.avatarUrl);
+  const displayName = profile?.name
+    || (hasAnyData ? username : `${username} (compte WhatsApp actif — profil privé)`);
+
   return {
     platform: 'whatsapp',
     username,
-    displayName: profile?.name || username,
-    bio: profile?.about || '',
+    displayName,
+    bio: profile?.about || (profile?.avatarUrl ? '' : 'Aucune information publique disponible. Le titulaire de ce numéro a probablement réglé sa confidentialité sur "Mes contacts" pour la photo de profil et le statut.'),
     profileImageUrl: profile?.avatarUrl || '',
-    stats: {},
+    stats: {
+      'Compte WhatsApp': 'actif',
+      ...(profile?.isBusiness ? { Type: 'Business' } : {}),
+    },
     registrationDate: null,
     extraImages: [],
     rawMetadata: {
       phoneE164,
       isBusiness: !!profile?.isBusiness,
+      hasName: !!profile?.name,
+      hasAvatar: !!profile?.avatarUrl,
+      hasAbout: !!profile?.about,
       source: 'wa-web',
     },
   };
