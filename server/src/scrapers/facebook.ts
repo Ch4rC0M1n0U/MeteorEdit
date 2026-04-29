@@ -183,10 +183,108 @@ export async function scrape(page: Page, url: string): Promise<ProfileData> {
         if (entityMatch) userId = entityMatch[1];
       }
 
+      // ══════════════════════════════════════════════════════════
+      // BUSINESS PAGE EXTRACTION (Salon, Restaurant, Shop, etc.)
+      // Triggered by "Page · <Category>" badge in the main content
+      // ══════════════════════════════════════════════════════════
+      const pageInfo: Record<string, string> = {};
+      const isPage = !!(mainContent?.textContent?.match(/(?:^|\s)Page\s*[·•]\s/));
+
+      if (mainContent && isPage) {
+        const mainText = mainContent.textContent || '';
+
+        // Page category (after "Page · ")
+        const categoryMatch = mainText.match(/Page\s*[·•]\s*([^\n·•]{2,80}?)(?=\s*(?:Profil|·|•|\n|Suivre|Message|WhatsApp|J'aime|Like|$))/);
+        if (categoryMatch) pageInfo.category = categoryMatch[1].trim();
+
+        // Recommandé par X% (Y avis)  /  Recommended by X% (Y reviews)
+        const recoMatch = mainText.match(/(?:Recommand[ée]\s*par|Recommended\s*by)\s*(\d+\s*%)[^\d]+(\d[\d\s,.]*)\s*(?:avis|reviews)/i);
+        if (recoMatch) {
+          pageInfo.recommendationRate = recoMatch[1].trim();
+          pageInfo.reviewCount = recoMatch[2].trim().replace(/\s/g, '');
+        }
+
+        // Fourchette de prix (€, €€, €€€, €€€€)  /  Price range
+        const priceMatch = mainText.match(/(?:Fourchette\s*de\s*prix|Price\s*range)[^€$£]*([€$£]{1,4})/i);
+        if (priceMatch) pageInfo.priceRange = priceMatch[1];
+
+        // Status horaires (Actuellement ouvert / Currently open / Fermé maintenant)
+        if (/Actuellement\s+ouvert|Currently\s+open|Open\s+now/i.test(mainText)) pageInfo.openStatus = 'Ouvert maintenant';
+        else if (/Actuellement\s+ferm[ée]|Currently\s+closed|Closed\s+now/i.test(mainText)) pageInfo.openStatus = 'Fermé maintenant';
+
+        // Address: anchor with maps href OR text starting with a number+street pattern
+        const mapsLink = mainContent.querySelector('a[href*="maps.google"], a[href*="maps/place"], a[href*="l.facebook.com/l.php"][href*="maps"]') as HTMLAnchorElement | null;
+        if (mapsLink) {
+          const text = mapsLink.textContent?.trim() || '';
+          if (text.length > 5 && text.length < 250) pageInfo.address = text;
+        }
+
+        // Website: external link in intro section (not facebook.com / l.facebook.com tracker)
+        const links = Array.from(mainContent.querySelectorAll('a[href]')) as HTMLAnchorElement[];
+        for (const a of links) {
+          const href = a.href || '';
+          // l.facebook.com is a tracking redirect — extract the actual u= param
+          let realUrl = href;
+          const lMatch = href.match(/l\.facebook\.com\/l\.php\?u=([^&]+)/);
+          if (lMatch) {
+            try { realUrl = decodeURIComponent(lMatch[1]); } catch { /* keep */ }
+          }
+          if (!realUrl.startsWith('http')) continue;
+          const host = (() => { try { return new URL(realUrl).host; } catch { return ''; } })();
+          if (!host || /facebook\.com|messenger\.com|fb\.me|fb\.com/i.test(host)) continue;
+          // Skip social platforms unless it's the only thing
+          if (!pageInfo.website) pageInfo.website = realUrl;
+          else if (/instagram\.com|tiktok\.com|x\.com|twitter\.com|wa\.me|whatsapp\.com/.test(host)) {
+            // Track as additional social link
+            const k = host.split('.')[host.split('.').length - 2] || host;
+            if (!pageInfo[`social_${k}`]) pageInfo[`social_${k}`] = realUrl;
+          }
+        }
+
+        // Phone: tel: links
+        const telLink = mainContent.querySelector('a[href^="tel:"]') as HTMLAnchorElement | null;
+        if (telLink) {
+          pageInfo.phone = telLink.getAttribute('href')?.replace(/^tel:/, '').trim() || telLink.textContent?.trim() || '';
+        }
+
+        // Email: mailto: links
+        const mailLink = mainContent.querySelector('a[href^="mailto:"]') as HTMLAnchorElement | null;
+        if (mailLink) {
+          pageInfo.email = mailLink.getAttribute('href')?.replace(/^mailto:/, '').trim() || '';
+        }
+
+        // WhatsApp button (aria-label or href)
+        const waLink = mainContent.querySelector('a[href*="wa.me"], a[href*="whatsapp.com/send"], a[aria-label*="WhatsApp" i]') as HTMLAnchorElement | null;
+        if (waLink) {
+          const href = waLink.href || '';
+          const lMatch = href.match(/l\.facebook\.com\/l\.php\?u=([^&]+)/);
+          let realUrl = href;
+          if (lMatch) { try { realUrl = decodeURIComponent(lMatch[1]); } catch { /* keep */ } }
+          const phoneMatch = realUrl.match(/wa\.me\/(?:\+)?(\d+)/);
+          if (phoneMatch) pageInfo.whatsapp = '+' + phoneMatch[1];
+          else pageInfo.whatsapp = realUrl;
+        }
+
+        // Followers count: "3,4 K followers" or "3.4K followers"
+        const followersM = mainText.match(/([\d\s,.]+\s*[KkMm]?)\s*(?:followers?|abonnés?|abonnees?)/i);
+        if (followersM) pageInfo.followers = followersM[1].trim();
+      }
+
+      // ── JSON-LD structured data (richest source for businesses) ──
+      const ldJsonScripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+      const ldData: any[] = [];
+      for (const s of ldJsonScripts) {
+        try {
+          const parsed = JSON.parse(s.textContent || '');
+          if (parsed) ldData.push(parsed);
+        } catch { /* invalid JSON */ }
+      }
+
       return {
         nameFromH1, nameFromTitle, profilePic, coverUrl,
         bio, bioPagelet, ogDesc,
         introItems, stats, userId,
+        isPage, pageInfo, ldData,
       };
     });
 
@@ -212,11 +310,76 @@ export async function scrape(page: Page, url: string): Promise<ProfileData> {
     }
 
     // ══════════════════════════════════════════════════════════
+    // BUSINESS PAGE: apply pageInfo + JSON-LD enrichment
+    // ══════════════════════════════════════════════════════════
+    if (domData.isPage) {
+      result.rawMetadata.isPage = true;
+      const pi = domData.pageInfo || {};
+      if (pi.category) result.rawMetadata.category = pi.category;
+      if (pi.address) result.rawMetadata.address = pi.address;
+      if (pi.website) result.rawMetadata.website = pi.website;
+      if (pi.phone) result.rawMetadata.phone = pi.phone;
+      if (pi.email) result.rawMetadata.email = pi.email;
+      if (pi.whatsapp) result.rawMetadata.whatsapp = pi.whatsapp;
+      if (pi.priceRange) result.rawMetadata.priceRange = pi.priceRange;
+      if (pi.openStatus) result.rawMetadata.openStatus = pi.openStatus;
+      if (pi.recommendationRate) result.rawMetadata.recommendationRate = pi.recommendationRate;
+      if (pi.reviewCount) result.rawMetadata.reviewCount = pi.reviewCount;
+      if (pi.followers && !result.stats.followers) result.stats.followers = pi.followers;
+      // Other social links collected
+      for (const k of Object.keys(pi)) {
+        if (k.startsWith('social_')) {
+          result.rawMetadata[k.replace(/^social_/, 'socialLink_')] = pi[k];
+        }
+      }
+    }
+
+    // JSON-LD enrichment (often provides street/city/country, tel, openingHours)
+    if (Array.isArray(domData.ldData) && domData.ldData.length > 0) {
+      for (const ld of domData.ldData) {
+        const nodes = Array.isArray(ld) ? ld : (ld['@graph'] ? ld['@graph'] : [ld]);
+        for (const n of nodes) {
+          if (!n || typeof n !== 'object') continue;
+          const type = String(n['@type'] || '').toLowerCase();
+
+          // Address
+          if (n.address && typeof n.address === 'object') {
+            const a = n.address;
+            const parts = [a.streetAddress, a.postalCode, a.addressLocality, a.addressRegion, a.addressCountry].filter(Boolean);
+            if (parts.length > 0 && !result.rawMetadata.address) result.rawMetadata.address = parts.join(', ');
+            if (a.addressCountry && !result.rawMetadata.country) result.rawMetadata.country = a.addressCountry;
+            if (a.addressLocality && !result.rawMetadata.currentCity) result.rawMetadata.currentCity = a.addressLocality;
+          }
+
+          if (n.telephone && !result.rawMetadata.phone) result.rawMetadata.phone = String(n.telephone);
+          if (n.email && !result.rawMetadata.email) result.rawMetadata.email = String(n.email);
+          if (n.url && !result.rawMetadata.website && !/facebook\.com/i.test(String(n.url))) {
+            result.rawMetadata.website = String(n.url);
+          }
+          if (n.priceRange && !result.rawMetadata.priceRange) result.rawMetadata.priceRange = String(n.priceRange);
+          if (n.openingHours && !result.rawMetadata.openingHours) {
+            result.rawMetadata.openingHours = Array.isArray(n.openingHours) ? n.openingHours.join('; ') : String(n.openingHours);
+          }
+          if (n.aggregateRating && typeof n.aggregateRating === 'object') {
+            const r = n.aggregateRating;
+            if (r.ratingValue && !result.rawMetadata.rating) result.rawMetadata.rating = `${r.ratingValue}${r.bestRating ? '/' + r.bestRating : ''}`;
+            if (r.reviewCount && !result.rawMetadata.reviewCount) result.rawMetadata.reviewCount = String(r.reviewCount);
+          }
+          if (type.includes('localbusiness') || type.includes('store') || type.includes('organization')) {
+            result.rawMetadata.isPage = true;
+            if (n.description && !result.bio) result.bio = String(n.description);
+          }
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════
     // ABOUT PAGE: Navigate to "À propos" tab for structured personal info
     // This is the MOST RELIABLE source for intro items (location, hometown, gender)
     // ══════════════════════════════════════════════════════════
 
-    if (domData.introItems.length === 0) {
+    // Visit /about tab if intro items missing (personal profile) OR if it's a business page
+    if (domData.introItems.length === 0 || domData.isPage) {
       console.log(`[Facebook] No intro items from main page, navigating to About tab...`);
       try {
         // Build about URL from the profile URL
@@ -235,11 +398,12 @@ export async function scrape(page: Page, url: string): Promise<ProfileData> {
 
         const aboutData = await page.evaluate(() => {
           const mainContent = document.querySelector('[role="main"]');
-          if (!mainContent) return { items: [] };
+          if (!mainContent) return { items: [] as string[], pageDetails: {} as Record<string, string> };
 
           const INTRO_PATTERN = /^(?:Habite à |Vit à |Lives in |De [A-ZÀ-Ü]|From [A-Z]|Femme$|Homme$|Female$|Male$|Non[ -]binaire$|Non-binary$|Travaille |Works at |A étudié à |Studied at |Célibataire$|En couple$|Marié|Single$|In a relationship$|Married$|Né le |Born on |Né en |Born in |Veuf|Divorcé|Widowed$|Divorced$|Pacsé|Fiancé)/i;
 
           const items: string[] = [];
+          const pageDetails: Record<string, string> = {};
 
           // Scan LEAF spans only (no child spans = no concatenation issues)
           const allSpans = Array.from(mainContent.querySelectorAll('span'));
@@ -252,13 +416,60 @@ export async function scrape(page: Page, url: string): Promise<ProfileData> {
             }
           }
 
-          return { items };
+          // Page-specific labelled rows: each row is a label like "Adresse" / "Téléphone" / "Site web"
+          // followed by its value. Since Facebook structure varies, we look for KNOWN
+          // labels and grab the next non-empty sibling text.
+          const allText = mainContent.textContent || '';
+          const labels: Array<[string, RegExp]> = [
+            ['phone', /(?:T[ée]l[ée]phone|Téléphone|Phone)\s*[:•·]?\s*([+\d][\d\s().+\-]{6,30})/i],
+            ['email', /(?:Email|E-mail|Courriel)\s*[:•·]?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i],
+            ['founded', /(?:Cr[ée]ation|Cr[ée]é(?:e)? le|Founded|Date\s*de\s*cr[ée]ation)\s*[:•·]?\s*(\d{1,2}[\/\s][a-zéûàùîôA-Z]{3,12}[\/\s]\d{2,4}|[a-zA-ZàéèêÀÉÈÊ]+\s+\d{4}|\d{4})/i],
+            ['founders', /(?:Fondateur(?:s)?|Founder[s]?)\s*[:•·]?\s*([^\n]{2,150})/i],
+            ['mission', /(?:Mission|Notre\s*mission|Our\s*mission)\s*[:•·]?\s*([^\n]{10,400})/i],
+            ['products', /(?:Produits|Products|Nos\s*produits)\s*[:•·]?\s*([^\n]{2,250})/i],
+            ['services', /(?:Services|Nos\s*services)\s*[:•·]?\s*([^\n]{2,250})/i],
+            ['businessHours', /(?:Heures\s*d['']ouverture|Opening\s*hours|Horaires)\s*[:•·]?\s*([^\n]{5,250})/i],
+          ];
+          for (const [key, re] of labels) {
+            const m = allText.match(re);
+            if (m) pageDetails[key] = m[1].trim();
+          }
+
+          // Long "About" / "À propos" descriptive paragraph (often a div with long text)
+          const candidates = Array.from(mainContent.querySelectorAll('div, p, span'));
+          let longDesc = '';
+          for (const c of candidates) {
+            if (c.querySelector('div, p, span')) continue;
+            const t = (c.textContent || '').trim();
+            if (t.length > 80 && t.length < 1500 && !pageDetails.longDescription) {
+              // Avoid grabbing legal disclaimers or login prompts
+              if (/Conditions d['']utilisation|Politique de confidentialit[ée]|Cookies|Connectez-vous|Sign\s*up|Log\s*in/i.test(t)) continue;
+              longDesc = t;
+              break;
+            }
+          }
+          if (longDesc) pageDetails.longDescription = longDesc;
+
+          return { items, pageDetails };
         });
 
-        console.log(`[Facebook] About page: found ${aboutData.items.length} intro items: ${JSON.stringify(aboutData.items)}`);
+        console.log(`[Facebook] About page: ${aboutData.items.length} intro items, pageDetails keys=${Object.keys(aboutData.pageDetails || {}).join(',')}`);
 
         if (aboutData.items.length > 0) {
           result.rawMetadata.introCardItems = aboutData.items.map(label => ({ label }));
+        }
+        // Apply page-specific details (only fill blanks)
+        const pd = aboutData.pageDetails || {};
+        if (pd.phone && !result.rawMetadata.phone) result.rawMetadata.phone = pd.phone;
+        if (pd.email && !result.rawMetadata.email) result.rawMetadata.email = pd.email;
+        if (pd.founded) result.rawMetadata.founded = pd.founded;
+        if (pd.founders) result.rawMetadata.founders = pd.founders;
+        if (pd.mission) result.rawMetadata.mission = pd.mission;
+        if (pd.products) result.rawMetadata.products = pd.products;
+        if (pd.services && !result.rawMetadata.services) result.rawMetadata.services = pd.services;
+        if (pd.businessHours && !result.rawMetadata.openingHours) result.rawMetadata.openingHours = pd.businessHours;
+        if (pd.longDescription && (!result.bio || result.bio.length < pd.longDescription.length)) {
+          result.bio = pd.longDescription;
         }
       } catch (err: any) {
         console.warn(`[Facebook] About page navigation failed:`, err.message);

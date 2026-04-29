@@ -176,6 +176,26 @@ function buildTipTapContent(profile: ProfileData, platform: string, sourceUrl?: 
   if (meta.isPrivate) rows.push(['Compte privé', meta.isPrivate ? 'Oui' : 'Non']);
   if (meta.isBusiness) rows.push(['Compte pro', 'Oui']);
   if (meta.category) rows.push(['Catégorie', meta.category]);
+  if (meta.address) rows.push(['Adresse', meta.address]);
+  if (meta.phone) rows.push(['Téléphone', meta.phone]);
+  if (meta.whatsapp) rows.push(['WhatsApp', meta.whatsapp]);
+  if (meta.priceRange) rows.push(['Fourchette de prix', meta.priceRange]);
+  if (meta.openStatus) rows.push(['Ouverture', meta.openStatus]);
+  if (meta.openingHours) rows.push(['Horaires', meta.openingHours]);
+  if (meta.rating) rows.push(['Note', meta.rating]);
+  if (meta.recommendationRate) rows.push(['Taux de recommandation', meta.recommendationRate]);
+  if (meta.reviewCount) rows.push(['Nombre d\'avis', meta.reviewCount]);
+  if (meta.isPage) rows.push(['Type', 'Page professionnelle']);
+  if (meta.founded) rows.push(['Date de création', meta.founded]);
+  if (meta.founders) rows.push(['Fondateur(s)', meta.founders]);
+  if (meta.mission) rows.push(['Mission', meta.mission]);
+  if (meta.products) rows.push(['Produits', meta.products]);
+  for (const k of Object.keys(meta)) {
+    if (k.startsWith('socialLink_')) {
+      const label = k.replace(/^socialLink_/, '').replace(/^./, (c) => c.toUpperCase());
+      rows.push([label, meta[k]]);
+    }
+  }
   if (meta.userId) rows.push(['ID utilisateur', String(meta.userId)]);
   if (meta.instagramUserId) rows.push(['Instagram ID', String(meta.instagramUserId)]);
   if (meta.facebookId) rows.push(['Facebook ID', String(meta.facebookId)]);
