@@ -383,7 +383,19 @@ async function dismissCookieBanners(page: any): Promise<void> {
   }
 }
 
+interface PageCapture {
+  screenshotPath: string | null;
+  articleText: string;
+  articleHtml: string;
+  pageTitle: string | null;
+}
+
 async function captureScreenshot(url: string, filename: string, userId?: string): Promise<string | null> {
+  const result = await capturePage(url, filename, userId);
+  return result.screenshotPath;
+}
+
+async function capturePage(url: string, filename: string, userId?: string): Promise<PageCapture> {
   let browser: any = null;
   try {
     const puppeteer = await import('puppeteer-core');
@@ -582,17 +594,51 @@ async function captureScreenshot(url: string, filename: string, userId?: string)
 
     const filepath = path.join(screenshotDir, filename);
     await page.screenshot({ path: filepath, fullPage: true });
+
+    // Extract main page content (article / main / role=main / body) — used to
+    // populate the note when the user did not paste content manually in the
+    // dialog. Run BEFORE closing the browser.
+    const extracted = await page.evaluate(() => {
+      const pickEl = () =>
+        document.querySelector('article')
+        || document.querySelector('[role="main"]')
+        || document.querySelector('main')
+        || document.body;
+
+      const el = pickEl();
+      if (!el) return { html: '', text: '', title: '' };
+
+      // Strip script/style/noscript before reading text
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('script, style, noscript, iframe, [aria-hidden="true"]').forEach((n) => n.remove());
+
+      const text = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+      // Cap at 50KB HTML / 30KB text
+      const html = clone.innerHTML.length > 50000 ? clone.innerHTML.slice(0, 50000) : clone.innerHTML;
+      const limitedText = text.length > 30000 ? text.slice(0, 30000) : text;
+      return {
+        html,
+        text: limitedText,
+        title: document.title || '',
+      };
+    }).catch(() => ({ html: '', text: '', title: '' }));
+
     await browser.close();
     browser = null;
 
-    console.log(`Screenshot captured: ${filepath}`);
-    return `uploads/screenshots/${filename}`;
+    console.log(`[Clipper] Screenshot captured: ${filepath}, extracted ${extracted.text.length} chars of text`);
+    return {
+      screenshotPath: `uploads/screenshots/${filename}`,
+      articleText: extracted.text,
+      articleHtml: extracted.html,
+      pageTitle: extracted.title || null,
+    };
   } catch (err: any) {
     console.error(`[Clipper] Screenshot capture FAILED for ${url}: ${err?.message || err}`);
     if (browser) {
       try { await browser.close(); } catch (_) { /* ignore */ }
     }
-    return null;
+    return { screenshotPath: null, articleText: '', articleHtml: '', pageTitle: null };
   }
 }
 
@@ -845,12 +891,24 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
     const hasAccess = dossier.owner.toString() === userId || dossier.collaborators.map(c => c.toString()).includes(userId);
     if (!hasAccess) { res.status(403).json({ error: 'Accès refusé' }); return; }
 
-    // Capture screenshot BEFORE creating node
+    // Capture screenshot AND extract page content BEFORE creating node
     const filename = `clip-${Date.now()}.png`;
-    console.log(`[Clipper] url="${url}", title="${title}", will capture screenshot: ${!!url}`);
-    const screenshotPath = url ? await captureScreenshot(url, filename, userId) : null;
-    console.log(`[Clipper] screenshotPath=${screenshotPath}`);
+    console.log(`[Clipper] url="${url}", title="${title}", will capture page: ${!!url}`);
+    const captured = url
+      ? await capturePage(url, filename, userId)
+      : { screenshotPath: null as string | null, articleText: '', articleHtml: '', pageTitle: null as string | null };
+    const screenshotPath = captured.screenshotPath;
+    console.log(`[Clipper] screenshotPath=${screenshotPath}, articleText=${captured.articleText.length} chars`);
     const baseUrl = getBaseUrl(req);
+
+    // Detect "fallback content" sent by the dialog when the user did not paste
+    // anything (HTML wrapping the i18n placeholder). In that case we prefer the
+    // server-extracted article text.
+    const fallbackPattern = /<p>\s*(?:Contenu\s+capturé\s+depuis|Content\s+captured\s+from|Inhoud\s+vastgelegd\s+van)/i;
+    const userPastedNothing = !content || fallbackPattern.test(content);
+    const effectiveText = (userPastedNothing && captured.articleText)
+      ? captured.articleText
+      : (textContent || (typeof content === 'string' ? content.replace(/<[^>]+>/g, ' ').substring(0, 50000) : ''));
 
     // Build TipTap-compatible JSON content
     const tiptapNodes: any[] = [
@@ -895,11 +953,21 @@ export async function clipWebContent(req: AuthRequest, res: Response): Promise<v
       });
     }
 
-    // Add text content
-    tiptapNodes.push({
-      type: 'paragraph',
-      content: [{ type: 'text', text: textContent || content.replace(/<[^>]+>/g, ' ').substring(0, 50000) }],
-    });
+    // Add text content — split on paragraph breaks so the editor renders proper
+    // paragraphs instead of a single wall of text.
+    const paragraphs: string[] = effectiveText
+      .split(/\n{2,}|(?<=[.!?])\s{2,}/)
+      .map((p: string) => p.trim())
+      .filter((p: string) => p.length > 0);
+
+    if (paragraphs.length === 0 && effectiveText) paragraphs.push(effectiveText);
+
+    for (const p of paragraphs) {
+      tiptapNodes.push({
+        type: 'paragraph',
+        content: [{ type: 'text', text: p }],
+      });
+    }
 
     const tiptapContent = { type: 'doc', content: tiptapNodes };
 
