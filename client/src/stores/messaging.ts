@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '../services/api';
 import { getSocket } from '../services/socket';
+import { encryptDmBody, decryptDmBody } from '../utils/messageEncryption';
+import { useEncryptionStore } from './encryption';
 
 export interface MessageAuthor {
   _id: string;
@@ -43,6 +45,14 @@ export interface ChatConversation {
 export interface ReadState {
   userId: string;
   lastReadMessageId: string;
+}
+
+export interface DmContact {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  avatarUrl?: string | null;
 }
 
 export const useMessagingStore = defineStore('messaging', () => {
@@ -141,6 +151,68 @@ export const useMessagingStore = defineStore('messaging', () => {
     } finally {
       loading.value = false;
     }
+  }
+
+  // Cache of decrypted DM bodies keyed by message _id (avoid re-decrypting)
+  const decryptedCache = ref<Map<string, string>>(new Map());
+
+  async function loadDmContacts(): Promise<DmContact[]> {
+    const { data } = await api.get<{ contacts: DmContact[] }>('/messaging/contacts');
+    return data.contacts;
+  }
+
+  async function openDirectWith(peerId: string): Promise<ChatConversation> {
+    const { data } = await api.post<{ conversation: ChatConversation }>(
+      '/messaging/conversations/direct',
+      { peerId }
+    );
+    const existing = conversations.value.find((c) => c._id === data.conversation._id);
+    if (!existing) conversations.value.unshift(data.conversation);
+    else Object.assign(existing, data.conversation);
+    return data.conversation;
+  }
+
+  async function getPeerPublicKey(userId: string): Promise<string | null> {
+    const { data } = await api.get<{ publicKey: string | null }>(
+      `/messaging/users/${userId}/pubkey`
+    );
+    return data.publicKey;
+  }
+
+  async function sendDmMessage(
+    conversation: ChatConversation,
+    body: string,
+    myUserId: string
+  ): Promise<ChatMessage | null> {
+    if (!body.trim()) return null;
+
+    // Build recipients map: every participant of the conversation
+    const recipients: Record<string, string> = {};
+    for (const p of conversation.participants) {
+      const pub = await getPeerPublicKey(p._id);
+      if (!pub) {
+        throw new Error(
+          `Le destinataire ${p.firstName ?? p.email} n'a pas activé le chiffrement E2E. Demandez-lui de le configurer dans Profile > Chiffrement.`
+        );
+      }
+      recipients[p._id] = pub;
+    }
+    if (!recipients[myUserId]) {
+      throw new Error('Vous devez activer le chiffrement E2E sur votre compte pour envoyer un DM.');
+    }
+
+    const ciphertext = await encryptDmBody(body, recipients);
+    return sendMessage(conversation._id, ciphertext, { isEncrypted: true });
+  }
+
+  async function decryptDmMessage(message: ChatMessage, myUserId: string): Promise<string | null> {
+    if (!message.isEncrypted) return message.body;
+    if (decryptedCache.value.has(message._id)) return decryptedCache.value.get(message._id) ?? null;
+    const enc = useEncryptionStore();
+    if (!enc.privateKey) return null;
+    const plain = await decryptDmBody(message.body, myUserId, enc.privateKey);
+    if (plain !== null) decryptedCache.value.set(message._id, plain);
+    return plain;
   }
 
   async function openDossierChannel(dossierId: string): Promise<ChatConversation> {
@@ -254,5 +326,11 @@ export const useMessagingStore = defineStore('messaging', () => {
     markAsRead,
     setActiveConversation,
     reset,
+    loadDmContacts,
+    openDirectWith,
+    getPeerPublicKey,
+    sendDmMessage,
+    decryptDmMessage,
+    decryptedCache,
   };
 });

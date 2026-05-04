@@ -877,7 +877,12 @@
     "editPrompt": "Modifier le message",
     "deleteConfirm": "Supprimer ce message ? Cette action ne peut pas être annulée.",
     "sent": "Envoyé",
-    "readByAll": "Lu par tous"
+    "readByAll": "Lu par tous",
+    "newDmTitle": "Nouvelle conversation privée",
+    "newDmHint": "Choisissez un collaborateur avec qui vous partagez au moins un dossier.",
+    "noContacts": "Aucun contact disponible. Ajoutez des collaborateurs à un de vos dossiers d'abord.",
+    "startDm": "Démarrer la conversation",
+    "dmFailed": "Impossible de démarrer la conversation"
   },
   "telegram": {
     "connectionTitle": "Connexion Telegram",

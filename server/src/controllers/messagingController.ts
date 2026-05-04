@@ -7,7 +7,10 @@ import ReadReceipt from '../models/ReadReceipt';
 import {
   authorizeConversationAccess,
   ensureDossierChannel,
+  shareAtLeastOneDossier,
 } from '../utils/messagingAuthz';
+import User from '../models/User';
+import Dossier from '../models/Dossier';
 import { sanitizeMessageBody, buildPreview } from '../utils/messageSanitize';
 import { getIO } from '../socket';
 import { logActivity } from '../utils/activityLogger';
@@ -376,5 +379,109 @@ export async function markAsRead(req: AuthRequest, res: Response): Promise<void>
     res.json({ success: true });
   } catch (err: unknown) {
     res.status(500).json({ message: err instanceof Error ? err.message : 'Server error' });
+  }
+}
+
+
+/**
+ * GET /api/messaging/contacts
+ * Returns the list of users this user can DM (= shares at least one dossier with).
+ */
+export async function getDmCandidates(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    // All users who own a dossier where I am collaborator OR who are collaborator on a dossier I own/collab on
+    const dossiers = await Dossier.find({
+      $or: [{ owner: userId }, { collaborators: userId }],
+    }).select("owner collaborators").lean();
+
+    const peerIds = new Set<string>();
+    for (const d of dossiers) {
+      if (String(d.owner) !== userId) peerIds.add(String(d.owner));
+      for (const c of d.collaborators) {
+        const cs = String(c);
+        if (cs !== userId) peerIds.add(cs);
+      }
+    }
+
+    if (peerIds.size === 0) { res.json({ contacts: [] }); return; }
+
+    const users = await User.find({ _id: { $in: Array.from(peerIds) } })
+      .select("firstName lastName email avatarUrl")
+      .lean();
+
+    res.json({ contacts: users });
+  } catch (err: unknown) {
+    res.status(500).json({ message: err instanceof Error ? err.message : "Server error" });
+  }
+}
+
+/**
+ * POST /api/messaging/conversations/direct
+ * body: { peerId }
+ * Creates (idempotent) a direct conversation with the given peer if they share a dossier.
+ */
+export async function openDirect(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const peerId = String(req.body?.peerId ?? "");
+    if (!Types.ObjectId.isValid(peerId) || peerId === userId) {
+      res.status(400).json({ message: "Invalid peerId" });
+      return;
+    }
+    const can = await shareAtLeastOneDossier(userId, peerId);
+    if (!can) {
+      res.status(403).json({ message: "You can only DM users you collaborate with on a dossier" });
+      return;
+    }
+
+    // Idempotent lookup: a direct conversation between exactly these two users
+    const existing = await Conversation.findOne({
+      type: "direct",
+      participants: { $all: [new Types.ObjectId(userId), new Types.ObjectId(peerId)], $size: 2 },
+    });
+    if (existing) {
+      const populated = await Conversation.findById(existing._id)
+        .populate("participants", "firstName lastName email avatarUrl")
+        .lean();
+      res.json({ conversation: populated });
+      return;
+    }
+
+    const conv = await Conversation.create({
+      type: "direct",
+      participants: [new Types.ObjectId(userId), new Types.ObjectId(peerId)],
+      createdBy: new Types.ObjectId(userId),
+    });
+    const populated = await Conversation.findById(conv._id)
+      .populate("participants", "firstName lastName email avatarUrl")
+      .lean();
+    res.status(201).json({ conversation: populated });
+  } catch (err: unknown) {
+    res.status(500).json({ message: err instanceof Error ? err.message : "Server error" });
+  }
+}
+
+/**
+ * GET /api/messaging/users/:userId/pubkey
+ * Returns the public RSA key of a user — used by the sender to encrypt DM bodies.
+ * Only resolvable for users we share a dossier with.
+ */
+export async function getPeerPublicKey(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const peerId = String(req.params.userId);
+    if (!Types.ObjectId.isValid(peerId)) {
+      res.status(400).json({ message: "Invalid userId" });
+      return;
+    }
+    if (peerId !== userId) {
+      const can = await shareAtLeastOneDossier(userId, peerId);
+      if (!can) { res.status(403).json({ message: "Access denied" }); return; }
+    }
+    const user = await User.findById(peerId).select("encryptionPublicKey").lean();
+    res.json({ publicKey: user?.encryptionPublicKey || null });
+  } catch (err: unknown) {
+    res.status(500).json({ message: err instanceof Error ? err.message : "Server error" });
   }
 }

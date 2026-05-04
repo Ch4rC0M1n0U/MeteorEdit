@@ -864,7 +864,12 @@
     "editPrompt": "Bericht bewerken",
     "deleteConfirm": "Dit bericht verwijderen? Dit kan niet ongedaan worden gemaakt.",
     "sent": "Verzonden",
-    "readByAll": "Gelezen door iedereen"
+    "readByAll": "Gelezen door iedereen",
+    "newDmTitle": "Nieuw privégesprek",
+    "newDmHint": "Kies een medewerker met wie u minstens één dossier deelt.",
+    "noContacts": "Geen contacten beschikbaar. Voeg eerst medewerkers toe aan een van uw dossiers.",
+    "startDm": "Gesprek starten",
+    "dmFailed": "Kan het gesprek niet starten"
   },
   "telegram": {
     "connectionTitle": "Telegram Verbinding",

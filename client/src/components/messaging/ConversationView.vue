@@ -224,10 +224,24 @@ function authorName(m: ChatMessage): string {
   return `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email;
 }
 
+const decryptedBodies = ref<Map<string, string>>(new Map());
+
 function bodyOf(m: ChatMessage): string {
   if (m.deletedAt) return t('messaging.messageDeleted');
-  if (m.isEncrypted) return t('messaging.encryptedPlaceholder');
+  if (m.isEncrypted) {
+    return decryptedBodies.value.get(m._id) ?? t('messaging.encryptedPlaceholder');
+  }
   return m.body;
+}
+
+async function decryptVisible(): Promise<void> {
+  const me = auth.user?._id;
+  if (!me) return;
+  for (const m of messages.value) {
+    if (!m.isEncrypted || decryptedBodies.value.has(m._id)) continue;
+    const plain = await store.decryptDmMessage(m, me);
+    if (plain !== null) decryptedBodies.value.set(m._id, plain);
+  }
 }
 
 function showDayHeader(i: number): boolean {
@@ -359,7 +373,25 @@ async function onSend(): Promise<void> {
   const body = draft.value.trim();
   draft.value = '';
   store.emitTyping(props.conversationId, false);
-  await store.sendMessage(props.conversationId, body);
+
+  try {
+    if (conversation.value?.type === 'direct') {
+      const me = auth.user?._id;
+      if (!me) throw new Error('Not authenticated');
+      await store.sendDmMessage(conversation.value, body, me);
+      // Cache local plaintext so we don't need to decrypt our own message
+      const list = store.messagesByConv.get(props.conversationId) ?? [];
+      const last = list[list.length - 1];
+      if (last && last.isEncrypted) decryptedBodies.value.set(last._id, body);
+    } else {
+      await store.sendMessage(props.conversationId, body);
+    }
+  } catch (err: any) {
+    // Restore draft on error so the user doesn't lose their message
+    draft.value = body;
+    throw err;
+  }
+
   await nextTick();
   scrollToBottom();
   await markLatestAsRead();
@@ -378,6 +410,7 @@ async function markLatestAsRead(): Promise<void> {
 }
 
 watch(messages, async (curr, prev) => {
+  await decryptVisible();
   if (curr.length > (prev?.length ?? 0)) {
     await nextTick();
     // Only auto-scroll if we are near the bottom already
@@ -391,6 +424,7 @@ watch(messages, async (curr, prev) => {
 
 onMounted(async () => {
   await store.loadMessages(props.conversationId);
+  await decryptVisible();
   await nextTick();
   scrollToBottom();
   await markLatestAsRead();

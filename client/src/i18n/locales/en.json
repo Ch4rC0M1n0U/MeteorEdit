@@ -865,7 +865,12 @@
     "editPrompt": "Edit message",
     "deleteConfirm": "Delete this message? This cannot be undone.",
     "sent": "Sent",
-    "readByAll": "Read by all"
+    "readByAll": "Read by all",
+    "newDmTitle": "New private conversation",
+    "newDmHint": "Pick a collaborator you share at least one dossier with.",
+    "noContacts": "No contacts available. Add collaborators to one of your dossiers first.",
+    "startDm": "Start conversation",
+    "dmFailed": "Could not start conversation"
   },
   "telegram": {
     "connectionTitle": "Telegram Connection",

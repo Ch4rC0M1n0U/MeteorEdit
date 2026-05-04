@@ -33,6 +33,15 @@
               {{ store.activeConversationId ? '' : $t('messaging.title') }}
             </h2>
             <Button
+              v-if="!store.activeConversationId"
+              icon="pi pi-plus"
+              text
+              rounded
+              size="small"
+              :title="$t('messaging.newDmTitle')"
+              @click="newDmOpen = true"
+            />
+            <Button
               icon="pi pi-times"
               text
               rounded
@@ -56,6 +65,8 @@
         </div>
       </template>
     </Card>
+
+    <NewDirectDialog v-model:visible="newDmOpen" @opened="onDmOpened" />
   </div>
 </template>
 
@@ -68,11 +79,13 @@ import { useMessagingStore } from '../../stores/messaging';
 import { useAuthStore } from '../../stores/auth';
 import ConversationList from './ConversationList.vue';
 import ConversationView from './ConversationView.vue';
+import NewDirectDialog from './NewDirectDialog.vue';
 
 const auth = useAuthStore();
 const store = useMessagingStore();
 
 const opened = ref(false);
+const newDmOpen = ref(false);
 
 function open(): void {
   opened.value = true;
@@ -80,6 +93,10 @@ function open(): void {
 
 function onPick(_id: string): void {
   // store already sets active; no extra action needed
+}
+
+function onDmOpened(conversationId: string): void {
+  store.setActiveConversation(conversationId);
 }
 
 watch(() => auth.user?._id, (id) => {

@@ -308,5 +308,8 @@ export const useEncryptionStore = defineStore('encryption', () => {
     shareDossierKey,
     encryptForDossier,
     decryptForDossier,
+    // Exposed read-only for messaging E2E DM decryption — same JS process,
+    // no extra exposure beyond what already lives in this store.
+    privateKey,
   };
 });
