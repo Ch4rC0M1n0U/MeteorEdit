@@ -71,13 +71,29 @@
       :style="{ width: 'min(92vw, 620px)' }"
     >
       <div class="esc-install">
+        <div class="esc-browser-tabs">
+          <button
+            v-for="b in browserOptions"
+            :key="b.id"
+            type="button"
+            :class="['esc-browser-tab', { 'esc-browser-tab--active': selectedBrowser === b.id }]"
+            @click="selectedBrowser = b.id"
+          >
+            <i :class="b.icon" />
+            <span>{{ b.label }}</span>
+            <span v-if="detectedBrowser === b.id" class="esc-browser-detected">
+              {{ $t('extension.install.detected') }}
+            </span>
+          </button>
+        </div>
+
         <p>{{ $t('extension.install.intro') }}</p>
 
         <ol class="esc-steps">
           <li>
             <strong>{{ $t('extension.install.step1') }}</strong>
             <Button
-              :label="$t('extension.install.download')"
+              :label="downloadLabel"
               icon="pi pi-download"
               size="small"
               :loading="downloading"
@@ -85,8 +101,8 @@
             />
           </li>
           <li>{{ $t('extension.install.step2') }}</li>
-          <li>{{ $t('extension.install.step3') }}</li>
-          <li>{{ $t('extension.install.step4') }}</li>
+          <li v-html="step3Html" />
+          <li v-html="step4Html" />
           <li>
             {{ $t('extension.install.step5') }}
             <a href="#" @click.prevent="goToTokens" class="esc-empty-link">{{ $t('extension.install.tokensLink') }}</a>
@@ -96,7 +112,7 @@
 
         <div class="esc-install-warn">
           <i class="pi pi-info-circle" />
-          <span>{{ $t('extension.install.devWarn') }}</span>
+          <span>{{ devWarn }}</span>
         </div>
       </div>
     </Dialog>
@@ -104,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
@@ -132,6 +148,47 @@ const clearing = ref<string | null>(null);
 const installOpen = ref(false);
 const downloading = ref(false);
 
+type BrowserId = 'chromium' | 'firefox';
+
+function detectBrowser(): BrowserId {
+  const ua = navigator.userAgent || '';
+  if (/Firefox\//i.test(ua) && !/Seamonkey/i.test(ua)) return 'firefox';
+  // Chrome / Edge / Brave / Opera all share the Chromium engine for extensions
+  return 'chromium';
+}
+
+const detectedBrowser = ref<BrowserId>(detectBrowser());
+const selectedBrowser = ref<BrowserId>(detectedBrowser.value);
+
+const browserOptions = computed(() => [
+  { id: 'chromium' as BrowserId, label: 'Chrome / Edge / Brave / Opera', icon: 'mdi mdi-google-chrome' },
+  { id: 'firefox' as BrowserId, label: 'Firefox', icon: 'mdi mdi-firefox' },
+]);
+
+const downloadLabel = computed(() =>
+  selectedBrowser.value === 'firefox'
+    ? t('extension.install.downloadFirefox')
+    : t('extension.install.downloadChromium')
+);
+
+const step3Html = computed(() =>
+  selectedBrowser.value === 'firefox'
+    ? t('extension.install.step3Firefox')
+    : t('extension.install.step3Chromium')
+);
+
+const step4Html = computed(() =>
+  selectedBrowser.value === 'firefox'
+    ? t('extension.install.step4Firefox')
+    : t('extension.install.step4Chromium')
+);
+
+const devWarn = computed(() =>
+  selectedBrowser.value === 'firefox'
+    ? t('extension.install.devWarnFirefox')
+    : t('extension.install.devWarnChromium')
+);
+
 async function onDownload(): Promise<void> {
   downloading.value = true;
   try {
@@ -139,7 +196,7 @@ async function onDownload(): Promise<void> {
     // Trigger the browser to download the ZIP
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'meteoredit-extension.zip';
+    a.download = `meteoredit-extension-${selectedBrowser.value}.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -276,4 +333,16 @@ onMounted(load);
 .esc-steps li strong { display: block; margin-bottom: 4px; color: var(--me-text-primary); }
 .esc-install-warn { display: flex; gap: 8px; padding: 10px 12px; border-radius: var(--me-radius-sm); background: rgba(245, 158, 11, 0.12); color: #b45309; font-size: 12px; }
 .esc-install-warn i { font-size: 16px; flex-shrink: 0; }
+
+.esc-browser-tabs { display: flex; gap: 8px; margin-bottom: 4px; }
+.esc-browser-tab {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 12px; border-radius: var(--me-radius-sm);
+  background: var(--me-bg-surface); border: 1px solid var(--me-border);
+  color: var(--me-text-secondary); cursor: pointer; font-size: 13px; transition: all 0.15s;
+}
+.esc-browser-tab:hover { color: var(--me-text-primary); border-color: var(--me-accent); }
+.esc-browser-tab--active { color: var(--me-accent); border-color: var(--me-accent); background: var(--me-accent-glow); font-weight: 600; }
+.esc-browser-tab i { font-size: 16px; }
+.esc-browser-detected { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: var(--me-success, #10b981); color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 </style>

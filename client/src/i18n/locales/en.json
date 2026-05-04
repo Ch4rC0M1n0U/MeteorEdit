@@ -823,15 +823,24 @@
       "button": "Install extension",
       "title": "Install the browser extension",
       "intro": "The extension lets you send authentication cookies (Instagram, Facebook, X, LinkedIn, etc.) to your MeteorEdit instance so that the tools can scrape authenticated on your behalf.",
-      "step1": "Download the extension ZIP archive:",
+      "detected": "Detected",
+      "step1": "Download the extension archive:",
       "step2": "Unzip it into a folder you'll keep — the extension is loaded from there.",
       "step3": "Open chrome://extensions (or edge://extensions, brave://extensions) and enable Developer mode in the top right.",
+      "step3Chromium": "Open <code>chrome://extensions</code> (or <code>edge://extensions</code>, <code>brave://extensions</code>) and enable Developer mode in the top right.",
+      "step3Firefox": "Open <code>about:debugging#/runtime/this-firefox</code> in Firefox.",
       "step4": "Click 'Load unpacked' and select the unzipped folder.",
+      "step4Chromium": "Click 'Load unpacked' and select the unzipped folder.",
+      "step4Firefox": "Click 'Load Temporary Add-on…' and pick the <code>manifest.json</code> file inside the unzipped folder.",
       "step5": "Generate an API token from ",
       "tokensLink": "Profile > API Tokens",
       "step6": "Open the extension options (gear icon in the popup), paste your instance URL + the token, then click 'Test connection'.",
       "devWarn": "Developer mode is required because the extension isn't (yet) on the Chrome Web Store. It's safe: the source is open and part of the MeteorEdit repository.",
-      "download": "Download extension (.zip)"
+      "devWarnChromium": "Developer mode is required because the extension isn't (yet) on the Chrome Web Store. It's safe: the source is open and part of the MeteorEdit repository.",
+      "devWarnFirefox": "The extension loads temporarily (until Firefox is closed) because it isn't signed by Mozilla AMO. For permanent installation, see Firefox's documentation on developer add-ons.",
+      "download": "Download extension (.zip)",
+      "downloadChromium": "Download for Chromium (.zip)",
+      "downloadFirefox": "Download for Firefox (.zip)"
     }
   },
   "telegram": {

@@ -1,20 +1,31 @@
 # MeteorEdit Cookie Bridge
 
-Browser extension (Chrome / Edge / Brave / Opera) that exports the **authentication cookies** of
-supported OSINT platforms to your MeteorEdit instance, so the server-side tools (Web Clipper,
-Profile Analyzer, OSINT Dorking…) can scrape **as you**, authenticated.
+Cross-browser extension (Chrome / Edge / Brave / Opera **and** Firefox 128+) that exports the
+**authentication cookies** of supported OSINT platforms to your MeteorEdit instance, so the
+server-side tools (Web Clipper, Profile Analyzer, OSINT Dorking…) can scrape **as you**,
+authenticated.
 
 ## Supported platforms
 
 Instagram · Facebook · Threads · X (Twitter) · TikTok · LinkedIn · YouTube · Reddit · Snapchat ·
 Telegram · WhatsApp · Mastodon · Linktree · PayPal · Strava
 
-## Installation (developer mode)
+## Installation
 
-1. Open `chrome://extensions` (or `edge://extensions`)
+### Chromium (Chrome / Edge / Brave / Opera)
+
+1. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`)
 2. Toggle **Developer mode** on
 3. Click **Load unpacked** and pick this `extension/` folder
 4. Pin the icon to the toolbar
+
+### Firefox (128+)
+
+1. Open `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on…**
+3. Pick the `manifest.json` file inside the unzipped `extension/` folder
+4. The extension stays loaded until Firefox is closed (unsigned add-ons can't be installed
+   permanently outside Mozilla AMO)
 
 ## First-time setup
 

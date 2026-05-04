@@ -822,15 +822,24 @@
       "button": "Extensie installeren",
       "title": "Installeer de browserextensie",
       "intro": "Met de extensie kunt u authenticatie-cookies (Instagram, Facebook, X, LinkedIn, enz.) naar uw MeteorEdit-instantie sturen, zodat de tools geauthenticeerd in uw naam kunnen scrapen.",
-      "step1": "Download het ZIP-archief van de extensie:",
+      "detected": "Gedetecteerd",
+      "step1": "Download het archief van de extensie:",
       "step2": "Pak het uit in een map die u bewaart — de extensie wordt vanuit die map geladen.",
       "step3": "Open chrome://extensions (of edge://extensions, brave://extensions) en schakel 'Ontwikkelaarsmodus' in rechtsboven.",
+      "step3Chromium": "Open <code>chrome://extensions</code> (of <code>edge://extensions</code>, <code>brave://extensions</code>) en schakel 'Ontwikkelaarsmodus' in rechtsboven.",
+      "step3Firefox": "Open <code>about:debugging#/runtime/this-firefox</code> in Firefox.",
       "step4": "Klik op 'Uitgepakte extensie laden' en selecteer de uitgepakte map.",
+      "step4Chromium": "Klik op 'Uitgepakte extensie laden' en selecteer de uitgepakte map.",
+      "step4Firefox": "Klik op 'Tijdelijke add-on laden…' en selecteer het <code>manifest.json</code>-bestand in de uitgepakte map.",
       "step5": "Genereer een API-token vanaf ",
       "tokensLink": "Profile > API-tokens",
       "step6": "Open de extensie-opties (tandwiel in de popup), plak uw instantie-URL + de token en klik op 'Verbinding testen'.",
       "devWarn": "Ontwikkelaarsmodus is vereist omdat de extensie (nog) niet in de Chrome Web Store staat. Het is veilig: de broncode is open en maakt deel uit van de MeteorEdit-repository.",
-      "download": "Extensie downloaden (.zip)"
+      "devWarnChromium": "Ontwikkelaarsmodus is vereist omdat de extensie (nog) niet in de Chrome Web Store staat. Het is veilig: de broncode is open en maakt deel uit van de MeteorEdit-repository.",
+      "devWarnFirefox": "De extensie wordt tijdelijk geladen (tot Firefox wordt gesloten) omdat hij niet door Mozilla AMO is ondertekend. Raadpleeg de Firefox-documentatie voor permanente installatie.",
+      "download": "Extensie downloaden (.zip)",
+      "downloadChromium": "Download voor Chromium (.zip)",
+      "downloadFirefox": "Download voor Firefox (.zip)"
     }
   },
   "telegram": {
