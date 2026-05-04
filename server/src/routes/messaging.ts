@@ -12,6 +12,16 @@ import {
   openDirect,
   getPeerPublicKey,
 } from '../controllers/messagingController';
+import {
+  addReaction,
+  removeReaction,
+  getReactions,
+  togglePin,
+  getPinnedMessages,
+  archiveConversation,
+  unarchiveConversation,
+  exportConversation,
+} from '../controllers/messagingExtras';
 
 const router = Router();
 
@@ -27,5 +37,15 @@ router.put('/messages/:id', editMessage);
 router.delete('/messages/:id', deleteMessage);
 router.get('/contacts', getDmCandidates);
 router.get('/users/:userId/pubkey', getPeerPublicKey);
+
+// Phase 4
+router.post('/messages/:id/reactions', addReaction);
+router.delete('/messages/:id/reactions/:emoji', removeReaction);
+router.get('/conversations/:id/reactions', getReactions);
+router.post('/messages/:id/pin', togglePin);
+router.get('/conversations/:id/pinned', getPinnedMessages);
+router.post('/conversations/:id/archive', archiveConversation);
+router.post('/conversations/:id/unarchive', unarchiveConversation);
+router.get('/conversations/:id/export', exportConversation);
 
 export default router;

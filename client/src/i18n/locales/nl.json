@@ -873,7 +873,16 @@
     "dmFailed": "Kan het gesprek niet starten",
     "openFullPage": "Volledig scherm openen",
     "pickAConversation": "Kies een gesprek",
-    "pickAConversationHint": "Kies links een gesprek of start een nieuw om te beginnen met chatten."
+    "pickAConversationHint": "Kies links een gesprek of start een nieuw om te beginnen met chatten.",
+    "reply": "Antwoorden",
+    "pin": "Vastmaken",
+    "unpin": "Losmaken",
+    "pinned": "Vastgemaakt",
+    "addReaction": "Reactie toevoegen",
+    "deletedQuote": "[bericht verwijderd]",
+    "exportConv": "Exporteren als Markdown",
+    "archive": "Archiveren",
+    "unarchive": "Dearchiveren"
   },
   "telegram": {
     "connectionTitle": "Telegram Verbinding",

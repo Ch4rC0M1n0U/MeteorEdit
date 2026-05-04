@@ -886,7 +886,16 @@
     "dmFailed": "Impossible de démarrer la conversation",
     "openFullPage": "Ouvrir en plein écran",
     "pickAConversation": "Sélectionnez une conversation",
-    "pickAConversationHint": "Choisissez une conversation à gauche, ou démarrez-en une nouvelle pour commencer à discuter."
+    "pickAConversationHint": "Choisissez une conversation à gauche, ou démarrez-en une nouvelle pour commencer à discuter.",
+    "reply": "Répondre",
+    "pin": "Épingler",
+    "unpin": "Désépingler",
+    "pinned": "Épinglé",
+    "addReaction": "Ajouter une réaction",
+    "deletedQuote": "[message supprimé]",
+    "exportConv": "Exporter en Markdown",
+    "archive": "Archiver",
+    "unarchive": "Désarchiver"
   },
   "telegram": {
     "connectionTitle": "Connexion Telegram",

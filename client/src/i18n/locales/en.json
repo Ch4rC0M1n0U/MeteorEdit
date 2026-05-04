@@ -874,7 +874,16 @@
     "dmFailed": "Could not start conversation",
     "openFullPage": "Open full page",
     "pickAConversation": "Pick a conversation",
-    "pickAConversationHint": "Select a conversation on the left, or start a new one to begin chatting."
+    "pickAConversationHint": "Select a conversation on the left, or start a new one to begin chatting.",
+    "reply": "Reply",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinned": "Pinned",
+    "addReaction": "Add reaction",
+    "deletedQuote": "[message deleted]",
+    "exportConv": "Export as Markdown",
+    "archive": "Archive",
+    "unarchive": "Unarchive"
   },
   "telegram": {
     "connectionTitle": "Telegram Connection",

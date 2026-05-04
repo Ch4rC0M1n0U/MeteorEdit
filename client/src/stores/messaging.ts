@@ -24,8 +24,17 @@ export interface ChatMessage {
   nodeRef?: { dossierId: string; nodeId: string } | null;
   editedAt?: string | null;
   deletedAt?: string | null;
+  pinnedAt?: string | null;
+  pinnedBy?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ChatReaction {
+  messageId: string;
+  userId: string;
+  emoji: string;
+  createdAt: string;
 }
 
 export interface ChatConversation {
@@ -128,6 +137,23 @@ export const useMessagingStore = defineStore('messaging', () => {
       else list.push(entry);
       readsByConv.value.set(payload.conversationId, list);
     });
+
+    s.on('reaction:add', (payload: any) => {
+      applyReactionAdd(payload.conversationId, payload.messageId, payload.userId, payload.emoji);
+    });
+
+    s.on('reaction:remove', (payload: any) => {
+      applyReactionRemove(payload.conversationId, payload.messageId, payload.userId, payload.emoji);
+    });
+
+    s.on('message:pin', (payload: any) => {
+      const list = messagesByConv.value.get(payload.conversationId) ?? [];
+      const m = list.find((x) => x._id === payload.messageId);
+      if (m) {
+        m.pinnedAt = payload.pinned ? (payload.pinnedAt ?? new Date().toISOString()) : null;
+        m.pinnedBy = payload.pinned ? payload.pinnedBy : null;
+      }
+    });
   }
 
   function joinConversation(conversationId: string): void {
@@ -155,6 +181,77 @@ export const useMessagingStore = defineStore('messaging', () => {
 
   // Cache of decrypted DM bodies keyed by message _id (avoid re-decrypting)
   const decryptedCache = ref<Map<string, string>>(new Map());
+
+  // Reactions: convId -> messageId -> emoji -> Set<userId>
+  const reactionsByConv = ref<Map<string, Map<string, Map<string, Set<string>>>>>(new Map());
+
+  function applyReactionAdd(convId: string, messageId: string, userId: string, emoji: string): void {
+    let convMap = reactionsByConv.value.get(convId);
+    if (!convMap) { convMap = new Map(); reactionsByConv.value.set(convId, convMap); }
+    let msgMap = convMap.get(messageId);
+    if (!msgMap) { msgMap = new Map(); convMap.set(messageId, msgMap); }
+    let users = msgMap.get(emoji);
+    if (!users) { users = new Set(); msgMap.set(emoji, users); }
+    users.add(userId);
+  }
+
+  function applyReactionRemove(convId: string, messageId: string, userId: string, emoji: string): void {
+    const users = reactionsByConv.value.get(convId)?.get(messageId)?.get(emoji);
+    if (!users) return;
+    users.delete(userId);
+    if (users.size === 0) reactionsByConv.value.get(convId)?.get(messageId)?.delete(emoji);
+  }
+
+  async function loadReactions(conversationId: string): Promise<void> {
+    const { data } = await api.get<{ reactions: ChatReaction[] }>(
+      `/messaging/conversations/${conversationId}/reactions`
+    );
+    const map = new Map<string, Map<string, Set<string>>>();
+    for (const r of data.reactions) {
+      let msgMap = map.get(r.messageId);
+      if (!msgMap) { msgMap = new Map(); map.set(r.messageId, msgMap); }
+      let users = msgMap.get(r.emoji);
+      if (!users) { users = new Set(); msgMap.set(r.emoji, users); }
+      users.add(r.userId);
+    }
+    reactionsByConv.value.set(conversationId, map);
+  }
+
+  async function addReaction(messageId: string, emoji: string): Promise<void> {
+    await api.post(`/messaging/messages/${messageId}/reactions`, { emoji });
+  }
+
+  async function removeReaction(messageId: string, emoji: string): Promise<void> {
+    await api.delete(`/messaging/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`);
+  }
+
+  async function togglePin(messageId: string): Promise<void> {
+    await api.post(`/messaging/messages/${messageId}/pin`);
+  }
+
+  async function loadPinned(conversationId: string): Promise<ChatMessage[]> {
+    const { data } = await api.get<{ messages: ChatMessage[] }>(
+      `/messaging/conversations/${conversationId}/pinned`
+    );
+    return data.messages;
+  }
+
+  async function archive(conversationId: string): Promise<void> {
+    await api.post(`/messaging/conversations/${conversationId}/archive`);
+    const conv = conversations.value.find((c) => c._id === conversationId);
+    if (conv) conv.archivedAt = new Date().toISOString();
+  }
+
+  async function unarchive(conversationId: string): Promise<void> {
+    await api.post(`/messaging/conversations/${conversationId}/unarchive`);
+    const conv = conversations.value.find((c) => c._id === conversationId);
+    if (conv) conv.archivedAt = null;
+  }
+
+  async function exportData(conversationId: string): Promise<{ conversation: any; messages: any[] }> {
+    const { data } = await api.get(`/messaging/conversations/${conversationId}/export`);
+    return data;
+  }
 
   async function loadDmContacts(): Promise<DmContact[]> {
     const { data } = await api.get<{ contacts: DmContact[] }>('/messaging/contacts');
@@ -332,5 +429,14 @@ export const useMessagingStore = defineStore('messaging', () => {
     sendDmMessage,
     decryptDmMessage,
     decryptedCache,
+    reactionsByConv,
+    loadReactions,
+    addReaction,
+    removeReaction,
+    togglePin,
+    loadPinned,
+    archive,
+    unarchive,
+    exportData,
   };
 });

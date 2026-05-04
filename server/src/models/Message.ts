@@ -14,6 +14,9 @@ export interface IMessage extends Document {
   nodeRef?: { dossierId: Types.ObjectId; nodeId: Types.ObjectId };
   editedAt?: Date | null;
   deletedAt?: Date | null;
+  /** Timestamp + userId of the person who pinned the message in its conversation */
+  pinnedAt?: Date | null;
+  pinnedBy?: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +34,8 @@ const messageSchema = new Schema<IMessage>({
   },
   editedAt: { type: Date, default: null },
   deletedAt: { type: Date, default: null },
+  pinnedAt: { type: Date, default: null },
+  pinnedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
 messageSchema.index({ conversationId: 1, createdAt: -1 });

@@ -24,6 +24,15 @@
           </span>
         </div>
       </div>
+      <Button
+        icon="pi pi-cog"
+        text
+        rounded
+        size="small"
+        :title="$t('common.actions')"
+        @click="(e) => convMenu?.show(e)"
+      />
+      <Menu ref="convMenu" :model="convMenuModel" :popup="true" />
     </header>
 
     <div ref="scrollEl" class="conv-view-body">
@@ -59,8 +68,31 @@
               <div v-if="!isMine(m) && showAuthor(i)" class="conv-msg-author">
                 {{ authorName(m) }}
               </div>
+
+              <div v-if="m.replyTo" class="conv-msg-quote">
+                <i class="pi pi-reply" />
+                <span>{{ quotedBody(m.replyTo) }}</span>
+              </div>
+
               <p class="conv-msg-body">{{ bodyOf(m) }}</p>
+
+              <div v-if="reactionsOf(m._id).length > 0" class="conv-msg-reactions">
+                <button
+                  v-for="r in reactionsOf(m._id)"
+                  :key="r.emoji"
+                  type="button"
+                  :class="['conv-msg-reaction', { 'conv-msg-reaction--mine': r.mine }]"
+                  @click="onToggleReaction(m._id, r.emoji, r.mine)"
+                >
+                  <span>{{ r.emoji }}</span>
+                  <span class="conv-msg-reaction-count">{{ r.count }}</span>
+                </button>
+              </div>
+
               <div class="conv-msg-footer">
+                <span v-if="m.pinnedAt" class="conv-msg-pin" :title="$t('messaging.pinned')">
+                  <i class="pi pi-bookmark-fill" />
+                </span>
                 <span class="conv-msg-time">{{ formatTime(m.createdAt) }}</span>
                 <span v-if="m.editedAt" class="conv-msg-edited">{{ $t('messaging.edited') }}</span>
                 <span v-if="isMine(m)" class="conv-msg-status" :title="readStatusTitle(m)">
@@ -69,7 +101,17 @@
               </div>
             </div>
             <Button
-              v-if="isMine(m) && !m.deletedAt"
+              v-if="!m.deletedAt"
+              icon="pi pi-face-smile"
+              text
+              rounded
+              size="small"
+              class="conv-msg-actions"
+              :title="$t('messaging.addReaction')"
+              @click="(e) => openEmojiPicker(e, m)"
+            />
+            <Button
+              v-if="!m.deletedAt"
               icon="pi pi-ellipsis-v"
               text
               rounded
@@ -84,6 +126,7 @@
     </div>
 
     <Menu ref="actionsMenu" :model="actionsModel" :popup="true" />
+    <Menu ref="emojiMenu" :model="emojiModel" :popup="true" class="conv-emoji-menu" />
 
     <Dialog
       v-model:visible="editOpen"
@@ -105,6 +148,18 @@
     </Dialog>
 
     <ConfirmDialog />
+
+    <div v-if="replyToTarget" class="conv-view-reply-banner">
+      <i class="pi pi-reply" />
+      <span class="conv-view-reply-quote">{{ quotedBody(replyToTarget._id) }}</span>
+      <Button
+        icon="pi pi-times"
+        text
+        rounded
+        size="small"
+        @click="replyToTarget = null"
+      />
+    </div>
 
     <footer class="conv-view-input">
       <Textarea
@@ -155,6 +210,121 @@ const draft = ref('');
 const editOpen = ref(false);
 const editDraft = ref('');
 const editTarget = ref<ChatMessage | null>(null);
+const replyToTarget = ref<ChatMessage | null>(null);
+const emojiMenu = ref<{ show: (e: Event) => void; hide: () => void } | null>(null);
+const emojiTarget = ref<ChatMessage | null>(null);
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🙏', '🔥', '💯', '✅', '❌'];
+
+const convMenu = ref<{ show: (e: Event) => void; hide: () => void } | null>(null);
+
+const convMenuModel = computed(() => {
+  const c = conversation.value;
+  if (!c) return [];
+  const meId = auth.user?._id;
+  const isOwner = String(c.adminId ?? '') === meId;
+  const isChannel = c.type === 'channel-dossier';
+  const items: any[] = [
+    { label: t('messaging.exportConv'), icon: 'pi pi-download', command: () => onExport() },
+  ];
+  if (!isChannel || isOwner) {
+    items.push({
+      label: c.archivedAt ? t('messaging.unarchive') : t('messaging.archive'),
+      icon: c.archivedAt ? 'pi pi-folder-open' : 'pi pi-inbox',
+      command: () => c.archivedAt ? store.unarchive(c._id) : store.archive(c._id),
+    });
+  }
+  return items;
+});
+
+async function onExport(): Promise<void> {
+  const data = await store.exportData(props.conversationId);
+  const me = auth.user?._id;
+  const lines: string[] = [
+    `# Export — ${title.value}`,
+    `Exported: ${new Date().toISOString()}`,
+    '',
+  ];
+  for (const m of data.messages) {
+    const author = typeof m.authorId === 'object' && m.authorId
+      ? `${m.authorId.firstName ?? ''} ${m.authorId.lastName ?? ''}`.trim() || m.authorId.email
+      : 'Unknown';
+    let body = m.body;
+    if (m.isEncrypted && me) {
+      const list = store.messagesByConv.get(props.conversationId) ?? [];
+      const fresh = list.find((x) => x._id === m._id);
+      if (fresh) {
+        const plain = await store.decryptDmMessage(fresh, me);
+        body = plain ?? '[unable to decrypt]';
+      } else {
+        body = '[unable to decrypt]';
+      }
+    }
+    const date = new Date(m.createdAt).toISOString();
+    const pinned = m.pinnedAt ? ' 📌' : '';
+    lines.push(`**${author}** — _${date}_${pinned}`);
+    lines.push(body);
+    lines.push('');
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `conversation-${props.conversationId}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function quotedBody(messageId: string): string {
+  const list = store.messagesByConv.get(props.conversationId) ?? [];
+  const m = list.find((x) => x._id === messageId);
+  if (!m) return t('messaging.deletedQuote');
+  if (m.deletedAt) return t('messaging.deletedQuote');
+  if (m.isEncrypted) {
+    return decryptedBodies.value.get(m._id) ?? t('messaging.encryptedPlaceholder');
+  }
+  const b = m.body.replace(/\s+/g, ' ').trim();
+  return b.length > 100 ? b.slice(0, 97) + '…' : b;
+}
+
+function reactionsOf(messageId: string): Array<{ emoji: string; count: number; mine: boolean }> {
+  const me = auth.user?._id;
+  const map = store.reactionsByConv.get(props.conversationId)?.get(messageId);
+  if (!map) return [];
+  const out: Array<{ emoji: string; count: number; mine: boolean }> = [];
+  for (const [emoji, users] of map.entries()) {
+    out.push({ emoji, count: users.size, mine: !!me && users.has(me) });
+  }
+  return out;
+}
+
+async function onToggleReaction(messageId: string, emoji: string, mine: boolean): Promise<void> {
+  if (mine) await store.removeReaction(messageId, emoji);
+  else await store.addReaction(messageId, emoji);
+}
+
+function openEmojiPicker(e: Event, m: ChatMessage): void {
+  emojiTarget.value = m;
+  emojiMenu.value?.show(e);
+}
+
+function pickEmoji(emoji: string): void {
+  if (!emojiTarget.value) return;
+  const me = auth.user?._id;
+  const existing = reactionsOf(emojiTarget.value._id).find((r) => r.emoji === emoji);
+  if (existing?.mine && me) onToggleReaction(emojiTarget.value._id, emoji, true);
+  else onToggleReaction(emojiTarget.value._id, emoji, false);
+  emojiMenu.value?.hide();
+}
+
+const emojiModel = computed(() =>
+  REACTION_EMOJIS.map((emoji) => ({
+    label: emoji,
+    command: () => pickEmoji(emoji),
+  }))
+);
 const scrollEl = ref<HTMLElement | null>(null);
 const loadingMore = ref(false);
 const typingDebounce = ref<number | null>(null);
@@ -287,18 +457,26 @@ function readStatusTitle(m: ChatMessage): string {
   return readStatusIcon(m).includes('check-circle') ? t('messaging.readByAll') : t('messaging.sent');
 }
 
-const actionsModel = computed(() => [
-  {
-    label: t('common.edit'),
-    icon: 'pi pi-pencil',
-    command: () => actionsTarget.value && onEdit(actionsTarget.value),
-  },
-  {
-    label: t('common.delete'),
-    icon: 'pi pi-trash',
-    command: () => actionsTarget.value && onDelete(actionsTarget.value),
-  },
-]);
+const actionsModel = computed(() => {
+  const m = actionsTarget.value;
+  if (!m) return [];
+  const meId = auth.user?._id;
+  const isMine = (typeof m.authorId === 'string' ? m.authorId : m.authorId._id) === meId;
+  const isAdmin = String(conversation.value?.adminId ?? '') === meId;
+  const items: any[] = [
+    { label: t('messaging.reply'), icon: 'pi pi-reply', command: () => { replyToTarget.value = m; } },
+    { label: m.pinnedAt ? t('messaging.unpin') : t('messaging.pin'),
+      icon: m.pinnedAt ? 'pi pi-bookmark' : 'pi pi-bookmark-fill',
+      visible: isMine || isAdmin,
+      command: () => store.togglePin(m._id) },
+  ];
+  if (isMine) {
+    items.push({ separator: true });
+    items.push({ label: t('common.edit'), icon: 'pi pi-pencil', command: () => onEdit(m) });
+    items.push({ label: t('common.delete'), icon: 'pi pi-trash', command: () => onDelete(m) });
+  }
+  return items;
+});
 
 function openActions(e: Event, m: ChatMessage): void {
   actionsTarget.value = m;
@@ -374,6 +552,9 @@ async function onSend(): Promise<void> {
   draft.value = '';
   store.emitTyping(props.conversationId, false);
 
+  const replyToId = replyToTarget.value?._id;
+  replyToTarget.value = null;
+
   try {
     if (conversation.value?.type === 'direct') {
       const me = auth.user?._id;
@@ -384,7 +565,7 @@ async function onSend(): Promise<void> {
       const last = list[list.length - 1];
       if (last && last.isEncrypted) decryptedBodies.value.set(last._id, body);
     } else {
-      await store.sendMessage(props.conversationId, body);
+      await store.sendMessage(props.conversationId, body, replyToId ? { replyTo: replyToId } : undefined);
     }
   } catch (err: any) {
     // Restore draft on error so the user doesn't lose their message
@@ -424,6 +605,7 @@ watch(messages, async (curr, prev) => {
 
 onMounted(async () => {
   await store.loadMessages(props.conversationId);
+  await store.loadReactions(props.conversationId).catch(() => { /* ignore */ });
   await decryptVisible();
   await nextTick();
   scrollToBottom();
@@ -485,6 +667,47 @@ onBeforeUnmount(() => {
 .conv-msg-status--read { color: var(--me-accent) !important; }
 .conv-msg-actions { opacity: 0; transition: opacity 0.15s; }
 .conv-msg-row:hover .conv-msg-actions { opacity: 1; }
+
+.conv-msg-quote {
+  display: flex; gap: 6px; align-items: center;
+  padding: 4px 8px; margin-bottom: 4px;
+  border-left: 3px solid var(--me-accent);
+  background: var(--me-bg-app); border-radius: 4px;
+  font-size: 12px; color: var(--me-text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conv-msg-quote i { font-size: 10px; }
+
+.conv-msg-reactions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.conv-msg-reaction {
+  display: inline-flex; gap: 4px; align-items: center;
+  padding: 2px 6px; border-radius: 10px;
+  background: var(--me-bg-app); border: 1px solid var(--me-border);
+  cursor: pointer; font-size: 12px; transition: all 0.15s;
+}
+.conv-msg-reaction:hover { border-color: var(--me-accent); }
+.conv-msg-reaction--mine { background: var(--me-accent-glow); border-color: var(--me-accent); }
+.conv-msg-reaction-count { font-size: 10px; font-weight: 700; color: var(--me-text-muted); }
+.conv-msg-reaction--mine .conv-msg-reaction-count { color: var(--me-accent); }
+
+.conv-msg-pin { color: var(--me-accent); font-size: 11px; }
+
+.conv-view-reply-banner {
+  display: flex; gap: 8px; align-items: center;
+  padding: 6px 12px; background: var(--me-bg-elevated); border-top: 1px solid var(--me-border);
+  font-size: 12px; color: var(--me-text-muted); flex-shrink: 0;
+}
+.conv-view-reply-quote {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-style: italic;
+}
+
+:deep(.conv-emoji-menu) .p-menuitem-text { font-size: 18px; }
+:deep(.conv-emoji-menu) .p-menuitem { padding: 0 !important; }
+:deep(.conv-emoji-menu .p-menu-list) { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; padding: 4px; }
+:deep(.conv-emoji-menu .p-menuitem-content) { padding: 6px 10px; cursor: pointer; border-radius: 6px; }
+:deep(.conv-emoji-menu .p-menuitem-content:hover) { background: var(--me-accent-glow); }
 
 .conv-view-input {
   display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px;
