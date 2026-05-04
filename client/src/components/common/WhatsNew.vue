@@ -24,7 +24,7 @@
       </div>
 
       <div class="whatsnew-body" v-if="changelogs.length > 0">
-        <div v-for="log in changelogs" :key="log._id" class="whatsnew-version-block">
+        <div v-for="log in sortedChangelogs" :key="log._id" class="whatsnew-version-block">
           <div class="whatsnew-version-header">
             <span class="whatsnew-version mono">{{ t('changelog.version') }} {{ log.version }}</span>
             <span class="whatsnew-date mono">{{ formatDate(log.date) }}</span>
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -89,6 +89,30 @@ const emit = defineEmits<{
 const { t, locale } = useI18n();
 const changelogs = ref<ChangelogItem[]>([]);
 const unreadCount = ref(0);
+
+/**
+ * Parse "3.23.2", "3.4.0-beta.1" → comparable tuple [major, minor, patch, preWeight, preNum].
+ * Stable releases (no pre-release) outrank any pre-release with the same major.minor.patch.
+ */
+function parseVersion(v: string): [number, number, number, number, number] {
+  const m = String(v ?? '').match(/^(\d+)\.(\d+)\.(\d+)(?:-([a-z]+)\.(\d+))?/i);
+  if (!m) return [0, 0, 0, Infinity, 0];
+  const [, mj, mn, pt, pre, preNum] = m;
+  // No pre-release => weight Infinity so it sorts higher than any pre-release of the same triple.
+  const preWeight = pre ? { alpha: 1, beta: 2, rc: 3 }[pre.toLowerCase()] ?? 0 : Infinity;
+  return [Number(mj), Number(mn), Number(pt), preWeight, Number(preNum ?? 0)];
+}
+
+const sortedChangelogs = computed(() => {
+  return [...changelogs.value].sort((a, b) => {
+    const va = parseVersion(a.version);
+    const vb = parseVersion(b.version);
+    for (let i = 0; i < va.length; i++) {
+      if (va[i] !== vb[i]) return vb[i] - va[i];
+    }
+    return 0;
+  });
+});
 
 function iconName(type: string): string {
   switch (type) {
