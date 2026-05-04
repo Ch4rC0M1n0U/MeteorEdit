@@ -90,6 +90,7 @@
     "lightMode": "Light mode",
     "preferences": "Preferences",
     "templates": "My templates",
+    "messages": "Messages",
     "help": "Help",
     "admin": "Administration",
     "sessions": "Social sessions",
@@ -870,7 +871,10 @@
     "newDmHint": "Pick a collaborator you share at least one dossier with.",
     "noContacts": "No contacts available. Add collaborators to one of your dossiers first.",
     "startDm": "Start conversation",
-    "dmFailed": "Could not start conversation"
+    "dmFailed": "Could not start conversation",
+    "openFullPage": "Open full page",
+    "pickAConversation": "Pick a conversation",
+    "pickAConversationHint": "Select a conversation on the left, or start a new one to begin chatting."
   },
   "telegram": {
     "connectionTitle": "Telegram Connection",
@@ -1601,6 +1605,8 @@
     "channels": "Channel configuration",
     "inApp": "In-app",
     "emailChannel": "Email",
+    "pwa": "Push (PWA)",
+    "telegram": "Telegram",
     "doNotDisturb": "Do not disturb",
     "doNotDisturbDesc": "Disables real-time push notifications",
     "soundLabel": "Notification sound",
@@ -1620,6 +1626,9 @@
       "taskDeadline": "Deadline reminder",
       "taskCompleted": "Task completed",
       "commentReply": "Comment reply",
+      "directMessage": "Direct message",
+      "channelMessage": "Channel message",
+      "messagingMention": "Mention in chat",
       "systemAnnouncement": "System announcement"
     }
   },

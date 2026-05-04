@@ -113,6 +113,7 @@ import Badge from 'primevue/badge';
 import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
+import { useMessagingStore } from '../../stores/messaging';
 import { useBrandingStore } from '../../stores/branding';
 import { SERVER_URL } from '../../services/api';
 import api from '../../services/api';
@@ -126,6 +127,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const dossierStore = useDossierStore();
+const messagingStore = useMessagingStore();
 const appVersion = __APP_VERSION__;
 const brandingStore = useBrandingStore();
 
@@ -143,6 +145,7 @@ const avatarUrl = computed(() => authStore.user?.avatarPath ? `${SERVER_URL}/${a
 const mainNavItems = computed(() => [
   { key: 'dossiers', icon: 'pi pi-folder', label: t('home.myDossiers'), to: '/', badge: dossierStore.dossiers.length || null },
   { key: 'templates', icon: 'pi pi-file-edit', label: t('nav.templates'), to: '/templates' },
+  { key: 'messages', icon: 'pi pi-comments', label: t('nav.messages'), to: '/messages', badge: messagingStore.totalUnread || null },
 ]);
 
 const toolNavItems = computed(() => [

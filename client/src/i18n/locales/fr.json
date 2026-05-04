@@ -90,6 +90,7 @@
     "lightMode": "Mode clair",
     "preferences": "Préférences",
     "templates": "Mes modèles",
+    "messages": "Messages",
     "help": "Aide",
     "admin": "Administration",
     "sessions": "Sessions sociales",
@@ -882,7 +883,10 @@
     "newDmHint": "Choisissez un collaborateur avec qui vous partagez au moins un dossier.",
     "noContacts": "Aucun contact disponible. Ajoutez des collaborateurs à un de vos dossiers d'abord.",
     "startDm": "Démarrer la conversation",
-    "dmFailed": "Impossible de démarrer la conversation"
+    "dmFailed": "Impossible de démarrer la conversation",
+    "openFullPage": "Ouvrir en plein écran",
+    "pickAConversation": "Sélectionnez une conversation",
+    "pickAConversationHint": "Choisissez une conversation à gauche, ou démarrez-en une nouvelle pour commencer à discuter."
   },
   "telegram": {
     "connectionTitle": "Connexion Telegram",
@@ -1613,6 +1617,8 @@
     "channels": "Configuration des canaux",
     "inApp": "In-app",
     "emailChannel": "Email",
+    "pwa": "Push (PWA)",
+    "telegram": "Telegram",
     "doNotDisturb": "Ne pas déranger",
     "doNotDisturbDesc": "Désactive les notifications push en temps réel",
     "soundLabel": "Son de notification",
@@ -1632,6 +1638,9 @@
       "taskDeadline": "Rappel deadline",
       "taskCompleted": "Tâche terminée",
       "commentReply": "Réponse commentaire",
+      "directMessage": "Message privé",
+      "channelMessage": "Message dans un canal",
+      "messagingMention": "Mention dans un message",
       "systemAnnouncement": "Annonce système"
     }
   },

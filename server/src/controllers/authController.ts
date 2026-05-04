@@ -262,11 +262,13 @@ export async function getNotificationPreferences(req: AuthRequest, res: Response
 
 export async function updateNotificationPreferences(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { inApp, email, doNotDisturb, soundEnabled } = req.body;
+    const { inApp, email, pwa, telegram, doNotDisturb, soundEnabled } = req.body;
     const update: Record<string, any> = {};
 
     if (typeof inApp === 'object') update['notificationPreferences.inApp'] = inApp;
     if (typeof email === 'object') update['notificationPreferences.email'] = email;
+    if (typeof pwa === 'object') update['notificationPreferences.pwa'] = pwa;
+    if (typeof telegram === 'object') update['notificationPreferences.telegram'] = telegram;
     if (typeof doNotDisturb === 'boolean') update['notificationPreferences.doNotDisturb'] = doNotDisturb;
     if (typeof soundEnabled === 'boolean') update['notificationPreferences.soundEnabled'] = soundEnabled;
 

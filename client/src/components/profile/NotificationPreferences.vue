@@ -34,7 +34,9 @@
       <div class="notif-type-grid">
         <div class="notif-type-header" />
         <div class="notif-type-header mono">{{ $t('notifications.inApp') }}</div>
+        <div class="notif-type-header mono">{{ $t('notifications.pwa') }}</div>
         <div class="notif-type-header mono">{{ $t('notifications.emailChannel') }}</div>
+        <div class="notif-type-header mono">{{ $t('notifications.telegram') }}</div>
 
         <template v-for="nt in notifTypes" :key="nt.key">
           <div class="notif-type-label">
@@ -45,7 +47,13 @@
             <ToggleSwitch v-model="prefs.inApp[nt.key]" @update:modelValue="save" />
           </div>
           <div class="notif-type-toggle">
+            <ToggleSwitch v-model="prefs.pwa[nt.key]" @update:modelValue="save" />
+          </div>
+          <div class="notif-type-toggle">
             <ToggleSwitch v-model="prefs.email[nt.key]" @update:modelValue="save" />
+          </div>
+          <div class="notif-type-toggle">
+            <ToggleSwitch v-model="prefs.telegram[nt.key]" @update:modelValue="save" />
           </div>
         </template>
       </div>
@@ -79,23 +87,32 @@ const notifTypes = computed(() => [
   { key: 'task.deadline', label: t('notifications.types.taskDeadline'), icon: 'mdi-clock-alert-outline' },
   { key: 'task.completed', label: t('notifications.types.taskCompleted'), icon: 'mdi-check-circle-outline' },
   { key: 'comment.reply', label: t('notifications.types.commentReply'), icon: 'mdi-comment-outline' },
+  { key: 'messaging.directMessage', label: t('notifications.types.directMessage'), icon: 'mdi-chat-outline' },
+  { key: 'messaging.channelMessage', label: t('notifications.types.channelMessage'), icon: 'mdi-forum-outline' },
+  { key: 'messaging.mention', label: t('notifications.types.messagingMention'), icon: 'mdi-at' },
   { key: 'system.announcement', label: t('notifications.types.systemAnnouncement'), icon: 'mdi-bullhorn-outline' },
 ]);
 
 const notifTypeKeys = [
   'collaborator.added', 'collaborator.removed', 'dossier.updated', 'dossier.shared',
   'node.updated', 'mention', 'task.assigned', 'task.deadline', 'task.completed',
-  'comment.reply', 'system.announcement',
+  'comment.reply',
+  'messaging.directMessage', 'messaging.channelMessage', 'messaging.mention',
+  'system.announcement',
 ];
 
 const defaultPrefs = () => {
   const inApp: Record<string, boolean> = {};
   const email: Record<string, boolean> = {};
+  const pwa: Record<string, boolean> = {};
+  const telegram: Record<string, boolean> = {};
   for (const key of notifTypeKeys) {
     inApp[key] = true;
     email[key] = false;
+    pwa[key] = key.startsWith('messaging.') || key === 'mention';
+    telegram[key] = false;
   }
-  return { inApp, email, doNotDisturb: false, soundEnabled: true };
+  return { inApp, email, pwa, telegram, doNotDisturb: false, soundEnabled: true };
 };
 
 const prefs = reactive(defaultPrefs());
@@ -105,6 +122,8 @@ onMounted(async () => {
     const { data } = await api.get('/auth/notification-preferences');
     if (data.inApp) Object.assign(prefs.inApp, data.inApp);
     if (data.email) Object.assign(prefs.email, data.email);
+    if (data.pwa) Object.assign(prefs.pwa, data.pwa);
+    if (data.telegram) Object.assign(prefs.telegram, data.telegram);
     if (typeof data.doNotDisturb === 'boolean') prefs.doNotDisturb = data.doNotDisturb;
     if (typeof data.soundEnabled === 'boolean') prefs.soundEnabled = data.soundEnabled;
   } catch {} finally {
@@ -137,7 +156,7 @@ function save() {
 .mb-4 { margin-bottom: 16px; }
 .notif-type-grid {
   display: grid;
-  grid-template-columns: 1fr 80px 80px;
+  grid-template-columns: 1fr 70px 70px 70px 70px;
   gap: 4px 8px;
   align-items: center;
 }

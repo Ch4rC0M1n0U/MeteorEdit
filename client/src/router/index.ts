@@ -8,6 +8,7 @@ const routes = [
   { path: '/setup', name: 'setup', component: () => import('../views/SetupView.vue') },
   { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
+  { path: '/messages', name: 'messages', component: () => import('../views/MessagesView.vue'), meta: { requiresAuth: true } },
   { path: '/templates', name: 'templates', component: () => import('../views/TemplatesView.vue'), meta: { requiresAuth: true } },
   { path: '/templates/:id/edit', name: 'template-edit', component: () => import('../views/TemplateEditView.vue'), meta: { requiresAuth: true } },
   { path: '/help', name: 'help', component: () => import('../views/HelpView.vue'), meta: { requiresAuth: true } },

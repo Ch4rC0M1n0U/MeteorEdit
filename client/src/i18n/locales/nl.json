@@ -90,6 +90,7 @@
     "lightMode": "Lichte modus",
     "preferences": "Voorkeuren",
     "templates": "Mijn sjablonen",
+    "messages": "Berichten",
     "help": "Help",
     "admin": "Beheer",
     "sessions": "Sociale sessies",
@@ -869,7 +870,10 @@
     "newDmHint": "Kies een medewerker met wie u minstens één dossier deelt.",
     "noContacts": "Geen contacten beschikbaar. Voeg eerst medewerkers toe aan een van uw dossiers.",
     "startDm": "Gesprek starten",
-    "dmFailed": "Kan het gesprek niet starten"
+    "dmFailed": "Kan het gesprek niet starten",
+    "openFullPage": "Volledig scherm openen",
+    "pickAConversation": "Kies een gesprek",
+    "pickAConversationHint": "Kies links een gesprek of start een nieuw om te beginnen met chatten."
   },
   "telegram": {
     "connectionTitle": "Telegram Verbinding",
@@ -1600,6 +1604,8 @@
     "channels": "Kanaalconfiguratie",
     "inApp": "In-app",
     "emailChannel": "E-mail",
+    "pwa": "Push (PWA)",
+    "telegram": "Telegram",
     "doNotDisturb": "Niet storen",
     "doNotDisturbDesc": "Schakelt realtime pushmeldingen uit",
     "soundLabel": "Meldingsgeluid",
@@ -1619,6 +1625,9 @@
       "taskDeadline": "Deadlineherinnering",
       "taskCompleted": "Taak voltooid",
       "commentReply": "Reactie op opmerking",
+      "directMessage": "Privébericht",
+      "channelMessage": "Kanaalbericht",
+      "messagingMention": "Vermelding in chat",
       "systemAnnouncement": "Systeemaankondiging"
     }
   },

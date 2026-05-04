@@ -1,5 +1,5 @@
 <template>
-  <div v-if="auth.user" class="me-bubble-root">
+  <div v-if="auth.user && !isOnMessagesPage" class="me-bubble-root">
     <Button
       v-show="!opened"
       class="me-bubble-fab"
@@ -42,6 +42,14 @@
               @click="newDmOpen = true"
             />
             <Button
+              icon="pi pi-window-maximize"
+              text
+              rounded
+              size="small"
+              :title="$t('messaging.openFullPage')"
+              @click="goFullPage"
+            />
+            <Button
               icon="pi pi-times"
               text
               rounded
@@ -71,7 +79,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import OverlayBadge from 'primevue/overlaybadge';
@@ -83,6 +92,14 @@ import NewDirectDialog from './NewDirectDialog.vue';
 
 const auth = useAuthStore();
 const store = useMessagingStore();
+const router = useRouter();
+const route = useRoute();
+const isOnMessagesPage = computed(() => route.name === 'messages');
+
+function goFullPage(): void {
+  opened.value = false;
+  router.push('/messages');
+}
 
 const opened = ref(false);
 const newDmOpen = ref(false);
