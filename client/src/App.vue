@@ -33,6 +33,7 @@
       :dossier-id="dossierStore.currentDossier?._id ?? null"
       @update:visible="(v: boolean) => v ? toolsUI.openPhoneScanner() : toolsUI.closePhoneScanner()"
     />
+    <MessagingBubble />
   </div>
 
   <!-- Non-authenticated views (login, register, setup, maintenance) -->
@@ -56,6 +57,7 @@ import ConfirmDialog from './components/common/ConfirmDialog.vue';
 import CommandPalette from './components/common/CommandPalette.vue';
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue';
 import PhoneScannerDialog from './components/tools/PhoneScannerDialog.vue';
+import MessagingBubble from './components/messaging/MessagingBubble.vue';
 import Toast from 'primevue/toast';
 import { useToolsUIStore } from './stores/toolsUI';
 

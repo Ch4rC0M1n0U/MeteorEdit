@@ -843,6 +843,30 @@
       "downloadFirefox": "Download for Firefox (.zip)"
     }
   },
+  "messaging": {
+    "title": "Messaging",
+    "openMessages": "Open messaging",
+    "conversations": "Conversations",
+    "noConversations": "No conversation yet.",
+    "noMessages": "No messages yet",
+    "channelDossierLabel": "Dossier channel",
+    "participantsCount": "{n} participant(s)",
+    "unknownUser": "Unknown user",
+    "someone": "Someone",
+    "isTyping": "{name} is typing…",
+    "peopleTyping": "{n} people are typing…",
+    "loadMore": "Load earlier messages",
+    "startTalking": "Be the first to write in this conversation.",
+    "typeMessage": "Type a message…",
+    "send": "Send",
+    "edited": "edited",
+    "messageDeleted": "Message deleted",
+    "encryptedPlaceholder": "🔒 Encrypted message (cannot be decrypted here)",
+    "editPrompt": "Edit message",
+    "deleteConfirm": "Delete this message? This cannot be undone.",
+    "sent": "Sent",
+    "readByAll": "Read by all"
+  },
   "telegram": {
     "connectionTitle": "Telegram Connection",
     "connectionDesc": "Connect your Telegram account for direct searches",

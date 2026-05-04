@@ -842,6 +842,30 @@
       "downloadFirefox": "Download voor Firefox (.zip)"
     }
   },
+  "messaging": {
+    "title": "Berichten",
+    "openMessages": "Berichten openen",
+    "conversations": "Gesprekken",
+    "noConversations": "Nog geen gesprek.",
+    "noMessages": "Nog geen bericht",
+    "channelDossierLabel": "Dossier-kanaal",
+    "participantsCount": "{n} deelnemer(s)",
+    "unknownUser": "Onbekende gebruiker",
+    "someone": "Iemand",
+    "isTyping": "{name} is aan het typen…",
+    "peopleTyping": "{n} mensen zijn aan het typen…",
+    "loadMore": "Oudere berichten laden",
+    "startTalking": "Wees de eerste om in dit gesprek te schrijven.",
+    "typeMessage": "Schrijf een bericht…",
+    "send": "Verzenden",
+    "edited": "bewerkt",
+    "messageDeleted": "Bericht verwijderd",
+    "encryptedPlaceholder": "🔒 Versleuteld bericht (kan hier niet worden ontsleuteld)",
+    "editPrompt": "Bericht bewerken",
+    "deleteConfirm": "Dit bericht verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "sent": "Verzonden",
+    "readByAll": "Gelezen door iedereen"
+  },
   "telegram": {
     "connectionTitle": "Telegram Verbinding",
     "connectionDesc": "Verbind uw Telegram-account voor directe zoekopdrachten",

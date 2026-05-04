@@ -855,6 +855,30 @@
       "downloadFirefox": "Télécharger pour Firefox (.zip)"
     }
   },
+  "messaging": {
+    "title": "Messagerie",
+    "openMessages": "Ouvrir la messagerie",
+    "conversations": "Conversations",
+    "noConversations": "Aucune conversation pour le moment.",
+    "noMessages": "Pas encore de message",
+    "channelDossierLabel": "Canal du dossier",
+    "participantsCount": "{n} participant(s)",
+    "unknownUser": "Utilisateur inconnu",
+    "someone": "Quelqu'un",
+    "isTyping": "{name} est en train d'écrire…",
+    "peopleTyping": "{n} personnes sont en train d'écrire…",
+    "loadMore": "Charger les messages plus anciens",
+    "startTalking": "Soyez le premier à écrire dans cette conversation.",
+    "typeMessage": "Écrivez un message…",
+    "send": "Envoyer",
+    "edited": "modifié",
+    "messageDeleted": "Message supprimé",
+    "encryptedPlaceholder": "🔒 Message chiffré (impossible à déchiffrer ici)",
+    "editPrompt": "Modifier le message",
+    "deleteConfirm": "Supprimer ce message ? Cette action ne peut pas être annulée.",
+    "sent": "Envoyé",
+    "readByAll": "Lu par tous"
+  },
   "telegram": {
     "connectionTitle": "Connexion Telegram",
     "connectionDesc": "Connectez votre compte Telegram pour effectuer des recherches directes",

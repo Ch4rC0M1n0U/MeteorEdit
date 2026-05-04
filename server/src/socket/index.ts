@@ -285,6 +285,49 @@ export function setupSocket(httpServer: HttpServer) {
       }
     });
 
+    // ── Messaging: join/leave a conversation room ──
+    // Server re-checks authorization on every join so a stale client can't
+    // listen to a conversation it has been removed from.
+    socket.on('conv:join', async (conversationId: string) => {
+      if (typeof conversationId !== 'string' || conversationId.length > 64) return;
+      try {
+        const { authorizeConversationAccess } = await import('../utils/messagingAuthz');
+        const authz = await authorizeConversationAccess(user.userId, conversationId);
+        if (!authz.ok) return;
+        socket.join(`conv:${conversationId}`);
+      } catch { /* ignore */ }
+    });
+
+    socket.on('conv:leave', (conversationId: string) => {
+      if (typeof conversationId !== 'string') return;
+      socket.leave(`conv:${conversationId}`);
+    });
+
+    // ── Typing indicator (ephemeral, in-memory only) ──
+    // We forward the event only to OTHER participants in the room.
+    socket.on('typing:start', async (conversationId: string) => {
+      if (typeof conversationId !== 'string' || conversationId.length > 64) return;
+      try {
+        const { authorizeConversationAccess } = await import('../utils/messagingAuthz');
+        const authz = await authorizeConversationAccess(user.userId, conversationId);
+        if (!authz.ok) return;
+        socket.to(`conv:${conversationId}`).emit('typing:update', {
+          conversationId,
+          userId: user.userId,
+          isTyping: true,
+        });
+      } catch { /* ignore */ }
+    });
+
+    socket.on('typing:stop', (conversationId: string) => {
+      if (typeof conversationId !== 'string') return;
+      socket.to(`conv:${conversationId}`).emit('typing:update', {
+        conversationId,
+        userId: user.userId,
+        isTyping: false,
+      });
+    });
+
     socket.on('disconnect', () => {
       console.log(`User ${user.userId} disconnected`);
       userSockets.get(user.userId)?.delete(socket.id);

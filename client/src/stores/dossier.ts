@@ -242,6 +242,13 @@ export const useDossierStore = defineStore('dossier', () => {
       const socket = connectSocket();
       socket.emit('join-dossier', id);
       setupSocketListeners();
+
+      // Ensure the dossier messaging channel exists for this user
+      try {
+        const { useMessagingStore } = await import('./messaging');
+        const messaging = useMessagingStore();
+        await messaging.openDossierChannel(id);
+      } catch { /* messaging is optional, never blocks dossier opening */ }
     } finally {
       loading.value = false;
     }
