@@ -31,6 +31,7 @@ export async function getMyConversations(req: AuthRequest, res: Response): Promi
     const conversations = await Conversation.find({ participants: userId, archivedAt: null })
       .sort({ lastMessageAt: -1, updatedAt: -1 })
       .populate('participants', 'firstName lastName email avatarUrl')
+      .populate('dossierId', 'title')
       .lean();
 
     // Compute unread counts in parallel
@@ -71,6 +72,7 @@ export async function openDossierChannel(req: AuthRequest, res: Response): Promi
     const conv = await ensureDossierChannel(dossierId, userId);
     const populated = await Conversation.findById(conv._id)
       .populate('participants', 'firstName lastName email avatarUrl')
+      .populate('dossierId', 'title')
       .lean();
     res.json({ conversation: populated });
   } catch (err: unknown) {

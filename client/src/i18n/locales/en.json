@@ -883,7 +883,10 @@
     "deletedQuote": "[message deleted]",
     "exportConv": "Export as Markdown",
     "archive": "Archive",
-    "unarchive": "Unarchive"
+    "unarchive": "Unarchive",
+    "members": "Members",
+    "you": "(you)",
+    "channelAdmin": "Admin"
   },
   "telegram": {
     "connectionTitle": "Telegram Connection",

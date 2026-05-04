@@ -194,7 +194,7 @@ import Menu from 'primevue/menu';
 import Dialog from 'primevue/dialog';
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
-import { useMessagingStore, type ChatMessage, type MessageAuthor } from '../../stores/messaging';
+import { useMessagingStore, conversationTitle, conversationPeer, type ChatMessage, type MessageAuthor } from '../../stores/messaging';
 import { useAuthStore } from '../../stores/auth';
 import UserAvatar from './UserAvatar.vue';
 
@@ -221,7 +221,7 @@ const convMenu = ref<{ show: (e: Event) => void; hide: () => void } | null>(null
 const convMenuModel = computed(() => {
   const c = conversation.value;
   if (!c) return [];
-  const meId = auth.user?._id;
+  const meId = auth.user?.id;
   const isOwner = String(c.adminId ?? '') === meId;
   const isChannel = c.type === 'channel-dossier';
   const items: any[] = [
@@ -239,7 +239,7 @@ const convMenuModel = computed(() => {
 
 async function onExport(): Promise<void> {
   const data = await store.exportData(props.conversationId);
-  const me = auth.user?._id;
+  const me = auth.user?.id;
   const lines: string[] = [
     `# Export — ${title.value}`,
     `Exported: ${new Date().toISOString()}`,
@@ -290,7 +290,7 @@ function quotedBody(messageId: string): string {
 }
 
 function reactionsOf(messageId: string): Array<{ emoji: string; count: number; mine: boolean }> {
-  const me = auth.user?._id;
+  const me = auth.user?.id;
   const map = store.reactionsByConv.get(props.conversationId)?.get(messageId);
   if (!map) return [];
   const out: Array<{ emoji: string; count: number; mine: boolean }> = [];
@@ -312,7 +312,7 @@ function openEmojiPicker(e: Event, m: ChatMessage): void {
 
 function pickEmoji(emoji: string): void {
   if (!emojiTarget.value) return;
-  const me = auth.user?._id;
+  const me = auth.user?.id;
   const existing = reactionsOf(emojiTarget.value._id).find((r) => r.emoji === emoji);
   if (existing?.mine && me) onToggleReaction(emojiTarget.value._id, emoji, true);
   else onToggleReaction(emojiTarget.value._id, emoji, false);
@@ -338,27 +338,20 @@ const messages = computed<ChatMessage[]>(() =>
 );
 const hasMore = computed(() => store.hasMoreByConv.get(props.conversationId) ?? false);
 
-const primaryParticipant = computed<MessageAuthor | undefined>(() => {
-  if (!conversation.value) return undefined;
-  if (conversation.value.type === 'channel-dossier') return conversation.value.participants[0];
-  const me = auth.user?._id;
-  return conversation.value.participants.find((p) => p._id !== me) ?? conversation.value.participants[0];
-});
+const primaryParticipant = computed<MessageAuthor | undefined>(() =>
+  conversation.value ? conversationPeer(conversation.value, auth.user?.id) : undefined
+);
 
 const title = computed(() => {
   if (!conversation.value) return '';
-  if (conversation.value.type === 'channel-dossier') return t('messaging.channelDossierLabel');
-  return primaryParticipant.value
-    ? `${primaryParticipant.value.firstName ?? ''} ${primaryParticipant.value.lastName ?? ''}`.trim()
-      || primaryParticipant.value.email
-    : t('messaging.unknownUser');
+  return conversationTitle(conversation.value, auth.user?.id) || t('messaging.channelDossierLabel');
 });
 
 const participantCount = computed(() => conversation.value?.participants.length ?? 0);
 
 const typingNames = computed(() => {
   const ids = store.typingByConv.get(props.conversationId) ?? new Set<string>();
-  const me = auth.user?._id;
+  const me = auth.user?.id;
   return Array.from(ids)
     .filter((id) => id !== me)
     .map((id) => {
@@ -378,7 +371,7 @@ const canSend = computed(() => draft.value.trim().length > 0 && !store.sending);
 
 function isMine(m: ChatMessage): boolean {
   const id = typeof m.authorId === 'string' ? m.authorId : m.authorId._id;
-  return id === auth.user?._id;
+  return id === auth.user?.id;
 }
 
 function authorOf(m: ChatMessage): MessageAuthor | undefined {
@@ -405,7 +398,7 @@ function bodyOf(m: ChatMessage): string {
 }
 
 async function decryptVisible(): Promise<void> {
-  const me = auth.user?._id;
+  const me = auth.user?.id;
   if (!me) return;
   for (const m of messages.value) {
     if (!m.isEncrypted || decryptedBodies.value.has(m._id)) continue;
@@ -442,7 +435,7 @@ function formatDay(iso: string): string {
 function readStatusIcon(m: ChatMessage): string {
   // ✓ sent / ✓✓ read by all others
   const reads = store.readsByConv.get(props.conversationId) ?? [];
-  const me = auth.user?._id;
+  const me = auth.user?.id;
   const others = (conversation.value?.participants ?? []).filter((p) => p._id !== me);
   if (others.length === 0) return 'pi pi-check';
   const allRead = others.every((p) => {
@@ -460,7 +453,7 @@ function readStatusTitle(m: ChatMessage): string {
 const actionsModel = computed(() => {
   const m = actionsTarget.value;
   if (!m) return [];
-  const meId = auth.user?._id;
+  const meId = auth.user?.id;
   const isMine = (typeof m.authorId === 'string' ? m.authorId : m.authorId._id) === meId;
   const isAdmin = String(conversation.value?.adminId ?? '') === meId;
   const items: any[] = [
@@ -557,7 +550,7 @@ async function onSend(): Promise<void> {
 
   try {
     if (conversation.value?.type === 'direct') {
-      const me = auth.user?._id;
+      const me = auth.user?.id;
       if (!me) throw new Error('Not authenticated');
       await store.sendDmMessage(conversation.value, body, me);
       // Cache local plaintext so we don't need to decrypt our own message

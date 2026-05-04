@@ -58,7 +58,7 @@ import { useI18n } from 'vue-i18n';
 import Button from 'primevue/button';
 import Badge from 'primevue/badge';
 import ScrollPanel from 'primevue/scrollpanel';
-import { useMessagingStore, type ChatConversation, type MessageAuthor } from '../../stores/messaging';
+import { useMessagingStore, conversationTitle, conversationPeer, type ChatConversation, type MessageAuthor } from '../../stores/messaging';
 import { useAuthStore } from '../../stores/auth';
 import UserAvatar from './UserAvatar.vue';
 
@@ -77,22 +77,11 @@ const sorted = computed(() =>
 );
 
 function titleOf(c: ChatConversation): string {
-  if (c.type === 'channel-dossier') return t('messaging.channelDossierLabel');
-  // Direct: use the other participant's name
-  const me = auth.user?._id;
-  const other = c.participants.find((p) => p._id !== me);
-  return displayName(other);
+  return conversationTitle(c, auth.user?.id) || t('messaging.channelDossierLabel');
 }
 
 function primaryParticipant(c: ChatConversation): MessageAuthor | undefined {
-  if (c.type === 'channel-dossier') return c.participants[0];
-  const me = auth.user?._id;
-  return c.participants.find((p) => p._id !== me) ?? c.participants[0];
-}
-
-function displayName(u?: MessageAuthor): string {
-  if (!u) return t('messaging.unknownUser');
-  return `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email;
+  return conversationPeer(c, auth.user?.id);
 }
 
 function formatTime(iso: string): string {

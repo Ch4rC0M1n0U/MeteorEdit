@@ -895,7 +895,10 @@
     "deletedQuote": "[message supprimé]",
     "exportConv": "Exporter en Markdown",
     "archive": "Archiver",
-    "unarchive": "Désarchiver"
+    "unarchive": "Désarchiver",
+    "members": "Membres",
+    "you": "(vous)",
+    "channelAdmin": "Admin"
   },
   "telegram": {
     "connectionTitle": "Connexion Telegram",

@@ -20,11 +20,17 @@
         @back="store.setActiveConversation(null)"
       />
       <div v-else class="msgs-empty">
-        <i class="pi pi-comments msgs-empty-icon" />
+        <i class="mdi mdi-message-outline msgs-empty-icon" />
         <h3>{{ $t('messaging.pickAConversation') }}</h3>
         <p>{{ $t('messaging.pickAConversationHint') }}</p>
       </div>
     </main>
+
+    <ConversationMembers
+      v-if="store.activeConversationId"
+      :conversation-id="store.activeConversationId"
+      class="msgs-members"
+    />
 
     <NewDirectDialog v-model:visible="newDmOpen" @opened="onDmOpened" />
   </div>
@@ -36,6 +42,7 @@ import Button from 'primevue/button';
 import { useMessagingStore } from '../stores/messaging';
 import ConversationList from '../components/messaging/ConversationList.vue';
 import ConversationView from '../components/messaging/ConversationView.vue';
+import ConversationMembers from '../components/messaging/ConversationMembers.vue';
 import NewDirectDialog from '../components/messaging/NewDirectDialog.vue';
 
 const store = useMessagingStore();
@@ -54,9 +61,13 @@ onMounted(() => {
 <style scoped>
 .msgs-view {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 320px 1fr 260px;
   height: calc(100vh - 56px);
   background: var(--me-bg-app);
+}
+@media (max-width: 1100px) {
+  .msgs-view { grid-template-columns: 280px 1fr; }
+  .msgs-members { display: none; }
 }
 .msgs-side {
   display: flex;

@@ -3,12 +3,11 @@
     <Button
       v-show="!opened"
       class="me-bubble-fab"
-      icon="pi pi-comments"
       rounded
-      severity="primary"
       :title="$t('messaging.openMessages')"
       @click="open"
     >
+      <i class="mdi mdi-message-outline me-bubble-fab-icon" />
       <OverlayBadge
         v-if="store.totalUnread > 0"
         :value="store.totalUnread > 99 ? '99+' : String(store.totalUnread)"
@@ -30,7 +29,7 @@
               @click="store.setActiveConversation(null)"
             />
             <h2 class="me-bubble-title">
-              {{ store.activeConversationId ? '' : $t('messaging.title') }}
+              {{ activeTitle }}
             </h2>
             <Button
               v-if="!store.activeConversationId"
@@ -84,17 +83,26 @@ import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import OverlayBadge from 'primevue/overlaybadge';
-import { useMessagingStore } from '../../stores/messaging';
+import { useMessagingStore, conversationTitle } from '../../stores/messaging';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../../stores/auth';
 import ConversationList from './ConversationList.vue';
 import ConversationView from './ConversationView.vue';
 import NewDirectDialog from './NewDirectDialog.vue';
 
+const { t } = useI18n();
 const auth = useAuthStore();
 const store = useMessagingStore();
 const router = useRouter();
 const route = useRoute();
 const isOnMessagesPage = computed(() => route.name === 'messages');
+
+const activeTitle = computed(() => {
+  if (!store.activeConversationId) return t('messaging.title');
+  const c = store.conversations.find((x) => x._id === store.activeConversationId);
+  if (!c) return t('messaging.title');
+  return conversationTitle(c, auth.user?.id) || t('messaging.channelDossierLabel');
+});
 
 function goFullPage(): void {
   opened.value = false;
@@ -116,7 +124,7 @@ function onDmOpened(conversationId: string): void {
   store.setActiveConversation(conversationId);
 }
 
-watch(() => auth.user?._id, (id) => {
+watch(() => auth.user?.id, (id) => {
   if (id) {
     store.bindSocket();
     store.loadConversations().catch(() => { /* ignore */ });
@@ -138,10 +146,23 @@ onMounted(() => {
 .me-bubble-root { position: fixed; bottom: 20px; right: 20px; z-index: 9000; }
 
 .me-bubble-fab {
-  width: 56px; height: 56px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  width: 60px; height: 60px;
+  border-radius: 50% !important;
+  background: var(--me-bg-elevated) !important;
+  border: 1px solid var(--me-border) !important;
+  color: var(--me-text-primary) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  transition: all 0.18s ease;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 !important;
 }
-.me-bubble-fab :deep(.p-button-icon) { font-size: 22px; }
+.me-bubble-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  border-color: var(--me-accent) !important;
+  color: var(--me-accent) !important;
+}
+.me-bubble-fab-icon { font-size: 26px; line-height: 1; }
 
 .me-bubble-panel {
   width: 380px;

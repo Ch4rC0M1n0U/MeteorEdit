@@ -40,7 +40,8 @@ export interface ChatReaction {
 export interface ChatConversation {
   _id: string;
   type: 'channel-dossier' | 'direct';
-  dossierId?: string | null;
+  /** Either a string (raw id) or a populated `{ _id, title }` object after server populate */
+  dossierId?: string | { _id: string; title?: string } | null;
   participants: MessageAuthor[];
   adminId?: string | null;
   lastMessageAt?: string | null;
@@ -49,6 +50,26 @@ export interface ChatConversation {
   archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Resolved display title — dossier name for channels, peer's name for DMs. */
+export function conversationTitle(c: ChatConversation, currentUserId?: string): string {
+  if (c.type === 'channel-dossier') {
+    if (c.dossierId && typeof c.dossierId === 'object' && c.dossierId.title) {
+      return c.dossierId.title;
+    }
+    return '';
+  }
+  // direct
+  const other = c.participants.find((p) => p._id !== currentUserId);
+  if (!other) return '';
+  return `${other.firstName ?? ''} ${other.lastName ?? ''}`.trim() || other.email;
+}
+
+/** The other participant in a DM, or first participant in a channel. */
+export function conversationPeer(c: ChatConversation, currentUserId?: string): MessageAuthor | undefined {
+  if (c.type === 'channel-dossier') return c.participants[0];
+  return c.participants.find((p) => p._id !== currentUserId) ?? c.participants[0];
 }
 
 export interface ReadState {

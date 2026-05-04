@@ -89,10 +89,6 @@
 
             <div class="dv-tools-group-sep"></div>
             <div class="dv-tools-group-header">{{ $t('tools.groups.webResearch') }}</div>
-            <button class="dv-export-option" @click="osintDorkingOpen = true; toolsMenuRef?.hide()">
-              <span class="mdi mdi-search-web" style="font-size: 16px;"></span>
-              <span>OSINT Dorking</span>
-            </button>
             <button class="dv-export-option" @click="reverseImageOpen = true; toolsMenuRef?.hide()">
               <span class="mdi mdi-image-search-outline" style="font-size: 16px;"></span>
               <span>{{ $t('dossier.reverseImageTitle') }}</span>
@@ -379,12 +375,6 @@
 
     <!-- Username Scanner -->
     <UsernameScanDialog v-model="usernameScanOpen" />
-
-    <!-- OSINT Dorking -->
-    <OsintDorkingDialog
-      v-model="osintDorkingOpen"
-      v-if="osintDorkingOpen && dossierStore.currentDossier"
-    />
 
     <!-- Elephantastic Import -->
     <ElephantasticImportDialog
@@ -678,7 +668,6 @@ import ImageAnnotator from '../editor/ImageAnnotator.vue';
 import PomodoroTimer from '../common/PomodoroTimer.vue';
 import TaskPanel from './TaskPanel.vue';
 import WebClipperDialog from './WebClipperDialog.vue';
-import OsintDorkingDialog from './OsintDorkingDialog.vue';
 import ReverseImageSearch from './ReverseImageSearch.vue';
 import UsernameScanDialog from './UsernameScanDialog.vue';
 import ExportSelectDialog from './ExportSelectDialog.vue';
@@ -714,7 +703,6 @@ const importMenuRef = ref();
 
 const webClipperOpen = ref(false);
 const profileAnalyzerOpen = ref(false);
-const osintDorkingOpen = ref(false);
 const reverseImageOpen = ref(false);
 const usernameScanOpen = ref(false);
 function openLeaksSearch() {

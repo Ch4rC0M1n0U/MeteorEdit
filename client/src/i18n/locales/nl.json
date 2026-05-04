@@ -882,7 +882,10 @@
     "deletedQuote": "[bericht verwijderd]",
     "exportConv": "Exporteren als Markdown",
     "archive": "Archiveren",
-    "unarchive": "Dearchiveren"
+    "unarchive": "Dearchiveren",
+    "members": "Leden",
+    "you": "(u)",
+    "channelAdmin": "Admin"
   },
   "telegram": {
     "connectionTitle": "Telegram Verbinding",
