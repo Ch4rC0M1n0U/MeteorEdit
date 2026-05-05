@@ -2265,6 +2265,9 @@
     "instanceUrl": "URL de votre instance",
     "tokenLabel": "Token API",
     "generateToken": "Générer un token (Profil > Tokens API)",
+    "resetBanner": "Réafficher la bannière de promotion",
+    "bannerResetTitle": "Bannière réactivée",
+    "bannerResetBody": "Elle réapparaîtra à votre prochain rechargement de l'application.",
     "steps": {
       "download": "Télécharger l'archive .zip",
       "downloadBody": "Cliquez sur le bouton de téléchargement ci-dessus puis <strong>extrayez le contenu</strong> du .zip dans un dossier permanent (ex : <code>~/MeteorEditCompanion</code>).",

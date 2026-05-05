@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import api from '../services/api';
 import { connectSocket, getSocket } from '../services/socket';
 import type { Dossier, DossierNode } from '../types';
@@ -528,8 +528,12 @@ export const useDossierStore = defineStore('dossier', () => {
     }
   }
 
+  // Dossiers en cours (open + in_progress) — exclut les clôturés.
+  // Utilisé pour les compteurs sidebar/dashboard, le picker du clipper, etc.
+  const activeDossiers = computed(() => dossiers.value.filter((d) => d.status !== 'closed'));
+
   return {
-    dossiers, currentDossier, nodes, trashNodes, selectedNode, loading,
+    dossiers, activeDossiers, currentDossier, nodes, trashNodes, selectedNode, loading,
     hasMoreDossiers, dossierPage,
     favorites, fetchFavorites, toggleFavorite, isFavorite, activeCollaborators, nodeContentCache,
     fetchDossiers, createDossier, openDossier, closeDossier,

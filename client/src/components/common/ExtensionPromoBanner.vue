@@ -25,7 +25,11 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { detectBrowser } from '../../utils/browser';
 
-const STORAGE_KEY = 'extension_banner_dismissed';
+// Versioned key — bumping this string forces the banner to reappear for users
+// who had previously dismissed it. Bump when the extension gets a noteworthy
+// new feature worth re-promoting.
+const BANNER_VERSION = '2.0';
+const STORAGE_KEY = 'extension_banner_dismissed_v';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -52,7 +56,7 @@ const message = computed(() => {
 
 function dismiss(): void {
   visible.value = false;
-  try { localStorage.setItem(STORAGE_KEY, '1'); } catch { /* ignore */ }
+  try { localStorage.setItem(STORAGE_KEY, BANNER_VERSION); } catch { /* ignore */ }
 }
 
 function install(): void {
@@ -60,14 +64,33 @@ function install(): void {
   router.push('/extension');
 }
 
-onMounted(() => {
+function shouldShow(): boolean {
   try {
-    if (localStorage.getItem(STORAGE_KEY) === '1') return;
-    // Don't show on the extension page itself, login or setup
-    const path = router.currentRoute.value.path;
-    if (path === '/extension' || path === '/login' || path === '/setup' || path === '/maintenance') return;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    // Only hide if the user already dismissed THIS exact version of the banner.
+    // Bumping BANNER_VERSION re-shows the banner once, then it can be dismissed again.
+    if (stored === BANNER_VERSION) return false;
+  } catch { /* localStorage may throw in private mode */ }
+  return true;
+}
+
+function isExcludedRoute(path: string): boolean {
+  return path === '/extension'
+    || path === '/login'
+    || path === '/register'
+    || path === '/setup'
+    || path === '/maintenance';
+}
+
+onMounted(() => {
+  // Wait for the next tick so router.currentRoute is fully resolved.
+  // This avoids a race where mounted fires before the initial navigation completes.
+  queueMicrotask(() => {
+    const path = router.currentRoute.value.path || '';
+    if (isExcludedRoute(path)) return;
+    if (!shouldShow()) return;
     visible.value = true;
-  } catch { /* ignore */ }
+  });
 });
 </script>
 

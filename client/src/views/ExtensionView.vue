@@ -101,11 +101,19 @@
         <p>{{ t('extension.features.settings.body') }}</p>
       </article>
     </section>
+
+    <!-- Footer utility action -->
+    <div class="ext-footer-actions">
+      <button class="me-btn me-btn-ghost" @click="resetPromoBanner">
+        <i class="pi pi-refresh" style="font-size: 12px; margin-right: 4px;"></i>
+        {{ t('extension.resetBanner') }}
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import { detectBrowser } from '../utils/browser';
@@ -161,10 +169,13 @@ async function copy(text: string): Promise<void> {
   }
 }
 
-onMounted(() => {
-  // Mark the promo banner as seen — visiting this page implies the user knows about the extension
-  try { localStorage.setItem('extension_banner_dismissed', '1'); } catch { /* ignore */ }
-});
+function resetPromoBanner(): void {
+  try {
+    localStorage.removeItem('extension_banner_dismissed');
+    localStorage.removeItem('extension_banner_dismissed_v');
+    toast.add({ severity: 'success', summary: t('extension.bannerResetTitle'), detail: t('extension.bannerResetBody'), life: 2500 });
+  } catch { /* ignore */ }
+}
 </script>
 
 <style scoped>
@@ -291,4 +302,11 @@ onMounted(() => {
 .ext-feature-icon { font-size: 28px; margin-bottom: 10px; }
 .ext-feature h3 { font-size: 14px; font-weight: 700; margin: 0 0 6px; color: var(--me-text-primary); }
 .ext-feature p { font-size: 12px; color: var(--me-text-muted); margin: 0; line-height: 1.5; }
+
+.ext-footer-actions {
+  display: flex; justify-content: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--me-border);
+}
 </style>

@@ -143,7 +143,7 @@ const initials = computed(() => {
 const avatarUrl = computed(() => authStore.user?.avatarPath ? `${SERVER_URL}/${authStore.user.avatarPath}` : null);
 
 const mainNavItems = computed(() => [
-  { key: 'dossiers', icon: 'pi pi-folder', label: t('home.myDossiers'), to: '/', badge: dossierStore.dossiers.length || null },
+  { key: 'dossiers', icon: 'pi pi-folder', label: t('home.myDossiers'), to: '/', badge: dossierStore.activeDossiers.length || null },
   { key: 'templates', icon: 'pi pi-file-edit', label: t('nav.templates'), to: '/templates' },
   { key: 'messages', icon: 'pi pi-comments', label: t('nav.messages'), to: '/messages', badge: messagingStore.totalUnread || null },
 ]);
