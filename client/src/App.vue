@@ -20,6 +20,7 @@
         <i :class="announcementIcon" style="margin-right: 8px;" />
         {{ brandingStore.announcementMessage }}
       </div>
+      <ExtensionPromoBanner />
       <main class="main-content">
         <router-view />
       </main>
@@ -56,6 +57,7 @@ import AppTopbar from './components/common/AppTopbar.vue';
 import ConfirmDialog from './components/common/ConfirmDialog.vue';
 import CommandPalette from './components/common/CommandPalette.vue';
 import PwaUpdatePrompt from './components/common/PwaUpdatePrompt.vue';
+import ExtensionPromoBanner from './components/common/ExtensionPromoBanner.vue';
 import PhoneScannerDialog from './components/tools/PhoneScannerDialog.vue';
 import MessagingBubble from './components/messaging/MessagingBubble.vue';
 import Toast from 'primevue/toast';
@@ -101,6 +103,7 @@ const pageTitle = computed(() => {
     '/help': t('nav.help'),
     '/osint-search': t('nav.osintSearch') || 'OSINT Search',
     '/companies': t('nav.companies'),
+    '/extension': t('nav.extension'),
   };
   return titles[route.path] || '';
 });

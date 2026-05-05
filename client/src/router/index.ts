@@ -14,6 +14,7 @@ const routes = [
   { path: '/help', name: 'help', component: () => import('../views/HelpView.vue'), meta: { requiresAuth: true } },
   { path: '/osint-search', name: 'osint-search', component: () => import('../views/OsintSearchView.vue'), meta: { requiresAuth: true } },
   { path: '/companies', name: 'companies', component: () => import('../views/CompaniesSearchView.vue'), meta: { requiresAuth: true } },
+  { path: '/extension', name: 'extension', component: () => import('../views/ExtensionView.vue'), meta: { requiresAuth: true } },
   { path: '/maintenance', name: 'maintenance', component: () => import('../views/MaintenanceView.vue') },
 ];
 

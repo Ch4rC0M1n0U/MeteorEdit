@@ -103,6 +103,7 @@
     "whatsNew": "Nouveautés",
     "osintSearch": "Recherche OSINT",
     "companies": "Recherche d'entreprises",
+    "extension": "Extension",
     "backendConnected": "Serveur connecte",
     "backendDisconnected": "Serveur deconnecte",
     "profile": "Mon profil",
@@ -2245,6 +2246,56 @@
     "customCategoryPlaceholder": "Nom de la catégorie",
     "description": "Description",
     "source": "Source / Référence"
+  },
+  "extension": {
+    "title": "MeteorEdit Companion",
+    "subtitle": "Extension navigateur officielle : import de sessions OSINT, web clipper plein écran, et plus à venir. Compatible Chrome, Firefox et autres navigateurs Chromium.",
+    "detectedBrowser": "Navigateur détecté",
+    "unsupportedBrowser": "Ce navigateur n'est pas pris en charge officiellement (Safari et autres). L'extension peut ne pas fonctionner correctement.",
+    "downloadFor": "Télécharger pour {browser}",
+    "downloadAnyway": "Télécharger quand même (.zip)",
+    "installTitle": "Installation",
+    "configureTitle": "Configuration",
+    "configureBody": "Une fois l'extension chargée, ouvrez son onglet Réglages et collez ces deux valeurs :",
+    "instanceUrl": "URL de votre instance",
+    "tokenLabel": "Token API",
+    "generateToken": "Générer un token (Profil > Tokens API)",
+    "steps": {
+      "download": "Télécharger l'archive .zip",
+      "downloadBody": "Cliquez sur le bouton de téléchargement ci-dessus puis <strong>extrayez le contenu</strong> du .zip dans un dossier permanent (ex : <code>~/MeteorEditCompanion</code>).",
+      "chromeOpen": "Ouvrir la page des extensions",
+      "chromeOpenBody": "Saisissez cette URL dans la barre d'adresse :",
+      "chromeDevMode": "Activer le mode développeur",
+      "chromeDevModeBody": "Activez le bouton « Mode développeur » en haut à droite de la page.",
+      "chromeLoad": "Charger l'extension dépaquetée",
+      "chromeLoadBody": "Cliquez « Charger l'extension non empaquetée » et sélectionnez le dossier que vous venez d'extraire.",
+      "firefoxOpen": "Ouvrir le débogage de modules",
+      "firefoxOpenBody": "Saisissez cette URL dans la barre d'adresse :",
+      "firefoxLoad": "Charger un module temporaire",
+      "firefoxLoadBody": "Cliquez « Charger un module temporaire » et sélectionnez le fichier <code>manifest.json</code> dans le dossier extrait.",
+      "configure": "Configurer l'extension",
+      "configureBody": "Ouvrez le popup de l'extension (icône puzzle), allez dans l'onglet Réglages et collez l'URL de votre instance + un token API généré depuis votre profil."
+    },
+    "features": {
+      "sessions": {
+        "title": "Sessions OSINT",
+        "body": "Importez vos sessions Facebook, Instagram, LinkedIn, etc. en un clic pour que MeteorEdit puisse agir authentifié."
+      },
+      "clipper": {
+        "title": "Web Clipper plein écran",
+        "body": "Capturez la page entière (scroll automatique) ou une zone précise. Bypasse les paywalls et nag screens."
+      },
+      "settings": {
+        "title": "Réglages avancés",
+        "body": "Test de connexion, gestion du token, ouverture des options en plein écran."
+      }
+    }
+  },
+  "extensionBanner": {
+    "title": "Nouveau :",
+    "message": "MeteorEdit Companion v2.0 est disponible pour {browser} avec un Web Clipper plein écran intégré.",
+    "unsupportedMessage": "MeteorEdit Companion v2.0 est disponible (compatible Chrome et Firefox).",
+    "cta": "Installer"
   },
   "companies": {
     "title": "Recherche d'entreprises",

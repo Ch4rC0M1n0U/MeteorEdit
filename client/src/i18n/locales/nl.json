@@ -103,6 +103,7 @@
     "whatsNew": "Nieuw",
     "osintSearch": "OSINT Zoeken",
     "companies": "Bedrijfszoekfunctie",
+    "extension": "Extensie",
     "backendConnected": "Server verbonden",
     "backendDisconnected": "Server niet verbonden",
     "profile": "Mijn profiel",
@@ -2232,6 +2233,56 @@
     "customCategoryPlaceholder": "Categorienaam",
     "description": "Beschrijving",
     "source": "Bron / Referentie"
+  },
+  "extension": {
+    "title": "MeteorEdit Companion",
+    "subtitle": "Officiële browserextensie: import van OSINT-sessies, full-page web clipper en meer onderweg. Compatibel met Chrome, Firefox en andere Chromium-browsers.",
+    "detectedBrowser": "Gedetecteerde browser",
+    "unsupportedBrowser": "Deze browser wordt niet officieel ondersteund (Safari en andere). De extensie werkt mogelijk niet correct.",
+    "downloadFor": "Downloaden voor {browser}",
+    "downloadAnyway": "Toch downloaden (.zip)",
+    "installTitle": "Installatie",
+    "configureTitle": "Configuratie",
+    "configureBody": "Wanneer de extensie is geladen, opent u het tabblad Instellingen en plakt u deze twee waarden:",
+    "instanceUrl": "URL van uw instantie",
+    "tokenLabel": "API-token",
+    "generateToken": "Een token genereren (Profiel > API-tokens)",
+    "steps": {
+      "download": "Download het .zip-archief",
+      "downloadBody": "Klik op de downloadknop hierboven en <strong>pak vervolgens de inhoud uit</strong> in een permanente map (bv. <code>~/MeteorEditCompanion</code>).",
+      "chromeOpen": "Open de extensies-pagina",
+      "chromeOpenBody": "Typ deze URL in de adresbalk:",
+      "chromeDevMode": "Activeer ontwikkelaarsmodus",
+      "chromeDevModeBody": "Schakel de schakelaar \"Ontwikkelaarsmodus\" rechtsboven in.",
+      "chromeLoad": "Laad de uitgepakte extensie",
+      "chromeLoadBody": "Klik \"Uitgepakte extensie laden\" en selecteer de zojuist uitgepakte map.",
+      "firefoxOpen": "Open about:debugging",
+      "firefoxOpenBody": "Typ deze URL in de adresbalk:",
+      "firefoxLoad": "Tijdelijke add-on laden",
+      "firefoxLoadBody": "Klik \"Tijdelijke add-on laden\" en selecteer het bestand <code>manifest.json</code> in de uitgepakte map.",
+      "configure": "Configureer de extensie",
+      "configureBody": "Open de extensie-popup (puzzel-icoon), ga naar het tabblad Instellingen en plak de URL van uw instantie + een API-token gegenereerd in uw profiel."
+    },
+    "features": {
+      "sessions": {
+        "title": "OSINT-sessies",
+        "body": "Importeer uw Facebook-, Instagram-, LinkedIn-sessies enz. met één klik zodat MeteorEdit geauthenticeerd kan optreden."
+      },
+      "clipper": {
+        "title": "Full-page Web Clipper",
+        "body": "Vang de hele pagina (auto-scroll) of een specifiek gebied. Omzeilt paywalls en nag screens."
+      },
+      "settings": {
+        "title": "Geavanceerde instellingen",
+        "body": "Verbindingstest, tokenbeheer, schermvullende optiespagina."
+      }
+    }
+  },
+  "extensionBanner": {
+    "title": "Nieuw:",
+    "message": "MeteorEdit Companion v2.0 is beschikbaar voor {browser} met een ingebouwde full-page Web Clipper.",
+    "unsupportedMessage": "MeteorEdit Companion v2.0 is beschikbaar (Chrome- en Firefox-compatibel).",
+    "cta": "Installeren"
   },
   "companies": {
     "title": "Bedrijfszoekfunctie",
