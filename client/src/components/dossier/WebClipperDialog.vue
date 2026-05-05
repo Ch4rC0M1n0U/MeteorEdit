@@ -1,159 +1,112 @@
 <template>
-  <Dialog v-model:visible="model" modal :style="{ width: '500px' }" :closable="false">
+  <Dialog v-model:visible="model" modal :style="{ width: '520px' }" :closable="true">
     <template #container>
-    <div class="wc-dialog glass-card">
-      <div class="wc-header">
-        <span class="mdi mdi-web wc-header-icon" style="font-size: 20px;"></span>
-        <span>{{ $t('dossier.webClipper') }}</span>
-        <button class="wc-close" @click="model = false">
-          <i class="pi pi-times" style="font-size: 18px;"></i>
-        </button>
-      </div>
-
-      <div class="wc-body">
-        <div class="wc-field">
-          <label class="wc-label">{{ $t('clipper.urlLabel') }}</label>
-          <input v-model="url" class="wc-input" :placeholder="$t('clipper.urlPlaceholder')" />
-        </div>
-        <div class="wc-field">
-          <label class="wc-label">{{ $t('clipper.titleLabel') }}</label>
-          <input v-model="title" class="wc-input" :placeholder="$t('clipper.titlePlaceholder')" />
-        </div>
-        <div class="wc-field">
-          <label class="wc-label">{{ $t('clipper.contentLabel') }}</label>
-          <textarea v-model="content" class="wc-input wc-textarea" rows="6" :placeholder="$t('clipper.contentPlaceholder')" />
-        </div>
-        <div class="wc-field">
-          <label class="wc-label">{{ $t('clipper.parentFolder') }}</label>
-          <FolderPicker v-model="parentId" />
+      <div class="wc-dialog glass-card">
+        <div class="wc-header">
+          <span class="mdi mdi-web wc-header-icon" style="font-size: 20px;"></span>
+          <span>{{ $t('clipper.movedTitle') }}</span>
+          <button class="wc-close" @click="model = false">
+            <i class="pi pi-times" style="font-size: 18px;"></i>
+          </button>
         </div>
 
-        <!-- Bookmarklet section -->
-        <div class="wc-bookmarklet">
-          <div class="wc-bookmarklet-label">
-            <span class="mdi mdi-bookmark-outline" style="font-size: 14px;"></span>
-            {{ $t('clipper.bookmarklet') }}
+        <div class="wc-body">
+          <div class="wc-hero">
+            <span class="mdi mdi-puzzle-outline" />
           </div>
-          <p class="wc-bookmarklet-hint">
-            {{ $t('clipper.bookmarkletHint') }}
-          </p>
-          <a
-            class="wc-bookmarklet-link"
-            :href="bookmarkletCode"
-            @click.prevent
-            draggable="true"
-          >
-            <span class="mdi mdi-lightning-bolt" style="font-size: 14px;"></span>
-            {{ $t('clipper.bookmarkletLink') }}
-          </a>
+
+          <p class="wc-lead">{{ $t('clipper.movedLead') }}</p>
+
+          <ul class="wc-bullets">
+            <li>
+              <span class="mdi mdi-check-circle-outline"></span>
+              <span>{{ $t('clipper.benefit1') }}</span>
+            </li>
+            <li>
+              <span class="mdi mdi-check-circle-outline"></span>
+              <span>{{ $t('clipper.benefit2') }}</span>
+            </li>
+            <li>
+              <span class="mdi mdi-check-circle-outline"></span>
+              <span>{{ $t('clipper.benefit3') }}</span>
+            </li>
+          </ul>
+
+          <div class="wc-actions">
+            <a :href="extensionDownloadUrl" class="me-btn me-btn-accent" target="_blank" rel="noopener">
+              <i class="pi pi-download" style="font-size: 14px; margin-right: 6px;"></i>
+              {{ $t('clipper.downloadExtension') }}
+            </a>
+            <button class="me-btn me-btn-ghost" @click="model = false">{{ $t('common.close') }}</button>
+          </div>
+
+          <p class="wc-note">{{ $t('clipper.howToUse') }}</p>
         </div>
       </div>
-
-      <div class="wc-footer">
-        <button class="wc-btn wc-btn--cancel" @click="model = false">{{ $t('common.cancel') }}</button>
-        <button class="wc-btn wc-btn--clip" @click="clip" :disabled="!url.trim() || !title.trim() || clipping">
-          <span v-if="clipping" class="mdi mdi-loading spin" style="font-size: 14px;"></span>
-          <span v-else class="mdi mdi-content-cut" style="font-size: 14px;"></span>
-          {{ clipping ? $t('clipper.clipping') : $t('clipper.clip') }}
-        </button>
-      </div>
-    </div>
     </template>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
 import Dialog from 'primevue/dialog';
-import api from '../../services/api';
-import { useDossierStore } from '../../stores/dossier';
-import FolderPicker from '../common/FolderPicker.vue';
+import { SERVER_URL } from '../../services/api';
 
-const { t } = useI18n();
-const model = defineModel<boolean>({ default: false });
+const props = defineProps<{ modelValue: boolean }>();
+const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>();
 
-const dossierStore = useDossierStore();
-
-const url = ref('');
-const title = ref('');
-const content = ref('');
-const parentId = ref('');
-const clipping = ref(false);
-
-const bookmarkletCode = computed(() => {
-  const baseUrl = window.location.origin;
-  const dossierId = dossierStore.currentDossier?._id || '';
-  const token = localStorage.getItem('accessToken') || '';
-  const successMsg = t('clipper.captureSuccess');
-  const errorMsg = t('clipper.captureError');
-  const connErrorMsg = t('clipper.connectionError');
-  // Bookmarklet captures page title, url, selected HTML or body content
-  return `javascript:void((function(){var d=document,sel=d.getSelection(),h='',txt='';if(sel&&sel.rangeCount>0){var c=d.createElement('div');for(var i=0;i<sel.rangeCount;i++)c.appendChild(sel.getRangeAt(i).cloneContents());h=c.innerHTML;txt=sel.toString()}if(!h){var main=d.querySelector('article')||d.querySelector('[role=main]')||d.querySelector('main')||d.body;h=main.innerHTML.substring(0,50000);txt=main.innerText.substring(0,10000)}var t=d.title,u=d.location.href;fetch('${baseUrl}/api/clip',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer ${token}'},body:JSON.stringify({dossierId:'${dossierId}',title:t,url:u,content:h,textContent:txt})}).then(function(r){if(r.ok)alert('${successMsg}');else alert('${errorMsg}');}).catch(function(){alert('${connErrorMsg}');})})())`;
+const model = computed({
+  get: () => props.modelValue,
+  set: (v: boolean) => emit('update:modelValue', v),
 });
 
-watch(model, (open) => {
-  if (open) {
-    url.value = '';
-    title.value = '';
-    content.value = '';
-    parentId.value = '';
-  }
-});
-
-async function clip() {
-  if (!dossierStore.currentDossier || !url.value.trim() || !title.value.trim()) return;
-  clipping.value = true;
-  try {
-    const { data } = await api.post('/clip', {
-      dossierId: dossierStore.currentDossier._id,
-      parentId: parentId.value || null,
-      title: title.value.trim(),
-      url: url.value.trim(),
-      content: content.value || `<p>${t('clipper.capturedFrom', { url: url.value })}</p>`,
-      textContent: content.value.replace(/<[^>]+>/g, ' ').substring(0, 50000),
-    });
-    // Add node to store
-    dossierStore.nodes.push(data);
-    model.value = false;
-  } catch (err) {
-    console.error('Clip error:', err);
-  } finally {
-    clipping.value = false;
-  }
-}
+const extensionDownloadUrl = computed(() => `${SERVER_URL}/api/extension/download`);
 </script>
 
 <style scoped>
-.wc-dialog { padding: 0; border-radius: 12px; overflow: hidden; background: var(--me-bg-surface); border: 1px solid var(--me-border); }
-.wc-header { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--me-border); font-size: 14px; font-weight: 600; color: var(--me-text-primary); }
-.wc-header-icon { color: var(--me-accent); }
-.wc-close { margin-left: auto; background: none; border: none; color: var(--me-text-muted); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; transition: all 0.15s; }
-.wc-close:hover { background: rgba(255,255,255,0.08); color: var(--me-text-primary); }
-.wc-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
-.wc-field { display: flex; flex-direction: column; gap: 4px; }
-.wc-label { font-size: 12px; color: var(--me-text-secondary); font-weight: 500; }
-.wc-input { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--me-border); background: var(--me-bg-deep); color: var(--me-text-primary); font-size: 13px; outline: none; transition: border-color 0.15s; font-family: inherit; }
-.wc-input:focus { border-color: var(--me-accent); }
-.wc-textarea { resize: vertical; min-height: 80px; }
-.wc-bookmarklet { padding: 12px; border-radius: 8px; background: var(--me-bg-elevated); border: 1px dashed var(--me-border); }
-.wc-bookmarklet-label { font-size: 12px; font-weight: 600; color: var(--me-text-primary); display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
-.wc-bookmarklet-hint { font-size: 11px; color: var(--me-text-muted); margin-bottom: 8px; }
-.wc-bookmarklet-link {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 6px 12px; border-radius: 6px;
-  background: var(--me-accent); color: #fff;
-  font-size: 12px; font-weight: 600; text-decoration: none;
-  cursor: grab; transition: filter 0.15s;
+.wc-dialog { padding: 0; border-radius: 12px; overflow: hidden; }
+.wc-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--me-border);
+  font-weight: 700; font-size: 15px;
 }
-.wc-bookmarklet-link:hover { filter: brightness(1.15); }
-.wc-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--me-border); }
-.wc-btn { padding: 7px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
-.wc-btn--cancel { background: none; color: var(--me-text-muted); }
-.wc-btn--cancel:hover { background: rgba(255,255,255,0.06); color: var(--me-text-primary); }
-.wc-btn--clip { background: var(--me-accent); color: #fff; }
-.wc-btn--clip:hover { filter: brightness(1.15); }
-.wc-btn--clip:disabled { opacity: 0.5; cursor: not-allowed; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 1s linear infinite; }
+.wc-header-icon { color: var(--me-accent); }
+.wc-close {
+  margin-left: auto;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--me-text-muted);
+  padding: 4px 8px;
+}
+.wc-close:hover { color: var(--me-text-primary); }
+
+.wc-body { padding: 24px; }
+.wc-hero {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--me-accent) 0%, var(--me-accent-light, #6366f1) 100%);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 16px;
+}
+.wc-lead {
+  font-size: 14px; color: var(--me-text-primary);
+  text-align: center; margin: 0 0 18px; line-height: 1.5;
+}
+.wc-bullets {
+  list-style: none; padding: 0; margin: 0 0 22px;
+  display: flex; flex-direction: column; gap: 8px;
+  font-size: 13px; color: var(--me-text-secondary);
+}
+.wc-bullets li { display: flex; align-items: flex-start; gap: 8px; }
+.wc-bullets .mdi { color: var(--me-success, #22c55e); font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+.wc-actions {
+  display: flex; gap: 8px; justify-content: center;
+  margin-bottom: 14px;
+}
+.wc-note {
+  text-align: center; font-size: 12px; color: var(--me-text-muted);
+  margin: 0; padding-top: 12px; border-top: 1px dashed var(--me-border);
+}
 </style>

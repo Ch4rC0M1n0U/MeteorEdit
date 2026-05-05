@@ -44,6 +44,8 @@ export const api = {
   verify:        () => request('/api/extension/auth/verify'),
   branding:      () => request('/api/branding', { requireAuth: false }),
   importCookies: (payload) => request('/api/extension/cookies/import', { method: 'POST', body: payload }),
+  listDossiers:  () => request('/api/extension/dossiers'),
+  clip:          (payload) => request('/api/extension/clip', { method: 'POST', body: payload }),
 };
 
 export { ApiError };

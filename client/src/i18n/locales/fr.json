@@ -686,7 +686,14 @@
     "capturedFrom": "Contenu capturé depuis {url}",
     "captureSuccess": "Capture réussie !",
     "captureError": "Erreur de capture",
-    "connectionError": "Erreur de connexion"
+    "connectionError": "Erreur de connexion",
+    "movedTitle": "Web Clipper — extension navigateur",
+    "movedLead": "Le Web Clipper est désormais intégré à l'extension MeteorEdit Companion. Plus rapide, plus fiable, et capable de capturer les pages avec paywall ou contenu chargé en JavaScript.",
+    "benefit1": "Capture plein écran avec scroll automatique (page entière, pas seulement la fenêtre visible)",
+    "benefit2": "Bypasse les paywalls et nag screens grâce à votre session navigateur",
+    "benefit3": "Capture de zone : cliquez-glissez pour ne capturer qu'une portion précise",
+    "downloadExtension": "Télécharger l'extension",
+    "howToUse": "Une fois installée, cliquez sur l'icône de l'extension dans votre navigateur, allez dans l'onglet Clipper, puis choisissez le dossier de destination."
   },
   "dataset": {
     "csvPlaceholder": "Collez vos données CSV ici...",

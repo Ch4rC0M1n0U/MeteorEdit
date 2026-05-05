@@ -8,6 +8,10 @@ import {
   clearMySession,
   downloadExtension,
 } from '../controllers/extensionController';
+import {
+  listExtensionDossiers,
+  clipFromExtension,
+} from '../controllers/extensionClipController';
 
 const router = Router();
 
@@ -17,6 +21,8 @@ router.get('/download', downloadExtension);
 // Bearer-token auth: used by the browser extension
 router.get('/auth/verify', extensionAuth, verify);
 router.post('/cookies/import', extensionAuth, importCookies);
+router.get('/dossiers', extensionAuth, listExtensionDossiers);
+router.post('/clip', extensionAuth, clipFromExtension);
 
 // Session-based auth: used by the web app (Profile > Sessions sociales)
 router.get('/sessions', authenticate, listMySessions);

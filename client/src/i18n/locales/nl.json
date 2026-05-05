@@ -673,7 +673,14 @@
     "capturedFrom": "Inhoud vastgelegd van {url}",
     "captureSuccess": "Vastleggen gelukt!",
     "captureError": "Vastlegfout",
-    "connectionError": "Verbindingsfout"
+    "connectionError": "Verbindingsfout",
+    "movedTitle": "Web Clipper — browserextensie",
+    "movedLead": "De Web Clipper is nu geïntegreerd in de MeteorEdit Companion-extensie. Sneller, betrouwbaarder en in staat om pagina's met paywall of JavaScript-content te capteren.",
+    "benefit1": "Schermafbeelding van volledige pagina met automatisch scrollen (hele pagina, niet alleen het zichtbare gedeelte)",
+    "benefit2": "Omzeilt paywalls en nag screens dankzij uw ingelogde browsersessie",
+    "benefit3": "Zonecapture: klik-en-sleep om alleen een specifiek gedeelte vast te leggen",
+    "downloadExtension": "Extensie downloaden",
+    "howToUse": "Na installatie klikt u op het extensie-icoon in uw browser, opent u het tabblad Clipper en kiest u het bestemmingsdossier."
   },
   "dataset": {
     "csvPlaceholder": "Plak uw CSV-gegevens hier...",

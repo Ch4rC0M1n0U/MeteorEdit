@@ -3,7 +3,17 @@ const KEYS = {
   apiUrl: 'meteoredit:apiUrl',
   apiToken: 'meteoredit:apiToken',
   branding: 'meteoredit:branding',
+  lastDossierId: 'meteoredit:lastDossierId',
 };
+
+export async function getLastDossierId() {
+  const data = await chrome.storage.local.get([KEYS.lastDossierId]);
+  return (data[KEYS.lastDossierId] ?? '').trim();
+}
+
+export async function setLastDossierId(id) {
+  await chrome.storage.local.set({ [KEYS.lastDossierId]: String(id ?? '') });
+}
 
 export async function getConfig() {
   const data = await chrome.storage.local.get([KEYS.apiUrl, KEYS.apiToken]);

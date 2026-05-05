@@ -76,3 +76,147 @@
 }
 .pop-link { color: var(--me-accent); font-size: 12px; text-decoration: none; }
 .pop-link:hover { text-decoration: underline; }
+
+/* ==================== TABS ==================== */
+.pop-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--me-border);
+  background: var(--me-bg-surface);
+}
+.pop-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--me-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.pop-tab:hover { background: var(--me-accent-glow); color: var(--me-text-secondary); }
+.pop-tab--active {
+  color: var(--me-accent);
+  border-bottom-color: var(--me-accent);
+  background: var(--me-bg-app);
+}
+.pop-tab-ico { font-size: 16px; line-height: 1; }
+
+.pop-pane { display: none; }
+.pop-pane--active { display: block; }
+
+/* ==================== CLIPPER ==================== */
+.clip-tab-info {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-md);
+}
+.clip-tab-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.clip-tab-url {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+  font-family: ui-monospace, monospace;
+}
+
+.me-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--me-text-muted);
+  margin-bottom: 6px;
+}
+.me-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-sm);
+  background: var(--me-bg-elevated);
+  color: var(--me-text-primary);
+  font-size: 13px;
+}
+.me-input:focus {
+  outline: none;
+  border-color: var(--me-accent);
+}
+
+.clip-options {
+  margin-top: 10px;
+  padding: 8px 0;
+}
+.clip-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--me-text-secondary);
+  cursor: pointer;
+}
+
+.clip-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.clip-btn-ico { font-size: 14px; margin-right: 4px; }
+.clip-full { font-weight: 600; }
+
+.clip-progress {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius-sm);
+}
+.clip-progress-bar {
+  height: 6px;
+  background: var(--me-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.clip-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--me-accent);
+  transition: width 0.2s;
+}
+.clip-progress-text {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--me-text-muted);
+  text-align: center;
+}
+
+/* ==================== SETTINGS ==================== */
+.set-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.set-actions .me-btn { flex: 1; }
+.set-divider {
+  height: 1px;
+  background: var(--me-border);
+  margin: 16px 0;
+}
+.set-full { width: 100%; }

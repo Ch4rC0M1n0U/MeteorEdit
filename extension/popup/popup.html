@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>MeteorEdit</title>
+  <title>MeteorEdit Companion</title>
   <link rel="stylesheet" href="../common/theme.css" />
   <link rel="stylesheet" href="popup.css" />
 </head>
@@ -11,65 +11,149 @@
     <header class="pop-header">
       <img id="brandLogo" src="../icons/icon48.png" alt="" class="pop-logo" />
       <div class="pop-brand">
-        <div id="brandName" class="pop-brand-name">MeteorEdit</div>
+        <div id="brandName" class="pop-brand-name">MeteorEdit Companion</div>
         <div id="brandHost" class="pop-brand-host">— non configuré —</div>
       </div>
-      <button id="optsBtn" class="me-btn me-btn--ghost pop-cog" title="Options">
-        <span class="mdi-icon">⚙</span>
-      </button>
     </header>
 
+    <nav class="pop-tabs" role="tablist">
+      <button class="pop-tab pop-tab--active" data-tab="sessions" role="tab" aria-selected="true">
+        <span class="pop-tab-ico">🍪</span>
+        <span>Sessions</span>
+      </button>
+      <button class="pop-tab" data-tab="clipper" role="tab" aria-selected="false">
+        <span class="pop-tab-ico">📋</span>
+        <span>Clipper</span>
+      </button>
+      <button class="pop-tab" data-tab="settings" role="tab" aria-selected="false">
+        <span class="pop-tab-ico">⚙</span>
+        <span>Réglages</span>
+      </button>
+    </nav>
+
     <main id="content" class="pop-content">
-      <!-- Loading skeleton -->
-      <div id="state-loading" class="pop-state">
-        <div class="pop-spinner"></div>
-        <p>Chargement…</p>
-      </div>
 
-      <!-- Not configured -->
-      <div id="state-config" class="pop-state" hidden>
-        <p class="pop-msg">Configurez l'URL de votre instance et un token API pour commencer.</p>
-        <button id="goOptsBtn" class="me-btn me-btn--primary">Ouvrir les options</button>
-      </div>
-
-      <!-- Auth error -->
-      <div id="state-auth" class="pop-state" hidden>
-        <p class="pop-msg pop-msg--err">Authentification échouée. Vérifiez votre token API.</p>
-        <button id="goOptsBtn2" class="me-btn me-btn--secondary">Vérifier les options</button>
-      </div>
-
-      <!-- Unsupported platform -->
-      <div id="state-unsupported" class="pop-state" hidden>
-        <p class="pop-msg">Aucune plateforme supportée détectée sur cet onglet.</p>
-        <p class="me-hint" id="currentHost"></p>
-      </div>
-
-      <!-- Ready to export -->
-      <div id="state-ready" class="pop-state" hidden>
-        <div class="pop-platform">
-          <div class="pop-platform-icon" id="platformIcon">●</div>
-          <div>
-            <div class="pop-platform-name" id="platformName"></div>
-            <div class="pop-platform-meta" id="platformMeta">— cookies détectés —</div>
-          </div>
+      <!-- ============== TAB: SESSIONS ============== -->
+      <section class="pop-pane pop-pane--active" data-pane="sessions">
+        <div id="state-loading" class="pop-state">
+          <div class="pop-spinner"></div>
+          <p>Chargement…</p>
         </div>
 
-        <p class="me-hint" style="margin: 0 0 12px; text-align: center;">
-          Les cookies d'authentification seront envoyés à votre instance pour permettre
-          aux outils MeteorEdit (Web Clipper, Profile Analyzer…) d'agir authentifiés en votre nom.
-        </p>
+        <div id="state-config" class="pop-state" hidden>
+          <p class="pop-msg">Configurez l'URL de votre instance et un token API dans l'onglet Réglages.</p>
+          <button id="goSettingsBtn" class="me-btn me-btn--primary">Aller aux réglages</button>
+        </div>
 
-        <button id="exportBtn" class="me-btn me-btn--primary pop-export">
-          <span>Importer la session vers MeteorEdit</span>
+        <div id="state-auth" class="pop-state" hidden>
+          <p class="pop-msg pop-msg--err">Authentification échouée. Vérifiez votre token API.</p>
+          <button id="goSettingsBtn2" class="me-btn me-btn--secondary">Vérifier les réglages</button>
+        </div>
+
+        <div id="state-unsupported" class="pop-state" hidden>
+          <p class="pop-msg">Aucune plateforme OSINT supportée détectée sur cet onglet.</p>
+          <p class="me-hint" id="currentHost"></p>
+          <p class="me-hint" style="margin-top: 12px;">Utilisez l'onglet <strong>Clipper</strong> pour sauvegarder n'importe quelle page.</p>
+        </div>
+
+        <div id="state-ready" class="pop-state" hidden>
+          <div class="pop-platform">
+            <div class="pop-platform-icon" id="platformIcon">●</div>
+            <div>
+              <div class="pop-platform-name" id="platformName"></div>
+              <div class="pop-platform-meta" id="platformMeta">— cookies détectés —</div>
+            </div>
+          </div>
+
+          <p class="me-hint" style="margin: 0 0 12px; text-align: center;">
+            Les cookies d'authentification seront envoyés à votre instance pour permettre
+            aux outils MeteorEdit (Profile Analyzer…) d'agir authentifiés en votre nom.
+          </p>
+
+          <button id="exportBtn" class="me-btn me-btn--primary pop-export">
+            <span>Importer la session vers MeteorEdit</span>
+          </button>
+
+          <div id="exportStatus" class="me-status" style="display:none; margin-top: 10px; align-self: stretch; justify-content: center;"></div>
+        </div>
+      </section>
+
+      <!-- ============== TAB: CLIPPER ============== -->
+      <section class="pop-pane" data-pane="clipper" hidden>
+        <div id="clip-state-config" class="pop-state" hidden>
+          <p class="pop-msg">Configurez d'abord l'URL et le token dans l'onglet Réglages.</p>
+        </div>
+
+        <div id="clip-state-ready" class="pop-state" hidden>
+          <div class="clip-tab-info">
+            <div class="clip-tab-title" id="clipPageTitle">—</div>
+            <div class="clip-tab-url" id="clipPageUrl">—</div>
+          </div>
+
+          <label class="me-label" for="clipDossier">Dossier de destination</label>
+          <select id="clipDossier" class="me-input">
+            <option value="">— Chargement des dossiers…</option>
+          </select>
+
+          <div class="clip-options">
+            <label class="clip-checkbox">
+              <input type="checkbox" id="clipIncludeHtml" />
+              <span>Inclure aussi le texte/HTML de la page</span>
+            </label>
+          </div>
+
+          <div class="clip-actions">
+            <button id="clipFullBtn" class="me-btn me-btn--primary clip-full">
+              <span class="clip-btn-ico">📸</span>
+              <span>Capturer la page entière</span>
+            </button>
+            <button id="clipAreaBtn" class="me-btn me-btn--secondary">
+              <span class="clip-btn-ico">▭</span>
+              <span>Capturer une zone</span>
+            </button>
+          </div>
+
+          <p class="me-hint" style="margin-top: 8px;">
+            Par défaut : capture full-page (scroll automatique + assemblage). La capture peut
+            prendre 2-10 s selon la longueur de la page.
+          </p>
+
+          <div id="clipProgress" class="clip-progress" hidden>
+            <div class="clip-progress-bar"><div id="clipProgressFill" class="clip-progress-fill"></div></div>
+            <div id="clipProgressText" class="clip-progress-text">Capture…</div>
+          </div>
+
+          <div id="clipStatus" class="me-status" style="display:none; margin-top: 10px;"></div>
+        </div>
+      </section>
+
+      <!-- ============== TAB: SETTINGS ============== -->
+      <section class="pop-pane" data-pane="settings" hidden>
+        <label class="me-label" for="setApiUrl">URL de l'instance</label>
+        <input id="setApiUrl" type="url" class="me-input" placeholder="https://meteoredit.local" />
+
+        <label class="me-label" for="setApiToken" style="margin-top: 12px;">Token API</label>
+        <input id="setApiToken" type="password" class="me-input" placeholder="mext_..." autocomplete="off" />
+        <p class="me-hint">Générable depuis Profil &gt; Tokens API sur votre instance.</p>
+
+        <div class="set-actions">
+          <button id="setSaveBtn" class="me-btn me-btn--primary">Enregistrer</button>
+          <button id="setTestBtn" class="me-btn me-btn--secondary">Tester</button>
+        </div>
+        <div id="setStatus" class="me-status" style="display:none; margin-top: 10px;"></div>
+
+        <div class="set-divider"></div>
+
+        <button id="setOpenFullBtn" class="me-btn me-btn--ghost set-full">
+          Ouvrir les options en plein écran
         </button>
+      </section>
 
-        <div id="exportStatus" class="me-status" style="display:none; margin-top: 10px; align-self: stretch; justify-content: center;"></div>
-      </div>
     </main>
 
     <footer class="pop-footer">
-      <span class="me-hint">v<span id="extVer">1.0.0</span></span>
-      <a href="#" id="optsLink" class="pop-link">Options</a>
+      <span class="me-hint">v<span id="extVer">2.0.0</span></span>
+      <a href="#" id="optsLink" class="pop-link">Réglages avancés</a>
     </footer>
   </div>
 
