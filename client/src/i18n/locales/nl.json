@@ -2232,7 +2232,7 @@
     "configureToken": "Mijn token configureren",
     "resultsCount": "{n} resultaat/resultaten",
     "noResults": "Geen bedrijf gevonden voor deze criteria.",
-    "addressSlowHint": "Adreszoekopdrachten gebruiken een trage index aan CBEAPI-zijde — reken op 20-30 seconden. Even geduld a.u.b. zonder opnieuw te starten.",
+    "addressSlowHint": "Adreszoekopdrachten zijn traag aan CBEAPI-zijde (20-30 s). Als u een huisnummer heeft ingevuld, wordt de filtering lokaal toegepast bij ontvangst. Even geduld a.u.b. zonder opnieuw te starten.",
     "viewDetails": "Details bekijken",
     "exportThis": "Dit bedrijf exporteren",
     "exportSelection": "Exporteren ({n})",

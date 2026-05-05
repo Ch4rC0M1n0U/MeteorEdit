@@ -150,6 +150,14 @@ export async function searchByName(token: string, name: string, postCode?: numbe
   return data;
 }
 
+/**
+ * Normalize a house number for comparison: trim, lowercase, drop spaces and
+ * dashes, so "12 A", "12-A" and "12a" all collapse to "12a".
+ */
+function normalizeHouseNumber(input: string | undefined | null): string {
+  return String(input ?? '').toLowerCase().replace(/[\s-]/g, '');
+}
+
 export async function searchByAddress(
   token: string,
   q: { street?: string; house_number?: string; city?: string; post_code?: number },
@@ -158,9 +166,30 @@ export async function searchByAddress(
   const cacheKey = `addr:${lang}:${JSON.stringify(q)}`;
   const cached = cacheGet<BceSearchResult>(cacheKey);
   if (cached) return cached;
-  // CBEAPI's address index is slow (typically 20-30s). Combining house_number
-  // with other fields can timeout server-side at ~60s. Allow up to 50s here.
-  const data = await callApi<BceSearchResult>('/company/search/address', token, lang, q, 50000);
+
+  // CBEAPI's address index is slow (typically 20-30s) and times out (504)
+  // when house_number is combined with other fields. Strategy: query without
+  // house_number, then filter server-side. This lets users keep typing a full
+  // address (street + number + city) without ever hitting CBEAPI's timeout.
+  const { house_number, ...remoteQuery } = q;
+  const data = await callApi<BceSearchResult>('/company/search/address', token, lang, remoteQuery, 50000);
+
+  if (house_number && data?.data) {
+    const target = normalizeHouseNumber(house_number);
+    const filtered = data.data.filter((c) => {
+      const headOffice = normalizeHouseNumber(c.address?.street_number);
+      if (headOffice === target) return true;
+      const establishments = Array.isArray(c.establishments) ? c.establishments : [];
+      return establishments.some((e) => normalizeHouseNumber((e as any)?.house_number) === target);
+    });
+    const result: BceSearchResult = {
+      data: filtered,
+      meta: data.meta ? { ...data.meta, total: filtered.length } : undefined,
+    };
+    cacheSet(cacheKey, result);
+    return result;
+  }
+
   cacheSet(cacheKey, data);
   return data;
 }

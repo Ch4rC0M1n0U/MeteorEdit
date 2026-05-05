@@ -2245,7 +2245,7 @@
     "configureToken": "Configurer mon token",
     "resultsCount": "{n} résultat(s)",
     "noResults": "Aucune entreprise trouvée pour ces critères.",
-    "addressSlowHint": "La recherche par adresse interroge un index lent côté CBEAPI — comptez 20 à 30 secondes. Patientez sans relancer.",
+    "addressSlowHint": "La recherche par adresse est lente côté CBEAPI (20-30 s). Si vous avez saisi un numéro, le filtrage est appliqué localement à la réception. Patientez sans relancer.",
     "viewDetails": "Voir les détails",
     "exportThis": "Exporter cette entreprise",
     "exportSelection": "Exporter ({n})",
