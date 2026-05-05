@@ -11,6 +11,10 @@
     "back": "Retour",
     "search": "Rechercher...",
     "ok": "OK",
+    "reset": "Réinitialiser",
+    "clear": "Effacer",
+    "comingSoon": "Bientôt",
+    "remove": "Retirer",
     "error": "Erreur",
     "loading": "Chargement...",
     "saving": "Sauvegarde...",
@@ -97,6 +101,7 @@
     "myAccount": "Mon compte",
     "whatsNew": "Nouveautés",
     "osintSearch": "Recherche OSINT",
+    "companies": "Recherche d'entreprises",
     "backendConnected": "Serveur connecte",
     "backendDisconnected": "Serveur deconnecte",
     "profile": "Mon profil",
@@ -818,6 +823,28 @@
       "revoke": "Révoquer",
       "revoked": "Token révoqué",
       "revokeConfirm": "Révoquer le token \"{name}\" ? Toute extension ou intégration utilisant ce token cessera de fonctionner immédiatement."
+    },
+    "externalTokens": {
+      "navLabel": "Tokens externes",
+      "title": "Tokens d'API externes",
+      "subtitle": "Connectez vos comptes auprès des services externes utilisés par MeteorEdit (registres d'entreprises, sources OSINT…). Vos tokens sont chiffrés et ne quittent jamais votre profil.",
+      "tokenLabel": "Token / clé API",
+      "tokenPlaceholder": "Collez votre token ici",
+      "configured": "Configuré",
+      "notConfigured": "Non configuré",
+      "savedTitle": "Token enregistré",
+      "savedDetail": "Le token a été chiffré et stocké.",
+      "removedTitle": "Token retiré",
+      "removedDetail": "Le token a été supprimé de votre profil.",
+      "bce": {
+        "title": "CBEAPI.be — Banque-Carrefour des Entreprises (Belgique)",
+        "help": "Créez un compte gratuit sur",
+        "quota": "2500 requêtes/jour"
+      },
+      "openCorporates": {
+        "title": "OpenCorporates — Registre mondial",
+        "help": "Demandez une clé API sur"
+      }
     }
   },
   "extension": {
@@ -2202,5 +2229,63 @@
     "customCategoryPlaceholder": "Nom de la catégorie",
     "description": "Description",
     "source": "Source / Référence"
+  },
+  "companies": {
+    "title": "Recherche d'entreprises",
+    "subtitle": "Interrogez les registres officiels d'entreprises et exportez les fiches dans vos dossiers.",
+    "configureToken": "Configurer mon token",
+    "resultsCount": "{n} résultat(s)",
+    "noResults": "Aucune entreprise trouvée pour ces critères.",
+    "viewDetails": "Voir les détails",
+    "exportThis": "Exporter cette entreprise",
+    "exportSelection": "Exporter ({n})",
+    "exportDialogTitle": "Exporter vers un dossier",
+    "exportTargetDossier": "Dossier de destination",
+    "selectDossier": "Choisir un dossier…",
+    "exportNoteCount": "Une note sera créée par entreprise ({n} au total) dans un dossier « BCE » à la racine.",
+    "exportSuccess": "Export terminé",
+    "exportCreated": "{n} note(s) créée(s)",
+    "exportErrors": "{n} échec(s) :",
+    "exportNoSelection": "Aucune entreprise sélectionnée.",
+    "doExport": "Exporter",
+    "detailsTitle": "Fiche entreprise",
+    "contact": "Contact",
+    "naceActivities": "Activités (NACE)",
+    "mainActivity": "Activité principale",
+    "sources": {
+      "bce": "Belgique (BCE)",
+      "eu": "Europe"
+    },
+    "modes": {
+      "name": "Par nom",
+      "address": "Par adresse",
+      "vat": "Par TVA / BCE"
+    },
+    "fields": {
+      "name": "Dénomination",
+      "vat": "Numéro de TVA",
+      "bce": "Numéro BCE",
+      "street": "Rue",
+      "houseNumber": "N°",
+      "city": "Ville",
+      "postCode": "Code postal",
+      "juridicalForm": "Forme juridique",
+      "situation": "Situation",
+      "status": "Statut",
+      "startDate": "Date de début",
+      "address": "Adresse"
+    },
+    "placeholders": {
+      "name": "Ex : Anthropic",
+      "street": "Ex : Rue de la Loi",
+      "city": "Ex : Bruxelles"
+    },
+    "cols": {
+      "vat": "TVA",
+      "denomination": "Dénomination",
+      "address": "Adresse",
+      "status": "Statut",
+      "actions": "Actions"
+    }
   }
 }

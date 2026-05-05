@@ -11,6 +11,10 @@
     "back": "Back",
     "search": "Search...",
     "ok": "OK",
+    "reset": "Reset",
+    "clear": "Clear",
+    "comingSoon": "Coming soon",
+    "remove": "Remove",
     "error": "Error",
     "loading": "Loading...",
     "saving": "Saving...",
@@ -97,6 +101,7 @@
     "myAccount": "My account",
     "whatsNew": "What's new",
     "osintSearch": "OSINT Search",
+    "companies": "Company search",
     "backendConnected": "Server connected",
     "backendDisconnected": "Server disconnected",
     "profile": "My profile",
@@ -806,6 +811,28 @@
       "revoke": "Revoke",
       "revoked": "Token revoked",
       "revokeConfirm": "Revoke token \"{name}\"? Any extension or integration using this token will stop working immediately."
+    },
+    "externalTokens": {
+      "navLabel": "External tokens",
+      "title": "External API tokens",
+      "subtitle": "Connect your accounts on external services used by MeteorEdit (company registries, OSINT sources…). Tokens are encrypted and never leave your profile.",
+      "tokenLabel": "Token / API key",
+      "tokenPlaceholder": "Paste your token here",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "savedTitle": "Token saved",
+      "savedDetail": "Token has been encrypted and stored.",
+      "removedTitle": "Token removed",
+      "removedDetail": "Token has been deleted from your profile.",
+      "bce": {
+        "title": "CBEAPI.be — Belgian Crossroads Bank for Enterprises",
+        "help": "Create a free account at",
+        "quota": "2500 requests/day"
+      },
+      "openCorporates": {
+        "title": "OpenCorporates — Global registry",
+        "help": "Request an API key at"
+      }
     }
   },
   "extension": {
@@ -2190,5 +2217,63 @@
     "customCategoryPlaceholder": "Category name",
     "description": "Description",
     "source": "Source / Reference"
+  },
+  "companies": {
+    "title": "Company search",
+    "subtitle": "Query official company registries and export records into your dossiers.",
+    "configureToken": "Configure my token",
+    "resultsCount": "{n} result(s)",
+    "noResults": "No company found for these criteria.",
+    "viewDetails": "View details",
+    "exportThis": "Export this company",
+    "exportSelection": "Export ({n})",
+    "exportDialogTitle": "Export to a dossier",
+    "exportTargetDossier": "Target dossier",
+    "selectDossier": "Choose a dossier…",
+    "exportNoteCount": "One note per company will be created ({n} total) inside a 'BCE' folder at the root.",
+    "exportSuccess": "Export complete",
+    "exportCreated": "{n} note(s) created",
+    "exportErrors": "{n} failure(s):",
+    "exportNoSelection": "No company selected.",
+    "doExport": "Export",
+    "detailsTitle": "Company details",
+    "contact": "Contact",
+    "naceActivities": "Activities (NACE)",
+    "mainActivity": "Main activity",
+    "sources": {
+      "bce": "Belgium (BCE)",
+      "eu": "Europe"
+    },
+    "modes": {
+      "name": "By name",
+      "address": "By address",
+      "vat": "By VAT / BCE"
+    },
+    "fields": {
+      "name": "Denomination",
+      "vat": "VAT number",
+      "bce": "BCE number",
+      "street": "Street",
+      "houseNumber": "No.",
+      "city": "City",
+      "postCode": "Postcode",
+      "juridicalForm": "Legal form",
+      "situation": "Situation",
+      "status": "Status",
+      "startDate": "Start date",
+      "address": "Address"
+    },
+    "placeholders": {
+      "name": "e.g. Anthropic",
+      "street": "e.g. Rue de la Loi",
+      "city": "e.g. Brussels"
+    },
+    "cols": {
+      "vat": "VAT",
+      "denomination": "Denomination",
+      "address": "Address",
+      "status": "Status",
+      "actions": "Actions"
+    }
   }
 }

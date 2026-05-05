@@ -13,6 +13,7 @@ const routes = [
   { path: '/templates/:id/edit', name: 'template-edit', component: () => import('../views/TemplateEditView.vue'), meta: { requiresAuth: true } },
   { path: '/help', name: 'help', component: () => import('../views/HelpView.vue'), meta: { requiresAuth: true } },
   { path: '/osint-search', name: 'osint-search', component: () => import('../views/OsintSearchView.vue'), meta: { requiresAuth: true } },
+  { path: '/companies', name: 'companies', component: () => import('../views/CompaniesSearchView.vue'), meta: { requiresAuth: true } },
   { path: '/maintenance', name: 'maintenance', component: () => import('../views/MaintenanceView.vue') },
 ];
 

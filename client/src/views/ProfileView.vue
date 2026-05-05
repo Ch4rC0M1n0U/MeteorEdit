@@ -36,6 +36,7 @@
       <ProfileAI v-else-if="activeSection === 'ai'" />
       <ProfileApiKeys v-else-if="activeSection === 'api-keys'" />
       <ProfileApiTokens v-else-if="activeSection === 'api-tokens'" />
+      <ProfileExternalTokens v-else-if="activeSection === 'external-tokens'" />
       <ProfileTelegram v-else-if="activeSection === 'telegram'" />
     </main>
   </div>
@@ -59,6 +60,7 @@ import ProfileEncryption from '../components/profile/ProfileEncryption.vue';
 import ProfileAI from '../components/profile/ProfileAI.vue';
 import ProfileApiKeys from '../components/profile/ProfileApiKeys.vue';
 import ProfileApiTokens from '../components/profile/ProfileApiTokens.vue';
+import ProfileExternalTokens from '../components/profile/ProfileExternalTokens.vue';
 import ProfileTelegram from '../components/profile/ProfileTelegram.vue';
 import api from '../services/api';
 
@@ -92,6 +94,7 @@ const navItems = computed<NavItem[]>(() => [
   ...(aiIndividualMode.value ? [{ id: 'ai', label: t('profile.ai.navLabel'), icon: 'mdi mdi-robot-outline' }] : []),
   { id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi mdi-key-variant' },
   { id: 'api-tokens', label: t('profile.apiTokens.navLabel'), icon: 'mdi mdi-key-chain-variant' },
+  { id: 'external-tokens', label: t('profile.externalTokens.navLabel'), icon: 'mdi mdi-key-link' },
   { id: 'telegram', label: t('profile.telegram'), icon: 'mdi mdi-send' },
 
   { type: 'group', label: t('profile.data') },

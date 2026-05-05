@@ -11,6 +11,10 @@
     "back": "Terug",
     "search": "Zoeken...",
     "ok": "OK",
+    "reset": "Resetten",
+    "clear": "Wissen",
+    "comingSoon": "Binnenkort",
+    "remove": "Verwijderen",
     "error": "Fout",
     "loading": "Laden...",
     "saving": "Opslaan...",
@@ -97,6 +101,7 @@
     "myAccount": "Mijn account",
     "whatsNew": "Nieuw",
     "osintSearch": "OSINT Zoeken",
+    "companies": "Bedrijfszoekfunctie",
     "backendConnected": "Server verbonden",
     "backendDisconnected": "Server niet verbonden",
     "profile": "Mijn profiel",
@@ -805,6 +810,28 @@
       "revoke": "Intrekken",
       "revoked": "Token ingetrokken",
       "revokeConfirm": "Token \"{name}\" intrekken? Alle extensies of integraties die deze token gebruiken, stoppen onmiddellijk met werken."
+    },
+    "externalTokens": {
+      "navLabel": "Externe tokens",
+      "title": "Externe API-tokens",
+      "subtitle": "Verbind uw accounts met externe diensten die door MeteorEdit worden gebruikt (bedrijfsregisters, OSINT-bronnen…). Tokens worden versleuteld en verlaten uw profiel nooit.",
+      "tokenLabel": "Token / API-sleutel",
+      "tokenPlaceholder": "Plak hier uw token",
+      "configured": "Geconfigureerd",
+      "notConfigured": "Niet geconfigureerd",
+      "savedTitle": "Token opgeslagen",
+      "savedDetail": "De token werd versleuteld opgeslagen.",
+      "removedTitle": "Token verwijderd",
+      "removedDetail": "De token werd uit uw profiel verwijderd.",
+      "bce": {
+        "title": "CBEAPI.be — Kruispuntbank van Ondernemingen (België)",
+        "help": "Maak een gratis account aan op",
+        "quota": "2500 verzoeken/dag"
+      },
+      "openCorporates": {
+        "title": "OpenCorporates — Wereldwijd register",
+        "help": "Vraag een API-sleutel aan op"
+      }
     }
   },
   "extension": {
@@ -2189,5 +2216,63 @@
     "customCategoryPlaceholder": "Categorienaam",
     "description": "Beschrijving",
     "source": "Bron / Referentie"
+  },
+  "companies": {
+    "title": "Bedrijfszoekfunctie",
+    "subtitle": "Doorzoek officiële bedrijfsregisters en exporteer fiches naar uw dossiers.",
+    "configureToken": "Mijn token configureren",
+    "resultsCount": "{n} resultaat/resultaten",
+    "noResults": "Geen bedrijf gevonden voor deze criteria.",
+    "viewDetails": "Details bekijken",
+    "exportThis": "Dit bedrijf exporteren",
+    "exportSelection": "Exporteren ({n})",
+    "exportDialogTitle": "Naar een dossier exporteren",
+    "exportTargetDossier": "Doeldossier",
+    "selectDossier": "Kies een dossier…",
+    "exportNoteCount": "Eén notitie per bedrijf wordt aangemaakt ({n} totaal) in een 'BCE'-map onderaan de boom.",
+    "exportSuccess": "Export voltooid",
+    "exportCreated": "{n} notitie(s) aangemaakt",
+    "exportErrors": "{n} fout(en):",
+    "exportNoSelection": "Geen bedrijf geselecteerd.",
+    "doExport": "Exporteren",
+    "detailsTitle": "Bedrijfsfiche",
+    "contact": "Contact",
+    "naceActivities": "Activiteiten (NACE)",
+    "mainActivity": "Hoofdactiviteit",
+    "sources": {
+      "bce": "België (KBO)",
+      "eu": "Europa"
+    },
+    "modes": {
+      "name": "Op naam",
+      "address": "Op adres",
+      "vat": "Op BTW / KBO"
+    },
+    "fields": {
+      "name": "Benaming",
+      "vat": "BTW-nummer",
+      "bce": "KBO-nummer",
+      "street": "Straat",
+      "houseNumber": "Nr.",
+      "city": "Stad",
+      "postCode": "Postcode",
+      "juridicalForm": "Rechtsvorm",
+      "situation": "Situatie",
+      "status": "Status",
+      "startDate": "Startdatum",
+      "address": "Adres"
+    },
+    "placeholders": {
+      "name": "Bv. Anthropic",
+      "street": "Bv. Wetstraat",
+      "city": "Bv. Brussel"
+    },
+    "cols": {
+      "vat": "BTW",
+      "denomination": "Benaming",
+      "address": "Adres",
+      "status": "Status",
+      "actions": "Acties"
+    }
   }
 }

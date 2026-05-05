@@ -149,6 +149,7 @@ const mainNavItems = computed(() => [
 ]);
 
 const toolNavItems = computed(() => [
+  { key: 'companies', icon: 'mdi mdi-domain', label: t('nav.companies'), to: '/companies' },
   { key: 'help', icon: 'pi pi-question-circle', label: t('nav.help'), to: '/help' },
   ...(authStore.isAdmin ? [{ key: 'admin', icon: 'pi pi-shield', label: t('nav.admin'), to: '/admin' }] : []),
 ]);

@@ -35,6 +35,8 @@ export interface IUser extends Document {
   encryptionPublicKey: string | null;
   encryptionPrivateKey: string | null;
   encryptionSalt: string | null;
+  bceApiToken: string | null;
+  openCorporatesApiToken: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

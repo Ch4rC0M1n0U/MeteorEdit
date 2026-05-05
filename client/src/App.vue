@@ -100,6 +100,7 @@ const pageTitle = computed(() => {
     '/templates': t('nav.templates'),
     '/help': t('nav.help'),
     '/osint-search': t('nav.osintSearch') || 'OSINT Search',
+    '/companies': t('nav.companies'),
   };
   return titles[route.path] || '';
 });

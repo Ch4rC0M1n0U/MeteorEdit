@@ -727,6 +727,11 @@ router.post('/2fa/validate', validate2FA); // No auth — uses tempToken
 router.get('/notification-preferences', authenticate, getNotificationPreferences);
 router.patch('/notification-preferences', authenticate, updateNotificationPreferences);
 
+// ─── External API tokens (CBEAPI, OpenCorporates) ──────────────────────────────
+import { listExternalTokens, updateExternalTokens } from '../controllers/externalTokensController';
+router.get('/external-tokens', authenticate, listExternalTokens);
+router.put('/external-tokens', authenticate, updateExternalTokens);
+
 // ─── Sessions & Login History ───────────────────────────────────────────────────
 /**
  * @swagger

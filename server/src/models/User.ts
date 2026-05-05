@@ -56,6 +56,10 @@ const userSchema = new Schema<IUser>(
     encryptionPublicKey: { type: String, default: null },
     encryptionPrivateKey: { type: String, default: null },
     encryptionSalt: { type: String, default: null },
+    /** CBEAPI.be Bearer token (encrypted at-rest with COOKIE_ENCRYPTION_KEY) */
+    bceApiToken: { type: String, default: null },
+    /** OpenCorporates API token — used for the Person search and EU coverage (encrypted at-rest) */
+    openCorporatesApiToken: { type: String, default: null },
   },
   { timestamps: true }
 );
