@@ -97,6 +97,10 @@
               <span class="mdi mdi-shield-search" style="font-size: 16px;"></span>
               <span>{{ $t('osint.leaksSearch') }}</span>
             </button>
+            <button class="dv-export-option" @click="openCompaniesSearch(); toolsMenuRef?.hide()">
+              <span class="mdi mdi-domain" style="font-size: 16px;"></span>
+              <span>{{ $t('nav.companies') }}</span>
+            </button>
 
             <div class="dv-tools-group-sep"></div>
             <div class="dv-tools-group-header">{{ $t('tools.groups.contentCapture') }}</div>
@@ -708,6 +712,10 @@ const usernameScanOpen = ref(false);
 function openLeaksSearch() {
   const dossierId = dossierStore.currentDossier?._id || '';
   window.open(`/osint-search?dossierId=${dossierId}`, '_blank');
+}
+function openCompaniesSearch() {
+  const dossierId = dossierStore.currentDossier?._id || '';
+  window.open(`/companies?dossierId=${dossierId}`, '_blank');
 }
 const elephantasticOpen = ref(false);
 const webCheckOpen = ref(false);

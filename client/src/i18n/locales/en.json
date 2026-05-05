@@ -6,6 +6,7 @@
     "edit": "Edit",
     "add": "Add",
     "create": "Create",
+    "update": "Update",
     "close": "Close",
     "confirm": "Confirm",
     "back": "Back",
@@ -813,24 +814,32 @@
       "revokeConfirm": "Revoke token \"{name}\"? Any extension or integration using this token will stop working immediately."
     },
     "externalTokens": {
-      "navLabel": "External tokens",
-      "title": "External API tokens",
-      "subtitle": "Connect your accounts on external services used by MeteorEdit (company registries, OSINT sources…). Tokens are encrypted and never leave your profile.",
+      "navLabel": "External sources",
+      "title": "External data sources",
+      "subtitle": "Connect third-party services that MeteorEdit queries on your behalf (company registries, OSINT sources…). All keys are encrypted server-side and never leave your profile. One single page for all your outbound integrations.",
       "tokenLabel": "Token / API key",
-      "tokenPlaceholder": "Paste your token here",
-      "configured": "Configured",
-      "notConfigured": "Not configured",
-      "savedTitle": "Token saved",
-      "savedDetail": "Token has been encrypted and stored.",
-      "removedTitle": "Token removed",
-      "removedDetail": "Token has been deleted from your profile.",
+      "tokenPlaceholder": "Paste your key here",
+      "configured": "Connected",
+      "notConfigured": "Not connected",
+      "savedTitle": "Connection established",
+      "savedDetail": "Your key has been encrypted and stored.",
+      "removedTitle": "Connection removed",
+      "removedDetail": "The key has been removed from your profile.",
+      "getKeyAt": "Get a key at {host}",
+      "groups": {
+        "companies": "Company registries",
+        "osint": "OSINT platforms"
+      },
+      "osintEmpty": "No OSINT integration available yet. Premium services (OSINT Industries, etc.) will appear here.",
       "bce": {
         "title": "CBEAPI.be — Belgian Crossroads Bank for Enterprises",
+        "description": "Official Belgian company data (BCE/KBO): name, VAT, address, legal forms, NACE activities.",
         "help": "Create a free account at",
         "quota": "2500 requests/day"
       },
       "openCorporates": {
         "title": "OpenCorporates — Global registry",
+        "description": "Over 200M companies across 140 jurisdictions (enable later if you need coverage outside Belgium).",
         "help": "Request an API key at"
       }
     }

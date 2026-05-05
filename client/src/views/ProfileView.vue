@@ -94,7 +94,7 @@ const navItems = computed<NavItem[]>(() => [
   ...(aiIndividualMode.value ? [{ id: 'ai', label: t('profile.ai.navLabel'), icon: 'mdi mdi-robot-outline' }] : []),
   { id: 'api-keys', label: t('admin.apiKeys'), icon: 'mdi mdi-key-variant' },
   { id: 'api-tokens', label: t('profile.apiTokens.navLabel'), icon: 'mdi mdi-key-chain-variant' },
-  { id: 'external-tokens', label: t('profile.externalTokens.navLabel'), icon: 'mdi mdi-key-link' },
+  { id: 'external-tokens', label: t('profile.externalTokens.navLabel'), icon: 'mdi mdi-transit-connection-variant' },
   { id: 'telegram', label: t('profile.telegram'), icon: 'mdi mdi-send' },
 
   { type: 'group', label: t('profile.data') },

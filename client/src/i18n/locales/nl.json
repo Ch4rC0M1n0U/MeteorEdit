@@ -6,6 +6,7 @@
     "edit": "Bewerken",
     "add": "Toevoegen",
     "create": "Aanmaken",
+    "update": "Bijwerken",
     "close": "Sluiten",
     "confirm": "Bevestigen",
     "back": "Terug",
@@ -812,24 +813,32 @@
       "revokeConfirm": "Token \"{name}\" intrekken? Alle extensies of integraties die deze token gebruiken, stoppen onmiddellijk met werken."
     },
     "externalTokens": {
-      "navLabel": "Externe tokens",
-      "title": "Externe API-tokens",
-      "subtitle": "Verbind uw accounts met externe diensten die door MeteorEdit worden gebruikt (bedrijfsregisters, OSINT-bronnen…). Tokens worden versleuteld en verlaten uw profiel nooit.",
+      "navLabel": "Externe bronnen",
+      "title": "Externe gegevensbronnen",
+      "subtitle": "Verbind externe diensten die MeteorEdit voor u raadpleegt (bedrijfsregisters, OSINT-bronnen…). Alle sleutels worden server-side versleuteld en verlaten uw profiel nooit. Eén pagina voor al uw uitgaande integraties.",
       "tokenLabel": "Token / API-sleutel",
-      "tokenPlaceholder": "Plak hier uw token",
-      "configured": "Geconfigureerd",
-      "notConfigured": "Niet geconfigureerd",
-      "savedTitle": "Token opgeslagen",
-      "savedDetail": "De token werd versleuteld opgeslagen.",
-      "removedTitle": "Token verwijderd",
-      "removedDetail": "De token werd uit uw profiel verwijderd.",
+      "tokenPlaceholder": "Plak hier uw sleutel",
+      "configured": "Verbonden",
+      "notConfigured": "Niet verbonden",
+      "savedTitle": "Verbinding tot stand gebracht",
+      "savedDetail": "Uw sleutel werd versleuteld opgeslagen.",
+      "removedTitle": "Verbinding verwijderd",
+      "removedDetail": "De sleutel werd uit uw profiel verwijderd.",
+      "getKeyAt": "Sleutel verkrijgen via {host}",
+      "groups": {
+        "companies": "Bedrijfsregisters",
+        "osint": "OSINT-platformen"
+      },
+      "osintEmpty": "Nog geen OSINT-integratie beschikbaar. Premium-diensten (OSINT Industries, enz.) verschijnen hier.",
       "bce": {
         "title": "CBEAPI.be — Kruispuntbank van Ondernemingen (België)",
+        "description": "Officiële Belgische bedrijfsgegevens (KBO): naam, BTW, adres, rechtsvormen, NACE-activiteiten.",
         "help": "Maak een gratis account aan op",
         "quota": "2500 verzoeken/dag"
       },
       "openCorporates": {
         "title": "OpenCorporates — Wereldwijd register",
+        "description": "Meer dan 200M bedrijven in 140 rechtsgebieden (later activeren indien dekking buiten België nodig).",
         "help": "Vraag een API-sleutel aan op"
       }
     }

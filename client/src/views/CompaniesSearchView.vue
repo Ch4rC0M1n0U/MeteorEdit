@@ -178,9 +178,14 @@
     <!-- Export dialog -->
     <Dialog v-model:visible="exportOpen" :header="t('companies.exportDialogTitle')" modal :style="{ width: '520px' }">
       <div class="cs-export-form">
-        <div class="cs-field">
+        <div v-if="!lockedDossierId" class="cs-field">
           <label>{{ t('companies.exportTargetDossier') }}</label>
           <Select v-model="exportDossierId" :options="dossierOptions" optionLabel="label" optionValue="value" :placeholder="t('companies.selectDossier')" class="w-full" filter />
+        </div>
+        <div v-else class="cs-locked-dossier">
+          <i class="pi pi-folder"></i>
+          <span>{{ t('companies.exportTargetDossier') }} :</span>
+          <strong>{{ dossierOptions.find(d => d.value === lockedDossierId)?.label || lockedDossierId }}</strong>
         </div>
         <p class="cs-export-info">
           <i class="pi pi-info-circle"></i>
@@ -202,7 +207,7 @@
       </div>
       <template #footer>
         <Button :label="t('common.close')" outlined @click="exportOpen = false" />
-        <Button :label="t('companies.doExport')" icon="pi pi-download" :loading="exportLoading" :disabled="!exportDossierId || pendingExportVats.length === 0" @click="doExport" />
+        <Button :label="t('companies.doExport')" icon="pi pi-download" :loading="exportLoading" :disabled="!(lockedDossierId || exportDossierId) || pendingExportVats.length === 0" @click="doExport" />
       </template>
     </Dialog>
   </div>
@@ -211,7 +216,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import api from '../services/api';
 import { useDossierStore } from '../stores/dossier';
@@ -247,9 +252,15 @@ interface ExportResult {
 }
 
 const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const dossierStore = useDossierStore();
+
+const lockedDossierId = computed(() => {
+  const q = route.query.dossierId;
+  return typeof q === 'string' && q.length > 0 ? q : '';
+});
 
 type SourceId = 'bce' | 'eu';
 const activeSource = ref<SourceId>('bce');
@@ -363,16 +374,18 @@ function openExport(vats?: string[]): void {
   pendingExportVats.value = vats ?? selected.value.map((c) => c.cbe_number);
   if (pendingExportVats.value.length === 0) return;
   exportResult.value = null;
+  if (lockedDossierId.value) exportDossierId.value = lockedDossierId.value;
   exportOpen.value = true;
 }
 
 async function doExport(): Promise<void> {
-  if (!exportDossierId.value || pendingExportVats.value.length === 0) return;
+  const targetId = lockedDossierId.value || exportDossierId.value;
+  if (!targetId || pendingExportVats.value.length === 0) return;
   exportLoading.value = true;
   exportResult.value = null;
   try {
     const { data } = await api.post<ExportResult>('/bce/export', {
-      dossierId: exportDossierId.value,
+      dossierId: targetId,
       vatNumbers: pendingExportVats.value,
     });
     exportResult.value = data;
@@ -457,6 +470,9 @@ onMounted(async () => {
 .cs-nace-version { color: var(--me-text-muted); font-size: 11px; margin-left: 6px; }
 
 .cs-export-form { display: flex; flex-direction: column; gap: 12px; }
+.cs-locked-dossier { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--me-bg-elev1); border-radius: var(--me-radius-xs); font-size: 13px; }
+.cs-locked-dossier i { color: var(--me-accent); }
+.cs-locked-dossier strong { color: var(--me-text-primary); }
 .cs-export-info { font-size: 13px; color: var(--me-text-muted); margin: 0; }
 .cs-export-result { margin-top: 12px; padding: 12px; background: var(--me-bg-elev1); border-radius: var(--me-radius-xs); font-size: 13px; }
 .cs-export-success { color: var(--me-success, #2a7); display: flex; align-items: center; gap: 6px; }

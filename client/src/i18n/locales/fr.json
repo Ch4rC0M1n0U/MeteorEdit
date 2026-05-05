@@ -6,6 +6,7 @@
     "edit": "Modifier",
     "add": "Ajouter",
     "create": "Créer",
+    "update": "Mettre à jour",
     "close": "Fermer",
     "confirm": "Confirmer",
     "back": "Retour",
@@ -825,24 +826,32 @@
       "revokeConfirm": "Révoquer le token \"{name}\" ? Toute extension ou intégration utilisant ce token cessera de fonctionner immédiatement."
     },
     "externalTokens": {
-      "navLabel": "Tokens externes",
-      "title": "Tokens d'API externes",
-      "subtitle": "Connectez vos comptes auprès des services externes utilisés par MeteorEdit (registres d'entreprises, sources OSINT…). Vos tokens sont chiffrés et ne quittent jamais votre profil.",
+      "navLabel": "Sources externes",
+      "title": "Sources de données externes",
+      "subtitle": "Connectez les services tiers que MeteorEdit interroge pour vous (registres d'entreprises, sources OSINT…). Toutes les clés sont chiffrées côté serveur et ne quittent jamais votre profil. Une seule page pour toutes vos intégrations sortantes.",
       "tokenLabel": "Token / clé API",
-      "tokenPlaceholder": "Collez votre token ici",
-      "configured": "Configuré",
-      "notConfigured": "Non configuré",
-      "savedTitle": "Token enregistré",
-      "savedDetail": "Le token a été chiffré et stocké.",
-      "removedTitle": "Token retiré",
-      "removedDetail": "Le token a été supprimé de votre profil.",
+      "tokenPlaceholder": "Collez votre clé ici",
+      "configured": "Connecté",
+      "notConfigured": "Non connecté",
+      "savedTitle": "Connexion établie",
+      "savedDetail": "Votre clé a été chiffrée et stockée.",
+      "removedTitle": "Connexion supprimée",
+      "removedDetail": "La clé a été retirée de votre profil.",
+      "getKeyAt": "Obtenir une clé sur {host}",
+      "groups": {
+        "companies": "Registres d'entreprises",
+        "osint": "Plateformes OSINT"
+      },
+      "osintEmpty": "Aucune intégration OSINT configurable pour le moment. Les services premium (OSINT Industries, etc.) apparaîtront ici.",
       "bce": {
         "title": "CBEAPI.be — Banque-Carrefour des Entreprises (Belgique)",
+        "description": "Données officielles des sociétés belges (BCE/KBO) : nom, TVA, adresse, formes juridiques, NACE.",
         "help": "Créez un compte gratuit sur",
         "quota": "2500 requêtes/jour"
       },
       "openCorporates": {
         "title": "OpenCorporates — Registre mondial",
+        "description": "Plus de 200 millions de sociétés à travers 140 juridictions (à activer plus tard, si besoin de couverture hors Belgique).",
         "help": "Demandez une clé API sur"
       }
     }
