@@ -28,9 +28,17 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
     const dossiers = await Dossier.find(userDossierFilter).lean();
     const dossierIds = dossiers.map(d => d._id);
 
+    // KPI principal : ne compter QUE les dossiers en cours (open + in_progress).
+    // Les dossiers clôturés sortent de la charge de travail courante.
+    const activeOnly = dossiers.filter(d => d.status !== 'closed');
+    const activeDossierIds = activeOnly.map(d => d._id);
+
     const totalDossiers = dossiers.length;
+    const activeDossiers = activeOnly.length;
     const ownedDossiers = dossiers.filter(d => d.owner.toString() === userId).length;
+    const ownedActiveDossiers = activeOnly.filter(d => d.owner.toString() === userId).length;
     const collabDossiers = totalDossiers - ownedDossiers;
+    const collabActiveDossiers = activeDossiers - ownedActiveDossiers;
 
     const statusCounts = { open: 0, in_progress: 0, closed: 0 };
     for (const d of dossiers) {
@@ -38,8 +46,18 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
       if (s in statusCounts) statusCounts[s]++;
     }
 
+    // Dossiers clôturés cette année calendaire (anchored sur closureDate quand
+    // disponible, updatedAt comme fallback pour les anciennes données).
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const closedThisYear = dossiers.filter((d) => {
+      if (d.status !== 'closed') return false;
+      const ref = (d as any).closureDate ?? (d as any).updatedAt;
+      return ref ? new Date(ref) >= yearStart : false;
+    }).length;
+
+    // Compte des nœuds restreint aux dossiers actifs (travail en cours).
     const nodeCountsByType = await DossierNode.aggregate([
-      { $match: { dossierId: { $in: dossierIds }, deletedAt: null } },
+      { $match: { dossierId: { $in: activeDossierIds }, deletedAt: null } },
       { $group: { _id: '$type', count: { $sum: 1 } } },
     ]);
 
@@ -55,7 +73,7 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
       { $sort: { _id: 1 } },
     ]);
 
-    const recentDossiers = await Dossier.find(userDossierFilter)
+    const recentDossiers = await Dossier.find({ ...userDossierFilter, status: { $ne: 'closed' } })
       .sort({ updatedAt: -1 }).limit(5).select('title status updatedAt').lean();
 
     // --- Last accessed nodes ---
@@ -159,7 +177,7 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
           },
         },
       },
-      { $match: { resolvedDossierId: { $in: dossierIds } } },
+      { $match: { resolvedDossierId: { $in: activeDossierIds } } },
       { $group: { _id: '$resolvedDossierId', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 5 },
@@ -199,7 +217,16 @@ export async function getUserDashboard(req: AuthRequest, res: Response): Promise
     };
 
     res.json({
-      totalDossiers, ownedDossiers, collabDossiers,
+      // Compteurs principaux : valeurs ACTIVES (sans clôturés)
+      totalDossiers: activeDossiers,
+      ownedDossiers: ownedActiveDossiers,
+      collabDossiers: collabActiveDossiers,
+      // Détails complets accessibles séparément si besoin
+      allDossiers: totalDossiers,
+      allOwnedDossiers: ownedDossiers,
+      allCollabDossiers: collabDossiers,
+      closedThisYear,
+      currentYear: now.getFullYear(),
       statusCounts, totalNodes, nodeCountsByType,
       recentActivity, activityPerDay, recentDossiers,
       lastAccessedNodes,

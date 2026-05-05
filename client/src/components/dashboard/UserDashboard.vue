@@ -10,20 +10,20 @@
     <ProgressBar v-if="loading" mode="indeterminate" class="mb-4" style="border-radius: 4px; height: 4px;" />
 
     <template v-if="!loading">
-      <!-- KPI Cards (always visible) -->
+      <!-- KPI Cards (always visible — counts exclude closed dossiers) -->
       <div class="dash-kpi-row fade-in">
-        <div class="dash-kpi glass-card">
+        <div class="dash-kpi glass-card" :title="$t('dashboard.activeHint')">
           <div class="dash-kpi-icon"><i class="pi pi-folder" style="font-size: 22px;" /></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.totalDossiers }}</span>
-            <span class="dash-kpi-label">{{ $t('dashboard.dossiers') }}</span>
+            <span class="dash-kpi-label">{{ $t('dashboard.dossiersActive') }}</span>
           </div>
         </div>
-        <div class="dash-kpi glass-card">
-          <div class="dash-kpi-icon"><i class="pi pi-user" style="font-size: 22px;" /></div>
+        <div class="dash-kpi glass-card" :title="$t('dashboard.processedYearHint')">
+          <div class="dash-kpi-icon"><i class="pi pi-check-circle" style="font-size: 22px;" /></div>
           <div class="dash-kpi-data">
-            <span class="dash-kpi-value mono">{{ stats.ownedDossiers }}</span>
-            <span class="dash-kpi-label">{{ $t('dashboard.owner') }}</span>
+            <span class="dash-kpi-value mono">{{ stats.closedThisYear ?? 0 }}</span>
+            <span class="dash-kpi-label">{{ $t('dashboard.processedYear', { year: stats.currentYear || new Date().getFullYear() }) }}</span>
           </div>
         </div>
         <div class="dash-kpi glass-card">
@@ -37,7 +37,7 @@
           <div class="dash-kpi-icon"><i class="pi pi-sitemap" style="font-size: 22px;" /></div>
           <div class="dash-kpi-data">
             <span class="dash-kpi-value mono">{{ stats.totalNodes }}</span>
-            <span class="dash-kpi-label">{{ $t('dashboard.elements') }}</span>
+            <span class="dash-kpi-label">{{ $t('dashboard.elementsActive') }}</span>
           </div>
         </div>
       </div>

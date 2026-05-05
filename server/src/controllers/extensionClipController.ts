@@ -71,9 +71,12 @@ export async function listExtensionDossiers(req: ExtensionRequest, res: Response
   try {
     const userId = req.user!.userId;
     const dossiers = await Dossier.find({
-      $or: [{ owner: userId }, { collaborators: userId }],
+      $and: [
+        { $or: [{ owner: userId }, { collaborators: userId }] },
+        { status: { $ne: 'closed' } },
+      ],
     })
-      .select('_id title encrypted createdAt')
+      .select('_id title encrypted status createdAt')
       .sort({ createdAt: -1 })
       .limit(200)
       .lean();
