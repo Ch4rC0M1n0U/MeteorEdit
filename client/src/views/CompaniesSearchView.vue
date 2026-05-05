@@ -125,9 +125,10 @@
             <span v-else>—</span>
           </template>
         </Column>
-        <Column :header="t('companies.cols.actions')" style="width: 140px">
+        <Column :header="t('companies.cols.actions')" style="width: 180px">
           <template #body="{ data }">
             <Button icon="pi pi-eye" size="small" text rounded :title="t('companies.viewDetails')" @click="openDetails(data.cbe_number)" />
+            <Button icon="mdi mdi-scale-balance" size="small" text rounded :title="t('companies.openMoniteurBelgeShort')" @click="openMoniteurBelge(data.cbe_number)" />
             <Button icon="pi pi-download" size="small" text rounded :title="t('companies.exportThis')" @click="openExport([data.cbe_number])" />
           </template>
         </Column>
@@ -172,8 +173,24 @@
             </li>
           </ul>
         </div>
+
+        <div class="cs-mb-note">
+          <i class="mdi mdi-information-outline"></i>
+          <div>
+            <strong>{{ t('companies.directorsNoteTitle') }}</strong>
+            <p>{{ t('companies.directorsNoteBody') }}</p>
+          </div>
+        </div>
       </div>
       <template #footer>
+        <Button
+          v-if="details"
+          :label="t('companies.openMoniteurBelge')"
+          icon="mdi mdi-scale-balance"
+          severity="secondary"
+          outlined
+          @click="openMoniteurBelge(details!.cbe_number)"
+        />
         <Button v-if="details" :label="t('companies.exportThis')" icon="pi pi-download" @click="openExport([details!.cbe_number]); detailsOpen = false" />
         <Button :label="t('common.close')" outlined @click="detailsOpen = false" />
       </template>
@@ -255,7 +272,7 @@ interface ExportResult {
   folderId: string;
 }
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -407,6 +424,12 @@ function goToTokenSettings(): void {
   router.push('/profile?section=external-tokens');
 }
 
+function openMoniteurBelge(cbe: string): void {
+  const digits = String(cbe ?? '').replace(/\D/g, '').padStart(10, '0').slice(-10);
+  const lang = ['fr', 'nl', 'de'].includes(locale.value) ? locale.value : 'fr';
+  window.open(`https://www.ejustice.just.fgov.be/cgi_tsv/list.pl?language=${lang}&btw=${digits}`, '_blank', 'noopener');
+}
+
 onMounted(async () => {
   if (dossierStore.dossiers.length === 0) {
     try { await dossierStore.fetchDossiers(); } catch { /* ignore */ }
@@ -474,6 +497,25 @@ onMounted(async () => {
 .cs-nace li:last-child { border-bottom: none; }
 .cs-nace-main { color: var(--me-accent); margin: 0 4px; }
 .cs-nace-version { color: var(--me-text-muted); font-size: 11px; margin-left: 6px; }
+
+.cs-mb-note {
+  margin-top: 24px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--me-radius-xs);
+  font-size: 12px;
+}
+.cs-mb-note i {
+  font-size: 18px;
+  color: rgb(99, 102, 241);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.cs-mb-note strong { display: block; color: var(--me-text-primary); margin-bottom: 4px; font-size: 13px; }
+.cs-mb-note p { margin: 0; color: var(--me-text-secondary); line-height: 1.5; }
 
 .cs-export-form { display: flex; flex-direction: column; gap: 12px; }
 .cs-locked-dossier { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--me-bg-elev1); border-radius: var(--me-radius-xs); font-size: 13px; }
