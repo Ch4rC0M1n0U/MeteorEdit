@@ -1,40 +1,31 @@
 // Full-page screenshot via scroll + stitching.
 // Works on both Chrome and Firefox (no debugger API required).
 //
-// Strategy v2 (after Firefox stitching artifacts):
-//   1. Inject a content script that:
-//      - Reads page dimensions and devicePixelRatio
-//      - Hides position:fixed/sticky elements during capture
-//      - Disables CSS smooth-scroll
-//   2. Scroll to each viewport position. After scrolling, READ the actual
-//      scroll position (the page may stop short or overshoot, especially
-//      on lazy-loaded sites).
-//   3. Capture each viewport. Decode the image immediately to get its
-//      REAL dimensions in pixels — we no longer assume each capture is
-//      exactly viewportHeight × dpr (Firefox can return slightly different
-//      sizes, e.g. when scrollbars appear/disappear).
-//   4. Re-evaluate scrollHeight at each step in case lazy loading extends
-//      the page.
-//   5. Composite using each slice's actual y position and actual image
-//      dimensions. Later slices overwrite earlier ones in the overlap zone,
-//      which is the correct behavior (the latest paint wins).
-//   6. Always restore page state in finally.
+// Strategy v3 (after Firefox showed huge gaps with the actualY×dpr layout):
+//   We no longer trust window.pageYOffset to position slices in the canvas.
+//   Each captured slice is appended END-TO-END to the canvas: every new slice
+//   starts exactly where the previous one ended in image-pixel space.
 //
-// Browser-specific:
-//   Firefox repaints more slowly than Chrome. Use longer settle delays.
+//   To handle the case where the scroll didn't fully advance (e.g. last
+//   viewport at the bottom of the page), we compare the requested CSS scroll
+//   step (viewportHeight) with what the page actually accepted (actualY −
+//   prevActualY). The difference, scaled by the effective dpr, tells us how
+//   many pixels at the TOP of the new slice overlap with the bottom of the
+//   previous slice. We crop those out before drawing.
+//
+//   This makes the stitch independent of any cross-browser oddity in the
+//   reported scroll position vs the actual captured image.
 
 const isFirefox = typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent);
 
-// Time to wait after scrolling before capturing (lets the browser repaint
-// and lazy-loaded images decode). Firefox needs noticeably more.
-const SCROLL_SETTLE_MS = isFirefox ? 450 : 200;
+// Time to wait after scrolling before capturing. Firefox repaints noticeably
+// slower than Chrome.
+const SCROLL_SETTLE_MS = isFirefox ? 500 : 200;
 
-// captureVisibleTab is rate-limited (~2/sec on Chrome, similar on Firefox).
-// Throttle between captures to avoid quota errors.
+// captureVisibleTab is rate-limited (~2/sec). Throttle between captures.
 const CAPTURE_DELAY_MS = isFirefox ? 800 : 600;
 
-// Hard cap on the number of slices to avoid runaway captures on very long
-// or infinite-scroll pages.
+// Hard cap on the number of slices to avoid runaway captures on infinite-scroll pages.
 const MAX_SLICES = 60;
 
 /**
@@ -46,8 +37,8 @@ const MAX_SLICES = 60;
 export async function captureFullPage(tabId, onProgress = () => {}) {
   onProgress(0.02, 'Préparation…');
 
-  // Step 1: prepare the page (hide sticky, disable smooth scroll, save state)
-  await chrome.scripting.executeScript({
+  // Step 1: prepare the page (hide sticky/fixed, disable smooth-scroll, save state)
+  const [{ result: prep }] = await chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
       const html = document.documentElement;
@@ -73,18 +64,32 @@ export async function captureFullPage(tabId, onProgress = () => {}) {
       }
       window.__meteoreditStickyHidden = stickies;
 
-      // Force layout recompute now that sticky/fixed are hidden
-      void html.offsetHeight;
+      void html.offsetHeight; // force layout
+
+      return {
+        viewportHeight: window.innerHeight,
+        viewportWidth: window.innerWidth,
+        dpr: window.devicePixelRatio || 1,
+      };
     },
   });
 
+  const viewportHeight = prep.viewportHeight; // CSS px
+  const cssScrollStep = Math.max(1, viewportHeight - 1); // -1 to avoid losing 1 px between slices on some browsers
+
+  /** @type {Array<{ img: HTMLImageElement, drawTopOffset: number }>} */
   const slices = [];
+  let canvasW = 0;
+  let canvasH = 0;
   let prevActualY = -1;
   let stuckCount = 0;
+  // Effective dpr is measured after the first capture, by dividing the
+  // captured image's height by the viewport's CSS height.
+  let effectiveDpr = prep.dpr;
 
   try {
     for (let step = 0; step < MAX_SLICES; step++) {
-      // Read current page dimensions (may grow during capture due to lazy loading)
+      // Re-measure scrollHeight at every step (lazy loading may extend the page)
       const [{ result: dims }] = await chrome.scripting.executeScript({
         target: { tabId },
         func: () => {
@@ -96,19 +101,12 @@ export async function captureFullPage(tabId, onProgress = () => {}) {
               h.offsetHeight, b.offsetHeight,
               h.clientHeight
             ),
-            scrollWidth: Math.max(
-              h.scrollWidth, b.scrollWidth,
-              h.offsetWidth, b.offsetWidth,
-              h.clientWidth
-            ),
-            viewportHeight: window.innerHeight,
-            dpr: window.devicePixelRatio || 1,
           };
         },
       });
-      const targetY = step * dims.viewportHeight;
 
-      // Scroll to target
+      const targetY = step * cssScrollStep;
+
       await chrome.scripting.executeScript({
         target: { tabId },
         func: (yy) => window.scrollTo(0, yy),
@@ -116,40 +114,59 @@ export async function captureFullPage(tabId, onProgress = () => {}) {
       });
       await sleep(SCROLL_SETTLE_MS);
 
-      // Read the actual scroll position the page accepted.
-      // Use pageYOffset which is the most consistent across browsers.
       const [{ result: actualY }] = await chrome.scripting.executeScript({
         target: { tabId },
         func: () => Math.round(window.pageYOffset || window.scrollY || 0),
       });
 
-      // Capture viewport
-      onProgress(Math.min(0.9, (step + 1) / Math.max(2, Math.ceil(dims.scrollHeight / dims.viewportHeight))), `Capture ${step + 1}…`);
+      onProgress(Math.min(0.9, (step + 1) / Math.max(2, Math.ceil(dims.scrollHeight / cssScrollStep))), `Capture ${step + 1}…`);
       const dataUrl = await captureWithRetry(tabId);
-
-      // Decode the image immediately so we know its real dimensions and can
-      // include them in the slice metadata. This is critical: Firefox can
-      // return slightly different image sizes than (viewportHeight × dpr).
       const img = await loadImage(dataUrl);
-      slices.push({ y: actualY, img, w: img.naturalWidth, h: img.naturalHeight });
 
-      // Stop conditions:
-      //   - We've reached or passed the bottom (actualY + viewportHeight >= scrollHeight)
-      //   - The scroll position didn't advance (page is shorter than expected)
-      const reachedBottom = actualY + dims.viewportHeight >= dims.scrollHeight - 1;
+      // Compute effective dpr from the very first slice. This is the ratio
+      // image-pixels-per-CSS-pixel that captureVisibleTab actually used —
+      // not always equal to window.devicePixelRatio (Firefox sometimes returns
+      // images sized differently than expected).
+      if (step === 0) {
+        effectiveDpr = img.naturalHeight / viewportHeight;
+        canvasW = img.naturalWidth;
+      }
+
+      // Determine how many top pixels of THIS slice overlap with the previous
+      // slice. Overlap happens when the page didn't scroll a full cssScrollStep
+      // (typically on the last slice when we hit the bottom).
+      let drawTopOffset = 0;
+      if (step > 0) {
+        // We expected the page to scroll by cssScrollStep CSS px between this
+        // capture and the previous one. If actualY advanced less, the
+        // difference is the overlap (in CSS px), which we convert to image px.
+        const expectedAdvanceCss = cssScrollStep;
+        const actualAdvanceCss = Math.max(0, actualY - prevActualY);
+        const overlapCss = Math.max(0, expectedAdvanceCss - actualAdvanceCss);
+        drawTopOffset = Math.round(overlapCss * effectiveDpr);
+        // Defensive: never crop more than the image height
+        drawTopOffset = Math.min(drawTopOffset, img.naturalHeight);
+      }
+
+      slices.push({ img, drawTopOffset });
+      canvasH += img.naturalHeight - drawTopOffset;
+
+      // Track scroll progression for the next iteration's overlap calc
       if (actualY === prevActualY) {
         stuckCount++;
-        if (stuckCount >= 1) break; // page won't scroll further
+        if (stuckCount >= 1) break; // page stopped scrolling
       } else {
         stuckCount = 0;
       }
       prevActualY = actualY;
-      if (reachedBottom) break;
+
+      // Stop condition: we've reached the bottom of the page
+      if (actualY + viewportHeight >= dims.scrollHeight - 1) break;
 
       await sleep(CAPTURE_DELAY_MS);
     }
   } finally {
-    // Always restore the page state, even on error
+    // Always restore page state
     await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
@@ -175,30 +192,22 @@ export async function captureFullPage(tabId, onProgress = () => {}) {
 
   onProgress(0.95, 'Assemblage…');
 
-  // Determine the canvas size from the actual captured slices.
-  //   - Width: max image width across all slices
-  //   - Height: (last slice's y in CSS px × dpr) + last slice's image height
-  // We compute dpr from the largest slice (image w / inner page width should
-  // give the same ratio everywhere, but we re-check for safety).
-  const maxImgW = Math.max(...slices.map((s) => s.w));
-  const last = slices[slices.length - 1];
-  // Get the dpr from the last sample we have. We approximate by reading the
-  // image-to-CSS ratio: if we know the CSS scrollY at capture time and the
-  // image height, the dpr is image.h / (number of CSS px captured).
-  // Simpler: take dpr from the prep step we did at the very start.
-  const [{ result: finalDpr }] = await chrome.scripting.executeScript({
-    target: { tabId },
-    func: () => window.devicePixelRatio || 1,
-  });
-  const dpr = finalDpr || 1;
-
-  // Total height in image pixels: last slice top (CSS y × dpr) + its image height.
-  const totalH = Math.round(last.y * dpr) + last.h;
-  const canvas = new OffscreenCanvas(maxImgW, totalH);
+  // Stitch end-to-end: each slice starts where the previous one ended.
+  const canvas = new OffscreenCanvas(canvasW, canvasH);
   const ctx = canvas.getContext('2d');
 
-  for (const slice of slices) {
-    ctx.drawImage(slice.img, 0, Math.round(slice.y * dpr));
+  let cursorY = 0;
+  for (const { img, drawTopOffset } of slices) {
+    const sliceVisibleH = img.naturalHeight - drawTopOffset;
+    if (sliceVisibleH <= 0) continue;
+    ctx.drawImage(
+      img,
+      0, drawTopOffset,                  // src x, y (skip overlapping top)
+      img.naturalWidth, sliceVisibleH,   // src w, h
+      0, cursorY,                        // dest x, y
+      img.naturalWidth, sliceVisibleH    // dest w, h
+    );
+    cursorY += sliceVisibleH;
   }
 
   const blob = await canvas.convertToBlob({ type: 'image/png' });
