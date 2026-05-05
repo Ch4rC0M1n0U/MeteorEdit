@@ -1,23 +1,41 @@
 // Full-page screenshot via scroll + stitching.
 // Works on both Chrome and Firefox (no debugger API required).
 //
-// Strategy:
+// Strategy v2 (after Firefox stitching artifacts):
 //   1. Inject a content script that:
-//      - Reads page dimensions (scrollHeight, devicePixelRatio)
-//      - Hides position:fixed/sticky elements during capture (avoid duplicates)
-//      - Disables CSS smooth-scroll (avoid animation lag)
-//      - Returns metadata
-//   2. Scroll the tab progressively, calling captureVisibleTab() at each step
-//   3. Restore the page (scroll position, hidden styles)
-//   4. Composite all PNG slices into one full-page canvas
-//   5. Return the final dataURL (base64 PNG)
+//      - Reads page dimensions and devicePixelRatio
+//      - Hides position:fixed/sticky elements during capture
+//      - Disables CSS smooth-scroll
+//   2. Scroll to each viewport position. After scrolling, READ the actual
+//      scroll position (the page may stop short or overshoot, especially
+//      on lazy-loaded sites).
+//   3. Capture each viewport. Decode the image immediately to get its
+//      REAL dimensions in pixels — we no longer assume each capture is
+//      exactly viewportHeight × dpr (Firefox can return slightly different
+//      sizes, e.g. when scrollbars appear/disappear).
+//   4. Re-evaluate scrollHeight at each step in case lazy loading extends
+//      the page.
+//   5. Composite using each slice's actual y position and actual image
+//      dimensions. Later slices overwrite earlier ones in the overlap zone,
+//      which is the correct behavior (the latest paint wins).
+//   6. Always restore page state in finally.
 //
-// Throttling:
-//   chrome.tabs.captureVisibleTab() is rate-limited to ~2/sec on Chrome.
-//   We wait ~600ms between captures to be safe.
+// Browser-specific:
+//   Firefox repaints more slowly than Chrome. Use longer settle delays.
 
-const CAPTURE_DELAY_MS = 600;
-const SCROLL_SETTLE_MS = 150;
+const isFirefox = typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent);
+
+// Time to wait after scrolling before capturing (lets the browser repaint
+// and lazy-loaded images decode). Firefox needs noticeably more.
+const SCROLL_SETTLE_MS = isFirefox ? 450 : 200;
+
+// captureVisibleTab is rate-limited (~2/sec on Chrome, similar on Firefox).
+// Throttle between captures to avoid quota errors.
+const CAPTURE_DELAY_MS = isFirefox ? 800 : 600;
+
+// Hard cap on the number of slices to avoid runaway captures on very long
+// or infinite-scroll pages.
+const MAX_SLICES = 60;
 
 /**
  * Capture the full scrollable page of a given tab.
@@ -28,96 +46,110 @@ const SCROLL_SETTLE_MS = 150;
 export async function captureFullPage(tabId, onProgress = () => {}) {
   onProgress(0.02, 'Préparation…');
 
-  // Step 1: prepare the page (read dims, hide sticky, save state)
-  const [{ result: prep }] = await chrome.scripting.executeScript({
+  // Step 1: prepare the page (hide sticky, disable smooth scroll, save state)
+  await chrome.scripting.executeScript({
     target: { tabId },
     func: () => {
       const html = document.documentElement;
       const body = document.body;
 
-      // Save the current state
-      const saved = {
+      window.__meteoreditSavedScroll = {
         scrollX: window.scrollX,
         scrollY: window.scrollY,
         htmlScrollBehavior: html.style.scrollBehavior,
         bodyScrollBehavior: body.style.scrollBehavior,
       };
 
-      // Disable smooth-scrolling (would break our step-by-step capture)
       html.style.scrollBehavior = 'auto';
       body.style.scrollBehavior = 'auto';
 
-      // Hide position:fixed and sticky elements to avoid them being repeated
-      // in every viewport slice. We tag them with a custom attribute so we
-      // can restore them later.
       const stickies = [];
-      const all = document.querySelectorAll('*');
-      for (const el of all) {
+      for (const el of document.querySelectorAll('*')) {
         const cs = window.getComputedStyle(el);
         if (cs.position === 'fixed' || cs.position === 'sticky') {
           stickies.push({ el, prevVisibility: el.style.visibility });
           el.style.visibility = 'hidden';
         }
       }
-      // Stash on a global so the cleanup script can find them again.
       window.__meteoreditStickyHidden = stickies;
-      window.__meteoreditSavedScroll = saved;
 
-      const dims = {
-        // We use the max of html/body to be defensive on weird sites.
-        scrollHeight: Math.max(
-          html.scrollHeight, body.scrollHeight,
-          html.offsetHeight, body.offsetHeight,
-          html.clientHeight
-        ),
-        scrollWidth: Math.max(
-          html.scrollWidth, body.scrollWidth,
-          html.offsetWidth, body.offsetWidth,
-          html.clientWidth
-        ),
-        viewportHeight: window.innerHeight,
-        viewportWidth: window.innerWidth,
-        dpr: window.devicePixelRatio || 1,
-      };
-      return dims;
+      // Force layout recompute now that sticky/fixed are hidden
+      void html.offsetHeight;
     },
   });
 
-  const { scrollHeight, scrollWidth, viewportHeight, viewportWidth, dpr } = prep;
   const slices = [];
-  let y = 0;
-  let stepIndex = 0;
-  const totalSteps = Math.max(1, Math.ceil(scrollHeight / viewportHeight));
+  let prevActualY = -1;
+  let stuckCount = 0;
 
   try {
-    while (y < scrollHeight) {
-      // Scroll to position y
+    for (let step = 0; step < MAX_SLICES; step++) {
+      // Read current page dimensions (may grow during capture due to lazy loading)
+      const [{ result: dims }] = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+          const h = document.documentElement;
+          const b = document.body;
+          return {
+            scrollHeight: Math.max(
+              h.scrollHeight, b.scrollHeight,
+              h.offsetHeight, b.offsetHeight,
+              h.clientHeight
+            ),
+            scrollWidth: Math.max(
+              h.scrollWidth, b.scrollWidth,
+              h.offsetWidth, b.offsetWidth,
+              h.clientWidth
+            ),
+            viewportHeight: window.innerHeight,
+            dpr: window.devicePixelRatio || 1,
+          };
+        },
+      });
+      const targetY = step * dims.viewportHeight;
+
+      // Scroll to target
       await chrome.scripting.executeScript({
         target: { tabId },
         func: (yy) => window.scrollTo(0, yy),
-        args: [y],
+        args: [targetY],
       });
       await sleep(SCROLL_SETTLE_MS);
 
-      // Read the actual scroll position (the page may not have honored our request
-      // exactly — last slice typically scrolls less than requested).
+      // Read the actual scroll position the page accepted.
+      // Use pageYOffset which is the most consistent across browsers.
       const [{ result: actualY }] = await chrome.scripting.executeScript({
         target: { tabId },
-        func: () => window.scrollY,
+        func: () => Math.round(window.pageYOffset || window.scrollY || 0),
       });
 
-      // Capture
-      onProgress(stepIndex / totalSteps, `Capture ${stepIndex + 1}/${totalSteps}…`);
+      // Capture viewport
+      onProgress(Math.min(0.9, (step + 1) / Math.max(2, Math.ceil(dims.scrollHeight / dims.viewportHeight))), `Capture ${step + 1}…`);
       const dataUrl = await captureWithRetry(tabId);
-      slices.push({ y: actualY, dataUrl });
 
-      stepIndex++;
-      y += viewportHeight;
-      // Throttle to respect captureVisibleTab MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND
+      // Decode the image immediately so we know its real dimensions and can
+      // include them in the slice metadata. This is critical: Firefox can
+      // return slightly different image sizes than (viewportHeight × dpr).
+      const img = await loadImage(dataUrl);
+      slices.push({ y: actualY, img, w: img.naturalWidth, h: img.naturalHeight });
+
+      // Stop conditions:
+      //   - We've reached or passed the bottom (actualY + viewportHeight >= scrollHeight)
+      //   - The scroll position didn't advance (page is shorter than expected)
+      const reachedBottom = actualY + dims.viewportHeight >= dims.scrollHeight - 1;
+      if (actualY === prevActualY) {
+        stuckCount++;
+        if (stuckCount >= 1) break; // page won't scroll further
+      } else {
+        stuckCount = 0;
+      }
+      prevActualY = actualY;
+      if (reachedBottom) break;
+
       await sleep(CAPTURE_DELAY_MS);
     }
   } finally {
-    // Always restore the page (scroll, sticky visibility) even on error
+    // Always restore the page state, even on error
     await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
@@ -134,20 +166,39 @@ export async function captureFullPage(tabId, onProgress = () => {}) {
         delete window.__meteoreditStickyHidden;
         delete window.__meteoreditSavedScroll;
       },
-    }).catch(() => { /* the tab may have navigated away */ });
+    }).catch(() => { /* tab may have navigated */ });
+  }
+
+  if (slices.length === 0) {
+    throw new Error('Aucune capture obtenue');
   }
 
   onProgress(0.95, 'Assemblage…');
 
-  // Stitch all slices into one canvas (CSS px × dpr).
-  const canvas = new OffscreenCanvas(
-    Math.round(scrollWidth * dpr),
-    Math.round(scrollHeight * dpr)
-  );
+  // Determine the canvas size from the actual captured slices.
+  //   - Width: max image width across all slices
+  //   - Height: (last slice's y in CSS px × dpr) + last slice's image height
+  // We compute dpr from the largest slice (image w / inner page width should
+  // give the same ratio everywhere, but we re-check for safety).
+  const maxImgW = Math.max(...slices.map((s) => s.w));
+  const last = slices[slices.length - 1];
+  // Get the dpr from the last sample we have. We approximate by reading the
+  // image-to-CSS ratio: if we know the CSS scrollY at capture time and the
+  // image height, the dpr is image.h / (number of CSS px captured).
+  // Simpler: take dpr from the prep step we did at the very start.
+  const [{ result: finalDpr }] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => window.devicePixelRatio || 1,
+  });
+  const dpr = finalDpr || 1;
+
+  // Total height in image pixels: last slice top (CSS y × dpr) + its image height.
+  const totalH = Math.round(last.y * dpr) + last.h;
+  const canvas = new OffscreenCanvas(maxImgW, totalH);
   const ctx = canvas.getContext('2d');
+
   for (const slice of slices) {
-    const img = await loadImage(slice.dataUrl);
-    ctx.drawImage(img, 0, Math.round(slice.y * dpr));
+    ctx.drawImage(slice.img, 0, Math.round(slice.y * dpr));
   }
 
   const blob = await canvas.convertToBlob({ type: 'image/png' });
@@ -160,11 +211,9 @@ async function captureWithRetry(tabId, maxAttempts = 3) {
   let lastErr;
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      // Pass undefined for windowId — uses the active window
       return await chrome.tabs.captureVisibleTab(undefined, { format: 'png' });
     } catch (err) {
       lastErr = err;
-      // Rate-limit error → wait longer and retry
       await sleep(800 * (i + 1));
     }
   }
@@ -177,8 +226,6 @@ function sleep(ms) {
 
 function loadImage(dataUrl) {
   return new Promise((resolve, reject) => {
-    // OffscreenCanvas in service workers cannot use `new Image()`. We are running
-    // in the popup window which is a real DOM context, so Image is available.
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = reject;
