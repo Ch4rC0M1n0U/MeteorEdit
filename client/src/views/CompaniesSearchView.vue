@@ -77,6 +77,10 @@
         <Button :label="t('common.search')" icon="pi pi-search" :loading="loading" :disabled="!canSearch" @click="search" />
         <Button :label="t('common.reset')" outlined icon="pi pi-times" @click="resetForm" />
       </div>
+      <div v-if="loading && mode === 'address'" class="cs-slow-hint">
+        <i class="pi pi-info-circle"></i>
+        <span>{{ t('companies.addressSlowHint') }}</span>
+      </div>
 
       <div v-if="error" class="cs-error">
         <i class="pi pi-exclamation-triangle"></i>
@@ -437,6 +441,8 @@ onMounted(async () => {
 
 .cs-actions { display: flex; gap: 8px; }
 .cs-error { display: flex; align-items: center; gap: 8px; padding: 12px 16px; margin-top: 12px; background: var(--me-error-bg, #fee); border: 1px solid var(--me-error-border, #fbb); border-radius: var(--me-radius-xs); color: var(--me-error, #c33); font-size: 13px; }
+.cs-slow-hint { display: flex; align-items: center; gap: 8px; padding: 10px 14px; margin-top: 12px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--me-radius-xs); color: rgb(180, 83, 9); font-size: 12px; }
+.cs-slow-hint i { font-size: 14px; }
 .cs-error-cta { margin-left: auto; padding: 4px 12px; background: var(--me-accent); color: #fff; border: none; border-radius: var(--me-radius-xs); cursor: pointer; font-size: 12px; }
 
 .cs-results { margin-top: 16px; }

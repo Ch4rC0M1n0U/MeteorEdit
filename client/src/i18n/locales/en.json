@@ -2233,6 +2233,7 @@
     "configureToken": "Configure my token",
     "resultsCount": "{n} result(s)",
     "noResults": "No company found for these criteria.",
+    "addressSlowHint": "Address search hits a slow index on CBEAPI's side — expect 20-30 seconds. Please wait without re-submitting.",
     "viewDetails": "View details",
     "exportThis": "Export this company",
     "exportSelection": "Export ({n})",

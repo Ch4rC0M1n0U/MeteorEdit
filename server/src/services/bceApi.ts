@@ -39,7 +39,7 @@ export class BceApiError extends Error {
   }
 }
 
-async function callApi<T>(path: string, token: string, lang: string, params?: Record<string, string | number | undefined>): Promise<T> {
+async function callApi<T>(path: string, token: string, lang: string, params?: Record<string, string | number | undefined>, timeoutMs = 12000): Promise<T> {
   const url = new URL(BASE_URL + path);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
@@ -48,7 +48,7 @@ async function callApi<T>(path: string, token: string, lang: string, params?: Re
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url.toString(), {
       headers: {
@@ -71,6 +71,9 @@ async function callApi<T>(path: string, token: string, lang: string, params?: Re
       if (res.status === 401) throw new BceApiError('Token CBEAPI invalide ou révoqué.', 401);
       if (res.status === 429) throw new BceApiError('Quota CBEAPI atteint (2500 req/jour). Réessayez plus tard.', 429);
       if (res.status === 404) throw new BceApiError('Entreprise introuvable.', 404);
+      if (res.status === 504 || res.status === 502) {
+        throw new BceApiError('CBEAPI a dépassé le délai d\'attente (registre belge surchargé). Essayez avec moins de critères ou réessayez dans quelques minutes.', 504);
+      }
       throw new BceApiError(`CBEAPI ${path}: ${detail}`, res.status);
     }
     return await res.json() as T;
@@ -78,7 +81,7 @@ async function callApi<T>(path: string, token: string, lang: string, params?: Re
     clearTimeout(timeout);
     if (err instanceof BceApiError) throw err;
     if ((err as any)?.name === 'AbortError') {
-      throw new BceApiError('Délai dépassé sur CBEAPI (>12s).', 504);
+      throw new BceApiError(`Délai dépassé sur CBEAPI (>${Math.round(timeoutMs / 1000)}s). La recherche par adresse peut être lente — réessayez avec moins de critères.`, 504);
     }
     throw new BceApiError(`CBEAPI réseau : ${err instanceof Error ? err.message : 'erreur inconnue'}`, 0);
   }
@@ -155,7 +158,9 @@ export async function searchByAddress(
   const cacheKey = `addr:${lang}:${JSON.stringify(q)}`;
   const cached = cacheGet<BceSearchResult>(cacheKey);
   if (cached) return cached;
-  const data = await callApi<BceSearchResult>('/company/search/address', token, lang, q);
+  // CBEAPI's address index is slow (typically 20-30s). Combining house_number
+  // with other fields can timeout server-side at ~60s. Allow up to 50s here.
+  const data = await callApi<BceSearchResult>('/company/search/address', token, lang, q, 50000);
   cacheSet(cacheKey, data);
   return data;
 }
