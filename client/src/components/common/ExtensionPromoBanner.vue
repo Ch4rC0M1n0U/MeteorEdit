@@ -24,11 +24,11 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { detectBrowser } from '../../utils/browser';
+import { EXTENSION_VERSION } from '../../utils/extensionVersion';
 
-// Versioned key — bumping this string forces the banner to reappear for users
-// who had previously dismissed it. Bump when the extension gets a noteworthy
-// new feature worth re-promoting.
-const BANNER_VERSION = '2.0';
+// We tie the banner-dismiss flag to the extension version: every new
+// release of the Companion automatically re-shows the banner once.
+const BANNER_VERSION = EXTENSION_VERSION;
 const STORAGE_KEY = 'extension_banner_dismissed_v';
 
 const { t } = useI18n();
@@ -50,8 +50,8 @@ const browserIcon = computed(() => {
 });
 
 const message = computed(() => {
-  if (!browser.value.supported) return t('extensionBanner.unsupportedMessage');
-  return t('extensionBanner.message', { browser: browser.value.label });
+  if (!browser.value.supported) return t('extensionBanner.unsupportedMessage', { version: EXTENSION_VERSION });
+  return t('extensionBanner.message', { browser: browser.value.label, version: EXTENSION_VERSION });
 });
 
 function dismiss(): void {

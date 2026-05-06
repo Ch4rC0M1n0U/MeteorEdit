@@ -2289,8 +2289,8 @@
   },
   "extensionBanner": {
     "title": "New:",
-    "message": "MeteorEdit Companion v2.0 is available for {browser} with a built-in full-page Web Clipper.",
-    "unsupportedMessage": "MeteorEdit Companion v2.0 is available (Chrome and Firefox compatible).",
+    "message": "MeteorEdit Companion v{version} is available for {browser} with a built-in full-page Web Clipper.",
+    "unsupportedMessage": "MeteorEdit Companion v{version} is available (Chrome and Firefox compatible).",
     "cta": "Install"
   },
   "companies": {

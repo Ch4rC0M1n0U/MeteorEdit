@@ -118,8 +118,7 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import { detectBrowser } from '../utils/browser';
 import { SERVER_URL } from '../services/api';
-
-const EXTENSION_VERSION = '2.0.0';
+import { EXTENSION_VERSION } from '../utils/extensionVersion';
 
 const { t } = useI18n();
 const toast = useToast();
