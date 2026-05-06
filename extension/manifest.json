@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MeteorEdit Companion",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Suite d'outils navigateur pour votre instance MeteorEdit : import de sessions OSINT, web clipper plein écran, et plus à venir.",
   "icons": {
     "16": "icons/icon16.png",
@@ -22,8 +22,7 @@
     "open_in_tab": true
   },
   "background": {
-    "service_worker": "background/service-worker.js",
-    "scripts": ["background/service-worker.js"]
+    "service_worker": "background/service-worker.js"
   },
   "permissions": [
     "cookies",
