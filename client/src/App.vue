@@ -110,7 +110,7 @@ const pageTitle = computed(() => {
 
 const pageSubtitle = computed(() => {
   if ((route.path === '/' || route.path === '/home') && !dossierStore.currentDossier) {
-    const count = dossierStore.dossiers.length;
+    const count = dossierStore.activeDossiers.length;
     return `${count} dossier${count > 1 ? 's' : ''}`;
   }
   return '';
