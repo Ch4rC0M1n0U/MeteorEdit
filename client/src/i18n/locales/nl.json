@@ -393,6 +393,8 @@
     "stopEnrichment": "Stoppen",
     "applyEnrichment": "Toepassen",
     "entityPhotos": "Identiteitsfoto's",
+    "entityPhotoSaveFirst": "Sla eerst de entiteit op, open ze opnieuw om foto's toe te voegen.",
+    "encryptedPhotoRef": "Versleutelde foto gekoppeld aan entiteit '{name}' — zichtbaar in het tabblad Info van het dossier.",
     "addPhoto": "Foto toevoegen",
     "deletePhoto": "Deze foto verwijderen",
     "removeIcon": "Pictogram verwijderen",

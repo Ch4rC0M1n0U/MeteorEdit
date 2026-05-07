@@ -183,17 +183,28 @@ export const useDossierStore = defineStore('dossier', () => {
         params: { page: dossierPage.value, limit: 20 },
       });
       // Support both old (array) and new (paginated) response formats
+      let raw: Dossier[];
+      let isFirstPage = true;
       if (Array.isArray(data)) {
-        dossiers.value = data;
+        raw = data;
         hasMoreDossiers.value = false;
       } else {
-        if (reset || dossierPage.value === 1) {
-          dossiers.value = data.dossiers;
-        } else {
-          dossiers.value.push(...data.dossiers);
-        }
+        raw = data.dossiers;
+        isFirstPage = (reset || dossierPage.value === 1);
         hasMoreDossiers.value = dossierPage.value < data.pagination.totalPages;
         dossierPage.value++;
+      }
+      // Decrypt sensitive fields ('description', 'objectives', 'judicialFacts',
+      // 'entities') for any dossier that ships encrypted "ENC:..." values, so
+      // the home grid never shows raw ciphertext.
+      const encStore = useEncryptionStore();
+      const list = encStore.isUnlocked
+        ? await Promise.all(raw.map((d) => decryptDossierFields(d)))
+        : raw;
+      if (isFirstPage) {
+        dossiers.value = list;
+      } else {
+        dossiers.value.push(...list);
       }
     } finally {
       loading.value = false;

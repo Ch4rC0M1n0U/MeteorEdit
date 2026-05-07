@@ -405,6 +405,8 @@
     "stopEnrichment": "Arrêter",
     "applyEnrichment": "Appliquer",
     "entityPhotos": "Photos d'identité",
+    "entityPhotoSaveFirst": "Sauvegardez d'abord l'entité, puis rouvrez-la pour ajouter des photos.",
+    "encryptedPhotoRef": "Photo chiffrée jointe à l'entité « {name} » — visible dans l'onglet Info du dossier.",
     "addPhoto": "Ajouter une photo",
     "deletePhoto": "Supprimer cette photo",
     "removeIcon": "Retirer l'icône",

@@ -393,6 +393,8 @@
     "stopEnrichment": "Stop",
     "applyEnrichment": "Apply",
     "entityPhotos": "ID photos",
+    "entityPhotoSaveFirst": "Save the entity first, then re-open it to add photos.",
+    "encryptedPhotoRef": "Encrypted photo attached to entity '{name}' — visible in the dossier Info tab.",
     "addPhoto": "Add a photo",
     "deletePhoto": "Delete this photo",
     "removeIcon": "Remove icon",

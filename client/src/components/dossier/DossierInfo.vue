@@ -586,12 +586,13 @@
           :suggestions="availableTags"
           :placeholder="$t('dossier.tags')"
           multiple
+          :typeahead="false"
           style="width: 100%; margin-top: 12px;"
           @complete="() => {}"
           @item-select="saveTags"
           @item-unselect="saveTags"
-          @keydown.enter="saveTags"
-          @blur="saveTags"
+          @keydown.enter="onTagEnter"
+          @blur="onTagBlur"
         />
       </div>
 
@@ -856,6 +857,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useToast } from 'primevue/usetoast';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
@@ -879,6 +881,7 @@ import { useDecryptedFile } from '../../composables/useDecryptedFile';
 import MiniEditor from '../editor/MiniEditor.vue';
 
 const { t, locale } = useI18n();
+const toast = useToast();
 const { confirm: customConfirm } = useConfirm();
 const dossierStore = useDossierStore();
 const authStore = useAuthStore();
@@ -1628,13 +1631,51 @@ async function saveTags() {
   // Read from the v-modeled localTags — PrimeVue AutoComplete events pass an
   // event object as their argument, not the array, so we must not trust the
   // first argument here.
-  const cleaned = (localTags.value ?? [])
-    .map((t) => String(t ?? '').toLowerCase().trim())
-    .filter(Boolean);
+  const cleaned = Array.from(new Set(
+    (localTags.value ?? [])
+      .map((t) => String(t ?? '').toLowerCase().trim())
+      .filter(Boolean)
+  ));
   localTags.value = cleaned;
   if (dossierStore.currentDossier) {
     await dossierStore.updateDossier(dossierStore.currentDossier._id, { tags: cleaned });
   }
+}
+
+/**
+ * PrimeVue AutoComplete in multiple mode does NOT tokenize the typed text on
+ * Enter automatically — it only commits a token when the user clicks a
+ * suggestion. For free-form tags we must read the inner input value, push it
+ * onto localTags, clear the input, then save.
+ */
+function onTagEnter(event: KeyboardEvent) {
+  const target = event.target as HTMLInputElement | null;
+  const raw = (target?.value ?? '').trim();
+  if (!raw) return;
+  event.preventDefault();
+  const tag = raw.toLowerCase();
+  if (!localTags.value.includes(tag)) {
+    localTags.value = [...localTags.value, tag];
+  }
+  if (target) target.value = '';
+  saveTags();
+}
+
+/**
+ * Same logic on blur: if there's still text in the input, commit it as a tag
+ * before saving — avoids losing what the user typed when they tab away.
+ */
+function onTagBlur(event: FocusEvent) {
+  const target = event.target as HTMLInputElement | null;
+  const raw = (target?.value ?? '').trim();
+  if (raw) {
+    const tag = raw.toLowerCase();
+    if (!localTags.value.includes(tag)) {
+      localTags.value = [...localTags.value, tag];
+    }
+    if (target) target.value = '';
+  }
+  saveTags();
 }
 
 function startEdit() {
@@ -1810,18 +1851,36 @@ async function sendEntityToNote(index: number) {
     });
   }
 
-  // Add photos if any
+  // Add photos if any. The TipTap 'image' node MUST be a top-level block — it
+  // does not render when wrapped in a paragraph. Also, we must persist a
+  // STABLE URL: getEntityPhotoUrl() can return a transient blob URL produced
+  // by E2E decryption, which evaporates on page reload. For E2E-encrypted
+  // photos (.enc) we cannot embed the image directly in the note; we add a
+  // text reference instead so the user knows where to find it.
   if (entity.photos?.length) {
     content.push({ type: 'horizontalRule' });
+    content.push({
+      type: 'heading',
+      attrs: { level: 3 },
+      content: [{ type: 'text', text: t('dossier.entityPhotos') }],
+    });
     for (const photo of entity.photos) {
-      const photoUrl = getEntityPhotoUrl(photo);
-      content.push({
-        type: 'paragraph',
-        content: [{
+      const isEncryptedPhoto = typeof photo === 'string' && photo.includes('.enc');
+      if (isEncryptedPhoto) {
+        content.push({
+          type: 'paragraph',
+          content: [
+            { type: 'text', marks: [{ type: 'italic' }], text: `🔒 ${t('dossier.encryptedPhotoRef', { name: entity.name })}` },
+          ],
+        });
+      } else {
+        // Non-encrypted upload → stable absolute URL served by Express static.
+        const stableUrl = `${SERVER_URL}/${String(photo).replace(/^\/+/, '')}`;
+        content.push({
           type: 'image',
-          attrs: { src: photoUrl, alt: entity.name },
-        }],
-      });
+          attrs: { src: stableUrl, alt: entity.name, title: entity.name },
+        });
+      }
     }
   }
 
@@ -1850,7 +1909,16 @@ async function uploadEntityPhoto(event: Event) {
 
   // Determine entity index: if editing, use that; otherwise it's the last one added
   const entityIndex = editingEntityIndex.value;
-  if (entityIndex === null) return;
+  if (entityIndex === null) {
+    toast.add({
+      severity: 'warn',
+      summary: t('dossier.entityPhotos'),
+      detail: t('dossier.entityPhotoSaveFirst'),
+      life: 4000,
+    });
+    if (input) input.value = '';
+    return;
+  }
 
   const dossierId = dossierStore.currentDossier._id;
   uploadingEntityPhoto.value = true;
@@ -1866,8 +1934,15 @@ async function uploadEntityPhoto(event: Event) {
       form.entities = (data.entities || []).map((e: any) => ({ ...e, photos: e.photos || [] }));
       newEntity.photos = [...(form.entities[entityIndex]?.photos || [])];
     }
-  } catch (err) {
-    console.error('Entity photo upload error:', err);
+  } catch (err: unknown) {
+    const apiErr = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
+    const detail = apiErr?.response?.data?.message ?? apiErr?.message ?? t('common.error');
+    toast.add({
+      severity: 'error',
+      summary: t('dossier.entityPhotos'),
+      detail,
+      life: 5000,
+    });
   } finally {
     uploadingEntityPhoto.value = false;
     if (input) input.value = '';

@@ -152,7 +152,9 @@ async function initClipperTab() {
     const sel = $('clipDossier');
     sel.innerHTML = '';
     if (state.dossiers.length === 0) {
-      sel.innerHTML = '<option value="">— Aucun dossier accessible —</option>';
+      sel.innerHTML = '<option value="">— Aucun dossier compatible —</option>';
+      // Hint to user: closed/encrypted dossiers are excluded server-side
+      setClipStatus('warn', 'Aucun dossier ouvert et non-chiffré disponible. L\'extension ne peut pas déposer de notes dans les dossiers clôturés ou chiffrés E2E.');
     } else {
       sel.innerHTML = state.dossiers.map((d) =>
         `<option value="${d._id}">${escapeHtml(d.title)}</option>`

@@ -286,6 +286,17 @@ export async function uploadEntityPhoto(req: AuthRequest, res: Response): Promis
     if (!isOwnerOrCollaborator(dossier, userId)) { res.status(403).json({ message: 'Access denied' }); return; }
     if (!req.file) { res.status(400).json({ message: 'No file provided' }); return; }
 
+    // 'entities' is now Schema.Types.Mixed — for E2E-encrypted dossiers it
+    // ships as the ciphertext string "ENC:...", so we cannot index into it
+    // server-side. Reject with a clear error rather than crashing on a
+    // string-character access below.
+    if (!Array.isArray(dossier.entities)) {
+      res.status(409).json({
+        message: 'Dossier chiffré E2E : les photos d\'entité ne peuvent pas être ajoutées via cet endpoint car le serveur n\'a pas accès aux entités chiffrées.',
+      });
+      return;
+    }
+
     const entityIndex = parseInt(req.params.entityIndex as string, 10);
     if (isNaN(entityIndex) || entityIndex < 0 || entityIndex >= dossier.entities.length) {
       res.status(404).json({ message: 'Entity not found' }); return;
@@ -320,6 +331,11 @@ export async function deleteEntityPhoto(req: AuthRequest, res: Response): Promis
     if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
     const userId = req.user!.userId;
     if (!isOwnerOrCollaborator(dossier, userId)) { res.status(403).json({ message: 'Access denied' }); return; }
+
+    if (!Array.isArray(dossier.entities)) {
+      res.status(409).json({ message: 'Dossier chiffré E2E : suppression de photo non disponible côté serveur.' });
+      return;
+    }
 
     const entityIndex = parseInt(req.params.entityIndex as string, 10);
     if (isNaN(entityIndex) || entityIndex < 0 || entityIndex >= dossier.entities.length) {

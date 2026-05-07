@@ -71,10 +71,16 @@ interface ClipBody {
 export async function listExtensionDossiers(req: ExtensionRequest, res: Response): Promise<void> {
   try {
     const userId = req.user!.userId;
+    // Exclure :
+    // - les dossiers clôturés (status='closed') : on n'y travaille plus
+    // - les dossiers chiffrés (E2E) : l'extension n'a pas la clé pour pousser
+    //   du contenu chiffré, donc /clip retournerait 409. Mieux vaut ne pas
+    //   les proposer dans le picker pour éviter une erreur silencieuse.
     const dossiers = await Dossier.find({
       $and: [
         { $or: [{ owner: userId }, { collaborators: userId }] },
         { status: { $ne: 'closed' } },
+        { $or: [{ encrypted: { $exists: false } }, { encrypted: false }] },
       ],
     })
       .select('_id title encrypted status createdAt')
