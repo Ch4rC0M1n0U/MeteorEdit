@@ -35,7 +35,67 @@ const MAX_SLICES = 60;
  * @returns {Promise<string>} base64 PNG data URL
  */
 export async function captureFullPage(tabId, onProgress = () => {}) {
-  onProgress(0.02, 'Préparation…');
+  onProgress(0.02, 'Préchargement de la page…');
+
+  // Step 0: pre-scroll the whole page top→bottom→top so lazy images,
+  // skeletons and IntersectionObserver-driven sections (hero pictures,
+  // "Related news" cards, sticky banners) hydrate BEFORE we start the actual
+  // capture. Without this, screenshots show a blank hero band at the top and
+  // grey skeletons at the bottom on sites that lazy-load below the fold.
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    func: async () => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const prevHtmlBhv = document.documentElement.style.scrollBehavior;
+      const prevBodyBhv = document.body.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior = 'auto';
+      document.body.style.scrollBehavior = 'auto';
+
+      const initial = { x: window.scrollX, y: window.scrollY };
+      const docHeight = () => Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        document.documentElement.offsetHeight,
+        document.body.offsetHeight,
+      );
+
+      const step = Math.max(200, Math.round(window.innerHeight * 0.7));
+      let y = 0;
+      let lastY = -1;
+      let safety = 0;
+      while (y < docHeight() && safety++ < 80) {
+        window.scrollTo(0, y);
+        await sleep(180);
+        if (y === lastY) break;
+        lastY = y;
+        y += step;
+      }
+      window.scrollTo(0, docHeight());
+      await sleep(400);
+
+      // Wait for any remaining images to load + decode
+      const imgs = Array.from(document.images || []);
+      await Promise.all(imgs.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise((res) => {
+          const done = () => res();
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+          setTimeout(done, 1500); // per-image safety timeout
+        });
+      }));
+
+      // One more tick for IntersectionObserver callbacks that fire after the
+      // image load (skeletons replaced by real cards).
+      await sleep(700);
+
+      // Back to top before the real capture loop kicks in.
+      window.scrollTo(initial.x, 0);
+      document.documentElement.style.scrollBehavior = prevHtmlBhv;
+      document.body.style.scrollBehavior = prevBodyBhv;
+      await sleep(300);
+    },
+  });
 
   // Step 1: prepare the page (hide sticky/fixed, disable smooth-scroll, save state)
   const [{ result: prep }] = await chrome.scripting.executeScript({
