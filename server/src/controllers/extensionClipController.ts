@@ -6,6 +6,7 @@ import type { ExtensionRequest } from '../middleware/extensionAuth';
 import Dossier from '../models/Dossier';
 import DossierNode from '../models/DossierNode';
 import { logActivity } from '../utils/activityLogger';
+import { getIO } from '../socket';
 
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', process.env.UPLOAD_DIR || './uploads');
 const CLIPS_DIR = path.join(UPLOAD_DIR, 'clips');
@@ -217,6 +218,15 @@ export async function clipFromExtension(req: ExtensionRequest, res: Response): P
       contentText: noteTitle,
       order: 0,
     });
+
+    // Live notify any opened web app currently viewing the dossier so the new
+    // note appears without a manual refresh. Same event the client already
+    // handles for other in-app creations.
+    const io = getIO();
+    if (io) {
+      const populatedNode = await DossierNode.findById(node._id).lean();
+      io.to(`dossier:${String(dossierId)}`).emit('node-added', populatedNode ?? node.toObject());
+    }
 
     const { ip, ua } = getRequestMeta(req);
     await logActivity(userId, 'extension.clip', 'dossier', String(dossierId), {
