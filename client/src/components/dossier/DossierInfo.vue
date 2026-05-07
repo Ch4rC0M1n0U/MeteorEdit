@@ -590,6 +590,8 @@
           @complete="() => {}"
           @item-select="saveTags"
           @item-unselect="saveTags"
+          @keydown.enter="saveTags"
+          @blur="saveTags"
         />
       </div>
 
@@ -1622,8 +1624,13 @@ onMounted(async () => {
   } catch { /* ignore - use defaults */ }
 });
 
-async function saveTags(tags: string[]) {
-  const cleaned = tags.map(t => t.toLowerCase().trim()).filter(Boolean);
+async function saveTags() {
+  // Read from the v-modeled localTags — PrimeVue AutoComplete events pass an
+  // event object as their argument, not the array, so we must not trust the
+  // first argument here.
+  const cleaned = (localTags.value ?? [])
+    .map((t) => String(t ?? '').toLowerCase().trim())
+    .filter(Boolean);
   localTags.value = cleaned;
   if (dossierStore.currentDossier) {
     await dossierStore.updateDossier(dossierStore.currentDossier._id, { tags: cleaned });

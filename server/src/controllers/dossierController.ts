@@ -88,14 +88,13 @@ export async function updateDossier(req: AuthRequest, res: Response): Promise<vo
       return;
     }
     const { collaborators, owner, _id, relatedDossiers, ...updateData } = req.body;
-    // Filter out undefined values and encrypted strings sent by E2E clients
-    // Encrypted fields (ENC:...) must not be assigned to embedded schema fields
+    // Filter out undefined values. Do NOT drop "ENC:..." strings — they are
+    // legitimate end-to-end-encrypted payloads that the client expects the
+    // server to round-trip verbatim. The Dossier schema declares the matching
+    // fields (objectives, judicialFacts, description, entities) as String or
+    // Mixed so they accept the ciphertext.
     for (const key of Object.keys(updateData)) {
-      if (updateData[key] === undefined) {
-        delete updateData[key];
-      } else if (typeof updateData[key] === 'string' && updateData[key].startsWith('ENC:')) {
-        delete updateData[key];
-      }
+      if (updateData[key] === undefined) delete updateData[key];
     }
     Object.assign(dossier, updateData);
     // Handle relatedDossiers separately (array of ObjectIds, filter invalid)

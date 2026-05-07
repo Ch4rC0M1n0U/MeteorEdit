@@ -31,7 +31,10 @@ const dossierSchema = new Schema<IDossier>(
     icon: { type: String, default: null },
     logoPath: { type: String, default: null },
     objectives: { type: String, default: '' },
-    entities: [entitySchema],
+    // Mixed because the client encrypts this field end-to-end ("ENC:base64").
+    // When E2E is locked or disabled, the value is the legacy [entitySchema] array.
+    // Keeping it Mixed lets both shapes round-trip through update/save.
+    entities: { type: Schema.Types.Mixed, default: [] },
     judicialFacts: { type: String, default: '' },
     tags: [{ type: String, lowercase: true, trim: true }],
     investigator: { type: investigatorSchema, default: () => ({}) },
