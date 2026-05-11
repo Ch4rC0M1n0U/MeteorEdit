@@ -87,8 +87,20 @@
     "features": {
       "dossierManagement": "Gestion de dossiers d'investigation",
       "realTimeCollab": "Collaboration en temps réel",
-      "mapping": "Cartographie et visualisation"
-    }
+      "mapping": "Cartographie et visualisation",
+      "structuredDossiers": "Dossiers structurés",
+      "structuredDossiersDesc": "Notes, captures, datasets, cartes — un seul endroit.",
+      "chainOfCustody": "Chaîne probatoire",
+      "chainOfCustodyDesc": "Horodatage et journal d'accès systématiques.",
+      "osintTools": "Outils OSINT intégrés",
+      "osintToolsDesc": "Web Clipper, Reverse Image, Username Scan…",
+      "teamWork": "Travail à plusieurs",
+      "teamWorkDesc": "Co-édition en temps réel, rôles fins."
+    },
+    "orSeparator": "ou",
+    "ssoInstitutional": "Connexion via SSO institutionnel (OIDC)",
+    "ssoHint": "Activable par un administrateur dans Système → Authentification.",
+    "tracingNotice": "Toute connexion est tracée. L'usage de cette plateforme est réservé aux personnels habilités dans le cadre de leurs missions."
   },
   "nav": {
     "darkMode": "Mode sombre",

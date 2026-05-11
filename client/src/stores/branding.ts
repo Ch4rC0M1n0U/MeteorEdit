@@ -13,6 +13,13 @@ export const useBrandingStore = defineStore('branding', () => {
   const announcementEnabled = ref(false);
   const announcementMessage = ref('');
   const announcementVariant = ref<'info' | 'warning' | 'error'>('info');
+  // v3.29 — institutional login fields. All optional, surfaced on the login page
+  // when the admin configures them in Settings > Branding.
+  const organizationTag = ref('');     // ex: "Police Fédérale · DJSOC / Cyber"
+  const environmentLabel = ref('');    // ex: "Production · be-fed-01" — badge top-right
+  const ssoUrl = ref('');              // ex: "/api/auth/oidc/start" or a full URL
+  const ssoLabel = ref('');            // ex: "Connexion via SSO institutionnel (OIDC)"
+  const loginNotice = ref('');         // long info text shown in the bottom card
   const loaded = ref(false);
 
   async function fetchBranding() {
@@ -28,6 +35,11 @@ export const useBrandingStore = defineStore('branding', () => {
       logoUrl.value = data.logoPath ? `${SERVER_URL}/${data.logoPath}` : null;
       faviconUrl.value = data.faviconPath ? `${SERVER_URL}/${data.faviconPath}` : null;
       loginBackgroundUrl.value = data.loginBackgroundPath ? `${SERVER_URL}/${data.loginBackgroundPath}` : null;
+      organizationTag.value = data.organizationTag || '';
+      environmentLabel.value = data.environmentLabel || '';
+      ssoUrl.value = data.ssoUrl || '';
+      ssoLabel.value = data.ssoLabel || '';
+      loginNotice.value = data.loginNotice || '';
       applyBranding();
       loaded.value = true;
     } catch {
@@ -60,5 +72,5 @@ export const useBrandingStore = defineStore('branding', () => {
     return `rgba(${r}, ${g}, ${b}, 0.15)`;
   }
 
-  return { appName, logoUrl, accentColor, faviconUrl, loginMessage, loginBackgroundUrl, registrationEnabled, announcementEnabled, announcementMessage, announcementVariant, loaded, fetchBranding, applyBranding };
+  return { appName, logoUrl, accentColor, faviconUrl, loginMessage, loginBackgroundUrl, registrationEnabled, announcementEnabled, announcementMessage, announcementVariant, organizationTag, environmentLabel, ssoUrl, ssoLabel, loginNotice, loaded, fetchBranding, applyBranding };
 });

@@ -87,8 +87,20 @@
     "features": {
       "dossierManagement": "Beheer van onderzoeksdossiers",
       "realTimeCollab": "Realtime samenwerking",
-      "mapping": "Cartografie en visualisatie"
-    }
+      "mapping": "Cartografie en visualisatie",
+      "structuredDossiers": "Gestructureerde dossiers",
+      "structuredDossiersDesc": "Notities, captures, datasets, kaarten — op één plek.",
+      "chainOfCustody": "Bewijsketen",
+      "chainOfCustodyDesc": "Automatische tijdsregistratie en toegangsjournaal.",
+      "osintTools": "Geïntegreerde OSINT-tools",
+      "osintToolsDesc": "Web Clipper, Reverse Image, Username Scan…",
+      "teamWork": "Samenwerken in team",
+      "teamWorkDesc": "Realtime co-editing, fijnmazige rollen."
+    },
+    "orSeparator": "of",
+    "ssoInstitutional": "Aanmelden via institutionele SSO (OIDC)",
+    "ssoHint": "Een beheerder kan dit activeren in Systeem → Authenticatie.",
+    "tracingNotice": "Elke aanmelding wordt geregistreerd. Het gebruik van dit platform is voorbehouden aan gemachtigd personeel in het kader van hun opdrachten."
   },
   "nav": {
     "darkMode": "Donkere modus",

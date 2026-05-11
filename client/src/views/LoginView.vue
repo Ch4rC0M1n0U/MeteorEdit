@@ -1,5 +1,15 @@
 <template>
   <div class="login-split">
+    <!-- Environment / theme toggle bar (top-right, always above split) -->
+    <div class="login-topbar">
+      <span v-if="brandingStore.environmentLabel" class="login-env-badge mono" :title="brandingStore.environmentLabel">
+        <span class="login-env-dot" aria-hidden="true" />
+        {{ brandingStore.environmentLabel }}
+      </span>
+      <button class="login-theme-toggle" type="button" @click="themeStore.toggle()" :title="themeStore.isDark ? $t('nav.lightMode') : $t('nav.darkMode')">
+        <i :class="themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'" />
+      </button>
+    </div>
     <!-- Left panel: branding showcase -->
     <div class="login-left" :class="{ 'has-bg-image': brandingStore.loginBackgroundUrl }">
       <img v-if="brandingStore.loginBackgroundUrl" :src="brandingStore.loginBackgroundUrl" alt="" class="login-left-bg-img" />
@@ -45,21 +55,43 @@
           <h1 class="login-brand-title mono">{{ brandingStore.appName }}</h1>
           <p class="login-brand-tagline">{{ brandingStore.loginMessage || $t('auth.osintPlatform') }}</p>
         </div>
-        <div class="login-left-features">
-          <div class="login-feature">
+        <!-- Mini-cards features 2×2 (replaces the previous vertical list) -->
+        <div class="login-left-features login-left-features--grid">
+          <article class="login-feature-card">
             <span class="login-feature-iconwrap"><i class="pi pi-folder-open" /></span>
-            <span>{{ $t('auth.features.dossierManagement') }}</span>
-          </div>
-          <div class="login-feature">
+            <div class="login-feature-text">
+              <strong>{{ $t('auth.features.structuredDossiers') }}</strong>
+              <p>{{ $t('auth.features.structuredDossiersDesc') }}</p>
+            </div>
+          </article>
+          <article class="login-feature-card">
+            <span class="login-feature-iconwrap"><i class="pi pi-shield" /></span>
+            <div class="login-feature-text">
+              <strong>{{ $t('auth.features.chainOfCustody') }}</strong>
+              <p>{{ $t('auth.features.chainOfCustodyDesc') }}</p>
+            </div>
+          </article>
+          <article class="login-feature-card">
+            <span class="login-feature-iconwrap"><i class="pi pi-search" /></span>
+            <div class="login-feature-text">
+              <strong>{{ $t('auth.features.osintTools') }}</strong>
+              <p>{{ $t('auth.features.osintToolsDesc') }}</p>
+            </div>
+          </article>
+          <article class="login-feature-card">
             <span class="login-feature-iconwrap"><i class="pi pi-users" /></span>
-            <span>{{ $t('auth.features.realTimeCollab') }}</span>
-          </div>
-          <div class="login-feature">
-            <span class="login-feature-iconwrap"><i class="pi pi-map-marker" /></span>
-            <span>{{ $t('auth.features.mapping') }}</span>
-          </div>
+            <div class="login-feature-text">
+              <strong>{{ $t('auth.features.teamWork') }}</strong>
+              <p>{{ $t('auth.features.teamWorkDesc') }}</p>
+            </div>
+          </article>
         </div>
       </div>
+      <!-- Institutional footer (visible only when no custom bg image) -->
+      <footer v-if="!brandingStore.loginBackgroundUrl" class="login-left-footer mono">
+        <span class="login-left-footer-text">{{ footerLabel }}</span>
+        <span class="login-left-footer-version">v{{ appVersion }}</span>
+      </footer>
     </div>
 
     <!-- Right panel: login form -->
@@ -160,6 +192,27 @@
           />
         </form>
 
+        <!-- SSO institutionnel — visible quand un endpoint OIDC est configuré
+             dans le branding admin. Le bouton renvoie sur l'URL d'autorisation. -->
+        <template v-if="brandingStore.ssoUrl && !show2FA">
+          <div class="login-sep" aria-hidden="true">
+            <span class="login-sep-line" />
+            <span class="login-sep-label mono">{{ $t('auth.orSeparator') }}</span>
+            <span class="login-sep-line" />
+          </div>
+          <a :href="brandingStore.ssoUrl" class="login-sso-btn">
+            <i class="pi pi-shield" />
+            <span>{{ brandingStore.ssoLabel || $t('auth.ssoInstitutional') }}</span>
+          </a>
+          <p v-if="!brandingStore.ssoUrl" class="login-sso-hint mono">{{ $t('auth.ssoHint') }}</p>
+        </template>
+
+        <!-- Encart d'information traçabilité / habilitations -->
+        <aside v-if="!show2FA" class="login-info-card">
+          <i class="pi pi-info-circle" />
+          <p>{{ brandingStore.loginNotice || $t('auth.tracingNotice') }}</p>
+        </aside>
+
         <!-- 2FA section -->
         <div v-if="show2FA" class="tfa-login-section">
           <div class="tfa-icon-wrap">
@@ -241,6 +294,12 @@ const versionTag = computed(() => {
   const monthYear = new Date().toLocaleDateString(locale.value, { month: 'long', year: 'numeric' }).toUpperCase();
   return `VERSION ${major}.${minor} · ${monthYear}`;
 });
+
+// Full version string for the institutional footer.
+const appVersion = __APP_VERSION__;
+// Footer text — admin can override via brandingStore.organizationTag,
+// otherwise we fall back to a neutral label derived from appName.
+const footerLabel = computed(() => brandingStore.organizationTag || brandingStore.appName);
 
 const email = ref('');
 const password = ref('');
@@ -431,12 +490,21 @@ async function handle2FA() {
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
 }
 
+/* Features list — kept for backwards compat; the v3.29 layout uses the
+   grid variant below. */
 .login-left-features {
   margin-top: 48px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   text-align: left;
+}
+
+/* Mini-cards 2×2 grid — v3.29 institutional layout */
+.login-left-features--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .login-feature {
@@ -451,6 +519,29 @@ async function handle2FA() {
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
   transition: all var(--me-dur) var(--me-ease);
+}
+
+.login-feature-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+.login-feature-text { min-width: 0; }
+.login-feature-text strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.3;
+}
+.login-feature-text p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
 }
 
 .login-feature:hover {
@@ -857,4 +948,141 @@ async function handle2FA() {
     max-width: 100%;
   }
 }
+
+/* ─── v3.29 institutional additions ─── */
+
+/* Top-right bar with environment badge + dark mode toggle */
+.login-topbar {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.login-env-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(8px);
+}
+.login-env-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--me-success);
+  box-shadow: 0 0 6px var(--me-success);
+  flex-shrink: 0;
+}
+.login-theme-toggle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background var(--me-dur-fast) var(--me-ease);
+  backdrop-filter: blur(8px);
+}
+.login-theme-toggle:hover { background: rgba(255, 255, 255, 0.1); }
+
+/* Institutional footer at the bottom of the left panel */
+.login-left-footer {
+  position: absolute;
+  bottom: 18px;
+  left: 40px;
+  right: 40px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.3px;
+}
+.login-left-footer-version { opacity: 0.6; }
+
+/* "OU" separator between native login and SSO */
+.login-sep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 14px;
+  color: var(--me-text-muted);
+}
+.login-sep-line {
+  flex: 1;
+  height: 1px;
+  background: var(--me-border);
+}
+.login-sep-label {
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+/* SSO institutional button */
+.login-sso-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 10px;
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  color: var(--me-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--me-dur-fast) var(--me-ease), background var(--me-dur-fast) var(--me-ease);
+}
+.login-sso-btn:hover {
+  border-color: var(--me-accent);
+  background: var(--me-accent-glow);
+}
+.login-sso-btn i { color: var(--me-accent); font-size: 14px; }
+.login-sso-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--me-text-muted);
+  text-align: center;
+}
+
+/* Traceability / habilités info card */
+.login-info-card {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(var(--me-accent-rgb), 0.07);
+  border: 1px solid rgba(var(--me-accent-rgb), 0.18);
+  color: var(--me-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.login-info-card i {
+  font-size: 14px;
+  color: var(--me-accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.login-info-card p { margin: 0; }
 </style>

@@ -87,8 +87,20 @@
     "features": {
       "dossierManagement": "Investigation case management",
       "realTimeCollab": "Real-time collaboration",
-      "mapping": "Mapping and visualization"
-    }
+      "mapping": "Mapping and visualization",
+      "structuredDossiers": "Structured cases",
+      "structuredDossiersDesc": "Notes, captures, datasets, maps — all in one place.",
+      "chainOfCustody": "Chain of custody",
+      "chainOfCustodyDesc": "Automatic timestamping and access journaling.",
+      "osintTools": "Built-in OSINT tools",
+      "osintToolsDesc": "Web Clipper, Reverse Image, Username Scan…",
+      "teamWork": "Team collaboration",
+      "teamWorkDesc": "Real-time co-editing, fine-grained roles."
+    },
+    "orSeparator": "or",
+    "ssoInstitutional": "Sign in with institutional SSO (OIDC)",
+    "ssoHint": "An administrator can enable this in Settings → Authentication.",
+    "tracingNotice": "All sign-ins are logged. Use of this platform is restricted to authorized personnel acting within their official duties."
   },
   "nav": {
     "darkMode": "Dark mode",
