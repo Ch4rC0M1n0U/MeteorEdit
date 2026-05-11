@@ -2,10 +2,21 @@
   <div class="dossier-info">
     <div class="di-header fade-in">
       <h2 class="di-title mono">{{ $t('dossier.info') }}</h2>
-      <button v-if="!editing" class="me-btn-primary" @click="startEdit">
-        <span class="mdi mdi-pencil-outline" style="font-size: 16px; margin-right: 4px;"></span>
-        {{ $t('common.edit') }}
-      </button>
+      <div v-if="!editing" class="di-header-actions">
+        <button class="me-btn-primary" @click="startEdit">
+          <span class="mdi mdi-pencil-outline" style="font-size: 16px; margin-right: 4px;"></span>
+          {{ $t('common.edit') }}
+        </button>
+        <button
+          v-if="dossierStore.currentDossier?.status !== 'closed'"
+          class="di-btn-close-dossier"
+          @click="showCloseDialog = true"
+          :title="$t('dossier.closeDossier')"
+        >
+          <span class="mdi mdi-archive-arrow-down-outline" style="font-size: 16px; margin-right: 4px;"></span>
+          {{ $t('dossier.closeDossier') }}
+        </button>
+      </div>
     </div>
 
     <!-- MODE LECTURE -->
@@ -457,12 +468,15 @@
               <input ref="reportInput" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden @change="handleReportSelect" />
               <span class="mdi mdi-file-upload-outline" style="font-size: 32px; margin-bottom: 8px; opacity: 0.4;"></span>
               <span class="mono" style="font-size: 13px;">{{ $t('dossier.selectReport') }}</span>
-              <span style="font-size: 11px; opacity: 0.5;">PDF, DOCX</span>
+              <span style="font-size: 11px; opacity: 0.5;">{{ $t('dossier.reportOptional') }}</span>
             </div>
             <div v-if="selectedReportFile" class="di-report-selected">
               <span class="mdi mdi-file-document-outline" style="font-size: 16px; margin-right: 8px;"></span>
               <span class="di-report-selected-name">{{ selectedReportFile.name }}</span>
               <span class="di-report-selected-size mono">{{ formatFileSize(selectedReportFile.size) }}</span>
+              <button class="di-report-clear" @click="selectedReportFile = null" :title="$t('common.remove')">
+                <span class="mdi mdi-close" style="font-size: 14px;"></span>
+              </button>
             </div>
             <div v-if="reportError" style="font-size: 13px; padding: 8px 12px; border-radius: 6px; background: rgba(239, 68, 68, 0.1); color: #ef4444; margin-top: 12px;">
               {{ reportError }}
@@ -470,9 +484,9 @@
           </div>
           <div class="dialog-footer">
             <button class="me-btn-small" @click="cancelCloseDialog">{{ $t('common.cancel') }}</button>
-            <button class="me-btn-small me-btn-primary-sm" :disabled="!selectedReportFile || uploadingReport" @click="submitFinalReport">
+            <button class="me-btn-small me-btn-primary-sm" :disabled="uploadingReport" @click="submitFinalReport">
               <ProgressSpinner v-if="uploadingReport" style="width: 14px; height: 14px; margin-right: 4px;" />
-              {{ $t('dossier.closeDossier') }}
+              {{ selectedReportFile ? $t('dossier.closeDossier') : $t('dossier.closeWithoutReport') }}
             </button>
           </div>
         </div>
@@ -1018,13 +1032,18 @@ function cancelCloseDialog() {
 }
 
 async function submitFinalReport() {
-  if (!selectedReportFile.value || !dossierStore.currentDossier) return;
+  if (!dossierStore.currentDossier) return;
   uploadingReport.value = true;
   reportError.value = '';
   try {
     const dossierId = dossierStore.currentDossier._id;
+    // The final report is OPTIONAL — clôturing without a file is a valid path.
+    // We always POST a multipart payload (the route uses upload.single) but
+    // only attach the file when one was selected.
     const fd = new FormData();
-    fd.append('finalReport', selectedReportFile.value);
+    if (selectedReportFile.value) {
+      fd.append('finalReport', selectedReportFile.value);
+    }
     await api.post(`/dossiers/${dossierId}/close`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -2337,6 +2356,43 @@ async function removeCollaborator(userId: string) {
   justify-content: space-between;
   margin-bottom: 16px;
 }
+.di-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.di-btn-close-dossier {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.08);
+  color: rgb(220, 38, 38);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.di-btn-close-dossier:hover {
+  background: rgb(239, 68, 68);
+  color: #fff;
+  border-color: rgb(239, 68, 68);
+}
+.di-report-clear {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--me-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.di-report-clear:hover { background: rgba(0,0,0,0.06); color: var(--me-error); }
 .di-title {
   font-size: 20px;
   font-weight: 700;

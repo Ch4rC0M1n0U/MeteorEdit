@@ -548,40 +548,40 @@ export async function closeDossier(req: AuthRequest, res: Response): Promise<voi
       res.status(403).json({ message: 'Only owner can close dossier' });
       return;
     }
-    if (!req.file) {
-      res.status(400).json({ message: 'Final report file is required (PDF or DOCX)' });
-      return;
-    }
-    if (!ALLOWED_REPORT_MIMETYPES.includes(req.file.mimetype)) {
-      // Clean up the uploaded file
+    // Final report file is OPTIONAL: a dossier can be closed without one.
+    // If a file is provided, validate its mime type; otherwise just flip the
+    // status to 'closed' and stamp the closure date.
+    if (req.file && !ALLOWED_REPORT_MIMETYPES.includes(req.file.mimetype)) {
       const tmpPath = path.resolve(UPLOAD_DIR, req.file.filename);
       if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
       res.status(400).json({ message: 'Only PDF or DOCX files are allowed' });
       return;
     }
 
-    // Remove old report file if exists
-    if (dossier.finalReport?.filePath) {
-      const oldPath = path.resolve(UPLOAD_DIR, dossier.finalReport.filePath.replace(/^uploads\//, ''));
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    if (req.file) {
+      // Remove old report file if exists (replacing with the new one)
+      if (dossier.finalReport?.filePath) {
+        const oldPath = path.resolve(UPLOAD_DIR, dossier.finalReport.filePath.replace(/^uploads\//, ''));
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      dossier.finalReport = {
+        fileName: req.file.originalname,
+        filePath: `uploads/${req.file.filename}`,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        uploadedAt: new Date(),
+      };
     }
 
     dossier.status = 'closed';
     dossier.closureDate = new Date();
-    dossier.finalReport = {
-      fileName: req.file.originalname,
-      filePath: `uploads/${req.file.filename}`,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
-      uploadedAt: new Date(),
-    };
     await dossier.save();
 
     if (!dossier.isEmbargo) {
       const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
       await logActivity(req.user!.userId, 'dossier.close', 'dossier', dossier._id.toString(), {
         title: dossier.title,
-        reportFileName: req.file.originalname,
+        reportFileName: req.file?.originalname ?? null,
       }, ip, req.headers['user-agent'] || '');
     }
 
