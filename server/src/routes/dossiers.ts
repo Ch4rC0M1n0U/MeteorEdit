@@ -6,6 +6,7 @@ import {
   uploadDossierLogo, deleteDossierLogo,
   uploadLinkedDocument, deleteLinkedDocument, transferDocumentToNode,
   uploadEntityPhoto, deleteEntityPhoto,
+  uploadEntityPhotoFile, deleteEntityPhotoFile,
   closeDossier, getFinalReport, deleteFinalReport,
 } from '../controllers/dossierController';
 import { getUserDashboard, getTaskStats } from '../controllers/dashboardController';
@@ -376,4 +377,8 @@ router.delete('/:id/documents/:docId', deleteLinkedDocument);
 router.post('/:id/documents/:docId/transfer', transferDocumentToNode);
 router.post('/:id/entities/:entityIndex/photo', upload.single('photo'), uploadEntityPhoto);
 router.delete('/:id/entities/:entityIndex/photo', deleteEntityPhoto);
+// Stateless endpoints (works for E2E-encrypted dossiers): client manages
+// entity.photos itself in the encrypted payload.
+router.post('/:id/entity-photo-file', upload.single('photo'), uploadEntityPhotoFile);
+router.delete('/:id/entity-photo-file', deleteEntityPhotoFile);
 export default router;

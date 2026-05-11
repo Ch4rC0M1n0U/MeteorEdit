@@ -278,6 +278,78 @@ export async function uploadLinkedDocument(req: AuthRequest, res: Response): Pro
   }
 }
 
+/**
+ * Stateless entity photo upload — accepts a file (already encrypted client-side
+ * if the dossier is E2E), stores it under uploads/, returns the path. Does NOT
+ * touch dossier.entities, so it works whether `entities` is an array (plaintext)
+ * or a ciphertext string ("ENC:..."). The client is responsible for adding the
+ * returned path to entity.photos and saving the dossier afterwards.
+ */
+export async function uploadEntityPhotoFile(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id).select('_id owner collaborators');
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    const userId = req.user!.userId;
+    if (!isOwnerOrCollaborator(dossier as any, userId)) { res.status(403).json({ message: 'Access denied' }); return; }
+    if (!req.file) { res.status(400).json({ message: 'No file provided' }); return; }
+
+    const photoPath = `uploads/${req.file.filename}`;
+    const meta = req.body?.originalContentType
+      ? { path: photoPath, originalContentType: String(req.body.originalContentType) }
+      : null;
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'entity.photo_upload', 'dossier', dossier._id.toString(), {
+      photoPath,
+    }, ip, req.headers['user-agent'] || '');
+
+    res.status(201).json({ path: photoPath, metadata: meta });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+/**
+ * Stateless entity photo deletion — removes a file from uploads/. Does NOT
+ * touch dossier.entities. The client is responsible for removing the path
+ * from entity.photos and saving the dossier afterwards.
+ */
+export async function deleteEntityPhotoFile(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const dossier = await Dossier.findById(req.params.id).select('_id owner collaborators');
+    if (!dossier) { res.status(404).json({ message: 'Dossier not found' }); return; }
+    const userId = req.user!.userId;
+    if (!isOwnerOrCollaborator(dossier as any, userId)) { res.status(403).json({ message: 'Access denied' }); return; }
+
+    const { photoPath } = req.body ?? {};
+    if (typeof photoPath !== 'string' || !photoPath.startsWith('uploads/')) {
+      res.status(400).json({ message: 'Invalid photoPath' });
+      return;
+    }
+
+    // Defensive: keep the deletion confined to the uploads dir
+    const uploadsRoot = path.resolve(process.env.UPLOAD_DIR || './uploads');
+    const relative = photoPath.replace(/^uploads\//, '');
+    const absPath = path.resolve(uploadsRoot, relative);
+    if (!absPath.startsWith(uploadsRoot)) {
+      res.status(400).json({ message: 'Path traversal blocked' });
+      return;
+    }
+    if (fs.existsSync(absPath)) {
+      try { fs.unlinkSync(absPath); } catch { /* file may be locked, ignore */ }
+    }
+
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '').replace('::ffff:', '');
+    await logActivity(userId, 'entity.photo_delete', 'dossier', dossier._id.toString(), {
+      photoPath,
+    }, ip, req.headers['user-agent'] || '');
+
+    res.json({ deleted: true, path: photoPath });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 export async function uploadEntityPhoto(req: AuthRequest, res: Response): Promise<void> {
   try {
     const dossier = await Dossier.findById(req.params.id);
@@ -286,13 +358,13 @@ export async function uploadEntityPhoto(req: AuthRequest, res: Response): Promis
     if (!isOwnerOrCollaborator(dossier, userId)) { res.status(403).json({ message: 'Access denied' }); return; }
     if (!req.file) { res.status(400).json({ message: 'No file provided' }); return; }
 
-    // 'entities' is now Schema.Types.Mixed — for E2E-encrypted dossiers it
-    // ships as the ciphertext string "ENC:...", so we cannot index into it
-    // server-side. Reject with a clear error rather than crashing on a
-    // string-character access below.
+    // Legacy endpoint — only works for plaintext dossiers (entities is an array).
+    // For E2E-encrypted dossiers, clients must use the stateless endpoints
+    // (uploadEntityPhotoFile / deleteEntityPhotoFile) and patch entity.photos
+    // themselves before calling updateDossier.
     if (!Array.isArray(dossier.entities)) {
       res.status(409).json({
-        message: 'Dossier chiffré E2E : les photos d\'entité ne peuvent pas être ajoutées via cet endpoint car le serveur n\'a pas accès aux entités chiffrées.',
+        message: 'Use stateless endpoint /entity-photo-file for encrypted dossiers',
       });
       return;
     }

@@ -675,8 +675,9 @@
           />
           <InputText v-model="newEntity.description" :placeholder="$t('dossier.entityDescOptional')" style="width: 100%;" />
 
-          <!-- Photos d'identité (only when editing existing entity) -->
-          <div v-if="editingEntityIndex !== null" class="di-entity-photos-section">
+          <!-- Photos d'identité (works for both new and existing entities thanks
+               to the stateless upload endpoint /dossiers/:id/entity-photo-file) -->
+          <div class="di-entity-photos-section">
             <div class="di-entity-photos-header">
               <span class="mono" style="font-size: 12px; font-weight: 600;">
                 <span class="mdi mdi-camera-outline" style="font-size: 14px; margin-right: 4px;"></span>
@@ -705,7 +706,7 @@
                 <img :src="getEntityPhotoUrl(photo)" class="di-entity-photo-img" />
                 <button
                   class="di-entity-photo-delete"
-                  @click="deleteEntityPhoto(editingEntityIndex!, photo)"
+                  @click="deleteEntityPhoto(editingEntityIndex ?? -1, photo)"
                   :title="$t('dossier.deletePhoto')"
                 >
                   <span class="mdi mdi-close" style="font-size: 12px;"></span>
@@ -1902,23 +1903,23 @@ async function removeEntity(index: number) {
 }
 
 // --- Photos d'entité ---
+//
+// New stateless flow (works for both plaintext and E2E-encrypted dossiers):
+//   1. Upload the file binary (encrypted client-side if a dossier key exists)
+//      to POST /dossiers/:id/entity-photo-file → receives the storage path
+//   2. Push the path into newEntity.photos (local dialog state)
+//   3. When the user clicks Save on the entity dialog, saveEntity() pushes
+//      the entity (with its photos array) into form.entities and calls
+//      dossierStore.updateDossier(), which encrypts the entire entities
+//      payload before sending. No dossier-side index manipulation required.
+//
+// This makes uploads work BEFORE the entity is saved (newEntity.photos is
+// the source of truth in the dialog) and on encrypted dossiers (the server
+// never needs to read entities to attach the photo).
 async function uploadEntityPhoto(event: Event) {
   const input = event.target as HTMLInputElement;
   const files = input.files;
   if (!files?.length || !dossierStore.currentDossier) return;
-
-  // Determine entity index: if editing, use that; otherwise it's the last one added
-  const entityIndex = editingEntityIndex.value;
-  if (entityIndex === null) {
-    toast.add({
-      severity: 'warn',
-      summary: t('dossier.entityPhotos'),
-      detail: t('dossier.entityPhotoSaveFirst'),
-      life: 4000,
-    });
-    if (input) input.value = '';
-    return;
-  }
 
   const dossierId = dossierStore.currentDossier._id;
   uploadingEntityPhoto.value = true;
@@ -1927,12 +1928,22 @@ async function uploadEntityPhoto(event: Event) {
       const { data } = await uploadEncryptedFile(
         dossierId,
         file,
-        `/dossiers/${dossierId}/entities/${entityIndex}/photo`,
+        `/dossiers/${dossierId}/entity-photo-file`,
         'photo',
       );
-      // Refresh entities from response
-      form.entities = (data.entities || []).map((e: any) => ({ ...e, photos: e.photos || [] }));
-      newEntity.photos = [...(form.entities[entityIndex]?.photos || [])];
+      const newPath = data?.path;
+      if (typeof newPath === 'string' && newPath.length > 0) {
+        if (!Array.isArray(newEntity.photos)) newEntity.photos = [];
+        newEntity.photos.push(newPath);
+      }
+    }
+    // If we are editing an existing entity (not just creating one), persist
+    // the updated photo list immediately so the user doesn't lose it if they
+    // cancel the dialog. saveEntity() also handles this for the create case.
+    if (editingEntityIndex.value !== null && dossierStore.currentDossier) {
+      const idx = editingEntityIndex.value;
+      form.entities[idx] = { ...form.entities[idx], ...newEntity, photos: [...newEntity.photos] };
+      await dossierStore.updateDossier(dossierStore.currentDossier._id, { entities: form.entities });
     }
   } catch (err: unknown) {
     const apiErr = err as { response?: { status?: number; data?: { message?: string } }; message?: string };
@@ -1951,18 +1962,32 @@ async function uploadEntityPhoto(event: Event) {
 
 async function deleteEntityPhoto(entityIndex: number, photoPath: string) {
   if (!dossierStore.currentDossier) return;
+  const dossierId = dossierStore.currentDossier._id;
   try {
-    const { data } = await api.delete(
-      `/dossiers/${dossierStore.currentDossier._id}/entities/${entityIndex}/photo`,
-      { data: { photoPath } },
-    );
-    form.entities = (data.entities || []).map((e: any) => ({ ...e, photos: e.photos || [] }));
-    // Update dialog state if open
-    if (editingEntityIndex.value === entityIndex) {
-      newEntity.photos = [...(form.entities[entityIndex]?.photos || [])];
+    // Delete the file binary on disk via stateless endpoint (works on E2E
+    // dossiers because we don't touch dossier.entities server-side).
+    await api.delete(`/dossiers/${dossierId}/entity-photo-file`, { data: { photoPath } });
+
+    // Drop the path from the in-dialog buffer
+    if (Array.isArray(newEntity.photos)) {
+      newEntity.photos = newEntity.photos.filter((p) => p !== photoPath);
     }
-  } catch (err) {
-    console.error('Entity photo delete error:', err);
+    // And from the persisted entity list, then save the dossier (encrypts
+    // the entities payload if E2E is unlocked).
+    if (entityIndex >= 0 && form.entities[entityIndex]) {
+      const updatedPhotos = (form.entities[entityIndex].photos || []).filter((p: string) => p !== photoPath);
+      form.entities[entityIndex] = { ...form.entities[entityIndex], photos: updatedPhotos };
+      await dossierStore.updateDossier(dossierId, { entities: form.entities });
+    }
+  } catch (err: unknown) {
+    const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
+    const detail = apiErr?.response?.data?.message ?? apiErr?.message ?? t('common.error');
+    toast.add({
+      severity: 'error',
+      summary: t('dossier.entityPhotos'),
+      detail,
+      life: 5000,
+    });
   }
 }
 
