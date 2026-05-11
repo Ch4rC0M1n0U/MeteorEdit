@@ -1,6 +1,13 @@
 <template>
   <div v-if="!dossierStore.currentDossier" class="home-page">
     <div class="home-header fade-in">
+      <div class="home-header-text">
+        <h1 class="home-title">{{ $t('home.myDossiers') }}</h1>
+        <p class="home-subtitle">
+          <span v-if="totalCount === 0">{{ $t('home.noDossiersHint') }}</span>
+          <span v-else class="mono">{{ totalCount }} {{ totalCount > 1 ? 'dossiers' : 'dossier' }}</span>
+        </p>
+      </div>
       <div class="home-header-actions">
         <Button icon="pi pi-upload" :label="$t('home.import')" outlined size="small" @click="triggerImport" />
         <CreateDossierDialog />
@@ -113,6 +120,8 @@ const tabOptions = computed(() => [
   { label: t('home.tabs.closed'), value: 'closed' },
 ]);
 
+const totalCount = computed(() => dossierStore.dossiers.length);
+
 const favoriteDossiers = computed(() =>
   dossierStore.dossiers.filter(d => dossierStore.isFavorite(d._id))
 );
@@ -198,20 +207,36 @@ async function handleDelete(id: string) {
 .home-page {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 32px;
+  padding: 28px 32px 40px;
 }
 .home-header {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.home-header-text { min-width: 0; }
+.home-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 0;
+}
+.home-subtitle {
+  font-size: 13px;
+  color: var(--me-text-muted);
+  margin: 4px 0 0;
 }
 .home-header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
-.home-seg { margin-bottom: 16px; }
+.home-seg { margin-bottom: 20px; }
 .dossier-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -248,12 +273,13 @@ async function handleDelete(id: string) {
 .closed-card {
   padding: 14px 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0.7;
+  transition: all var(--me-dur) var(--me-ease);
+  opacity: 0.75;
 }
 .closed-card:hover {
   opacity: 1;
   transform: translateY(-1px);
+  border-color: var(--me-border-hover);
 }
 .closed-card-header {
   display: flex;

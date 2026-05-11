@@ -1450,9 +1450,9 @@ onBeforeUnmount(() => {
 .lt-tooltip-suggestion {
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(56, 189, 248, 0.1);
-  color: var(--me-accent, #38bdf8);
-  border: 1px solid var(--me-accent, #38bdf8);
+  background: rgba(var(--me-accent-rgb), 0.1);
+  color: var(--me-accent, #6391d6);
+  border: 1px solid var(--me-accent, #6391d6);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -1460,7 +1460,7 @@ onBeforeUnmount(() => {
   font-family: inherit;
 }
 .lt-tooltip-suggestion:hover {
-  background: var(--me-accent, #38bdf8);
+  background: var(--me-accent, #6391d6);
   color: #fff;
 }
 .lt-tooltip-no-suggestion {

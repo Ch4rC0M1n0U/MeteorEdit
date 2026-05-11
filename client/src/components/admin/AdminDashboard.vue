@@ -123,7 +123,7 @@ onUnmounted(() => {
   if (socket) socket.off('online-count');
 });
 
-const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--me-accent').trim() || '#38bdf8';
+const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--me-accent').trim() || '#6391d6';
 const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--me-text-muted').trim() || '#64748b';
 
 const lineOptions = {
@@ -179,7 +179,7 @@ const dossierChartData = computed(() => {
 });
 
 const statusLabels = computed<Record<string, string>>(() => ({ open: t('admin.statusOpen'), in_progress: t('admin.statusInProgress'), closed: t('admin.statusClosed') }));
-const statusColors = ['#38bdf8', '#fbbf24', '#34d399'];
+const statusColors = ['#6391d6', '#fbbf24', '#34d399'];
 
 const statusChartData = computed(() => {
   if (!stats.value.statusDistribution?.length) return null;

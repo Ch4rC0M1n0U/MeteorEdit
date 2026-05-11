@@ -31,8 +31,35 @@ export async function listDossiers(req: AuthRequest, res: Response): Promise<voi
       Dossier.countDocuments(filter),
     ]);
 
+    // Enrichissement v3.28 : ajouter entityCount + noteCount pour les meta-stats
+    // affichées sur les DossierCard. Pour entityCount : si entities est array
+    // (dossier en clair), on prend sa longueur ; sinon null (E2E chiffré).
+    // Pour noteCount : 1 seul aggregation pipeline batched sur tous les dossiers
+    // de la page (pas de N+1).
+    const dossierIds = dossiers.map((d) => d._id);
+    const noteCounts = dossierIds.length > 0
+      ? await DossierNode.aggregate([
+          // `deletedAt: { $in: [null] }` matches both explicit nulls AND
+          // documents where the field is absent (legacy data pre-soft-delete).
+          // The strict `deletedAt: null` form would silently exclude those.
+          { $match: { dossierId: { $in: dossierIds }, type: 'note', deletedAt: { $in: [null] } } },
+          { $group: { _id: '$dossierId', count: { $sum: 1 } } },
+        ])
+      : [];
+    const noteCountMap = new Map<string, number>(
+      noteCounts.map((n: { _id: { toString(): string }; count: number }) => [String(n._id), n.count])
+    );
+
+    const enriched = dossiers.map((d) => ({
+      ...d,
+      entityCount: Array.isArray((d as { entities?: unknown }).entities)
+        ? ((d as { entities: unknown[] }).entities).length
+        : null,
+      noteCount: noteCountMap.get(String(d._id)) ?? null,
+    }));
+
     res.json({
-      dossiers,
+      dossiers: enriched,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {

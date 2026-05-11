@@ -58,6 +58,14 @@ export interface Dossier {
   encryptionKeys: { userId: string; encryptedKey: string }[];
   createdAt: string;
   updatedAt: string;
+  // Aggregated counters added by GET /api/dossiers (v3.28+). Optional :
+  // backwards-compatible with other endpoints that don't return these.
+  // - entityCount is null for E2E-encrypted dossiers (server cannot count
+  //   inside an "ENC:..." ciphertext string).
+  // - noteCount is null when the dossier has zero notes (so the meta-stats
+  //   row stays hidden on empty dossiers).
+  entityCount?: number | null;
+  noteCount?: number | null;
 }
 
 export interface CollaboratorUser {

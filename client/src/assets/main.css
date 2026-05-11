@@ -4,48 +4,96 @@
 @import '@fontsource-variable/inter';
 
 :root {
+  /* Surfaces */
   --me-bg-deep: #0a0e17;
   --me-bg-surface: #111827;
   --me-bg-elevated: #1a2332;
   --me-bg-glass: rgba(17, 24, 39, 0.85);
-  --me-border: rgba(99, 179, 237, 0.15);
-  --me-border-hover: rgba(99, 179, 237, 0.28);
-  --me-accent: #38bdf8;
-  --me-accent-glow: rgba(56, 189, 248, 0.15);
-  --me-accent-warm: #f59e0b;
+
+  /* Borders — bleu acier doux */
+  --me-border: rgba(99, 145, 214, 0.14);
+  --me-border-hover: rgba(99, 145, 214, 0.28);
+  --me-border-strong: rgba(99, 145, 214, 0.35);
+
+  /* Accent v3.28 — passage du cyan vif au bleu acier */
+  --me-accent: #6391d6;
+  --me-accent-hover: #5580c4;
+  --me-accent-glow: rgba(99, 145, 214, 0.15);
+  --me-accent-rgb: 99, 145, 214;
+  --me-accent-warm: #e0af68;
+  --me-accent-soft: #81b29a;
+
+  /* Text */
   --me-text-primary: #e2e8f0;
   --me-text-secondary: #94a3b8;
   --me-text-muted: #64748b;
+
+  /* Status */
   --me-success: #34d399;
   --me-error: #f87171;
   --me-warning: #fbbf24;
-  --me-radius: 12px;
-  --me-radius-sm: 8px;
+  --me-info: #60a5fa;
+
+  /* Radius */
   --me-radius-xs: 6px;
+  --me-radius-sm: 8px;
+  --me-radius: 12px;
+  --me-radius-lg: 16px;
+  --me-radius-xl: 24px;
+
+  /* Type */
   --me-font-mono: 'JetBrains Mono', monospace;
   --me-font-body: 'Inter Variable', system-ui, sans-serif;
+
+  /* Elevation */
+  --me-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --me-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --me-shadow-glow: 0 0 20px rgba(56, 189, 248, 0.08);
+  --me-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --me-shadow-glow: 0 0 20px rgba(99, 145, 214, 0.12);
+
+  /* Motion */
+  --me-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --me-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --me-dur-fast: 0.15s;
+  --me-dur: 0.25s;
+  --me-dur-slow: 0.4s;
+
+  /* Layout */
+  --me-sidebar-w: 240px;
+  --me-sidebar-w-collapsed: 64px;
+  --me-topbar-h: 56px;
 }
 
 [data-theme="light"] {
   --me-bg-deep: #f1f5f9;
   --me-bg-surface: #ffffff;
   --me-bg-elevated: #f8fafc;
-  --me-bg-glass: rgba(255, 255, 255, 0.8);
-  --me-border: rgba(15, 23, 42, 0.1);
+  --me-bg-glass: rgba(255, 255, 255, 0.85);
+
+  --me-border: rgba(15, 23, 42, 0.09);
   --me-border-hover: rgba(15, 23, 42, 0.2);
+  --me-border-strong: rgba(15, 23, 42, 0.3);
+
   --me-accent: #2563eb;
+  --me-accent-hover: #1d4ed8;
   --me-accent-glow: rgba(37, 99, 235, 0.1);
+  --me-accent-rgb: 37, 99, 235;
   --me-accent-warm: #d97706;
+  --me-accent-soft: #059669;
+
   --me-text-primary: #0f172a;
   --me-text-secondary: #475569;
   --me-text-muted: #94a3b8;
+
   --me-success: #059669;
   --me-error: #dc2626;
   --me-warning: #d97706;
+  --me-info: #2563eb;
+
+  --me-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --me-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  --me-shadow-glow: 0 0 20px rgba(37, 99, 235, 0.06);
+  --me-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --me-shadow-glow: 0 0 20px rgba(37, 99, 235, 0.08);
 }
 
 *,
@@ -112,12 +160,20 @@ body {
   border: 1px solid var(--me-border);
   border-radius: var(--me-radius);
   box-shadow: var(--me-shadow);
+  transition: transform var(--me-dur) var(--me-ease), border-color var(--me-dur-fast) var(--me-ease), box-shadow var(--me-dur) var(--me-ease);
 }
 
 .glass-card:hover {
   border-color: var(--me-border-hover);
   box-shadow: var(--me-shadow), var(--me-shadow-glow);
 }
+
+/* Pulsing dot for "in progress" status (used by DossierCard among others) */
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; }
+  50%      { box-shadow: 0 0 0 4px transparent; }
+}
+.status-dot--pulse { animation: pulseDot 2s ease-in-out infinite; }
 
 /* PrimeVue Dialog — theme-aware */
 .p-dialog {

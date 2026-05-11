@@ -181,8 +181,8 @@ async function handleRegister() {
   align-items: center;
   justify-content: center;
   background:
-    linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
-    linear-gradient(225deg, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(var(--me-accent-rgb), 0.12) 0%, transparent 60%),
+    linear-gradient(225deg, rgba(var(--me-accent-rgb), 0.06) 0%, transparent 50%),
     var(--me-bg-deep);
   overflow: hidden;
   border-right: 1px solid var(--me-border);
@@ -245,12 +245,12 @@ async function handleRegister() {
   width: 80px;
   height: 80px;
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--me-accent), rgba(56, 189, 248, 0.7));
+  background: linear-gradient(135deg, var(--me-accent), rgba(var(--me-accent-rgb), 0.7));
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  box-shadow: 0 8px 32px rgba(56, 189, 248, 0.25);
+  box-shadow: 0 8px 32px rgba(var(--me-accent-rgb), 0.25);
 }
 
 .login-brand-title {
@@ -389,7 +389,7 @@ async function handleRegister() {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--me-accent), rgba(56, 189, 248, 0.7));
+  background: linear-gradient(135deg, var(--me-accent), rgba(var(--me-accent-rgb), 0.7));
   display: flex;
   align-items: center;
   justify-content: center;

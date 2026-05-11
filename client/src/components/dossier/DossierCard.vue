@@ -6,7 +6,7 @@
         <span class="dc-status-label dc-status-label--continuous mono">{{ t('dossier.statusContinuous') }}</span>
       </div>
       <div class="dc-status" v-else>
-        <span :class="['status-dot', `status-dot--${statusDot}`]" />
+        <span :class="['status-dot', `status-dot--${statusDot}`, statusDot === 'in-progress' ? 'status-dot--pulse' : '']" />
         <span class="dc-status-label mono">{{ statusLabel }}</span>
       </div>
       <div class="dc-actions">
@@ -27,7 +27,19 @@
       <i v-else class="pi pi-lock dc-lock" :title="$t('home.e2eActive')" />
     </div>
     <div v-if="dossier.tags?.length" class="dc-tags">
-      <span v-for="tag in dossier.tags" :key="tag" class="dc-tag mono">{{ tag }}</span>
+      <span v-for="tag in dossier.tags.slice(0, 4)" :key="tag" class="dc-tag mono">{{ tag }}</span>
+      <span v-if="dossier.tags.length > 4" class="dc-tag dc-tag--more mono">+{{ dossier.tags.length - 4 }}</span>
+    </div>
+
+    <div v-if="hasMetaStats" class="dc-stats">
+      <span v-if="dossier.entityCount != null" class="dc-stat">
+        <i class="pi pi-users dc-stat-icon" />
+        <span class="mono">{{ dossier.entityCount }}</span>
+      </span>
+      <span v-if="dossier.noteCount != null" class="dc-stat">
+        <i class="pi pi-file-edit dc-stat-icon" />
+        <span class="mono">{{ dossier.noteCount }}</span>
+      </span>
     </div>
     <p v-if="dossier.description" class="dc-desc">{{ stripHtml(dossier.description) }}</p>
     <div class="dc-footer mono">
@@ -52,6 +64,12 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim();
 }
 defineEmits<{ open: [id: string]; delete: [id: string]; 'toggle-favorite': [id: string] }>();
+
+// Optional aggregated counters from backend — render conditionally so the
+// card stays clean when these fields aren't populated yet.
+const hasMetaStats = computed(() => {
+  return props.dossier.entityCount != null || props.dossier.noteCount != null;
+});
 
 const decryptedLogo = ref<string | null>(null);
 
@@ -90,9 +108,9 @@ const statusLabel = computed(() => {
 
 <style scoped>
 .dossier-card {
-  padding: 20px;
+  padding: 18px 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform var(--me-dur) var(--me-ease), border-color var(--me-dur-fast) var(--me-ease), box-shadow var(--me-dur) var(--me-ease);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -102,6 +120,8 @@ const statusLabel = computed(() => {
 }
 .dossier-card:hover {
   transform: translateY(-2px);
+  border-color: var(--me-border-hover);
+  box-shadow: var(--me-shadow-lg), 0 0 24px rgba(var(--me-accent-rgb), 0.08);
 }
 .dc-header {
   display: flex;
@@ -114,9 +134,10 @@ const statusLabel = computed(() => {
   gap: 8px;
 }
 .dc-status-label {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
+  font-weight: 600;
   color: var(--me-text-muted);
 }
 .dc-status-label--continuous {
@@ -140,7 +161,7 @@ const statusLabel = computed(() => {
 }
 .dc-fav--active {
   opacity: 1 !important;
-  color: var(--me-accent);
+  color: var(--me-accent-warm);
 }
 .dossier-card:hover .dc-fav,
 .dossier-card:hover .dc-delete {
@@ -188,10 +209,11 @@ const statusLabel = computed(() => {
   font-size: 14px;
 }
 .dc-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--me-text-primary);
-  line-height: 1.3;
+  line-height: 1.35;
+  letter-spacing: -0.1px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -219,14 +241,34 @@ const statusLabel = computed(() => {
   color: var(--me-accent);
   text-transform: lowercase;
 }
+.dc-tag--more {
+  background: var(--me-bg-elevated);
+  color: var(--me-text-muted);
+}
+.dc-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--me-border);
+}
+.dc-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--me-text-muted);
+}
+.dc-stat-icon { font-size: 11px; opacity: 0.7; }
+.dc-stat .mono { color: var(--me-text-secondary); font-weight: 600; }
 .dc-footer {
   font-size: 11px;
   color: var(--me-text-muted);
   margin-top: auto;
 }
-/* Status dot colors */
+/* Status dot colors — tokenized so currentColor (used by pulseDot keyframe) gets the right hue */
 .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.status-dot--open { background: #81b29a; box-shadow: 0 0 6px rgba(129, 178, 154, 0.5); }
-.status-dot--in-progress { background: #6391d6; box-shadow: 0 0 6px rgba(99, 145, 214, 0.5); }
-.status-dot--closed { background: #c97b7b; box-shadow: 0 0 6px rgba(201, 123, 123, 0.5); }
+.status-dot--open        { background: var(--me-accent-soft); box-shadow: 0 0 6px rgba(129, 178, 154, 0.5); color: var(--me-accent-soft); }
+.status-dot--in-progress { background: var(--me-accent);      box-shadow: 0 0 6px rgba(var(--me-accent-rgb), 0.5); color: var(--me-accent); }
+.status-dot--closed      { background: #c97b7b;                box-shadow: 0 0 6px rgba(201, 123, 123, 0.5); color: #c97b7b; }
 </style>

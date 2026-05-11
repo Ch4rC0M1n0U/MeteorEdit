@@ -47,6 +47,7 @@
           :title="collapsed ? item.label : undefined"
           @click="item.key === 'dossiers' ? onDossiersClick($event) : undefined"
         >
+          <span class="nav-active-bar" aria-hidden="true" />
           <i :class="item.icon" class="nav-icon" />
           <transition name="fade-text">
             <span v-if="!collapsed" class="nav-text">{{ item.label }}</span>
@@ -65,6 +66,7 @@
           :class="{ 'nav-item--active': isActive(item) }"
           :title="collapsed ? item.label : undefined"
         >
+          <span class="nav-active-bar" aria-hidden="true" />
           <i :class="item.icon" class="nav-icon" />
           <transition name="fade-text">
             <span v-if="!collapsed" class="nav-text">{{ item.label }}</span>
@@ -180,19 +182,19 @@ onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
 
 <style scoped>
 .sidebar {
-  width: 240px;
+  width: var(--me-sidebar-w, 240px);
   background: var(--me-bg-surface);
   border-right: 1px solid var(--me-border);
   display: flex;
   flex-direction: column;
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width var(--me-dur) var(--me-ease);
   flex-shrink: 0;
   z-index: 50;
 }
-.sidebar--collapsed { width: 64px; }
+.sidebar--collapsed { width: var(--me-sidebar-w-collapsed, 64px); }
 
 .sidebar-header {
-  padding: 16px 12px;
+  padding: 14px 12px;
   border-bottom: 1px solid var(--me-border);
 }
 .sidebar-brand {
@@ -224,44 +226,54 @@ onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
 .brand-text { display: flex; flex-direction: column; min-width: 0; }
 .brand-name { font-weight: 700; font-size: 15px; color: var(--me-text-primary); white-space: nowrap; }
 .brand-meta { display: flex; align-items: center; gap: 6px; }
-.brand-version { font-size: 10px; color: var(--me-text-muted); }
+.brand-version { font-size: 10px; color: var(--me-text-muted); letter-spacing: 0.3px; }
 
 .connection-dot {
   width: 6px; height: 6px; border-radius: 50%;
   display: inline-block; transition: background 0.3s;
 }
-.connection-dot--ok { background: #22c55e; opacity: 0.7; }
-.connection-dot--err { background: #ef4444; opacity: 0.8; }
+.connection-dot--ok { background: var(--me-success); opacity: 0.85; box-shadow: 0 0 6px var(--me-success); }
+.connection-dot--err { background: var(--me-error); opacity: 0.85; }
 
 .sidebar-nav { flex: 1; overflow-y: auto; padding: 8px; }
 .sidebar-footer { padding: 8px; border-top: 1px solid var(--me-border); display: flex; flex-direction: column; gap: 2px; }
 
-.nav-section { display: flex; flex-direction: column; gap: 2px; margin-bottom: 16px; }
+.nav-section { display: flex; flex-direction: column; gap: 2px; margin-bottom: 18px; }
 .nav-section:last-child { margin-bottom: 0; }
 .nav-label {
   font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 1px; color: var(--me-text-muted); padding: 8px 12px 4px;
+  letter-spacing: 1.2px; color: var(--me-text-muted); padding: 8px 12px 6px;
 }
 
 .nav-item {
+  position: relative;
   display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; border-radius: 8px;
+  padding: 9px 12px; border-radius: 8px;
   border: none; background: none;
   color: var(--me-text-secondary); font-size: 13px;
-  cursor: pointer; transition: all 0.15s;
+  cursor: pointer; transition: all var(--me-dur-fast) var(--me-ease);
   width: 100%; text-align: left; white-space: nowrap; overflow: hidden;
   text-decoration: none;
 }
+.nav-active-bar {
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: transparent;
+  transition: background var(--me-dur-fast) var(--me-ease);
+}
 .sidebar--collapsed .nav-item { justify-content: center; padding: 10px; }
 .nav-item:hover { background: var(--me-accent-glow); color: var(--me-text-primary); }
-.nav-item--active { background: rgba(99, 145, 214, 0.12); color: #6391d6; font-weight: 600; }
-.nav-item--active .nav-icon { color: #6391d6; }
+.nav-item--active { background: var(--me-accent-glow); color: var(--me-accent); font-weight: 600; }
+.nav-item--active .nav-icon { color: var(--me-accent); }
+.nav-item--active .nav-active-bar { background: var(--me-accent); }
 .nav-item--back {
   color: var(--me-accent); font-weight: 600;
-  background: rgba(99, 145, 214, 0.08);
-  border: 1px solid rgba(99, 145, 214, 0.15);
+  background: rgba(var(--me-accent-rgb), 0.08);
+  border: 1px solid var(--me-border-hover);
 }
-.nav-item--back:hover { background: rgba(99, 145, 214, 0.16); color: var(--me-accent); }
+.nav-item--back:hover { background: rgba(var(--me-accent-rgb), 0.16); color: var(--me-accent); }
 .nav-item--back .nav-icon { color: var(--me-accent); }
 .nav-item--danger:hover { color: var(--me-error); }
 .nav-item--danger:hover .nav-icon { color: var(--me-error); }
@@ -275,7 +287,7 @@ onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
 .nav-avatar { width: 28px !important; height: 28px !important; font-size: 11px !important; flex-shrink: 0; }
 .nav-user-info { display: flex; flex-direction: column; min-width: 0; }
 .nav-user-name { font-size: 12px; font-weight: 600; color: var(--me-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nav-user-role { font-size: 10px; color: var(--me-text-muted); }
+.nav-user-role { font-size: 10px; color: var(--me-text-muted); letter-spacing: 0.3px; }
 
 .fade-text-enter-active, .fade-text-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .fade-text-enter-from, .fade-text-leave-to { opacity: 0; transform: translateX(-4px); }
