@@ -24,7 +24,7 @@
         <div class="color-picker-row">
           <input type="color" v-model="form.accentColor" class="color-input" />
           <InputText v-model="form.accentColor"
-            placeholder="#38bdf8"
+            placeholder="#6391d6"
             class="color-hex-field" />
           <div class="color-preview" :style="{ background: form.accentColor }" />
         </div>
@@ -122,7 +122,7 @@ const { t } = useI18n();
 
 const form = reactive({
   appName: '',
-  accentColor: '#38bdf8',
+  accentColor: '#6391d6',
   loginMessage: '',
 });
 
@@ -153,7 +153,7 @@ async function saveSettings() {
 
 async function resetDefaults() {
   form.appName = 'MeteorEdit';
-  form.accentColor = '#38bdf8';
+  form.accentColor = '#6391d6';
   form.loginMessage = '';
   await saveSettings();
 }

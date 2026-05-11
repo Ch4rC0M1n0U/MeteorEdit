@@ -4,6 +4,39 @@
     <div class="login-left" :class="{ 'has-bg-image': brandingStore.loginBackgroundUrl }">
       <img v-if="brandingStore.loginBackgroundUrl" :src="brandingStore.loginBackgroundUrl" alt="" class="login-left-bg-img" />
       <div class="login-left-overlay" />
+      <!-- Constellation decorative SVG (only when no custom bg).
+           Couleurs gérées via classes CSS scopées plutôt que via attributs
+           stroke/fill : meilleur support cross-navigateur (Safari iOS < 15
+           ne résout pas var() dans les attributs de présentation SVG). -->
+      <svg v-if="!brandingStore.loginBackgroundUrl" class="login-constellation" viewBox="0 0 800 600" fill="none" aria-hidden="true">
+        <g class="login-constellation-lines" stroke-width="0.6">
+          <line x1="120" y1="140" x2="280" y2="220" />
+          <line x1="280" y1="220" x2="420" y2="160" />
+          <line x1="420" y1="160" x2="560" y2="280" />
+          <line x1="560" y1="280" x2="640" y2="420" />
+          <line x1="280" y1="220" x2="200" y2="380" />
+          <line x1="200" y1="380" x2="380" y2="460" />
+          <line x1="380" y1="460" x2="560" y2="280" />
+          <line x1="640" y1="420" x2="720" y2="500" />
+        </g>
+        <g class="login-constellation-stars">
+          <circle cx="120" cy="140" r="2.5" />
+          <circle cx="280" cy="220" r="3" />
+          <circle cx="420" cy="160" r="2.5" />
+          <circle cx="560" cy="280" r="3.5" />
+          <circle cx="640" cy="420" r="2.5" />
+          <circle cx="200" cy="380" r="2" />
+          <circle cx="380" cy="460" r="2.5" />
+          <circle cx="720" cy="500" r="2" />
+        </g>
+        <g class="login-constellation-dust">
+          <circle cx="80" cy="320" r="1" />
+          <circle cx="350" cy="80" r="1" />
+          <circle cx="500" cy="500" r="1" />
+          <circle cx="700" cy="180" r="1" />
+          <circle cx="160" cy="500" r="1" />
+        </g>
+      </svg>
       <div class="login-left-content">
         <div class="login-brand">
           <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-brand-logo" />
@@ -13,15 +46,15 @@
         </div>
         <div class="login-left-features">
           <div class="login-feature">
-            <i class="pi pi-folder-open login-feature-icon" />
+            <span class="login-feature-iconwrap"><i class="pi pi-folder-open" /></span>
             <span>{{ $t('auth.features.dossierManagement') }}</span>
           </div>
           <div class="login-feature">
-            <i class="pi pi-users login-feature-icon" />
+            <span class="login-feature-iconwrap"><i class="pi pi-users" /></span>
             <span>{{ $t('auth.features.realTimeCollab') }}</span>
           </div>
           <div class="login-feature">
-            <i class="pi pi-map-marker login-feature-icon" />
+            <span class="login-feature-iconwrap"><i class="pi pi-map-marker" /></span>
             <span>{{ $t('auth.features.mapping') }}</span>
           </div>
         </div>
@@ -297,7 +330,7 @@ async function handle2FA() {
   align-items: center;
   justify-content: center;
   background:
-    linear-gradient(135deg, rgba(99, 145, 214, 0.14) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(var(--me-accent-rgb), 0.14) 0%, transparent 60%),
     linear-gradient(225deg, rgba(129, 178, 154, 0.08) 0%, transparent 50%),
     var(--me-bg-deep);
   overflow: hidden;
@@ -317,29 +350,32 @@ async function handle2FA() {
   background: rgba(0, 0, 0, 0.7);
 }
 
-.login-left.has-bg-image::before {
-  display: none;
-}
-
 .login-left-overlay {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 30% 70%, rgba(99, 145, 214, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 30% 70%, rgba(var(--me-accent-rgb), 0.12) 0%, transparent 50%),
     radial-gradient(circle at 70% 30%, rgba(224, 175, 104, 0.08) 0%, transparent 50%);
   pointer-events: none;
   z-index: 1;
 }
 
-.login-left::before {
-  content: '';
+/* Constellation SVG decoration — replaces the old dotted grid */
+.login-constellation {
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
-  background-size: 32px 32px;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
   pointer-events: none;
+  opacity: 0.85;
 }
+.login-left.has-bg-image .login-constellation { display: none; }
+/* Use CSS for SVG colors so var() works reliably on every browser
+   (var() in stroke/fill SVG attributes is unreliable on Safari iOS < 15). */
+.login-constellation-lines { stroke: rgba(var(--me-accent-rgb), 0.18); }
+.login-constellation-stars { fill: rgba(var(--me-accent-rgb), 0.7); }
+.login-constellation-dust  { fill: rgba(255, 255, 255, 0.18); }
 
 .login-left-content {
   position: relative;
@@ -380,7 +416,7 @@ async function handle2FA() {
   margin-top: 48px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   text-align: left;
 }
 
@@ -395,18 +431,26 @@ async function handle2FA() {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
+  transition: all var(--me-dur) var(--me-ease);
 }
 
 .login-feature:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(99, 145, 214, 0.25);
+  border-color: rgba(var(--me-accent-rgb), 0.25);
 }
 
-.login-feature-icon {
-  color: #6391d6;
-  font-size: 16px;
+/* Tinted square wrapper around feature icons */
+.login-feature-iconwrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(var(--me-accent-rgb), 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--me-accent);
   flex-shrink: 0;
+  font-size: 13px;
 }
 
 /* ─── Right panel ─── */
@@ -468,8 +512,8 @@ async function handle2FA() {
 }
 
 .login-iconfield :deep(.p-inputtext:focus) {
-  border-color: #6391d6;
-  box-shadow: 0 0 0 3px rgba(99, 145, 214, 0.15);
+  border-color: var(--me-accent);
+  box-shadow: 0 0 0 3px var(--me-accent-glow), inset 0 1px 2px rgba(0, 0, 0, 0.05);
   outline: none;
 }
 
@@ -506,8 +550,8 @@ async function handle2FA() {
 
 .login-password-field :deep(.p-inputtext:focus),
 :deep(.login-input:focus) {
-  border-color: #6391d6;
-  box-shadow: 0 0 0 3px rgba(99, 145, 214, 0.15);
+  border-color: var(--me-accent);
+  box-shadow: 0 0 0 3px var(--me-accent-glow), inset 0 1px 2px rgba(0, 0, 0, 0.05);
   outline: none;
 }
 
@@ -529,7 +573,7 @@ async function handle2FA() {
   font-weight: 600;
   font-size: 15px;
   letter-spacing: 0.3px;
-  background: #6391d6;
+  background: var(--me-accent);
   border: none;
   color: #fff;
   cursor: pointer;
@@ -538,8 +582,8 @@ async function handle2FA() {
 }
 
 .login-submit-btn:hover:not(:disabled) {
-  background: #5580c4;
-  box-shadow: 0 0 20px rgba(99, 145, 214, 0.25), 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: var(--me-accent-hover);
+  box-shadow: 0 0 20px rgba(var(--me-accent-rgb), 0.25), 0 4px 12px rgba(0, 0, 0, 0.2);
   transform: translateY(-1px);
 }
 
@@ -598,8 +642,8 @@ async function handle2FA() {
 }
 
 .remember-me-inner :deep(.p-checkbox.p-highlight .p-checkbox-box) {
-  background: #6391d6;
-  border-color: #6391d6;
+  background: var(--me-accent);
+  border-color: var(--me-accent);
 }
 
 .remember-me-inner :deep(.p-checkbox .p-checkbox-input) {
@@ -622,7 +666,7 @@ async function handle2FA() {
   margin: 0 auto 16px;
   overflow: hidden;
   background: var(--me-bg-card, var(--me-bg-surface));
-  border: 2px solid rgba(99, 145, 214, 0.3);
+  border: 2px solid rgba(var(--me-accent-rgb), 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -637,7 +681,7 @@ async function handle2FA() {
 .remembered-initials {
   font-size: 28px;
   font-weight: 700;
-  color: #6391d6;
+  color: var(--me-accent);
   font-family: var(--me-font-mono);
 }
 
@@ -675,7 +719,7 @@ async function handle2FA() {
 }
 
 .remembered-not-me:hover {
-  color: #6391d6;
+  color: var(--me-accent);
 }
 
 /* ─── 2FA ─── */
@@ -690,7 +734,7 @@ async function handle2FA() {
 
 .tfa-icon {
   font-size: 32px;
-  color: #e0af68;
+  color: var(--me-accent-warm);
 }
 
 .tfa-login-text {
@@ -733,7 +777,7 @@ async function handle2FA() {
 }
 
 .login-link {
-  color: #6391d6;
+  color: var(--me-accent);
   text-decoration: none;
   margin-left: 6px;
   font-weight: 600;
@@ -742,7 +786,7 @@ async function handle2FA() {
 
 .login-link:hover {
   text-decoration: underline;
-  color: #5580c4;
+  color: var(--me-accent-hover);
 }
 
 /* ─── Mobile branding ─── */

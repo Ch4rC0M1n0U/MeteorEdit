@@ -125,10 +125,10 @@ function iconName(type: string): string {
 
 function iconColor(type: string): string {
   switch (type) {
-    case 'feature': return '#81b29a';
-    case 'fix': return '#e0af68';
-    case 'improvement': return '#6391d6';
-    default: return 'grey';
+    case 'feature': return 'var(--me-accent-soft)';
+    case 'fix': return 'var(--me-accent-warm)';
+    case 'improvement': return 'var(--me-accent)';
+    default: return 'var(--me-text-muted)';
   }
 }
 
@@ -237,13 +237,13 @@ onMounted(loadChangelog);
   font-family: var(--me-font-mono);
 }
 .badge--feature {
-  color: #81b29a;
+  color: var(--me-accent-soft);
 }
 .badge--fix {
-  color: #e0af68;
+  color: var(--me-accent-warm);
 }
 .badge--improvement {
-  color: #6391d6;
+  color: var(--me-accent);
 }
 .whatsnew-entry-message {
   font-size: 13px;

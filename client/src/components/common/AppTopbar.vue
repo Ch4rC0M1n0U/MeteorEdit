@@ -10,7 +10,10 @@
     </div>
 
     <div class="topbar-center">
-      <SearchBar />
+      <div class="topbar-search-wrap">
+        <SearchBar />
+        <span class="topbar-search-kbd mono" aria-hidden="true">⌘K</span>
+      </div>
     </div>
 
     <div class="topbar-right">
@@ -55,7 +58,7 @@ onMounted(async () => {
 
 <style scoped>
 .topbar {
-  height: 52px;
+  height: var(--me-topbar-h, 56px);
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -66,21 +69,42 @@ onMounted(async () => {
 }
 .topbar-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .topbar-dossier-icon {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: var(--me-radius-sm);
   background: var(--me-bg-elevated);
   border: 1px solid var(--me-border);
   color: var(--me-accent);
   flex-shrink: 0;
 }
 .topbar-menu-btn { display: none; }
-.page-title { font-size: 16px; font-weight: 700; color: var(--me-text-primary); }
+.page-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--me-text-primary);
+  letter-spacing: -0.1px;
+  margin: 0;
+}
 .page-tag { font-size: 11px; }
-.topbar-center { flex: 1; max-width: 480px; margin: 0 auto; }
+.topbar-center { flex: 1; max-width: 520px; margin: 0 auto; }
+.topbar-search-wrap { position: relative; }
+.topbar-search-kbd {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--me-text-muted);
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  pointer-events: none;
+  letter-spacing: 0.3px;
+}
 .topbar-right { flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
 .topbar-btn { width: 36px !important; height: 36px !important; overflow: visible !important; position: relative; }
 .topbar-btn :deep(.p-badge) {

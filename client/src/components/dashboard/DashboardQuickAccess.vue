@@ -101,7 +101,7 @@ function formatDate(d: string): string {
 .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .priority-urgent { background: #ef4444; }
 .priority-high { background: #f59e0b; }
-.priority-normal { background: #38bdf8; }
+.priority-normal { background: var(--me-accent); }
 .priority-low { background: #6b7280; }
 @media (max-width: 900px) { .dash-quick { grid-template-columns: 1fr; } }
 </style>

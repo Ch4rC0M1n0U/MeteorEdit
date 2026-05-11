@@ -303,7 +303,7 @@ const adminForm = ref({
 
 const settingsForm = ref({
   appName: 'MeteorEdit',
-  accentColor: '#38bdf8',
+  accentColor: '#6391d6',
   loginMessage: '',
   language: 'fr',
   registrationEnabled: true,
@@ -398,7 +398,7 @@ onMounted(fetchStatus);
   align-items: center;
   justify-content: center;
   background:
-    linear-gradient(135deg, rgba(56, 189, 248, 0.06) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(var(--me-accent-rgb), 0.06) 0%, transparent 60%),
     var(--me-bg-deep);
   padding: 24px;
 }
@@ -417,12 +417,12 @@ onMounted(fetchStatus);
   width: 72px;
   height: 72px;
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--me-accent), rgba(56, 189, 248, 0.7));
+  background: linear-gradient(135deg, var(--me-accent), rgba(var(--me-accent-rgb), 0.7));
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 32px rgba(56, 189, 248, 0.25);
+  box-shadow: 0 8px 32px rgba(var(--me-accent-rgb), 0.25);
 }
 
 .setup-title {

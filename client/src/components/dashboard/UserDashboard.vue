@@ -244,7 +244,7 @@ const nodeTypeItems = computed(() => {
   });
 });
 
-const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--me-accent').trim() || '#38bdf8';
+const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--me-accent').trim() || '#6391d6';
 const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--me-text-muted').trim() || '#64748b';
 
 const lineOptions = {
