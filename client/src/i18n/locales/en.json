@@ -216,6 +216,9 @@
   },
   "home": {
     "myDossiers": "My cases",
+    "greetingName": "Hello {name}.",
+    "greetingNeutral": "Hello.",
+    "todayWithWeek": "{date} · Week {week}",
     "dossierCount": "{count} case(s)",
     "importJson": "Import JSON case",
     "import": "Import",

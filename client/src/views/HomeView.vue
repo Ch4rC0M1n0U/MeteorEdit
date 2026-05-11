@@ -2,10 +2,11 @@
   <div v-if="!dossierStore.currentDossier" class="home-page">
     <div class="home-header fade-in">
       <div class="home-header-text">
-        <h1 class="home-title">{{ $t('home.myDossiers') }}</h1>
+        <h1 class="home-title">{{ greeting }}</h1>
         <p class="home-subtitle">
-          <span v-if="totalCount === 0">{{ $t('home.noDossiersHint') }}</span>
-          <span v-else class="mono">{{ totalCount }} {{ totalCount > 1 ? 'dossiers' : 'dossier' }}</span>
+          <span class="mono">{{ dateLabel }}</span>
+          <span v-if="totalCount > 0" class="mono home-subtitle-sep">·</span>
+          <span v-if="totalCount > 0" class="mono">{{ totalCount }} {{ totalCount > 1 ? 'dossiers' : 'dossier' }}</span>
         </p>
       </div>
       <div class="home-header-actions">
@@ -99,6 +100,7 @@ import ProgressBar from 'primevue/progressbar';
 import SelectButton from 'primevue/selectbutton';
 import Tag from 'primevue/tag';
 import { useDossierStore } from '../stores/dossier';
+import { useAuthStore } from '../stores/auth';
 import { useConfirm } from '../composables/useConfirm';
 import api from '../services/api';
 import DossierCard from '../components/dossier/DossierCard.vue';
@@ -108,6 +110,34 @@ import UserDashboard from '../components/dashboard/UserDashboard.vue';
 
 const { t, locale } = useI18n();
 const dossierStore = useDossierStore();
+const authStore = useAuthStore();
+
+// "Bonjour {firstName}." — falls back to a neutral title when the user
+// has no firstName yet (e.g. just after registration before profile setup).
+const greeting = computed(() => {
+  const name = authStore.user?.firstName?.trim();
+  return name ? t('home.greetingName', { name }) : t('home.greetingNeutral');
+});
+
+// "lundi 11 mai 2026 · Semaine 19" — full localized date + ISO week number.
+const dateLabel = computed(() => {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(locale.value, {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  return t('home.todayWithWeek', { date: dateStr, week: getIsoWeek(now) });
+});
+
+// ISO 8601 week number — week containing the year's first Thursday is week 1.
+// Matches Belgian/French convention used by police case management.
+function getIsoWeek(d: Date): number {
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dayNr = (target.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const diff = target.getTime() - firstThursday.getTime();
+  return 1 + Math.round(((diff / 86400000) - 3 + ((firstThursday.getDay() + 6) % 7)) / 7);
+}
 const { confirm } = useConfirm();
 const importInputRef = ref<HTMLInputElement | null>(null);
 const sentinelRef = ref<HTMLElement | null>(null);
@@ -229,6 +259,10 @@ async function handleDelete(id: string) {
   font-size: 13px;
   color: var(--me-text-muted);
   margin: 4px 0 0;
+}
+.home-subtitle-sep {
+  margin: 0 6px;
+  opacity: 0.5;
 }
 .home-header-actions {
   display: flex;

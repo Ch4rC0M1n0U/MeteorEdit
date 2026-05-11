@@ -216,6 +216,9 @@
   },
   "home": {
     "myDossiers": "Mijn dossiers",
+    "greetingName": "Hallo {name}.",
+    "greetingNeutral": "Hallo.",
+    "todayWithWeek": "{date} · Week {week}",
     "dossierCount": "{count} dossier(s)",
     "importJson": "JSON-dossier importeren",
     "import": "Importeren",

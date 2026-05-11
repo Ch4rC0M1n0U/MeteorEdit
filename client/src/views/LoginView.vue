@@ -41,6 +41,7 @@
         <div class="login-brand">
           <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-brand-logo" />
           <img v-else :src="themeStore.isDark ? '/logo-me-red.png' : '/logo-me-blue.png'" alt="MeteorEdit" class="login-brand-logo" />
+          <p class="login-version-tag mono">{{ versionTag }}</p>
           <h1 class="login-brand-title mono">{{ brandingStore.appName }}</h1>
           <p class="login-brand-tagline">{{ brandingStore.loginMessage || $t('auth.osintPlatform') }}</p>
         </div>
@@ -226,11 +227,20 @@ interface RememberedUser {
   lastName: string;
 }
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const authStore = useAuthStore();
 const brandingStore = useBrandingStore();
 const themeStore = useThemeStore();
 const router = useRouter();
+
+// Version tag shown above the login title — replaces the static "VERSION 3.0 · MAI 2026"
+// placeholder from the design mockups with the actual app version, formatted as
+// "VERSION 3.28 · MAI 2026" (major.minor, current month/year in the user's locale).
+const versionTag = computed(() => {
+  const [major, minor] = __APP_VERSION__.split('.');
+  const monthYear = new Date().toLocaleDateString(locale.value, { month: 'long', year: 'numeric' }).toUpperCase();
+  return `VERSION ${major}.${minor} · ${monthYear}`;
+});
 
 const email = ref('');
 const password = ref('');
@@ -391,6 +401,15 @@ async function handle2FA() {
   object-fit: contain;
   margin-bottom: 20px;
   filter: drop-shadow(0 4px 24px rgba(0, 0, 0, 0.3));
+}
+
+.login-version-tag {
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--me-accent);
+  margin: 0 0 12px;
+  opacity: 0.9;
 }
 
 .login-brand-title {
