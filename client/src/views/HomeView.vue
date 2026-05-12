@@ -274,10 +274,36 @@ async function handleDelete(id: string) {
 </script>
 
 <style scoped>
+/* ─── v3.33 — Tokens locaux scopés à HomeView (light + dark warm) ─── */
+.home-page {
+  --v3-bg: var(--me-bg-deep);
+  --v3-bg-2: var(--me-bg-surface);
+  --v3-bg-3: var(--me-bg-elevated);
+  --v3-ink: var(--me-text-primary);
+  --v3-ink-2: var(--me-text-secondary);
+  --v3-ink-3: var(--me-text-muted);
+  --v3-line: var(--me-border);
+  --v3-accent: var(--me-accent);
+  --v3-grid: rgba(99, 145, 214, 0.10);
+}
+:global([data-theme='light']) .home-page {
+  --v3-bg: #FAFAF7;
+  --v3-bg-2: #FFFFFF;
+  --v3-bg-3: #F5F4EF;
+  --v3-ink: #1C1B18;
+  --v3-ink-2: #45433D;
+  --v3-ink-3: #6F6C63;
+  --v3-line: #E7E5DD;
+  --v3-accent: #2E4FA8;
+  --v3-grid: rgba(46, 79, 168, 0.10);
+}
+
 .home-page {
   max-width: 1400px;
   margin: 0 auto;
   padding: 28px 32px 40px;
+  background: var(--v3-bg);
+  min-height: 100%;
 }
 .home-header {
   display: flex;
@@ -288,16 +314,17 @@ async function handleDelete(id: string) {
 }
 .home-header-text { min-width: 0; }
 .home-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  letter-spacing: -0.5px;
-  line-height: 1.2;
+  /* v3 tweak : titre institutionnel, poids 650, tracking serré */
+  font-size: 26px;
+  font-weight: 650;
+  color: var(--v3-ink);
+  letter-spacing: -0.8px;
+  line-height: 1.15;
   margin: 0;
 }
 .home-subtitle {
   font-size: 13px;
-  color: var(--me-text-muted);
+  color: var(--v3-ink-3);
   margin: 4px 0 0;
 }
 .home-subtitle-sep {
@@ -305,17 +332,17 @@ async function handleDelete(id: string) {
   opacity: 0.5;
 }
 
-/* KPI bandeau (v3.30) — 3 stats horizontales sous le greeting */
+/* KPI bandeau (v3.30 → tokens v3.33) — 3 stats horizontales sous le greeting */
 .home-kpis {
   display: flex;
   align-items: stretch;
   gap: 0;
   margin-bottom: 24px;
   padding: 14px 20px;
-  background: var(--me-bg-surface);
-  border: 1px solid var(--me-border);
-  border-radius: var(--me-radius);
-  box-shadow: var(--me-shadow-sm);
+  background: var(--v3-bg-2);
+  border: 1px solid var(--v3-line);
+  border-radius: 7px;
+  box-shadow: 0 1px 0 rgba(28, 27, 24, 0.03), 0 1px 2px rgba(28, 27, 24, 0.02);
 }
 .home-kpi {
   flex: 1;
@@ -325,26 +352,27 @@ async function handleDelete(id: string) {
   min-width: 0;
 }
 .home-kpi-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  /* v3 tweak : icône plus carrée, radius discret */
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 15px;
   flex-shrink: 0;
 }
 .home-kpi-icon--open {
-  background: rgba(var(--me-accent-rgb), 0.12);
-  color: var(--me-accent);
+  background: rgba(46, 79, 168, 0.10);
+  color: var(--v3-accent);
 }
 .home-kpi-icon--progress {
-  background: rgba(251, 191, 36, 0.12);
-  color: var(--me-warning);
+  background: rgba(176, 122, 31, 0.12);
+  color: #B07A1F;
 }
 .home-kpi-icon--closed {
-  background: rgba(52, 211, 153, 0.12);
-  color: var(--me-success);
+  background: rgba(91, 133, 80, 0.12);
+  color: #5B8550;
 }
 .home-kpi-text {
   display: flex;
@@ -354,19 +382,21 @@ async function handleDelete(id: string) {
 }
 .home-kpi-label {
   font-size: 11px;
-  color: var(--me-text-muted);
+  color: var(--v3-ink-3);
   text-transform: uppercase;
   letter-spacing: 0.4px;
+  font-weight: 600;
 }
 .home-kpi-value {
   font-size: 22px;
-  font-weight: 700;
-  color: var(--me-text-primary);
+  font-weight: 650;
+  color: var(--v3-ink);
   margin-top: 2px;
+  letter-spacing: -0.3px;
 }
 .home-kpi-sep {
   width: 1px;
-  background: var(--me-border);
+  background: var(--v3-line);
   margin: 4px 18px;
   align-self: stretch;
 }
@@ -397,16 +427,18 @@ async function handleDelete(id: string) {
 }
 .empty-icon {
   font-size: 40px;
-  color: var(--me-text-muted);
+  color: var(--v3-ink-3);
   margin-bottom: 12px;
   display: block;
 }
 .home-empty h3 {
-  color: var(--me-text-primary);
+  color: var(--v3-ink);
   margin-bottom: 8px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
 }
 .text-muted {
-  color: var(--me-text-muted);
+  color: var(--v3-ink-3);
   font-size: 14px;
 }
 .section-loader { border-radius: 4px; }

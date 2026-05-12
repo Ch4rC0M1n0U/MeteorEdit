@@ -388,18 +388,40 @@ function formatDate(dateStr: string): string {
 </script>
 
 <style scoped>
+/* ─── v3.33 — Tokens locaux scopés à UserDashboard (light + dark warm) ─── */
+.user-dashboard {
+  --v3-bg-2: var(--me-bg-surface);
+  --v3-bg-3: var(--me-bg-elevated);
+  --v3-ink: var(--me-text-primary);
+  --v3-ink-2: var(--me-text-secondary);
+  --v3-ink-3: var(--me-text-muted);
+  --v3-line: var(--me-border);
+  --v3-accent: var(--me-accent);
+}
+:global([data-theme='light']) .user-dashboard {
+  --v3-bg-2: #FFFFFF;
+  --v3-bg-3: #F5F4EF;
+  --v3-ink: #1C1B18;
+  --v3-ink-2: #45433D;
+  --v3-ink-3: #6F6C63;
+  --v3-line: #E7E5DD;
+  --v3-accent: #2E4FA8;
+}
+
 .user-dashboard {
   margin-top: 40px;
   padding-top: 32px;
-  border-top: 1px solid var(--me-border);
+  border-top: 1px solid var(--v3-line);
 }
 .dash-header {
   margin-bottom: 20px;
 }
 .dash-title {
+  /* v3 tweak : titre dashboard institutionnel */
   font-size: 18px;
-  font-weight: 700;
-  color: var(--me-text-primary);
+  font-weight: 650;
+  color: var(--v3-ink);
+  letter-spacing: -0.3px;
   display: flex;
   align-items: center;
 }
@@ -419,14 +441,21 @@ function formatDate(dateStr: string): string {
   align-items: center;
   gap: 12px;
 }
-.dash-kpi-icon { color: var(--me-accent); }
+.dash-kpi-icon { color: var(--v3-accent); }
 .dash-kpi-data { display: flex; flex-direction: column; }
-.dash-kpi-value { font-size: 24px; font-weight: 700; color: var(--me-text-primary); line-height: 1; }
-.dash-kpi-label { font-size: 12px; color: var(--me-text-muted); margin-top: 2px; }
+.dash-kpi-value {
+  /* v3 tweak : chiffres institutionnels */
+  font-size: 24px;
+  font-weight: 650;
+  color: var(--v3-ink);
+  line-height: 1;
+  letter-spacing: -0.4px;
+}
+.dash-kpi-label { font-size: 12px; color: var(--v3-ink-3); margin-top: 2px; }
 
 /* Tabs */
 .dash-tabs {
-  border-bottom: 1px solid var(--me-border);
+  border-bottom: 1px solid var(--v3-line);
 }
 
 /* Content row */
@@ -438,10 +467,12 @@ function formatDate(dateStr: string): string {
 }
 .dash-card { padding: 18px; }
 .dash-card-title {
+  /* v3 tweak : sous-titres carte plus calmes */
   font-size: 13px;
-  font-weight: 700;
-  color: var(--me-text-primary);
+  font-weight: 600;
+  color: var(--v3-ink);
   margin-bottom: 12px;
+  letter-spacing: -0.1px;
 }
 
 /* Status bars */
@@ -453,11 +484,11 @@ function formatDate(dateStr: string): string {
   gap: 6px;
   margin-bottom: 4px;
 }
-.dash-status-name { font-size: 12px; color: var(--me-text-secondary); flex: 1; }
-.dash-status-count { font-size: 12px; color: var(--me-text-muted); }
+.dash-status-name { font-size: 12px; color: var(--v3-ink-2); flex: 1; }
+.dash-status-count { font-size: 12px; color: var(--v3-ink-3); }
 .dash-status-bar-bg {
   height: 6px;
-  background: var(--me-bg-elevated);
+  background: var(--v3-bg-3);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -479,9 +510,9 @@ function formatDate(dateStr: string): string {
   gap: 8px;
   padding: 4px 0;
 }
-.dash-node-icon { color: var(--me-accent); flex-shrink: 0; }
-.dash-node-label { font-size: 12px; color: var(--me-text-secondary); flex: 1; }
-.dash-node-count { font-size: 12px; color: var(--me-text-muted); }
+.dash-node-icon { color: var(--v3-accent); flex-shrink: 0; }
+.dash-node-label { font-size: 12px; color: var(--v3-ink-2); flex: 1; }
+.dash-node-count { font-size: 12px; color: var(--v3-ink-3); }
 
 /* Activity */
 .dash-activity-list {
@@ -499,12 +530,12 @@ function formatDate(dateStr: string): string {
   border-radius: var(--me-radius-xs);
   transition: background 0.15s;
 }
-.dash-activity-item:hover { background: var(--me-accent-glow); }
-.dash-act-icon { color: var(--me-accent); flex-shrink: 0; }
-.dash-act-label { font-size: 12px; color: var(--me-text-secondary); white-space: nowrap; }
+.dash-activity-item:hover { background: rgba(46, 79, 168, 0.05); }
+.dash-act-icon { color: var(--v3-accent); flex-shrink: 0; }
+.dash-act-label { font-size: 12px; color: var(--v3-ink-2); white-space: nowrap; }
 .dash-act-target {
   font-size: 11px;
-  color: var(--me-text-muted);
+  color: var(--v3-ink-3);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -512,13 +543,13 @@ function formatDate(dateStr: string): string {
 }
 .dash-act-time {
   font-size: 11px;
-  color: var(--me-text-muted);
+  color: var(--v3-ink-3);
   flex-shrink: 0;
 }
 
 .dash-empty-text {
   font-size: 12px;
-  color: var(--me-text-muted);
+  color: var(--v3-ink-3);
   text-align: center;
   padding: 16px 0;
 }
@@ -530,15 +561,16 @@ function formatDate(dateStr: string): string {
   gap: 8px;
 }
 .processing-chip {
+  /* v3 tweak : chips plus discrets, radius institutionnel */
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 11px;
   padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--me-bg-elevated);
-  color: var(--me-text-secondary);
-  border: 1px solid var(--me-border);
+  border-radius: 5px;
+  background: var(--v3-bg-3);
+  color: var(--v3-ink-2);
+  border: 1px solid var(--v3-line);
 }
 
 /* Recent dossiers */
@@ -553,16 +585,16 @@ function formatDate(dateStr: string): string {
   cursor: pointer;
   transition: background 0.15s;
 }
-.dash-recent-item:hover { background: var(--me-accent-glow); }
+.dash-recent-item:hover { background: rgba(46, 79, 168, 0.05); }
 .dash-recent-title {
   flex: 1;
   font-size: 13px;
-  color: var(--me-text-secondary);
+  color: var(--v3-ink-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.dash-recent-date { font-size: 11px; color: var(--me-text-muted); flex-shrink: 0; }
+.dash-recent-date { font-size: 11px; color: var(--v3-ink-3); flex-shrink: 0; }
 
 /* Responsive */
 @media (max-width: 900px) {
