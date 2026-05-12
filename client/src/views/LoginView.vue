@@ -10,52 +10,27 @@
         <i :class="themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'" />
       </button>
     </div>
-    <!-- Left panel: branding showcase -->
+    <!-- Left panel: branding showcase (v3.29.1 — institutional layout) -->
     <div class="login-left" :class="{ 'has-bg-image': brandingStore.loginBackgroundUrl }">
       <img v-if="brandingStore.loginBackgroundUrl" :src="brandingStore.loginBackgroundUrl" alt="" class="login-left-bg-img" />
       <div class="login-left-overlay" />
-      <!-- Constellation decorative SVG (only when no custom bg).
-           Couleurs gérées via classes CSS scopées plutôt que via attributs
-           stroke/fill : meilleur support cross-navigateur (Safari iOS < 15
-           ne résout pas var() dans les attributs de présentation SVG). -->
-      <svg v-if="!brandingStore.loginBackgroundUrl" class="login-constellation" viewBox="0 0 800 600" fill="none" aria-hidden="true">
-        <g class="login-constellation-lines" stroke-width="0.6">
-          <line x1="120" y1="140" x2="280" y2="220" />
-          <line x1="280" y1="220" x2="420" y2="160" />
-          <line x1="420" y1="160" x2="560" y2="280" />
-          <line x1="560" y1="280" x2="640" y2="420" />
-          <line x1="280" y1="220" x2="200" y2="380" />
-          <line x1="200" y1="380" x2="380" y2="460" />
-          <line x1="380" y1="460" x2="560" y2="280" />
-          <line x1="640" y1="420" x2="720" y2="500" />
-        </g>
-        <g class="login-constellation-stars">
-          <circle cx="120" cy="140" r="2.5" />
-          <circle cx="280" cy="220" r="3" />
-          <circle cx="420" cy="160" r="2.5" />
-          <circle cx="560" cy="280" r="3.5" />
-          <circle cx="640" cy="420" r="2.5" />
-          <circle cx="200" cy="380" r="2" />
-          <circle cx="380" cy="460" r="2.5" />
-          <circle cx="720" cy="500" r="2" />
-        </g>
-        <g class="login-constellation-dust">
-          <circle cx="80" cy="320" r="1" />
-          <circle cx="350" cy="80" r="1" />
-          <circle cx="500" cy="500" r="1" />
-          <circle cx="700" cy="180" r="1" />
-          <circle cx="160" cy="500" r="1" />
-        </g>
-      </svg>
-      <div class="login-left-content">
-        <div class="login-brand">
-          <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-brand-logo" />
-          <img v-else :src="themeStore.isDark ? '/logo-me-red.png' : '/logo-me-blue.png'" alt="MeteorEdit" class="login-brand-logo" />
-          <p class="login-version-tag mono">{{ versionTag }}</p>
-          <h1 class="login-brand-title mono">{{ brandingStore.appName }}</h1>
-          <p class="login-brand-tagline">{{ brandingStore.loginMessage || $t('auth.osintPlatform') }}</p>
+
+      <!-- Top-left brand header : logo + app name + organization tag -->
+      <header class="login-left-header">
+        <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-left-header-logo" />
+        <img v-else :src="themeStore.isDark ? '/logo-me-red.png' : '/logo-me-blue.png'" alt="MeteorEdit" class="login-left-header-logo" />
+        <div class="login-left-header-text">
+          <strong>{{ brandingStore.appName }}</strong>
+          <span v-if="brandingStore.organizationTag" class="login-left-header-org">{{ brandingStore.organizationTag }}</span>
         </div>
-        <!-- Mini-cards features 2×2 (replaces the previous vertical list) -->
+      </header>
+
+      <!-- Centered-bottom content : version tag, h1 hero, paragraph, 2x2 grid of features -->
+      <div class="login-left-content">
+        <p class="login-version-tag mono">{{ versionTag }}</p>
+        <h1 class="login-hero-title">{{ heroTitle }}</h1>
+        <p class="login-hero-desc">{{ heroDesc }}</p>
+
         <div class="login-left-features login-left-features--grid">
           <article class="login-feature-card">
             <span class="login-feature-iconwrap"><i class="pi pi-folder-open" /></span>
@@ -113,41 +88,45 @@
           {{ error }}
         </Message>
 
-        <!-- Remembered user card -->
-        <div v-if="rememberedUser && !show2FA" class="remembered-card glass-card">
-          <div class="remembered-avatar">
-            <img v-if="avatarUrl && !avatarError" :src="avatarUrl" alt="" class="remembered-avatar-img" @error="avatarError = true" />
-            <span v-else class="remembered-initials">{{ initials }}</span>
+        <!-- Remembered user — avatar inlined into the main form (no nested card) -->
+        <form v-if="rememberedUser && !show2FA" @submit.prevent="handleLogin" class="remembered-form-inline">
+          <div class="remembered-identity">
+            <div class="remembered-avatar">
+              <img v-if="avatarUrl && !avatarError" :src="avatarUrl" alt="" class="remembered-avatar-img" @error="avatarError = true" />
+              <span v-else class="remembered-initials">{{ initials }}</span>
+            </div>
+            <div class="remembered-identity-text">
+              <span class="remembered-welcome">{{ $t('auth.welcomeBack') }}</span>
+              <strong class="remembered-name">{{ rememberedUser.firstName }} {{ rememberedUser.lastName }}</strong>
+            </div>
           </div>
-          <p class="remembered-welcome">{{ $t('auth.welcomeBack') }}</p>
-          <h3 class="remembered-name">{{ rememberedUser.firstName }} {{ rememberedUser.lastName }}</h3>
 
-          <form @submit.prevent="handleLogin" class="remembered-form">
-            <Password
-              v-model="password"
-              :placeholder="$t('auth.passwordPlaceholder')"
-              :feedback="false"
-              toggleMask
-              :disabled="authStore.loading"
-              inputClass="login-input"
-              class="login-password-field"
-              :pt="{ root: { style: 'width: 100%' }, pcInput: { style: 'width: 100%' } }"
-              autofocus
-            />
-            <Button
-              type="submit"
-              :label="$t('auth.loginAction')"
-              icon="pi pi-sign-in"
-              :loading="authStore.loading"
-              class="login-submit-btn"
-            />
-          </form>
+          <label class="login-field-label">{{ $t('auth.password') }}</label>
+          <Password
+            v-model="password"
+            :placeholder="$t('auth.passwordPlaceholder')"
+            :feedback="false"
+            toggleMask
+            :disabled="authStore.loading"
+            inputClass="login-input"
+            class="login-password-field"
+            :pt="{ root: { style: 'width: 100%' }, pcInput: { style: 'width: 100%' } }"
+            autofocus
+          />
 
-          <button class="remembered-not-me" @click="clearRememberedUser">
+          <Button
+            type="submit"
+            :label="$t('auth.loginAction')"
+            icon="pi pi-sign-in"
+            :loading="authStore.loading"
+            class="login-submit-btn"
+          />
+
+          <button type="button" class="remembered-not-me" @click="clearRememberedUser">
             <i class="pi pi-user-edit" style="font-size: 12px" />
             {{ $t('auth.notMe') }}
           </button>
-        </div>
+        </form>
 
         <!-- Classic login form -->
         <form v-if="!show2FA && !rememberedUser" @submit.prevent="handleLogin">
@@ -301,6 +280,12 @@ const appVersion = __APP_VERSION__;
 // otherwise we fall back to a neutral label derived from appName.
 const footerLabel = computed(() => brandingStore.organizationTag || brandingStore.appName);
 
+// Hero title + description shown on the left panel. Admin overrides via
+// brandingStore.loginMessage (title) and brandingStore.loginNotice is reserved
+// for the bottom info card. Defaults come from i18n.
+const heroTitle = computed(() => brandingStore.loginMessage || t('auth.heroTitle'));
+const heroDesc = computed(() => t('auth.heroDesc'));
+
 const email = ref('');
 const password = ref('');
 const error = ref('');
@@ -391,20 +376,32 @@ async function handle2FA() {
   background: var(--me-bg-deep);
 }
 
-/* ─── Left panel ─── */
+/* ─── Left panel — v3.29.1 institutional layout (light + dark theme aware) ─── */
 .login-left {
   position: relative;
   flex: 0 0 44%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-end;  /* content sits at the bottom, header is absolute */
   background:
-    linear-gradient(135deg, rgba(var(--me-accent-rgb), 0.14) 0%, transparent 60%),
-    linear-gradient(225deg, rgba(129, 178, 154, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(var(--me-accent-rgb), 0.10) 0%, transparent 55%),
+    radial-gradient(circle at 20% 10%, rgba(var(--me-accent-rgb), 0.05) 0%, transparent 50%),
     var(--me-bg-deep);
   overflow: hidden;
   border-right: 1px solid var(--me-border);
 }
+/* Subtle dotted grid background — same idea as the design mockups */
+.login-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(circle, rgba(var(--me-accent-rgb), 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.login-left.has-bg-image::before { display: none; }
 
 .login-left-bg-img {
   position: absolute;
@@ -446,12 +443,64 @@ async function handle2FA() {
 .login-constellation-stars { fill: rgba(var(--me-accent-rgb), 0.7); }
 .login-constellation-dust  { fill: rgba(255, 255, 255, 0.18); }
 
+/* Top-left brand header (logo + appName + organization tag) */
+.login-left-header {
+  position: absolute;
+  top: 24px;
+  left: 40px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.login-left-header-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.login-left-header-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.login-left-header-text strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  letter-spacing: -0.1px;
+}
+.login-left-header-org {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  letter-spacing: 0.2px;
+}
+
+/* Bottom-left content stack — sits naturally at the bottom of the column */
 .login-left-content {
   position: relative;
   z-index: 2;
-  text-align: center;
-  padding: 40px;
-  max-width: 400px;
+  padding: 0 56px 96px;
+  max-width: 560px;
+  text-align: left;
+}
+
+/* Hero title (big, multi-line) */
+.login-hero-title {
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  letter-spacing: -0.8px;
+  line-height: 1.15;
+  margin: 12px 0 18px;
+  max-width: 14em;
+}
+.login-hero-desc {
+  font-size: 14px;
+  color: var(--me-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 28px;
+  max-width: 38em;
 }
 
 .login-brand-logo {
@@ -493,34 +542,31 @@ async function handle2FA() {
 /* Features list — kept for backwards compat; the v3.29 layout uses the
    grid variant below. */
 .login-left-features {
-  margin-top: 48px;
+  margin-top: 24px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   text-align: left;
 }
 
-/* Mini-cards 2×2 grid — v3.29 institutional layout */
+/* Mini-cards 2×2 grid — flat, no card background, just icon + 2 lines of text */
 .login-left-features--grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 20px 32px;
 }
 
+/* Legacy single-line feature (kept in case other views import it) */
 .login-feature {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--me-text-secondary);
   font-size: 13px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  transition: all var(--me-dur) var(--me-ease);
+  padding: 8px 0;
 }
 
+/* v3.29 flat card — icon + heading + 2-line description */
 .login-feature-card {
   display: flex;
   align-items: flex-start;
@@ -534,19 +580,14 @@ async function handle2FA() {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--me-text-primary);
   line-height: 1.3;
 }
 .login-feature-text p {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--me-text-muted);
   line-height: 1.5;
-}
-
-.login-feature:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(var(--me-accent-rgb), 0.25);
 }
 
 /* Tinted square wrapper around feature icons */
@@ -761,73 +802,77 @@ async function handle2FA() {
   z-index: 1;
 }
 
-/* ─── Remembered user card ─── */
-.remembered-card {
-  text-align: center;
-  padding: 32px 24px;
-  border-radius: 10px;
-  margin-bottom: 16px;
+/* ─── Remembered user — inline in the main form (no nested card) ─── */
+.remembered-form-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
+/* Identity row : avatar + welcome/name in a horizontal layout, integrated into the form flow */
+.remembered-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: var(--me-radius-sm);
+  background: var(--me-bg-elevated);
+  border: 1px solid var(--me-border);
+  margin-bottom: 12px;
+}
 .remembered-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 16px;
-  margin: 0 auto 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   overflow: hidden;
-  background: var(--me-bg-card, var(--me-bg-surface));
+  background: var(--me-bg-surface);
   border: 2px solid rgba(var(--me-accent-rgb), 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
-
 .remembered-avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .remembered-initials {
-  font-size: 28px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--me-accent);
   font-family: var(--me-font-mono);
 }
-
-.remembered-welcome {
-  font-size: 13px;
-  color: var(--me-text-muted);
-  margin-bottom: 2px;
-}
-
-.remembered-name {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  margin-bottom: 20px;
-}
-
-.remembered-form {
-  text-align: left;
+.remembered-identity-text {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  line-height: 1.3;
+  min-width: 0;
+}
+.remembered-welcome {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  letter-spacing: 0.3px;
+}
+.remembered-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--me-text-primary);
 }
 
 .remembered-not-me {
+  align-self: center;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 16px;
+  margin-top: 10px;
   background: none;
   border: none;
   color: var(--me-text-muted);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   transition: color 0.2s;
 }
-
 .remembered-not-me:hover {
   color: var(--me-accent);
 }

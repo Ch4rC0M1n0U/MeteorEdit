@@ -84,6 +84,8 @@
     "unit": "Eenheid",
     "unitPlaceholder": "Uw eenheid",
     "osintPlatform": "OSINT-onderzoeksplatform",
+    "heroTitle": "De werkplek voor cyber-onderzoekers.",
+    "heroDesc": "Centraliseer uw OSINT-bronnen, notities, bijlagen en analyses in een gedeeld dossier. MeteorEdit houdt alles bij — versie, auteur, bron — zodat de bewijsketen intact blijft.",
     "features": {
       "dossierManagement": "Beheer van onderzoeksdossiers",
       "realTimeCollab": "Realtime samenwerking",
