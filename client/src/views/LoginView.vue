@@ -458,6 +458,10 @@ async function handle2FA() {
    ============================================================ */
 
 .login-v3 {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: auto;
   font-family: var(--font);
   font-feature-settings: 'ss01', 'cv11';
   font-optical-sizing: auto;
@@ -466,7 +470,6 @@ async function handle2FA() {
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
 }
 
 .login-v3 * { box-sizing: border-box; }
@@ -491,7 +494,7 @@ async function handle2FA() {
 .login {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
-  height: 100vh;
+  width: 100%;
   min-height: 100vh;
   background: var(--bg);
 }
