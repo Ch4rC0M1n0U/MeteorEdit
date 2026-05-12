@@ -131,7 +131,7 @@ export async function getSetupStatus(req: Request, res: Response): Promise<void>
         languagetoolUrl: LT_URL || 'not set',
         ollamaUrl: OLLAMA_URL || 'not set',
       },
-      version: '3.32.0',
+      version: '3.32.2',
     });
   } catch (e: any) {
     res.status(500).json({ message: e.message || 'Setup status check failed' });
