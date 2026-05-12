@@ -11,7 +11,14 @@
       </button>
     </div>
     <!-- Left panel: branding showcase (v3.29.1 — institutional layout) -->
-    <div class="login-left" :class="{ 'has-bg-image': brandingStore.loginBackgroundUrl }">
+    <div
+      class="login-left"
+      :class="{ 'has-bg-image': brandingStore.loginBackgroundUrl, 'is-hover': spotActive }"
+      :style="{ '--mx': mouseX + 'px', '--my': mouseY + 'px' }"
+      @mousemove="onSpotMove"
+      @mouseenter="spotActive = true"
+      @mouseleave="spotActive = false"
+    >
       <img v-if="brandingStore.loginBackgroundUrl" :src="brandingStore.loginBackgroundUrl" alt="" class="login-left-bg-img" />
       <div class="login-left-overlay" />
 
@@ -286,6 +293,19 @@ const footerLabel = computed(() => brandingStore.organizationTag || brandingStor
 const heroTitle = computed(() => brandingStore.loginMessage || t('auth.heroTitle'));
 const heroDesc = computed(() => t('auth.heroDesc'));
 
+// v3.32.5 — Spotlight interactif sur le panel gauche (effet "grille réactive au curseur")
+const mouseX = ref(0);
+const mouseY = ref(0);
+const spotActive = ref(false);
+
+function onSpotMove(e: MouseEvent) {
+  const target = e.currentTarget as HTMLElement | null;
+  if (!target) return;
+  const rect = target.getBoundingClientRect();
+  mouseX.value = e.clientX - rect.left;
+  mouseY.value = e.clientY - rect.top;
+}
+
 const email = ref('');
 const password = ref('');
 const error = ref('');
@@ -425,6 +445,26 @@ async function handle2FA() {
   mask-image: radial-gradient(ellipse 70% 50% at 80% 100%, black 30%, transparent 80%);
 }
 .login-left.has-bg-image::before { display: none; }
+
+/* v3.32.5 — Spotlight réactif au curseur : grille brillante masquée
+   par un cercle autour de --mx/--my. Effet « carrés s'illuminent au survol ». */
+.login-left::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--login-accent) 1px, transparent 1px),
+    linear-gradient(90deg, var(--login-accent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0;
+  -webkit-mask-image: radial-gradient(circle 220px at var(--mx, -200px) var(--my, -200px), black 0%, transparent 70%);
+  mask-image: radial-gradient(circle 220px at var(--mx, -200px) var(--my, -200px), black 0%, transparent 70%);
+  transition: opacity 0.25s ease;
+}
+.login-left.is-hover::after { opacity: 0.55; }
+.login-left.has-bg-image::after { display: none; }
 
 .login-left-bg-img {
   position: absolute;
