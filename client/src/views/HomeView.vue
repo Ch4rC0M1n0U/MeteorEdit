@@ -302,8 +302,12 @@ async function handleDelete(id: string) {
   max-width: 1400px;
   margin: 0 auto;
   padding: 28px 32px 40px;
-  background: var(--v3-bg);
   min-height: 100%;
+}
+
+/* v3.33 — bg cream warm appliqué au parent .main-content uniquement quand HomeView est monté */
+:global(.main-content):has(.home-page) {
+  background: var(--v3-bg);
 }
 .home-header {
   display: flex;
@@ -332,34 +336,44 @@ async function handleDelete(id: string) {
   opacity: 0.5;
 }
 
-/* KPI bandeau (v3.30 → tokens v3.33) — 3 stats horizontales sous le greeting */
+/* KPI bandeau (v3.30 → tokens v3.33+) — 3 cards séparées, plus marquées */
 .home-kpis {
   display: flex;
   align-items: stretch;
-  gap: 0;
-  margin-bottom: 24px;
-  padding: 14px 20px;
-  background: var(--v3-bg-2);
-  border: 1px solid var(--v3-line);
-  border-radius: 7px;
-  box-shadow: 0 1px 0 rgba(28, 27, 24, 0.03), 0 1px 2px rgba(28, 27, 24, 0.02);
+  gap: 12px;
+  margin-bottom: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 .home-kpi {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
+  padding: 18px 22px;
+  background: var(--v3-bg-2);
+  border: 1px solid var(--v3-line);
+  border-radius: 7px;
+  box-shadow: 0 1px 0 rgba(28, 27, 24, 0.03), 0 1px 2px rgba(28, 27, 24, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.home-kpi:hover {
+  border-color: var(--v3-accent);
+  box-shadow: 0 1px 0 rgba(28, 27, 24, 0.04), 0 4px 12px rgba(46, 79, 168, 0.08);
 }
 .home-kpi-icon {
   /* v3 tweak : icône plus carrée, radius discret */
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 17px;
   flex-shrink: 0;
 }
 .home-kpi-icon--open {
@@ -388,17 +402,17 @@ async function handleDelete(id: string) {
   font-weight: 600;
 }
 .home-kpi-value {
-  font-size: 22px;
+  /* v3 tweak : chiffre KPI imposant, encre noire, tracking serré */
+  font-size: 32px;
   font-weight: 650;
   color: var(--v3-ink);
   margin-top: 2px;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.8px;
+  line-height: 1;
 }
 .home-kpi-sep {
-  width: 1px;
-  background: var(--v3-line);
-  margin: 4px 18px;
-  align-self: stretch;
+  /* Séparateur supprimé (cards séparées maintenant) */
+  display: none;
 }
 @media (max-width: 720px) {
   .home-kpis { flex-direction: column; padding: 12px 16px; }

@@ -107,8 +107,26 @@ const statusLabel = computed(() => {
 </script>
 
 <style scoped>
+/* ─── v3.33 — Tokens locaux + ruban catégorie ─── */
 .dossier-card {
-  padding: 18px 20px;
+  --v3-bg-2: var(--me-bg-surface);
+  --v3-ink: var(--me-text-primary);
+  --v3-line: var(--me-border);
+  --v3-accent: var(--me-accent);
+  --v3-cat: var(--me-accent);
+}
+:global([data-theme='light']) .dossier-card {
+  --v3-bg-2: #FFFFFF;
+  --v3-ink: #1C1B18;
+  --v3-line: #E7E5DD;
+  --v3-accent: #2E4FA8;
+  --v3-cat: #2E4FA8;
+}
+
+.dossier-card {
+  /* v3 tweak : ruban catégorie en bord gauche + radius discret 7px */
+  position: relative;
+  padding: 18px 20px 18px 22px;
   cursor: pointer;
   transition: transform var(--me-dur) var(--me-ease), border-color var(--me-dur-fast) var(--me-ease), box-shadow var(--me-dur) var(--me-ease);
   display: flex;
@@ -116,13 +134,27 @@ const statusLabel = computed(() => {
   gap: 12px;
   overflow: hidden;
   min-width: 0;
-  border-radius: 10px;
+  border-radius: 7px;
+  background: var(--v3-bg-2);
+}
+.dossier-card::before {
+  /* Ruban catégorie bord gauche (3 px d'accent encre) */
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  background: var(--v3-cat);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.85;
 }
 .dossier-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--me-border-hover);
-  box-shadow: var(--me-shadow-lg), 0 0 24px rgba(var(--me-accent-rgb), 0.08);
+  transform: translateY(-1px);
+  border-color: var(--v3-line);
+  box-shadow: 0 1px 0 rgba(28, 27, 24, 0.04), 0 8px 24px rgba(28, 27, 24, 0.06);
 }
+.dossier-card:hover::before { opacity: 1; }
 .dc-header {
   display: flex;
   align-items: center;
