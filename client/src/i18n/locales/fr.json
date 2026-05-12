@@ -230,6 +230,11 @@
   },
   "home": {
     "myDossiers": "Mes dossiers",
+    "kpis": {
+      "open": "Ouverts",
+      "inProgress": "En traitement",
+      "closedThisYear": "Clôturés cette année"
+    },
     "greetingName": "Bonjour {name}.",
     "greetingNeutral": "Bonjour.",
     "todayWithWeek": "{date} · Semaine {week}",

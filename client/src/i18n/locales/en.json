@@ -230,6 +230,11 @@
   },
   "home": {
     "myDossiers": "My cases",
+    "kpis": {
+      "open": "Open",
+      "inProgress": "In progress",
+      "closedThisYear": "Closed this year"
+    },
     "greetingName": "Hello {name}.",
     "greetingNeutral": "Hello.",
     "todayWithWeek": "{date} · Week {week}",
