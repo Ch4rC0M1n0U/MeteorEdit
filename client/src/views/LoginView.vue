@@ -21,6 +21,8 @@
     >
       <img v-if="brandingStore.loginBackgroundUrl" :src="brandingStore.loginBackgroundUrl" alt="" class="login-left-bg-img" />
       <div class="login-left-overlay" />
+      <!-- v3.32.6 : grille interactive révélée autour du curseur -->
+      <div class="login-left-grid-spot" aria-hidden="true" />
 
       <!-- Top-left brand header : logo + app name + organization tag -->
       <header class="login-left-header">
@@ -446,25 +448,47 @@ async function handle2FA() {
 }
 .login-left.has-bg-image::before { display: none; }
 
-/* v3.32.5 — Spotlight réactif au curseur : grille brillante masquée
-   par un cercle autour de --mx/--my. Effet « carrés s'illuminent au survol ». */
+/* v3.32.6 — Spotlight réactif au curseur : 2 couches superposées
+   • Couche 1 : halo accent bleu encre doux (radial color)
+   • Couche 2 : grille épaisse révélée par mask radial autour de --mx/--my
+   Effet « carrés/quadrillage s'illuminent au passage de la souris ». */
 .login-left::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background-image:
-    linear-gradient(var(--login-accent) 1px, transparent 1px),
-    linear-gradient(90deg, var(--login-accent) 1px, transparent 1px);
-  background-size: 32px 32px;
+  /* Couche 1 : halo coloré (toujours visible quand .is-hover) */
+  background:
+    radial-gradient(
+      circle 320px at var(--mx, -200px) var(--my, -200px),
+      rgba(46, 79, 168, 0.18) 0%,
+      rgba(46, 79, 168, 0.08) 35%,
+      transparent 70%
+    );
   opacity: 0;
-  -webkit-mask-image: radial-gradient(circle 220px at var(--mx, -200px) var(--my, -200px), black 0%, transparent 70%);
-  mask-image: radial-gradient(circle 220px at var(--mx, -200px) var(--my, -200px), black 0%, transparent 70%);
   transition: opacity 0.25s ease;
 }
-.login-left.is-hover::after { opacity: 0.55; }
-.login-left.has-bg-image::after { display: none; }
+.login-left.is-hover::after { opacity: 1; }
+
+/* Couche 2 : grille épaisse révélée seulement autour du curseur */
+.login-left .login-left-grid-spot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--login-accent) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--login-accent) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  opacity: 0;
+  -webkit-mask-image: radial-gradient(circle 260px at var(--mx, -200px) var(--my, -200px), black 5%, transparent 70%);
+  mask-image: radial-gradient(circle 260px at var(--mx, -200px) var(--my, -200px), black 5%, transparent 70%);
+  transition: opacity 0.25s ease;
+}
+.login-left.is-hover .login-left-grid-spot { opacity: 0.85; }
+.login-left.has-bg-image::after,
+.login-left.has-bg-image .login-left-grid-spot { display: none; }
 
 .login-left-bg-img {
   position: absolute;
