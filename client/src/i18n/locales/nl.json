@@ -241,8 +241,14 @@
     "myDossiers": "Mijn dossiers",
     "kpis": {
       "open": "Open",
+      "active": "Actieve dossiers",
+      "activeTrend": "{open} open · {progress} in behandeling",
       "inProgress": "In behandeling",
-      "closedThisYear": "Afgesloten dit jaar"
+      "inProgressTrend": "Wordt momenteel geanalyseerd",
+      "tasksToday": "Taken vandaag",
+      "tasksTodayTrend": "Vóór einde van de dag",
+      "closedThisYear": "Afgesloten dit jaar",
+      "closedThisYearTrend": "Jaar {year}"
     },
     "greetingName": "Hallo {name}.",
     "greetingNeutral": "Hallo.",

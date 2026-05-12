@@ -160,3 +160,32 @@ export async function deleteTask(req: AuthRequest, res: Response): Promise<void>
   await task.deleteOne();
   res.json({ ok: true });
 }
+
+/**
+ * v3.35 — Compte les tâches "prévues aujourd'hui" sur tous les dossiers accessibles à l'utilisateur.
+ * Critère : dueDate = aujourd'hui (00:00 → 23:59 locale serveur) ET status != 'done'.
+ */
+export async function countTasksToday(req: AuthRequest, res: Response): Promise<void> {
+  const userId = req.user!.userId;
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 1);
+
+  const accessibleDossiers = await Dossier.find({
+    $or: [
+      { createdBy: userId },
+      { 'collaborators.userId': userId },
+      { isPublic: true },
+    ],
+    deletedAt: { $in: [null] },
+  }).select('_id').lean();
+
+  const ids = accessibleDossiers.map((d) => d._id as unknown as import('mongoose').Types.ObjectId);
+
+  const count = await Task.countDocuments({
+    dossierId: { $in: ids },
+    status: { $ne: 'done' },
+    dueDate: { $gte: start, $lt: end },
+  });
+
+  res.json({ count });
+}

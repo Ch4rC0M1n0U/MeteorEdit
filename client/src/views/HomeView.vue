@@ -1,44 +1,55 @@
 <template>
   <div v-if="!dossierStore.currentDossier" class="home-page">
+    <!-- v3.35 — Actions Importer + Nouveau dossier téléportées dans la topbar -->
+    <Teleport v-if="topbarReady" to="#topbar-actions">
+      <Button icon="pi pi-upload" :label="$t('home.import')" outlined size="small" class="topbar-action-btn" @click="triggerImport" />
+      <CreateDossierDialog />
+    </Teleport>
+
     <div class="home-header fade-in">
       <div class="home-header-text">
         <h1 class="home-title">{{ greeting }}</h1>
         <p class="home-subtitle">
-          <span class="mono">{{ dateLabel }}</span>
-          <span v-if="totalCount > 0" class="mono home-subtitle-sep">·</span>
-          <span v-if="totalCount > 0" class="mono">{{ totalCount }} {{ totalCount > 1 ? 'dossiers' : 'dossier' }}</span>
+          <span>{{ dateLabel }}</span>
+          <span v-if="totalCount > 0" class="home-subtitle-sep">·</span>
+          <span v-if="totalCount > 0">{{ totalCount }} {{ totalCount > 1 ? 'dossiers' : 'dossier' }}</span>
         </p>
-      </div>
-      <div class="home-header-actions">
-        <Button icon="pi pi-upload" :label="$t('home.import')" outlined size="small" @click="triggerImport" />
-        <CreateDossierDialog />
       </div>
       <input ref="importInputRef" type="file" accept=".json" style="display: none;" @change="handleImport" />
     </div>
 
-    <!-- KPI bandeau (v3.30) — résumé rapide juste sous le greeting -->
+    <!-- v3.35 — KPI strip 4 cards alignées sur le brief (markup card-style indépendant) -->
     <div v-if="totalCount > 0" class="home-kpis fade-in fade-in-delay-1">
       <div class="home-kpi">
         <span class="home-kpi-icon home-kpi-icon--open"><i class="pi pi-folder-open" /></span>
         <div class="home-kpi-text">
-          <span class="home-kpi-label mono">{{ $t('home.kpis.open') }}</span>
-          <span class="home-kpi-value mono">{{ openCount }}</span>
+          <span class="home-kpi-label">{{ $t('home.kpis.active') }}</span>
+          <span class="home-kpi-value num">{{ openCount + inProgressCount }}</span>
+          <span class="home-kpi-trend">{{ $t('home.kpis.activeTrend', { open: openCount, progress: inProgressCount }) }}</span>
         </div>
       </div>
-      <div class="home-kpi-sep" aria-hidden="true" />
       <div class="home-kpi">
         <span class="home-kpi-icon home-kpi-icon--progress"><i class="pi pi-spinner-dotted" /></span>
         <div class="home-kpi-text">
-          <span class="home-kpi-label mono">{{ $t('home.kpis.inProgress') }}</span>
-          <span class="home-kpi-value mono">{{ inProgressCount }}</span>
+          <span class="home-kpi-label">{{ $t('home.kpis.inProgress') }}</span>
+          <span class="home-kpi-value num">{{ inProgressCount }}</span>
+          <span class="home-kpi-trend">{{ $t('home.kpis.inProgressTrend') }}</span>
         </div>
       </div>
-      <div class="home-kpi-sep" aria-hidden="true" />
+      <div class="home-kpi">
+        <span class="home-kpi-icon home-kpi-icon--tasks"><i class="pi pi-check-square" /></span>
+        <div class="home-kpi-text">
+          <span class="home-kpi-label">{{ $t('home.kpis.tasksToday') }}</span>
+          <span class="home-kpi-value num">{{ tasksTodayCount }}</span>
+          <span class="home-kpi-trend">{{ $t('home.kpis.tasksTodayTrend') }}</span>
+        </div>
+      </div>
       <div class="home-kpi">
         <span class="home-kpi-icon home-kpi-icon--closed"><i class="pi pi-check-circle" /></span>
         <div class="home-kpi-text">
-          <span class="home-kpi-label mono">{{ $t('home.kpis.closedThisYear') }}</span>
-          <span class="home-kpi-value mono">{{ closedThisYearCount }}</span>
+          <span class="home-kpi-label">{{ $t('home.kpis.closedThisYear') }}</span>
+          <span class="home-kpi-value num">{{ closedThisYearCount }}</span>
+          <span class="home-kpi-trend">{{ $t('home.kpis.closedThisYearTrend', { year: new Date().getFullYear() }) }}</span>
         </div>
       </div>
     </div>
@@ -204,6 +215,20 @@ const closedThisYearCount = computed(() => {
   }).length;
 });
 
+// v3.35 — Tâches prévues aujourd'hui (agrégé multi-dossier via endpoint serveur)
+const tasksTodayCount = ref(0);
+async function fetchTasksToday() {
+  try {
+    const { data } = await api.get('/tasks/today/count');
+    tasksTodayCount.value = data.count || 0;
+  } catch {
+    tasksTodayCount.value = 0;
+  }
+}
+
+// v3.35 — Délai pour que le Teleport target #topbar-actions soit monté
+const topbarReady = ref(false);
+
 function formatClosureDate(date: string | null): string {
   if (!date) return '-';
   return new Date(date).toLocaleDateString(locale.value);
@@ -212,6 +237,9 @@ function formatClosureDate(date: string | null): string {
 onMounted(() => {
   dossierStore.fetchDossiers(true);
   dossierStore.fetchFavorites();
+  fetchTasksToday();
+  // v3.35 — Active le Teleport après le 1er tick (la topbar est garantie montée)
+  setTimeout(() => { topbarReady.value = true; }, 0);
 
   observer = new IntersectionObserver(
     (entries) => {
@@ -336,10 +364,10 @@ async function handleDelete(id: string) {
   opacity: 0.5;
 }
 
-/* KPI bandeau (v3.30 → tokens v3.33+) — 3 cards séparées, plus marquées */
+/* v3.35 — KPI strip : 4 cards horizontales (grid responsive) */
 .home-kpis {
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 28px;
   padding: 0;
@@ -348,13 +376,18 @@ async function handleDelete(id: string) {
   border-radius: 0;
   box-shadow: none;
 }
+@media (max-width: 1100px) {
+  .home-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .home-kpis { grid-template-columns: 1fr; }
+}
 .home-kpi {
-  flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   min-width: 0;
-  padding: 18px 22px;
+  padding: 16px 20px;
   background: var(--v3-bg-2);
   border: 1px solid var(--v3-line);
   border-radius: 7px;
@@ -367,14 +400,15 @@ async function handleDelete(id: string) {
 }
 .home-kpi-icon {
   /* v3 tweak : icône plus carrée, radius discret */
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 16px;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 .home-kpi-icon--open {
   background: rgba(46, 79, 168, 0.10);
@@ -384,6 +418,10 @@ async function handleDelete(id: string) {
   background: rgba(176, 122, 31, 0.12);
   color: #B07A1F;
 }
+.home-kpi-icon--tasks {
+  background: rgba(122, 92, 143, 0.12);
+  color: #7A5C8F;
+}
 .home-kpi-icon--closed {
   background: rgba(91, 133, 80, 0.12);
   color: #5B8550;
@@ -391,24 +429,31 @@ async function handleDelete(id: string) {
 .home-kpi-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 1.25;
   min-width: 0;
+  flex: 1;
 }
 .home-kpi-label {
   font-size: 11px;
   color: var(--v3-ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.04em;
   font-weight: 600;
 }
 .home-kpi-value {
   /* v3 tweak : chiffre KPI imposant, encre noire, tracking serré */
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 650;
   color: var(--v3-ink);
-  margin-top: 2px;
-  letter-spacing: -0.8px;
+  margin-top: 4px;
+  letter-spacing: -0.7px;
   line-height: 1;
+}
+.home-kpi-trend {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--v3-ink-3);
+  letter-spacing: 0.02em;
+  line-height: 1.4;
 }
 .home-kpi-sep {
   /* Séparateur supprimé (cards séparées maintenant) */

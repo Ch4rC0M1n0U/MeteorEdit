@@ -32,6 +32,9 @@
       <Button v-else icon="pi pi-gift" text rounded severity="secondary" class="topbar-btn" @click="whatsNewOpen = true" />
 
       <WhatsNew v-model="whatsNewOpen" @read="whatsNewCount = 0" />
+
+      <!-- v3.35 — Slot pour actions contextuelles (vues téléportent ici leurs boutons) -->
+      <div id="topbar-actions" class="topbar-actions-slot" />
     </div>
   </header>
 </template>
@@ -130,6 +133,18 @@ onMounted(async () => {
 }
 .topbar-right { flex-shrink: 0; display: flex; align-items: center; gap: 4px; }
 .topbar-btn { width: 36px !important; height: 36px !important; overflow: visible !important; position: relative; }
+
+/* v3.35 — Slot actions contextuelles : sépare visuellement des boutons système (cloche, gift) */
+.topbar-actions-slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.topbar-actions-slot:not(:empty) {
+  margin-left: 8px;
+  padding-left: 10px;
+  border-left: 1px solid var(--v3-line);
+}
 .topbar-btn :deep(.p-badge) {
   position: absolute;
   top: -2px;

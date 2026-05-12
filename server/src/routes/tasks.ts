@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { listTasks, createTask, updateTask, deleteTask } from '../controllers/taskController';
+import { listTasks, createTask, updateTask, deleteTask, countTasksToday } from '../controllers/taskController';
 
 const router = Router();
 router.use(authenticate);
@@ -146,5 +146,8 @@ router.post('/dossiers/:dossierId/tasks', createTask);
  */
 router.put('/tasks/:taskId', updateTask);
 router.delete('/tasks/:taskId', deleteTask);
+
+// v3.35 — Compteur "tâches prévues aujourd'hui" (agrégé multi-dossier, ACL appliquée)
+router.get('/tasks/today/count', countTasksToday);
 
 export default router;

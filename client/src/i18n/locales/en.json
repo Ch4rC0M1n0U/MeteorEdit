@@ -241,8 +241,14 @@
     "myDossiers": "My cases",
     "kpis": {
       "open": "Open",
+      "active": "Active cases",
+      "activeTrend": "{open} open · {progress} in progress",
       "inProgress": "In progress",
-      "closedThisYear": "Closed this year"
+      "inProgressTrend": "Currently being analysed",
+      "tasksToday": "Tasks today",
+      "tasksTodayTrend": "To handle before EOD",
+      "closedThisYear": "Closed this year",
+      "closedThisYearTrend": "Year {year}"
     },
     "greetingName": "Hello {name}.",
     "greetingNeutral": "Hello.",

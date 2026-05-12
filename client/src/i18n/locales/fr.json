@@ -241,8 +241,14 @@
     "myDossiers": "Mes dossiers",
     "kpis": {
       "open": "Ouverts",
+      "active": "Dossiers actifs",
+      "activeTrend": "{open} ouverts · {progress} en traitement",
       "inProgress": "En traitement",
-      "closedThisYear": "Clôturés cette année"
+      "inProgressTrend": "En cours d'analyse",
+      "tasksToday": "Tâches aujourd'hui",
+      "tasksTodayTrend": "À traiter avant ce soir",
+      "closedThisYear": "Clôturés cette année",
+      "closedThisYearTrend": "Année {year}"
     },
     "greetingName": "Bonjour {name}.",
     "greetingNeutral": "Bonjour.",
