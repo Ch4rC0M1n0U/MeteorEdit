@@ -267,6 +267,12 @@
     "addToFavorites": "Ajouter aux favoris",
     "removeFromFavorites": "Retirer des favoris",
     "e2eActive": "Chiffrement E2E actif",
+    "notes": "Notes",
+    "justNow": "à l'instant",
+    "minutesAgo": "il y a {n} min",
+    "hoursAgo": "il y a {n} h",
+    "yesterday": "hier",
+    "daysAgo": "il y a {n} j",
     "tabs": {
       "favorites": "Favoris",
       "active": "En cours",

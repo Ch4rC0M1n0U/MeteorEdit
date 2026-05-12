@@ -267,6 +267,12 @@
     "addToFavorites": "Aan favorieten toevoegen",
     "removeFromFavorites": "Uit favorieten verwijderen",
     "e2eActive": "E2E-versleuteling actief",
+    "notes": "Notities",
+    "justNow": "zojuist",
+    "minutesAgo": "{n} min geleden",
+    "hoursAgo": "{n} u geleden",
+    "yesterday": "gisteren",
+    "daysAgo": "{n} d geleden",
     "tabs": {
       "favorites": "Favorieten",
       "active": "Actief",

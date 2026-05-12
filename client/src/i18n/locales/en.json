@@ -267,6 +267,12 @@
     "addToFavorites": "Add to favorites",
     "removeFromFavorites": "Remove from favorites",
     "e2eActive": "E2E encryption active",
+    "notes": "Notes",
+    "justNow": "just now",
+    "minutesAgo": "{n} min ago",
+    "hoursAgo": "{n} h ago",
+    "yesterday": "yesterday",
+    "daysAgo": "{n} d ago",
     "tabs": {
       "favorites": "Favorites",
       "active": "Active",
