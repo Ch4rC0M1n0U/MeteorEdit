@@ -36,72 +36,62 @@
         </button>
       </div>
 
-      <div class="nav-section">
-        <span v-if="!collapsed" class="nav-label">{{ t('nav.main') }}</span>
+      <!-- v3.34 — sections nav (TRAVAIL / BIBLIOTHÈQUE / SYSTÈME) générées dynamiquement -->
+      <div v-for="section in navSections" :key="section.key" class="nav-section">
+        <span v-if="!collapsed" class="nav-label">{{ section.label }}</span>
         <router-link
-          v-for="item in mainNavItems"
+          v-for="item in section.items"
           :key="item.key"
           :to="item.to"
           class="nav-item"
           :class="{ 'nav-item--active': isActive(item) }"
           :title="collapsed ? item.label : undefined"
-          @click="item.key === 'dossiers' ? onDossiersClick($event) : undefined"
+          @click="item.key === 'dossiers' || item.key === 'dashboard' ? onHomeClick($event) : undefined"
         >
           <span class="nav-active-bar" aria-hidden="true" />
           <i :class="item.icon" class="nav-icon" />
           <transition name="fade-text">
             <span v-if="!collapsed" class="nav-text">{{ item.label }}</span>
           </transition>
-          <Badge v-if="item.badge && !collapsed" :value="item.badge" severity="info" class="nav-badge" />
-        </router-link>
-      </div>
-
-      <div class="nav-section">
-        <span v-if="!collapsed" class="nav-label">{{ t('nav.tools') }}</span>
-        <router-link
-          v-for="item in toolNavItems"
-          :key="item.key"
-          :to="item.to"
-          class="nav-item"
-          :class="{ 'nav-item--active': isActive(item) }"
-          :title="collapsed ? item.label : undefined"
-        >
-          <span class="nav-active-bar" aria-hidden="true" />
-          <i :class="item.icon" class="nav-icon" />
-          <transition name="fade-text">
-            <span v-if="!collapsed" class="nav-text">{{ item.label }}</span>
-          </transition>
+          <span v-if="item.count != null && !collapsed" class="nav-count num">{{ item.count }}</span>
         </router-link>
       </div>
     </nav>
 
+    <!-- v3.34 — Footer institutionnel : Replier button + carte user + theme + logout -->
     <div class="sidebar-footer">
-      <button class="nav-item" @click="themeStore.toggle()" :title="themeStore.isDark ? t('nav.lightMode') : t('nav.darkMode')">
-        <i :class="themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'" class="nav-icon" />
+      <button class="sidebar-collapse-btn" @click="$emit('toggle-collapse')" :title="collapsed ? t('nav.expand') : t('nav.collapse')">
+        <i :class="collapsed ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'" class="nav-icon" />
         <transition name="fade-text">
-          <span v-if="!collapsed" class="nav-text">{{ themeStore.isDark ? t('nav.lightMode') : t('nav.darkMode') }}</span>
+          <span v-if="!collapsed" class="nav-text">{{ t('nav.collapse') }}</span>
         </transition>
       </button>
-      <div class="nav-item nav-item--user" @click="$router.push('/profile')" style="cursor:pointer">
-        <Avatar
-          :label="initials"
-          :image="avatarUrl || undefined"
-          shape="circle"
-          class="nav-avatar"
-        />
+
+      <div class="sidebar-user" @click="$router.push('/profile')">
+        <Avatar :label="initials" :image="avatarUrl || undefined" shape="circle" class="user-avatar" />
         <transition name="fade-text">
-          <div v-if="!collapsed" class="nav-user-info">
-            <span class="nav-user-name">{{ authStore.user?.firstName }} {{ authStore.user?.lastName }}</span>
-            <span class="nav-user-role">{{ authStore.isAdmin ? 'Admin' : 'Analyste' }}</span>
+          <div v-if="!collapsed" class="user-info">
+            <span class="user-name">{{ authStore.user?.firstName }} {{ authStore.user?.lastName }}</span>
+            <span class="user-role">{{ authStore.isAdmin ? 'Admin' : 'Analyste' }} · Cyber</span>
           </div>
         </transition>
+        <button
+          v-if="!collapsed"
+          class="user-action-btn"
+          @click.stop="themeStore.toggle()"
+          :title="themeStore.isDark ? t('nav.lightMode') : t('nav.darkMode')"
+        >
+          <i :class="themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'" />
+        </button>
+        <button
+          v-if="!collapsed"
+          class="user-action-btn user-action-btn--danger"
+          @click.stop="$emit('logout')"
+          :title="t('auth.logout')"
+        >
+          <i class="pi pi-sign-out" />
+        </button>
       </div>
-      <button class="nav-item nav-item--danger" @click="$emit('logout')" :title="t('auth.logout')">
-        <i class="pi pi-sign-out nav-icon" />
-        <transition name="fade-text">
-          <span v-if="!collapsed" class="nav-text">{{ t('auth.logout') }}</span>
-        </transition>
-      </button>
     </div>
   </aside>
 </template>
@@ -111,7 +101,6 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import Avatar from 'primevue/avatar';
-import Badge from 'primevue/badge';
 import { useAuthStore } from '../../stores/auth';
 import { useThemeStore } from '../../stores/theme';
 import { useDossierStore } from '../../stores/dossier';
@@ -144,20 +133,41 @@ const initials = computed(() => {
 });
 const avatarUrl = computed(() => authStore.user?.avatarPath ? `${SERVER_URL}/${authStore.user.avatarPath}` : null);
 
-const mainNavItems = computed(() => [
-  { key: 'dossiers', icon: 'pi pi-folder', label: t('home.myDossiers'), to: '/', badge: dossierStore.activeDossiers.length || null },
-  { key: 'templates', icon: 'pi pi-file-edit', label: t('nav.templates'), to: '/templates' },
-  { key: 'messages', icon: 'pi pi-comments', label: t('nav.messages'), to: '/messages', badge: messagingStore.totalUnread || null },
-]);
-
-const toolNavItems = computed(() => [
-  { key: 'extension', icon: 'mdi mdi-puzzle-outline', label: t('nav.extension'), to: '/extension' },
-  { key: 'help', icon: 'pi pi-question-circle', label: t('nav.help'), to: '/help' },
-  ...(authStore.isAdmin ? [{ key: 'admin', icon: 'pi pi-shield', label: t('nav.admin'), to: '/admin' }] : []),
+/* v3.34 — sections nav alignées sur le brief v3 */
+const navSections = computed(() => [
+  {
+    key: 'work',
+    label: t('nav.work'),
+    items: [
+      { key: 'dashboard', icon: 'pi pi-th-large', label: t('nav.dashboard'), to: '/' },
+      { key: 'dossiers', icon: 'pi pi-folder', label: t('nav.dossiers'), to: '/', count: dossierStore.activeDossiers.length || null },
+      { key: 'osint', icon: 'pi pi-search', label: t('nav.osintSearch'), to: '/osint-search' },
+      { key: 'companies', icon: 'pi pi-building', label: t('nav.companies'), to: '/companies' },
+      { key: 'messages', icon: 'pi pi-comments', label: t('nav.messages'), to: '/messages', count: messagingStore.totalUnread || null },
+    ],
+  },
+  {
+    key: 'library',
+    label: t('nav.library'),
+    items: [
+      { key: 'templates', icon: 'pi pi-file-edit', label: t('nav.templates'), to: '/templates' },
+      { key: 'extension', icon: 'mdi mdi-puzzle-outline', label: t('nav.extension'), to: '/extension' },
+    ],
+  },
+  {
+    key: 'system',
+    label: t('nav.systemGroup'),
+    items: [
+      ...(authStore.isAdmin ? [{ key: 'admin', icon: 'pi pi-shield', label: t('nav.admin'), to: '/admin' }] : []),
+      { key: 'help', icon: 'pi pi-question-circle', label: t('nav.help'), to: '/help' },
+    ],
+  },
 ]);
 
 function isActive(item: { to: string; key: string }): boolean {
-  return route.path === item.to || (item.key === 'dossiers' && route.path === '/');
+  // v3.34 — sur / on garde "dashboard" actif (dossiers n'est plus mis en évidence par défaut)
+  if (route.path === '/') return item.key === 'dashboard';
+  return route.path === item.to || route.path.startsWith(item.to + '/');
 }
 
 function closeDossier() {
@@ -165,7 +175,8 @@ function closeDossier() {
   router.push('/');
 }
 
-function onDossiersClick(e: MouseEvent) {
+function onHomeClick(e: MouseEvent) {
+  // Si un dossier est ouvert, on le ferme avant de retourner à l'accueil
   if (dossierStore.currentDossier) {
     e.preventDefault();
     closeDossier();
@@ -328,8 +339,18 @@ onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
 
 .nav-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; color: var(--v3-ink-3); transition: color 0.15s; }
 .nav-item:hover .nav-icon { color: var(--v3-ink); }
-.nav-text { overflow: hidden; text-overflow: ellipsis; }
+.nav-text { overflow: hidden; text-overflow: ellipsis; flex: 1; }
 .nav-badge { margin-left: auto; }
+
+/* v3.34 — Compteur discret aligné à droite (style brief) */
+.nav-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--v3-ink-3);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.nav-item--active .nav-count { color: var(--v3-accent); font-weight: 600; }
 
 .nav-item--user { gap: 10px; padding: 8px; }
 .nav-avatar { width: 28px !important; height: 28px !important; font-size: 11px !important; flex-shrink: 0; }
@@ -344,6 +365,82 @@ onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
   letter-spacing: -0.1px;
 }
 .nav-user-role { font-size: 10px; color: var(--v3-ink-3); letter-spacing: 0.4px; }
+
+/* v3.34 — Bouton Replier (footer) */
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--v3-ink-3);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-collapse-btn:hover { background: var(--v3-bg-3); color: var(--v3-ink); }
+.sidebar-collapse-btn .nav-icon { font-size: 14px; }
+.sidebar--collapsed .sidebar-collapse-btn { justify-content: center; padding: 10px; }
+
+/* v3.34 — Carte user dédiée en footer (style brief) */
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  background: var(--v3-bg-3);
+  border: 1px solid var(--v3-line);
+  transition: border-color 0.15s, background 0.15s;
+}
+.sidebar-user:hover { border-color: var(--v3-accent); }
+.sidebar--collapsed .sidebar-user { justify-content: center; padding: 6px; }
+
+.user-avatar { width: 30px !important; height: 30px !important; font-size: 11px !important; flex-shrink: 0; }
+.user-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.user-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--v3-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+}
+.user-role {
+  font-size: 10.5px;
+  color: var(--v3-ink-3);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--v3-ink-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.user-action-btn:hover { background: var(--v3-bg-2); color: var(--v3-ink); }
+.user-action-btn--danger:hover { color: var(--me-error); }
+.user-action-btn i { font-size: 13px; }
 
 .fade-text-enter-active, .fade-text-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .fade-text-enter-from, .fade-text-leave-to { opacity: 0; transform: translateX(-4px); }

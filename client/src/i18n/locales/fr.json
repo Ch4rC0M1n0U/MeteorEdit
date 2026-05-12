@@ -125,6 +125,13 @@
     "profile": "Mon profil",
     "main": "Navigation",
     "tools": "Outils",
+    "work": "Travail",
+    "library": "Bibliothèque",
+    "systemGroup": "Système",
+    "dashboard": "Tableau de bord",
+    "dossiers": "Dossiers",
+    "collapse": "Replier",
+    "expand": "Déplier",
     "closeDossier": "Fermer le dossier",
     "phoneScanner": "Phone Scanner"
   },

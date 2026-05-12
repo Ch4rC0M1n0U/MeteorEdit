@@ -125,6 +125,13 @@
     "profile": "Mijn profiel",
     "main": "Navigatie",
     "tools": "Hulpmiddelen",
+    "work": "Werk",
+    "library": "Bibliotheek",
+    "systemGroup": "Systeem",
+    "dashboard": "Dashboard",
+    "dossiers": "Dossiers",
+    "collapse": "Inklappen",
+    "expand": "Uitklappen",
     "closeDossier": "Dossier sluiten",
     "phoneScanner": "Phone Scanner"
   },
