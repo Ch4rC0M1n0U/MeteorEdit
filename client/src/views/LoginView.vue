@@ -368,38 +368,61 @@ async function handle2FA() {
 </script>
 
 <style scoped>
-/* ─── Layout ─── */
+/* ─── v3.32.4 — Local design system tokens (scoped to LoginView) ───
+   Ces variables permettent une refonte visuelle « v3 institutionnel »
+   sans toucher aux --me-* globaux. */
 .login-split {
+  /* Cream warm bg (light) + ink blue accent + grille subtile */
+  --login-bg: var(--me-bg-deep);
+  --login-bg-panel: var(--me-bg-deep);
+  --login-ink: var(--me-text-primary);
+  --login-ink-2: var(--me-text-secondary);
+  --login-ink-3: var(--me-text-muted);
+  --login-line: var(--me-border);
+  --login-accent: var(--me-accent);
+
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--me-bg-deep);
+  background: var(--login-bg);
 }
 
-/* ─── Left panel — v3.29.1 institutional layout (light + dark theme aware) ─── */
+/* Light theme override : ton cream/warm institutionnel */
+:global([data-theme='light']) .login-split {
+  --login-bg: #FAFAF7;
+  --login-bg-panel: #F5F4EF;
+  --login-ink: #1C1B18;
+  --login-ink-2: #45433D;
+  --login-ink-3: #6F6C63;
+  --login-line: #E7E5DD;
+  --login-accent: #2E4FA8;
+}
+
+/* ─── Left panel — v3.32.4 institutional « outil métier calme » ─── */
 .login-left {
   position: relative;
   flex: 0 0 44%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;  /* content sits at the bottom, header is absolute */
-  background:
-    radial-gradient(circle at 80% 90%, rgba(var(--me-accent-rgb), 0.10) 0%, transparent 55%),
-    radial-gradient(circle at 20% 10%, rgba(var(--me-accent-rgb), 0.05) 0%, transparent 50%),
-    var(--me-bg-deep);
+  background: var(--login-bg-panel);
   overflow: hidden;
-  border-right: 1px solid var(--me-border);
+  border-right: 1px solid var(--login-line);
 }
-/* Subtle dotted grid background — same idea as the design mockups */
+/* v3 tweak : grille carrée régulière (au lieu des dots) — pattern subtil masqué en bas-droite */
 .login-left::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image: radial-gradient(circle, rgba(var(--me-accent-rgb), 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-image:
+    linear-gradient(var(--login-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--login-line) 1px, transparent 1px);
+  background-size: 32px 32px;
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(ellipse 70% 50% at 80% 100%, black 30%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 50% at 80% 100%, black 30%, transparent 80%);
 }
 .login-left.has-bg-image::before { display: none; }
 
@@ -468,12 +491,12 @@ async function handle2FA() {
   /* v3 tweak : nom app moins gras (institutionnel) */
   font-size: 15px;
   font-weight: 600;
-  color: var(--me-text-primary);
+  color: var(--login-ink);
   letter-spacing: -0.3px;
 }
 .login-left-header-org {
   font-size: 11px;
-  color: var(--me-text-muted);
+  color: var(--login-ink-3);
   letter-spacing: 0.4px;
   margin-top: 1px;
 }
@@ -489,10 +512,10 @@ async function handle2FA() {
 
 /* Hero title (big, multi-line) */
 .login-hero-title {
-  /* v3 tweak : titre plus institutionnel — poids 650, tracking serré, line-height tight */
+  /* v3 tweak : titre institutionnel — encre noire, poids 650, tracking serré */
   font-size: 40px;
   font-weight: 650;
-  color: var(--me-text-primary);
+  color: var(--login-ink);
   letter-spacing: -1.2px;
   line-height: 1.12;
   margin: 12px 0 18px;
@@ -501,7 +524,7 @@ async function handle2FA() {
 }
 .login-hero-desc {
   font-size: 14px;
-  color: var(--me-text-secondary);
+  color: var(--login-ink-2);
   line-height: 1.6;
   margin: 0 0 28px;
   max-width: 38em;
@@ -516,14 +539,14 @@ async function handle2FA() {
 }
 
 .login-version-tag {
-  /* v3 tweak : eyebrow plus calme, tracking moins criard */
+  /* v3 tweak : eyebrow couleur accent institutionnelle (encre bleue) */
   font-size: 11px;
   letter-spacing: 1.1px;
   text-transform: uppercase;
   font-weight: 600;
-  color: var(--me-accent);
+  color: var(--login-accent);
   margin: 0 0 14px;
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .login-brand-title {
@@ -587,14 +610,14 @@ async function handle2FA() {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: var(--me-text-primary);
+  color: var(--login-ink);
   line-height: 1.3;
   letter-spacing: -0.1px;
 }
 .login-feature-text p {
   margin: 3px 0 0;
   font-size: 12px;
-  color: var(--me-text-muted);
+  color: var(--login-ink-3);
   line-height: 1.55;
 }
 
@@ -606,13 +629,13 @@ async function handle2FA() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--me-accent);
+  color: var(--login-accent);
   flex-shrink: 0;
   font-size: 16px;
   margin-top: 1px;
 }
 
-/* ─── Right panel ─── */
+/* ─── Right panel — v3.32.4 cream warm bg ─── */
 .login-right {
   flex: 1;
   display: flex;
@@ -621,6 +644,7 @@ async function handle2FA() {
   justify-content: center;
   position: relative;
   padding: 40px;
+  background: var(--login-bg);
 }
 
 .login-right-inner {
@@ -636,14 +660,14 @@ async function handle2FA() {
   /* v3 tweak : titre form plus institutionnel, poids 650, tracking serré */
   font-size: 22px;
   font-weight: 650;
-  color: var(--me-text-primary);
+  color: var(--login-ink);
   margin-bottom: 4px;
   letter-spacing: -0.4px;
 }
 
 .login-form-subtitle {
   font-size: 13px;
-  color: var(--me-text-muted);
+  color: var(--login-ink-3);
 }
 
 /* ─── Form fields ─── */
@@ -728,24 +752,25 @@ async function handle2FA() {
 
 /* ─── Submit button ─── */
 .login-submit-btn {
-  /* v3 tweak : radius plus discret, poids 550, tracking neutre */
+  /* v3 tweak : encre bleue institutionnelle, radius discret, poids 550 */
   width: 100%;
   height: 44px;
   border-radius: 7px;
   font-weight: 550;
   font-size: 14px;
   letter-spacing: 0;
-  background: var(--me-accent);
-  border: none;
+  background: var(--login-accent);
+  border: 1px solid var(--login-accent);
   color: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   margin-top: 4px;
 }
 
 .login-submit-btn:hover:not(:disabled) {
   background: var(--me-accent-hover);
-  box-shadow: 0 0 20px rgba(var(--me-accent-rgb), 0.25), 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: var(--me-accent-hover);
+  box-shadow: 0 1px 0 rgba(28, 27, 24, 0.04), 0 4px 12px rgba(28, 27, 24, 0.06);
   transform: translateY(-1px);
 }
 
@@ -1018,17 +1043,17 @@ async function handle2FA() {
   gap: 10px;
 }
 .login-env-badge {
+  /* v3 tweak : badge env theme-aware via --login-* */
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--me-bg-surface);
+  border: 1px solid var(--login-line);
+  color: var(--login-ink-3);
   border-radius: 999px;
   font-size: 11px;
   letter-spacing: 0.3px;
-  backdrop-filter: blur(8px);
 }
 .login-env-dot {
   width: 6px;
@@ -1039,21 +1064,24 @@ async function handle2FA() {
   flex-shrink: 0;
 }
 .login-theme-toggle {
+  /* v3 tweak : toggle theme-aware */
   width: 30px;
   height: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: rgba(255, 255, 255, 0.85);
+  border-radius: 7px;
+  border: 1px solid var(--login-line);
+  background: var(--me-bg-surface);
+  color: var(--login-ink-3);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 13px;
-  transition: background var(--me-dur-fast) var(--me-ease);
-  backdrop-filter: blur(8px);
+  transition: background var(--me-dur-fast) var(--me-ease), color var(--me-dur-fast) var(--me-ease);
 }
-.login-theme-toggle:hover { background: rgba(255, 255, 255, 0.1); }
+.login-theme-toggle:hover {
+  background: var(--me-bg-elevated);
+  color: var(--login-ink);
+}
 
 /* Institutional footer at the bottom of the left panel */
 .login-left-footer {
@@ -1066,10 +1094,10 @@ async function handle2FA() {
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.3px;
+  color: var(--login-ink-3);
+  letter-spacing: 0.4px;
 }
-.login-left-footer-version { opacity: 0.6; }
+.login-left-footer-version { opacity: 0.7; }
 
 /* "OU" separator between native login and SSO */
 .login-sep {
@@ -1123,22 +1151,22 @@ async function handle2FA() {
 
 /* Traceability / habilités info card */
 .login-info-card {
-  /* v3 tweak : encart plus institutionnel, radius discret, bordure plus sobre */
+  /* v3 tweak : encart institutionnel encre bleue */
   display: flex;
   gap: 10px;
   align-items: flex-start;
   margin-top: 18px;
   padding: 12px 14px;
   border-radius: 7px;
-  background: rgba(var(--me-accent-rgb), 0.05);
-  border: 1px solid rgba(var(--me-accent-rgb), 0.14);
-  color: var(--me-text-secondary);
+  background: var(--me-bg-surface);
+  border: 1px solid var(--login-line);
+  color: var(--login-ink-2);
   font-size: 11.5px;
   line-height: 1.5;
 }
 .login-info-card i {
   font-size: 14px;
-  color: var(--me-accent);
+  color: var(--login-accent);
   flex-shrink: 0;
   margin-top: 2px;
 }
