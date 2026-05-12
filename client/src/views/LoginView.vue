@@ -418,6 +418,13 @@ async function handle2FA() {
   --login-ink-3: #6F6C63;
   --login-line: #E7E5DD;
   --login-accent: #2E4FA8;
+  /* Grille statique : accent bleu à faible opacité (visible sur cream) */
+  --login-grid: rgba(46, 79, 168, 0.12);
+}
+
+/* Dark theme fallback : grille blanc cassé visible sur fond sombre */
+.login-split {
+  --login-grid: rgba(99, 145, 214, 0.15);
 }
 
 /* ─── Left panel — v3.32.4 institutional « outil métier calme » ─── */
@@ -431,20 +438,20 @@ async function handle2FA() {
   overflow: hidden;
   border-right: 1px solid var(--login-line);
 }
-/* v3 tweak : grille carrée régulière (au lieu des dots) — pattern subtil masqué en bas-droite */
+/* v3 tweak : grille carrée 32×32 px tintée accent, masquée en bas-droite
+   Désormais visible sur cream (10–12 % d'accent bleu, plus suffisant). */
 .login-left::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(var(--login-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--login-line) 1px, transparent 1px);
+    linear-gradient(var(--login-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--login-grid) 1px, transparent 1px);
   background-size: 32px 32px;
   pointer-events: none;
-  opacity: 0.5;
-  -webkit-mask-image: radial-gradient(ellipse 70% 50% at 80% 100%, black 30%, transparent 80%);
-  mask-image: radial-gradient(ellipse 70% 50% at 80% 100%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 100% 100%, black 25%, transparent 75%);
+  mask-image: radial-gradient(ellipse 90% 70% at 100% 100%, black 25%, transparent 75%);
 }
 .login-left.has-bg-image::before { display: none; }
 
@@ -471,22 +478,26 @@ async function handle2FA() {
 }
 .login-left.is-hover::after { opacity: 1; }
 
-/* Couche 2 : grille épaisse révélée seulement autour du curseur */
+/* Couche 2 : grille épaisse + carrés aux intersections, révélés seulement autour du curseur */
 .login-left .login-left-grid-spot {
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   background-image:
+    /* Carrés (points) aux intersections */
+    radial-gradient(circle, var(--login-accent) 2.5px, transparent 3.5px),
+    /* Lignes verticales et horizontales */
     linear-gradient(var(--login-accent) 1.5px, transparent 1.5px),
     linear-gradient(90deg, var(--login-accent) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
+  background-position: 16px 16px, 0 0, 0 0;
   opacity: 0;
-  -webkit-mask-image: radial-gradient(circle 260px at var(--mx, -200px) var(--my, -200px), black 5%, transparent 70%);
-  mask-image: radial-gradient(circle 260px at var(--mx, -200px) var(--my, -200px), black 5%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle 260px at var(--mx, -200px) var(--my, -200px), black 10%, transparent 75%);
+  mask-image: radial-gradient(circle 260px at var(--mx, -200px) var(--my, -200px), black 10%, transparent 75%);
   transition: opacity 0.25s ease;
 }
-.login-left.is-hover .login-left-grid-spot { opacity: 0.85; }
+.login-left.is-hover .login-left-grid-spot { opacity: 0.9; }
 .login-left.has-bg-image::after,
 .login-left.has-bg-image .login-left-grid-spot { display: none; }
 
