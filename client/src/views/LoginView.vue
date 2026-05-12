@@ -465,15 +465,17 @@ async function handle2FA() {
   line-height: 1.2;
 }
 .login-left-header-text strong {
-  font-size: 14px;
-  font-weight: 700;
+  /* v3 tweak : nom app moins gras (institutionnel) */
+  font-size: 15px;
+  font-weight: 600;
   color: var(--me-text-primary);
-  letter-spacing: -0.1px;
+  letter-spacing: -0.3px;
 }
 .login-left-header-org {
   font-size: 11px;
   color: var(--me-text-muted);
-  letter-spacing: 0.2px;
+  letter-spacing: 0.4px;
+  margin-top: 1px;
 }
 
 /* Bottom-left content stack — sits naturally at the bottom of the column */
@@ -487,13 +489,15 @@ async function handle2FA() {
 
 /* Hero title (big, multi-line) */
 .login-hero-title {
-  font-size: 38px;
-  font-weight: 700;
+  /* v3 tweak : titre plus institutionnel — poids 650, tracking serré, line-height tight */
+  font-size: 40px;
+  font-weight: 650;
   color: var(--me-text-primary);
-  letter-spacing: -0.8px;
-  line-height: 1.15;
+  letter-spacing: -1.2px;
+  line-height: 1.12;
   margin: 12px 0 18px;
   max-width: 14em;
+  text-wrap: pretty;
 }
 .login-hero-desc {
   font-size: 14px;
@@ -512,12 +516,14 @@ async function handle2FA() {
 }
 
 .login-version-tag {
+  /* v3 tweak : eyebrow plus calme, tracking moins criard */
   font-size: 11px;
-  letter-spacing: 1.6px;
+  letter-spacing: 1.1px;
   text-transform: uppercase;
+  font-weight: 600;
   color: var(--me-accent);
-  margin: 0 0 12px;
-  opacity: 0.9;
+  margin: 0 0 14px;
+  opacity: 0.95;
 }
 
 .login-brand-title {
@@ -570,38 +576,40 @@ async function handle2FA() {
 .login-feature-card {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   padding: 0;
   background: transparent;
   border: none;
 }
 .login-feature-text { min-width: 0; }
 .login-feature-text strong {
+  /* v3 tweak : poids 550 (institutionnel, pas trop gras) */
   display: block;
   font-size: 13px;
   font-weight: 600;
   color: var(--me-text-primary);
   line-height: 1.3;
+  letter-spacing: -0.1px;
 }
 .login-feature-text p {
   margin: 3px 0 0;
   font-size: 12px;
   color: var(--me-text-muted);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-/* Tinted square wrapper around feature icons */
+/* v3 tweak : icône à plat (plus de carré tinted), inspiré du brief v3 */
 .login-feature-iconwrap {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: rgba(var(--me-accent-rgb), 0.18);
+  width: 20px;
+  height: 20px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--me-accent);
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 16px;
+  margin-top: 1px;
 }
 
 /* ─── Right panel ─── */
@@ -625,14 +633,16 @@ async function handle2FA() {
 }
 
 .login-form-title {
-  font-size: 24px;
-  font-weight: 700;
+  /* v3 tweak : titre form plus institutionnel, poids 650, tracking serré */
+  font-size: 22px;
+  font-weight: 650;
   color: var(--me-text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  letter-spacing: -0.4px;
 }
 
 .login-form-subtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--me-text-muted);
 }
 
@@ -718,12 +728,13 @@ async function handle2FA() {
 
 /* ─── Submit button ─── */
 .login-submit-btn {
+  /* v3 tweak : radius plus discret, poids 550, tracking neutre */
   width: 100%;
-  height: 48px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.3px;
+  height: 44px;
+  border-radius: 7px;
+  font-weight: 550;
+  font-size: 14px;
+  letter-spacing: 0;
   background: var(--me-accent);
   border: none;
   color: #fff;
@@ -1081,18 +1092,19 @@ async function handle2FA() {
 
 /* SSO institutional button */
 .login-sso-btn {
+  /* v3 tweak : radius discret, poids 550 (institutionnel) */
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
   padding: 11px 16px;
-  border-radius: 10px;
+  border-radius: 7px;
   background: var(--me-bg-elevated);
   border: 1px solid var(--me-border);
   color: var(--me-text-primary);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 550;
   text-decoration: none;
   cursor: pointer;
   transition: border-color var(--me-dur-fast) var(--me-ease), background var(--me-dur-fast) var(--me-ease);
@@ -1111,16 +1123,17 @@ async function handle2FA() {
 
 /* Traceability / habilités info card */
 .login-info-card {
+  /* v3 tweak : encart plus institutionnel, radius discret, bordure plus sobre */
   display: flex;
   gap: 10px;
   align-items: flex-start;
   margin-top: 18px;
   padding: 12px 14px;
-  border-radius: 10px;
-  background: rgba(var(--me-accent-rgb), 0.07);
-  border: 1px solid rgba(var(--me-accent-rgb), 0.18);
+  border-radius: 7px;
+  background: rgba(var(--me-accent-rgb), 0.05);
+  border: 1px solid rgba(var(--me-accent-rgb), 0.14);
   color: var(--me-text-secondary);
-  font-size: 12px;
+  font-size: 11.5px;
   line-height: 1.5;
 }
 .login-info-card i {
