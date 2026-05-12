@@ -1,236 +1,316 @@
 <template>
-  <div class="login-split">
-    <!-- Environment / theme toggle bar (top-right, always above split) -->
-    <div class="login-topbar">
-      <span v-if="brandingStore.environmentLabel" class="login-env-badge mono" :title="brandingStore.environmentLabel">
-        <span class="login-env-dot" aria-hidden="true" />
-        {{ brandingStore.environmentLabel }}
-      </span>
-      <button class="login-theme-toggle" type="button" @click="themeStore.toggle()" :title="themeStore.isDark ? $t('nav.lightMode') : $t('nav.darkMode')">
-        <i :class="themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'" />
-      </button>
-    </div>
-    <!-- Left panel: branding showcase (v3.29.1 — institutional layout) -->
-    <div class="login-left" :class="{ 'has-bg-image': brandingStore.loginBackgroundUrl }">
-      <img v-if="brandingStore.loginBackgroundUrl" :src="brandingStore.loginBackgroundUrl" alt="" class="login-left-bg-img" />
-      <div class="login-left-overlay" />
+  <div class="login-v3">
+    <!-- Classification ribbon (top of screen) -->
+    <div class="login__class">{{ $t('auth.classificationBanner') }}</div>
 
-      <!-- Top-left brand header : logo + app name + organization tag -->
-      <header class="login-left-header">
-        <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-left-header-logo" />
-        <img v-else :src="themeStore.isDark ? '/logo-me-red.png' : '/logo-me-blue.png'" alt="MeteorEdit" class="login-left-header-logo" />
-        <div class="login-left-header-text">
-          <strong>{{ brandingStore.appName }}</strong>
-          <span v-if="brandingStore.organizationTag" class="login-left-header-org">{{ brandingStore.organizationTag }}</span>
-        </div>
-      </header>
+    <div class="login">
+      <!-- ============================================================
+           BRAND PANEL (left)
+           ============================================================ -->
+      <section class="login__brand">
+        <div class="login__brand-pattern" aria-hidden="true" />
 
-      <!-- Centered-bottom content : version tag, h1 hero, paragraph, 2x2 grid of features -->
-      <div class="login-left-content">
-        <p class="login-version-tag mono">{{ versionTag }}</p>
-        <h1 class="login-hero-title">{{ heroTitle }}</h1>
-        <p class="login-hero-desc">{{ heroDesc }}</p>
-
-        <div class="login-left-features login-left-features--grid">
-          <article class="login-feature-card">
-            <span class="login-feature-iconwrap"><i class="pi pi-folder-open" /></span>
-            <div class="login-feature-text">
-              <strong>{{ $t('auth.features.structuredDossiers') }}</strong>
-              <p>{{ $t('auth.features.structuredDossiersDesc') }}</p>
-            </div>
-          </article>
-          <article class="login-feature-card">
-            <span class="login-feature-iconwrap"><i class="pi pi-shield" /></span>
-            <div class="login-feature-text">
-              <strong>{{ $t('auth.features.chainOfCustody') }}</strong>
-              <p>{{ $t('auth.features.chainOfCustodyDesc') }}</p>
-            </div>
-          </article>
-          <article class="login-feature-card">
-            <span class="login-feature-iconwrap"><i class="pi pi-search" /></span>
-            <div class="login-feature-text">
-              <strong>{{ $t('auth.features.osintTools') }}</strong>
-              <p>{{ $t('auth.features.osintToolsDesc') }}</p>
-            </div>
-          </article>
-          <article class="login-feature-card">
-            <span class="login-feature-iconwrap"><i class="pi pi-users" /></span>
-            <div class="login-feature-text">
-              <strong>{{ $t('auth.features.teamWork') }}</strong>
-              <p>{{ $t('auth.features.teamWorkDesc') }}</p>
-            </div>
-          </article>
-        </div>
-      </div>
-      <!-- Institutional footer (visible only when no custom bg image) -->
-      <footer v-if="!brandingStore.loginBackgroundUrl" class="login-left-footer mono">
-        <span class="login-left-footer-text">{{ footerLabel }}</span>
-        <span class="login-left-footer-version">v{{ appVersion }}</span>
-      </footer>
-    </div>
-
-    <!-- Right panel: login form -->
-    <div class="login-right">
-      <!-- Mobile branding (shown only on small screens) -->
-      <div class="login-mobile-brand">
-        <img v-if="brandingStore.logoUrl" :src="brandingStore.logoUrl" :alt="brandingStore.appName" class="login-mobile-logo" />
-        <img v-else :src="themeStore.isDark ? '/logo-me-red.png' : '/logo-me-blue.png'" alt="MeteorEdit" class="login-mobile-logo" />
-        <span class="login-mobile-name mono">{{ brandingStore.appName }}</span>
-      </div>
-
-      <div class="login-right-inner fade-in">
-        <div class="login-form-header">
-          <h2 class="login-form-title">{{ $t('auth.login') }}</h2>
-          <p class="login-form-subtitle">{{ $t('auth.loginSubtitle') }}</p>
-        </div>
-
-        <Message v-if="error" severity="error" :closable="true" @close="error = ''" class="login-message">
-          {{ error }}
-        </Message>
-
-        <!-- Remembered user — avatar inlined into the main form (no nested card) -->
-        <form v-if="rememberedUser && !show2FA" @submit.prevent="handleLogin" class="remembered-form-inline">
-          <div class="remembered-identity">
-            <div class="remembered-avatar">
-              <img v-if="avatarUrl && !avatarError" :src="avatarUrl" alt="" class="remembered-avatar-img" @error="avatarError = true" />
-              <span v-else class="remembered-initials">{{ initials }}</span>
-            </div>
-            <div class="remembered-identity-text">
-              <span class="remembered-welcome">{{ $t('auth.welcomeBack') }}</span>
-              <strong class="remembered-name">{{ rememberedUser.firstName }} {{ rememberedUser.lastName }}</strong>
-            </div>
-          </div>
-
-          <label class="login-field-label">{{ $t('auth.password') }}</label>
-          <Password
-            v-model="password"
-            :placeholder="$t('auth.passwordPlaceholder')"
-            :feedback="false"
-            toggleMask
-            :disabled="authStore.loading"
-            inputClass="login-input"
-            class="login-password-field"
-            :pt="{ root: { style: 'width: 100%' }, pcInput: { style: 'width: 100%' } }"
-            autofocus
-          />
-
-          <Button
-            type="submit"
-            :label="$t('auth.loginAction')"
-            icon="pi pi-sign-in"
-            :loading="authStore.loading"
-            class="login-submit-btn"
-          />
-
-          <button type="button" class="remembered-not-me" @click="clearRememberedUser">
-            <i class="pi pi-user-edit" style="font-size: 12px" />
-            {{ $t('auth.notMe') }}
-          </button>
-        </form>
-
-        <!-- Classic login form -->
-        <form v-if="!show2FA && !rememberedUser" @submit.prevent="handleLogin">
-          <label class="login-field-label">{{ $t('auth.email') }}</label>
-          <IconField class="login-iconfield">
-            <InputIcon class="pi pi-envelope" />
-            <InputText
-              v-model="email"
-              type="email"
-              :placeholder="$t('auth.emailPlaceholder')"
-              :disabled="authStore.loading"
-              class="login-input"
-              required
+        <div class="login__brand-top">
+          <div class="login__brand-logo">
+            <img
+              v-if="brandingStore.logoUrl"
+              :src="brandingStore.logoUrl"
+              :alt="brandingStore.appName"
             />
-          </IconField>
-
-          <label class="login-field-label">{{ $t('auth.password') }}</label>
-          <Password
-            v-model="password"
-            :placeholder="$t('auth.passwordPlaceholder')"
-            :feedback="false"
-            toggleMask
-            :disabled="authStore.loading"
-            inputClass="login-input"
-            class="login-password-field"
-            :pt="{ root: { style: 'width: 100%' }, pcInput: { style: 'width: 100%' } }"
-          />
-
-          <div class="remember-me-row">
-            <div class="remember-me-inner">
-              <Checkbox v-model="rememberMe" :binary="true" inputId="rememberMe" />
-              <label for="rememberMe" class="remember-me-label">{{ $t('auth.rememberMe') }}</label>
+            <img
+              v-else
+              :src="themeStore.isDark ? '/logo-me-red.png' : '/logo-me-blue.png'"
+              alt="MeteorEdit"
+            />
+          </div>
+          <div>
+            <div class="login__brand-name">{{ brandingStore.appName }}</div>
+            <div v-if="brandingStore.organizationTag" class="login__brand-tag">
+              {{ brandingStore.organizationTag }}
             </div>
           </div>
+        </div>
 
-          <Button
-            type="submit"
-            :label="$t('auth.loginAction')"
-            icon="pi pi-sign-in"
-            :loading="authStore.loading"
-            class="login-submit-btn"
-          />
-        </form>
+        <div class="login__brand-body">
+          <div class="login__brand-eyebrow">{{ versionTag }}</div>
+          <h1 class="login__brand-title">{{ heroTitle }}</h1>
+          <p class="login__brand-lede">{{ heroDesc }}</p>
 
-        <!-- SSO institutionnel — visible quand un endpoint OIDC est configuré
-             dans le branding admin. Le bouton renvoie sur l'URL d'autorisation. -->
-        <template v-if="brandingStore.ssoUrl && !show2FA">
-          <div class="login-sep" aria-hidden="true">
-            <span class="login-sep-line" />
-            <span class="login-sep-label mono">{{ $t('auth.orSeparator') }}</span>
-            <span class="login-sep-line" />
+          <div class="login__features">
+            <div class="login__feat">
+              <span class="mdi mdi-folder-multiple-outline" style="color: var(--accent)" />
+              <div>
+                <strong>{{ $t('auth.features.structuredDossiers') }}</strong>
+                {{ $t('auth.features.structuredDossiersDesc') }}
+              </div>
+            </div>
+            <div class="login__feat">
+              <span class="mdi mdi-shield-lock-outline" style="color: var(--cat-map)" />
+              <div>
+                <strong>{{ $t('auth.features.chainOfCustody') }}</strong>
+                {{ $t('auth.features.chainOfCustodyDesc') }}
+              </div>
+            </div>
+            <div class="login__feat">
+              <span class="mdi mdi-magnify-scan" style="color: var(--cat-clipper)" />
+              <div>
+                <strong>{{ $t('auth.features.osintTools') }}</strong>
+                {{ $t('auth.features.osintToolsDesc') }}
+              </div>
+            </div>
+            <div class="login__feat">
+              <span class="mdi mdi-account-multiple-outline" style="color: var(--cat-note)" />
+              <div>
+                <strong>{{ $t('auth.features.teamWork') }}</strong>
+                {{ $t('auth.features.teamWorkDesc') }}
+              </div>
+            </div>
           </div>
-          <a :href="brandingStore.ssoUrl" class="login-sso-btn">
-            <i class="pi pi-shield" />
-            <span>{{ brandingStore.ssoLabel || $t('auth.ssoInstitutional') }}</span>
-          </a>
-          <p v-if="!brandingStore.ssoUrl" class="login-sso-hint mono">{{ $t('auth.ssoHint') }}</p>
-        </template>
+        </div>
 
-        <!-- Encart d'information traçabilité / habilitations -->
-        <aside v-if="!show2FA" class="login-info-card">
-          <i class="pi pi-info-circle" />
-          <p>{{ brandingStore.loginNotice || $t('auth.tracingNotice') }}</p>
-        </aside>
+        <div class="login__brand-foot">
+          <span><strong>{{ footerLabel }}</strong></span>
+          <span>v{{ appVersion }}</span>
+        </div>
+      </section>
 
-        <!-- 2FA section -->
-        <div v-if="show2FA" class="tfa-login-section">
-          <div class="tfa-icon-wrap">
-            <i class="pi pi-shield tfa-icon" />
-          </div>
-          <p class="tfa-login-text mono">{{ $t('auth.twoFaPrompt') }}</p>
-
-          <IconField class="login-iconfield">
-            <InputIcon class="pi pi-key" />
-            <InputText
-              v-model="tfaCode"
-              :placeholder="$t('auth.twoFaCode')"
-              maxlength="8"
-              :disabled="authStore.loading"
-              class="login-input"
-              autofocus
-              @keyup.enter="handle2FA"
-            />
-          </IconField>
-
-          <Button
+      <!-- ============================================================
+           FORM PANEL (right)
+           ============================================================ -->
+      <section class="login__form">
+        <div class="login__top">
+          <span v-if="brandingStore.environmentLabel" class="login__env">
+            <span class="dot" aria-hidden="true" />
+            {{ brandingStore.environmentLabel }}
+          </span>
+          <button
+            class="theme-toggle"
             type="button"
-            :label="$t('auth.verify')"
-            icon="pi pi-check-circle"
-            :loading="authStore.loading"
-            class="login-submit-btn"
-            @click="handle2FA"
-          />
-          <button class="tfa-back-btn" @click="show2FA = false; tempToken = ''">
-            <i class="pi pi-arrow-left" style="font-size: 12px" />
-            {{ $t('common.back') }}
+            :title="themeStore.isDark ? $t('nav.lightMode') : $t('nav.darkMode')"
+            @click="themeStore.toggle()"
+          >
+            <span class="mdi mdi-weather-night theme-toggle__moon" />
+            <span class="mdi mdi-white-balance-sunny theme-toggle__sun" />
           </button>
         </div>
 
-        <div v-if="brandingStore.registrationEnabled" class="login-footer">
-          <span class="text-muted">{{ $t('auth.noAccount') }}</span>
-          <router-link to="/register" class="login-link">{{ $t('auth.register') }}</router-link>
+        <div class="login__form-inner">
+          <!-- =============== 2FA ================ -->
+          <template v-if="show2FA">
+            <h2>{{ $t('auth.verify') }}</h2>
+            <p>{{ $t('auth.twoFaPrompt') }}</p>
+
+            <form @submit.prevent="handle2FA">
+              <div v-if="error" class="login__error">
+                <span class="mdi mdi-alert-circle-outline" />
+                <span>{{ error }}</span>
+              </div>
+
+              <div class="field">
+                <label class="field__label">{{ $t('auth.twoFaCode') }}</label>
+                <div class="field__input">
+                  <span class="mdi mdi-key-outline" />
+                  <input
+                    v-model="tfaCode"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="8"
+                    :placeholder="$t('auth.twoFaCode')"
+                    :disabled="authStore.loading"
+                    autofocus
+                  />
+                </div>
+              </div>
+
+              <button
+                class="btn btn--primary btn--block"
+                type="submit"
+                :disabled="authStore.loading || !tfaCode"
+              >
+                {{ $t('auth.verify') }}
+                <span class="mdi mdi-check-circle-outline" />
+              </button>
+            </form>
+
+            <button
+              class="btn btn--block login__back"
+              type="button"
+              @click="cancel2FA"
+            >
+              <span class="mdi mdi-arrow-left" />
+              {{ $t('common.back') }}
+            </button>
+          </template>
+
+          <!-- =============== LOGIN (classic or remembered) ================ -->
+          <template v-else>
+            <h2>{{ $t('auth.login') }}</h2>
+            <p>{{ $t('auth.loginSubtitle') }}</p>
+
+            <!-- Error banner -->
+            <div v-if="error" class="login__error">
+              <span class="mdi mdi-alert-circle-outline" />
+              <span>{{ error }}</span>
+              <button
+                class="login__error-close"
+                type="button"
+                :aria-label="$t('common.close')"
+                @click="error = ''"
+              >
+                <span class="mdi mdi-close" />
+              </button>
+            </div>
+
+            <!-- Remembered user (inline avatar + password only) -->
+            <form
+              v-if="rememberedUser"
+              class="login__form-body"
+              @submit.prevent="handleLogin"
+            >
+              <div class="login__remembered">
+                <div class="login__remembered-avatar">
+                  <img
+                    v-if="avatarUrl && !avatarError"
+                    :src="avatarUrl"
+                    alt=""
+                    @error="avatarError = true"
+                  />
+                  <span v-else>{{ initials }}</span>
+                </div>
+                <div class="login__remembered-text">
+                  <span>{{ $t('auth.welcomeBack') }}</span>
+                  <strong>{{ rememberedUser.firstName }} {{ rememberedUser.lastName }}</strong>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field__label">{{ $t('auth.password') }}</label>
+                <div class="field__input">
+                  <span class="mdi mdi-lock-outline" />
+                  <input
+                    v-model="password"
+                    :type="showPwd ? 'text' : 'password'"
+                    :placeholder="$t('auth.passwordPlaceholder')"
+                    :disabled="authStore.loading"
+                    autofocus
+                    required
+                  />
+                  <span
+                    class="mdi login__eye"
+                    :class="showPwd ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+                    role="button"
+                    tabindex="0"
+                    :aria-label="$t('auth.password')"
+                    @click="showPwd = !showPwd"
+                    @keyup.enter="showPwd = !showPwd"
+                  />
+                </div>
+              </div>
+
+              <button
+                class="btn btn--primary btn--block"
+                type="submit"
+                :disabled="authStore.loading || !password"
+              >
+                {{ $t('auth.loginAction') }}
+                <span class="mdi mdi-arrow-right" />
+              </button>
+
+              <button
+                type="button"
+                class="login__not-me"
+                @click="clearRememberedUser"
+              >
+                <span class="mdi mdi-account-edit-outline" />
+                {{ $t('auth.notMe') }}
+              </button>
+            </form>
+
+            <!-- Classic form -->
+            <form
+              v-else
+              class="login__form-body"
+              @submit.prevent="handleLogin"
+            >
+              <div class="field">
+                <label class="field__label">{{ $t('auth.email') }}</label>
+                <div class="field__input">
+                  <span class="mdi mdi-account-circle-outline" />
+                  <input
+                    v-model="email"
+                    type="email"
+                    :placeholder="$t('auth.emailPlaceholder')"
+                    :disabled="authStore.loading"
+                    autocomplete="username"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field__label">{{ $t('auth.password') }}</label>
+                <div class="field__input">
+                  <span class="mdi mdi-lock-outline" />
+                  <input
+                    v-model="password"
+                    :type="showPwd ? 'text' : 'password'"
+                    :placeholder="$t('auth.passwordPlaceholder')"
+                    :disabled="authStore.loading"
+                    autocomplete="current-password"
+                    required
+                  />
+                  <span
+                    class="mdi login__eye"
+                    :class="showPwd ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+                    role="button"
+                    tabindex="0"
+                    :aria-label="$t('auth.password')"
+                    @click="showPwd = !showPwd"
+                    @keyup.enter="showPwd = !showPwd"
+                  />
+                </div>
+              </div>
+
+              <div class="field__row">
+                <label>
+                  <input v-model="rememberMe" type="checkbox" />
+                  {{ $t('auth.rememberMe') }}
+                </label>
+              </div>
+
+              <button
+                class="btn btn--primary btn--block"
+                type="submit"
+                :disabled="authStore.loading || !email || !password"
+              >
+                {{ $t('auth.loginAction') }}
+                <span class="mdi mdi-arrow-right" />
+              </button>
+            </form>
+
+            <!-- SSO -->
+            <template v-if="brandingStore.ssoUrl">
+              <div class="login__divider">{{ $t('auth.orSeparator') }}</div>
+              <a :href="brandingStore.ssoUrl" class="btn btn--block">
+                <span class="mdi mdi-shield-key-outline" style="color: var(--accent)" />
+                {{ brandingStore.ssoLabel || $t('auth.ssoInstitutional') }}
+              </a>
+            </template>
+
+            <!-- Traceability notice -->
+            <div class="login__notice">
+              <span class="mdi mdi-information-outline" />
+              <div>{{ brandingStore.loginNotice || $t('auth.tracingNotice') }}</div>
+            </div>
+
+            <!-- Register link (admin-controlled) -->
+            <div v-if="brandingStore.registrationEnabled" class="login__register">
+              <span>{{ $t('auth.noAccount') }}</span>
+              <router-link to="/register">{{ $t('auth.register') }}</router-link>
+            </div>
+          </template>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 </template>
@@ -243,14 +323,6 @@ import { useAuthStore } from '../stores/auth';
 import { useBrandingStore } from '../stores/branding';
 import { useThemeStore } from '../stores/theme';
 import { SERVER_URL } from '../services/api';
-
-import InputText from 'primevue/inputtext';
-import Password from 'primevue/password';
-import Button from 'primevue/button';
-import Checkbox from 'primevue/checkbox';
-import Message from 'primevue/message';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
 
 interface RememberedUser {
   userId: string;
@@ -265,29 +337,26 @@ const brandingStore = useBrandingStore();
 const themeStore = useThemeStore();
 const router = useRouter();
 
-// Version tag shown above the login title — replaces the static "VERSION 3.0 · MAI 2026"
-// placeholder from the design mockups with the actual app version, formatted as
-// "VERSION 3.28 · MAI 2026" (major.minor, current month/year in the user's locale).
+// Version tag shown above the hero title.
+// Format: "VERSION 3.32 · MAI 2026"
 const versionTag = computed(() => {
   const [major, minor] = __APP_VERSION__.split('.');
-  const monthYear = new Date().toLocaleDateString(locale.value, { month: 'long', year: 'numeric' }).toUpperCase();
+  const monthYear = new Date()
+    .toLocaleDateString(locale.value, { month: 'long', year: 'numeric' })
+    .toUpperCase();
   return `VERSION ${major}.${minor} · ${monthYear}`;
 });
 
-// Full version string for the institutional footer.
 const appVersion = __APP_VERSION__;
-// Footer text — admin can override via brandingStore.organizationTag,
-// otherwise we fall back to a neutral label derived from appName.
+
 const footerLabel = computed(() => brandingStore.organizationTag || brandingStore.appName);
 
-// Hero title + description shown on the left panel. Admin overrides via
-// brandingStore.loginMessage (title) and brandingStore.loginNotice is reserved
-// for the bottom info card. Defaults come from i18n.
 const heroTitle = computed(() => brandingStore.loginMessage || t('auth.heroTitle'));
 const heroDesc = computed(() => t('auth.heroDesc'));
 
 const email = ref('');
 const password = ref('');
+const showPwd = ref(false);
 const error = ref('');
 const show2FA = ref(false);
 const tempToken = ref('');
@@ -309,7 +378,9 @@ onMounted(() => {
   }
 });
 
-watch(() => rememberedUser.value, () => { avatarError.value = false; });
+watch(() => rememberedUser.value, () => {
+  avatarError.value = false;
+});
 
 const avatarUrl = computed(() => {
   if (!rememberedUser.value) return null;
@@ -318,7 +389,9 @@ const avatarUrl = computed(() => {
 
 const initials = computed(() => {
   if (!rememberedUser.value) return '';
-  return ((rememberedUser.value.firstName?.[0] || '') + (rememberedUser.value.lastName?.[0] || '')).toUpperCase();
+  return (
+    (rememberedUser.value.firstName?.[0] || '') + (rememberedUser.value.lastName?.[0] || '')
+  ).toUpperCase();
 });
 
 function clearRememberedUser() {
@@ -330,13 +403,23 @@ function clearRememberedUser() {
 
 function saveRememberedUser() {
   if (rememberMe.value && authStore.user) {
-    localStorage.setItem('rememberedUser', JSON.stringify({
-      userId: authStore.user.id,
-      email: authStore.user.email,
-      firstName: authStore.user.firstName,
-      lastName: authStore.user.lastName,
-    }));
+    localStorage.setItem(
+      'rememberedUser',
+      JSON.stringify({
+        userId: authStore.user.id,
+        email: authStore.user.email,
+        firstName: authStore.user.firstName,
+        lastName: authStore.user.lastName,
+      }),
+    );
   }
+}
+
+function cancel2FA() {
+  show2FA.value = false;
+  tempToken.value = '';
+  tfaCode.value = '';
+  error.value = '';
 }
 
 async function handleLogin() {
@@ -368,766 +451,532 @@ async function handle2FA() {
 </script>
 
 <style scoped>
-/* ─── Layout ─── */
-.login-split {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-  background: var(--me-bg-deep);
+/* ============================================================
+   LoginView v3.32 — markup BEM scoped, tokens v3 (--bg, --ink, --accent…)
+   Hérite des tokens définis dans assets/tokens-v3.css.
+   Force la typographie Inter sur tout le scope login uniquement.
+   ============================================================ */
+
+.login-v3 {
+  font-family: var(--font);
+  font-feature-settings: 'ss01', 'cv11';
+  font-optical-sizing: auto;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
-/* ─── Left panel — v3.29.1 institutional layout (light + dark theme aware) ─── */
-.login-left {
-  position: relative;
-  flex: 0 0 44%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;  /* content sits at the bottom, header is absolute */
-  background:
-    radial-gradient(circle at 80% 90%, rgba(var(--me-accent-rgb), 0.10) 0%, transparent 55%),
-    radial-gradient(circle at 20% 10%, rgba(var(--me-accent-rgb), 0.05) 0%, transparent 50%),
-    var(--me-bg-deep);
-  overflow: hidden;
-  border-right: 1px solid var(--me-border);
-}
-/* Subtle dotted grid background — same idea as the design mockups */
-.login-left::before {
-  content: '';
+.login-v3 * { box-sizing: border-box; }
+
+/* --- CLASSIFICATION RIBBON --- */
+.login__class {
   position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: radial-gradient(circle, rgba(var(--me-accent-rgb), 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
-  pointer-events: none;
-  opacity: 0.6;
-}
-.login-left.has-bg-image::before { display: none; }
-
-.login-left-bg-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: 0;
-}
-
-.login-left.has-bg-image .login-left-overlay {
-  background: rgba(0, 0, 0, 0.7);
-}
-
-.login-left-overlay {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 30% 70%, rgba(var(--me-accent-rgb), 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 70% 30%, rgba(224, 175, 104, 0.08) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Constellation SVG decoration — replaces the old dotted grid */
-.login-constellation {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.85;
-}
-.login-left.has-bg-image .login-constellation { display: none; }
-/* Use CSS for SVG colors so var() works reliably on every browser
-   (var() in stroke/fill SVG attributes is unreliable on Safari iOS < 15). */
-.login-constellation-lines { stroke: rgba(var(--me-accent-rgb), 0.18); }
-.login-constellation-stars { fill: rgba(var(--me-accent-rgb), 0.7); }
-.login-constellation-dust  { fill: rgba(255, 255, 255, 0.18); }
-
-/* Top-left brand header (logo + appName + organization tag) */
-.login-left-header {
-  position: absolute;
-  top: 24px;
-  left: 40px;
+  top: 0; left: 0; right: 0;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--ink-3);
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--line);
+  padding: 4px 0;
+  text-transform: uppercase;
   z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.login-left-header-logo {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  border-radius: 6px;
-}
-.login-left-header-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-.login-left-header-text strong {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  letter-spacing: -0.1px;
-}
-.login-left-header-org {
-  font-size: 11px;
-  color: var(--me-text-muted);
-  letter-spacing: 0.2px;
 }
 
-/* Bottom-left content stack — sits naturally at the bottom of the column */
-.login-left-content {
-  position: relative;
-  z-index: 2;
-  padding: 0 56px 96px;
-  max-width: 560px;
-  text-align: left;
-}
-
-/* Hero title (big, multi-line) */
-.login-hero-title {
-  font-size: 38px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  letter-spacing: -0.8px;
-  line-height: 1.15;
-  margin: 12px 0 18px;
-  max-width: 14em;
-}
-.login-hero-desc {
-  font-size: 14px;
-  color: var(--me-text-secondary);
-  line-height: 1.6;
-  margin: 0 0 28px;
-  max-width: 38em;
-}
-
-.login-brand-logo {
-  height: 72px;
-  width: auto;
-  object-fit: contain;
-  margin-bottom: 20px;
-  filter: drop-shadow(0 4px 24px rgba(0, 0, 0, 0.3));
-}
-
-.login-version-tag {
-  font-size: 11px;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
-  color: var(--me-accent);
-  margin: 0 0 12px;
-  opacity: 0.9;
-}
-
-.login-brand-title {
-  font-size: 32px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: -0.5px;
-  margin-bottom: 8px;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-}
-
-.login-brand-tagline {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  font-family: var(--me-font-mono);
-  line-height: 1.6;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
-}
-
-/* Features list — kept for backwards compat; the v3.29 layout uses the
-   grid variant below. */
-.login-left-features {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  text-align: left;
-}
-
-/* Mini-cards 2×2 grid — flat, no card background, just icon + 2 lines of text */
-.login-left-features--grid {
+/* --- ROOT GRID --- */
+.login {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px 32px;
+  grid-template-columns: 1.05fr 1fr;
+  height: 100vh;
+  min-height: 100vh;
+  background: var(--bg);
 }
 
-/* Legacy single-line feature (kept in case other views import it) */
-.login-feature {
+/* --- BRAND PANEL --- */
+.login__brand {
+  position: relative;
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.login__brand-top {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--me-text-secondary);
-  font-size: 13px;
-  padding: 8px 0;
+  position: relative;
+  z-index: 2;
 }
 
-/* v3.29 flat card — icon + heading + 2-line description */
-.login-feature-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 0;
-  background: transparent;
-  border: none;
+.login__brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--ink);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
 }
-.login-feature-text { min-width: 0; }
-.login-feature-text strong {
-  display: block;
-  font-size: 13px;
+.login__brand-logo img { width: 100%; height: 100%; object-fit: contain; }
+
+.login__brand-name {
+  font-size: 15px;
   font-weight: 600;
-  color: var(--me-text-primary);
-  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
-.login-feature-text p {
-  margin: 3px 0 0;
-  font-size: 12px;
-  color: var(--me-text-muted);
-  line-height: 1.5;
-}
-
-/* Tinted square wrapper around feature icons */
-.login-feature-iconwrap {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: rgba(var(--me-accent-rgb), 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--me-accent);
-  flex-shrink: 0;
-  font-size: 13px;
+.login__brand-tag {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 1px;
+  letter-spacing: 0.04em;
 }
 
-/* ─── Right panel ─── */
-.login-right {
+.login__brand-body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
   position: relative;
-  padding: 40px;
+  z-index: 2;
+  max-width: 460px;
 }
 
-.login-right-inner {
-  width: 100%;
-  max-width: 400px;
-}
-
-.login-form-header {
-  margin-bottom: 32px;
-}
-
-.login-form-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  margin-bottom: 6px;
-}
-
-.login-form-subtitle {
-  font-size: 14px;
-  color: var(--me-text-muted);
-}
-
-/* ─── Form fields ─── */
-.login-field-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--me-text-secondary);
-  margin-bottom: 6px;
-}
-
-.login-iconfield {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.login-iconfield :deep(.p-inputtext) {
-  width: 100%;
-  border-radius: 8px;
-  background: var(--me-bg-surface);
-  border: 1px solid var(--me-border);
-  color: var(--me-text-primary);
-  font-family: var(--me-font-body);
-  font-size: 14px;
-  padding: 12px 12px 12px 40px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.login-iconfield :deep(.p-inputtext:focus) {
-  border-color: var(--me-accent);
-  box-shadow: 0 0 0 3px var(--me-accent-glow), inset 0 1px 2px rgba(0, 0, 0, 0.05);
-  outline: none;
-}
-
-.login-iconfield :deep(.p-inputtext::placeholder) {
-  color: var(--me-text-muted);
-}
-
-.login-iconfield :deep(.p-inputicon) {
-  color: var(--me-text-muted);
-}
-
-/* Password field */
-.login-password-field {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.login-password-field :deep(.p-password) {
-  width: 100%;
-}
-
-.login-password-field :deep(.p-inputtext),
-:deep(.login-input) {
-  width: 100%;
-  border-radius: 8px;
-  background: var(--me-bg-surface);
-  border: 1px solid var(--me-border);
-  color: var(--me-text-primary);
-  font-family: var(--me-font-body);
-  font-size: 14px;
-  padding: 12px 40px 12px 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.login-password-field :deep(.p-inputtext:focus),
-:deep(.login-input:focus) {
-  border-color: var(--me-accent);
-  box-shadow: 0 0 0 3px var(--me-accent-glow), inset 0 1px 2px rgba(0, 0, 0, 0.05);
-  outline: none;
-}
-
-.login-password-field :deep(.p-inputtext::placeholder),
-:deep(.login-input::placeholder) {
-  color: var(--me-text-muted);
-}
-
-.login-password-field :deep(.p-password-toggle-mask-icon) {
-  color: var(--me-text-muted);
-  right: 12px;
-}
-
-/* ─── Submit button ─── */
-.login-submit-btn {
-  width: 100%;
-  height: 48px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.3px;
-  background: var(--me-accent);
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 4px;
-}
-
-.login-submit-btn:hover:not(:disabled) {
-  background: var(--me-accent-hover);
-  box-shadow: 0 0 20px rgba(var(--me-accent-rgb), 0.25), 0 4px 12px rgba(0, 0, 0, 0.2);
-  transform: translateY(-1px);
-}
-
-.login-submit-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.login-submit-btn :deep(.p-button-icon) {
-  font-size: 14px;
-}
-
-/* ─── Message / Alert ─── */
-.login-message {
-  margin-bottom: 20px;
-  border-radius: 10px;
-}
-
-.login-message :deep(.p-message-content) {
-  font-size: 14px;
-}
-
-/* ─── Remember me ─── */
-.remember-me-row {
-  margin-bottom: 20px;
-  margin-top: -4px;
-}
-
-.remember-me-inner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.remember-me-label {
-  font-size: 13px;
-  color: var(--me-text-secondary);
-  cursor: pointer;
-  user-select: none;
-}
-
-.remember-me-inner :deep(.p-checkbox) {
-  width: 18px;
-  height: 18px;
-  position: relative;
-  z-index: 1;
-  cursor: pointer;
-}
-
-.remember-me-inner :deep(.p-checkbox .p-checkbox-box) {
-  border-radius: 4px;
-  border: 1px solid var(--me-border);
-  background: var(--me-bg-surface);
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.remember-me-inner :deep(.p-checkbox.p-highlight .p-checkbox-box) {
-  background: var(--me-accent);
-  border-color: var(--me-accent);
-}
-
-.remember-me-inner :deep(.p-checkbox .p-checkbox-input) {
-  cursor: pointer;
-  z-index: 1;
-}
-
-/* ─── Remembered user — inline in the main form (no nested card) ─── */
-.remembered-form-inline {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Identity row : avatar + welcome/name in a horizontal layout, integrated into the form flow */
-.remembered-identity {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 12px;
-  border-radius: var(--me-radius-sm);
-  background: var(--me-bg-elevated);
-  border: 1px solid var(--me-border);
-  margin-bottom: 12px;
-}
-.remembered-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--me-bg-surface);
-  border: 2px solid rgba(var(--me-accent-rgb), 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.remembered-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.remembered-initials {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--me-accent);
-  font-family: var(--me-font-mono);
-}
-.remembered-identity-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
-  min-width: 0;
-}
-.remembered-welcome {
+.login__brand-eyebrow {
   font-size: 11px;
-  color: var(--me-text-muted);
-  letter-spacing: 0.3px;
-}
-.remembered-name {
-  font-size: 14px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   font-weight: 600;
-  color: var(--me-text-primary);
+  margin-bottom: 14px;
 }
 
-.remembered-not-me {
-  align-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  background: none;
-  border: none;
-  color: var(--me-text-muted);
-  cursor: pointer;
-  font-size: 12px;
-  transition: color 0.2s;
-}
-.remembered-not-me:hover {
-  color: var(--me-accent);
-}
-
-/* ─── 2FA ─── */
-.tfa-login-section {
-  margin-top: 8px;
-}
-
-.tfa-icon-wrap {
-  text-align: center;
-  margin-bottom: 16px;
-}
-
-.tfa-icon {
+.login__brand-title {
   font-size: 32px;
-  color: var(--me-accent-warm);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+  margin: 0 0 16px;
+  text-wrap: pretty;
+  color: var(--ink);
 }
 
-.tfa-login-text {
-  font-size: 13px;
-  color: var(--me-text-secondary);
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.tfa-back-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 12px;
-  background: none;
-  border: none;
-  color: var(--me-text-muted);
-  cursor: pointer;
-  font-size: 13px;
-  transition: color 0.2s;
-}
-
-.tfa-back-btn:hover {
-  color: var(--me-text-primary);
-}
-
-/* ─── Footer ─── */
-.login-footer {
-  text-align: center;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--me-border);
+.login__brand-lede {
   font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 24px;
+  text-wrap: pretty;
 }
 
-.text-muted {
-  color: var(--me-text-muted);
+.login__features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 12px;
 }
 
-.login-link {
-  color: var(--me-accent);
-  text-decoration: none;
-  margin-left: 6px;
+.login__feat {
+  display: flex;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.login__feat .mdi { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+.login__feat strong {
+  color: var(--ink);
   font-weight: 600;
-  transition: color 0.2s ease;
+  display: block;
+  margin-bottom: 1px;
 }
 
-.login-link:hover {
-  text-decoration: underline;
-  color: var(--me-accent-hover);
-}
-
-/* ─── Mobile branding ─── */
-.login-mobile-brand {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 32px;
-}
-
-.login-mobile-logo {
-  height: 36px;
-  width: auto;
-  object-fit: contain;
-}
-
-.login-mobile-name {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--me-text-primary);
-}
-
-/* ─── Responsive ─── */
-@media (max-width: 900px) {
-  .login-left {
-    display: none;
-  }
-
-  .login-right {
-    padding: 24px;
-    justify-content: center;
-  }
-
-  .login-mobile-brand {
-    display: flex;
-  }
-
-  .login-form-header {
-    text-align: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .login-right {
-    padding: 16px;
-  }
-
-  .login-right-inner {
-    max-width: 100%;
-  }
-}
-
-/* ─── v3.29 institutional additions ─── */
-
-/* Top-right bar with environment badge + dark mode toggle */
-.login-topbar {
+/* Decorative grid pattern */
+.login__brand-pattern {
   position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.5;
+  mask-image: radial-gradient(ellipse 70% 50% at 80% 100%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 50% at 80% 100%, black 30%, transparent 80%);
+  pointer-events: none;
 }
-.login-env-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
-  border-radius: 999px;
-  font-size: 11px;
-  letter-spacing: 0.3px;
-  backdrop-filter: blur(8px);
-}
-.login-env-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--me-success);
-  box-shadow: 0 0 6px var(--me-success);
-  flex-shrink: 0;
-}
-.login-theme-toggle {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.35);
-  color: rgba(255, 255, 255, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background var(--me-dur-fast) var(--me-ease);
-  backdrop-filter: blur(8px);
-}
-.login-theme-toggle:hover { background: rgba(255, 255, 255, 0.1); }
 
-/* Institutional footer at the bottom of the left panel */
-.login-left-footer {
-  position: absolute;
-  bottom: 18px;
-  left: 40px;
-  right: 40px;
+.login__brand-foot {
+  position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.3px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
 }
-.login-left-footer-version { opacity: 0.6; }
+.login__brand-foot strong { color: var(--ink-2); font-weight: 550; }
 
-/* "OU" separator between native login and SSO */
-.login-sep {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 20px 0 14px;
-  color: var(--me-text-muted);
+/* --- FORM PANEL --- */
+.login__form {
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  position: relative;
+  background: var(--bg);
 }
-.login-sep-line {
-  flex: 1;
-  height: 1px;
-  background: var(--me-border);
-}
-.login-sep-label {
-  font-size: 11px;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-}
-
-/* SSO institutional button */
-.login-sso-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+.login__form-inner {
   width: 100%;
-  padding: 11px 16px;
-  border-radius: 10px;
-  background: var(--me-bg-elevated);
-  border: 1px solid var(--me-border);
-  color: var(--me-text-primary);
+  max-width: 380px;
+}
+.login__form-inner h2 {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.014em;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+.login__form-inner > p {
   font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: border-color var(--me-dur-fast) var(--me-ease), background var(--me-dur-fast) var(--me-ease);
-}
-.login-sso-btn:hover {
-  border-color: var(--me-accent);
-  background: var(--me-accent-glow);
-}
-.login-sso-btn i { color: var(--me-accent); font-size: 14px; }
-.login-sso-hint {
-  margin: 6px 0 0;
-  font-size: 11px;
-  color: var(--me-text-muted);
-  text-align: center;
+  color: var(--ink-3);
+  margin: 0 0 28px;
 }
 
-/* Traceability / habilités info card */
-.login-info-card {
+/* --- FIELDS --- */
+.field { margin-bottom: 16px; }
+.field__label {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.field__input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  transition: border-color 80ms ease, box-shadow 80ms ease;
+}
+.field__input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.field__input .mdi { color: var(--ink-3); font-size: 16px; }
+.field__input input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  min-width: 0;
+}
+.field__input input::placeholder { color: var(--ink-3); }
+.field__input input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.login__eye { cursor: pointer; }
+.login__eye:hover { color: var(--ink-2); }
+
+.field__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -4px;
+  margin-bottom: 18px;
+  font-size: 12px;
+}
+.field__row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.field__row label input { accent-color: var(--accent); }
+.field__row a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.field__row a:hover { text-decoration: underline; }
+
+/* --- BUTTONS --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all 80ms ease;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+}
+.btn:hover { background: var(--bg); border-color: var(--line-2); color: var(--ink); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn .mdi { font-size: 14px; color: var(--ink-3); }
+.btn:hover .mdi { color: var(--ink-2); }
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--on-accent);
+}
+.btn--primary .mdi { color: var(--on-accent); }
+
+.btn--block {
+  width: 100%;
+  height: 38px;
+  justify-content: center;
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+/* --- THEME TOGGLE BUTTON --- */
+.theme-toggle {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-3);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all 80ms ease;
+  font-family: inherit;
+}
+.theme-toggle:hover {
+  background: var(--bg-3);
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+.theme-toggle .mdi { font-size: 14px; }
+:global([data-theme='light']) .theme-toggle__moon,
+:global([data-theme='dark']) .theme-toggle__sun { display: none; }
+
+/* --- TOP-RIGHT ENV + TOGGLE --- */
+.login__top {
+  position: absolute;
+  top: 36px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+.login__env {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--ink-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  letter-spacing: 0.04em;
+}
+.login__env .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+/* --- NOTICE / INFO --- */
+.login__notice {
+  margin-top: 22px;
+  padding: 12px 14px;
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  margin-top: 18px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: rgba(var(--me-accent-rgb), 0.07);
-  border: 1px solid rgba(var(--me-accent-rgb), 0.18);
-  color: var(--me-text-secondary);
-  font-size: 12px;
+  background: var(--info-soft);
+  border: 1px solid var(--cat-map-line);
+  border-radius: var(--r-md);
+  font-size: 11.5px;
+  color: var(--ink-2);
   line-height: 1.5;
 }
-.login-info-card i {
-  font-size: 14px;
-  color: var(--me-accent);
+.login__notice .mdi {
+  color: var(--info);
+  font-size: 16px;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
 }
-.login-info-card p { margin: 0; }
+
+/* --- DIVIDER --- */
+.login__divider {
+  position: relative;
+  text-align: center;
+  margin: 22px 0;
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.login__divider::before,
+.login__divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 28px);
+  height: 1px;
+  background: var(--line);
+}
+.login__divider::before { left: 0; }
+.login__divider::after { right: 0; }
+
+/* --- ERROR BANNER --- */
+.login__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  background: var(--err-soft);
+  border: 1px solid var(--err);
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  color: var(--err);
+  line-height: 1.45;
+}
+.login__error > span:first-child { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.login__error > span:nth-child(2) { flex: 1; }
+.login__error-close {
+  background: transparent;
+  border: 0;
+  color: var(--err);
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+}
+.login__error-close .mdi { font-size: 14px; }
+
+/* --- REMEMBERED USER (inline avatar block above password) --- */
+.login__remembered {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-md);
+}
+.login__remembered-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.login__remembered-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.login__remembered-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.login__remembered-text span {
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.login__remembered-text strong {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.login__not-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 10px auto 0;
+  background: transparent;
+  border: 0;
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+}
+.login__not-me:hover { color: var(--accent); }
+.login__not-me .mdi { font-size: 12px; }
+
+/* --- BACK BUTTON (2FA) --- */
+.login__back { margin-top: 10px; color: var(--ink-3); }
+
+/* --- REGISTER LINK --- */
+.login__register {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.login__register span { margin-right: 4px; }
+.login__register a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 550;
+}
+.login__register a:hover { text-decoration: underline; }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
+  .login {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+  }
+  .login__brand {
+    padding: 56px 28px 32px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .login__brand-body { max-width: none; }
+  .login__features { grid-template-columns: 1fr; }
+  .login__form { padding: 32px 24px 48px; }
+  .login__top { top: 32px; }
+}
 </style>

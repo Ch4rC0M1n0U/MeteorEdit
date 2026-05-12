@@ -102,7 +102,9 @@
     "orSeparator": "or",
     "ssoInstitutional": "Sign in with institutional SSO (OIDC)",
     "ssoHint": "An administrator can enable this in Settings → Authentication.",
-    "tracingNotice": "All sign-ins are logged. Use of this platform is restricted to authorized personnel acting within their official duties."
+    "tracingNotice": "All sign-ins are logged. Use of this platform is restricted to authorized personnel acting within their official duties.",
+    "classificationBanner": "Restricted distribution · Strictly professional use",
+    "forgotPassword": "Forgot password?"
   },
   "nav": {
     "darkMode": "Dark mode",

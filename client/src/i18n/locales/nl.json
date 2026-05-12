@@ -102,7 +102,9 @@
     "orSeparator": "of",
     "ssoInstitutional": "Aanmelden via institutionele SSO (OIDC)",
     "ssoHint": "Een beheerder kan dit activeren in Systeem → Authenticatie.",
-    "tracingNotice": "Elke aanmelding wordt geregistreerd. Het gebruik van dit platform is voorbehouden aan gemachtigd personeel in het kader van hun opdrachten."
+    "tracingNotice": "Elke aanmelding wordt geregistreerd. Het gebruik van dit platform is voorbehouden aan gemachtigd personeel in het kader van hun opdrachten.",
+    "classificationBanner": "Beperkte verspreiding · Uitsluitend professioneel gebruik",
+    "forgotPassword": "Wachtwoord vergeten?"
   },
   "nav": {
     "darkMode": "Donkere modus",
