@@ -16,6 +16,33 @@
       <input ref="importInputRef" type="file" accept=".json" style="display: none;" @change="handleImport" />
     </div>
 
+    <!-- KPI bandeau (v3.30) — résumé rapide juste sous le greeting -->
+    <div v-if="totalCount > 0" class="home-kpis fade-in fade-in-delay-1">
+      <div class="home-kpi">
+        <span class="home-kpi-icon home-kpi-icon--open"><i class="pi pi-folder-open" /></span>
+        <div class="home-kpi-text">
+          <span class="home-kpi-label mono">{{ $t('home.kpis.open') }}</span>
+          <span class="home-kpi-value mono">{{ openCount }}</span>
+        </div>
+      </div>
+      <div class="home-kpi-sep" aria-hidden="true" />
+      <div class="home-kpi">
+        <span class="home-kpi-icon home-kpi-icon--progress"><i class="pi pi-spinner-dotted" /></span>
+        <div class="home-kpi-text">
+          <span class="home-kpi-label mono">{{ $t('home.kpis.inProgress') }}</span>
+          <span class="home-kpi-value mono">{{ inProgressCount }}</span>
+        </div>
+      </div>
+      <div class="home-kpi-sep" aria-hidden="true" />
+      <div class="home-kpi">
+        <span class="home-kpi-icon home-kpi-icon--closed"><i class="pi pi-check-circle" /></span>
+        <div class="home-kpi-text">
+          <span class="home-kpi-label mono">{{ $t('home.kpis.closedThisYear') }}</span>
+          <span class="home-kpi-value mono">{{ closedThisYearCount }}</span>
+        </div>
+      </div>
+    </div>
+
     <ProgressBar v-if="dossierStore.loading" mode="indeterminate" class="mb-4 section-loader" />
 
     <!-- Tabbed dossier list -->
@@ -164,6 +191,19 @@ const closedDossiers = computed(() =>
   dossierStore.dossiers.filter(d => d.status === 'closed')
 );
 
+// KPI bandeau (v3.30) — 3 chiffres rapides au-dessus des onglets, mirroir du visuel
+// `03-home-light.png`. Comptés client-side sur la liste déjà chargée.
+const openCount = computed(() => dossierStore.dossiers.filter(d => d.status === 'open').length);
+const inProgressCount = computed(() => dossierStore.dossiers.filter(d => d.status === 'in_progress').length);
+const closedThisYearCount = computed(() => {
+  const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+  return dossierStore.dossiers.filter((d) => {
+    if (d.status !== 'closed') return false;
+    const ref = d.closureDate ?? d.updatedAt;
+    return ref ? new Date(ref).getTime() >= yearStart : false;
+  }).length;
+});
+
 function formatClosureDate(date: string | null): string {
   if (!date) return '-';
   return new Date(date).toLocaleDateString(locale.value);
@@ -263,6 +303,76 @@ async function handleDelete(id: string) {
 .home-subtitle-sep {
   margin: 0 6px;
   opacity: 0.5;
+}
+
+/* KPI bandeau (v3.30) — 3 stats horizontales sous le greeting */
+.home-kpis {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 24px;
+  padding: 14px 20px;
+  background: var(--me-bg-surface);
+  border: 1px solid var(--me-border);
+  border-radius: var(--me-radius);
+  box-shadow: var(--me-shadow-sm);
+}
+.home-kpi {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.home-kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.home-kpi-icon--open {
+  background: rgba(var(--me-accent-rgb), 0.12);
+  color: var(--me-accent);
+}
+.home-kpi-icon--progress {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--me-warning);
+}
+.home-kpi-icon--closed {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--me-success);
+}
+.home-kpi-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.home-kpi-label {
+  font-size: 11px;
+  color: var(--me-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.home-kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--me-text-primary);
+  margin-top: 2px;
+}
+.home-kpi-sep {
+  width: 1px;
+  background: var(--me-border);
+  margin: 4px 18px;
+  align-self: stretch;
+}
+@media (max-width: 720px) {
+  .home-kpis { flex-direction: column; padding: 12px 16px; }
+  .home-kpi-sep { width: auto; height: 1px; margin: 8px 0; }
 }
 .home-header-actions {
   display: flex;

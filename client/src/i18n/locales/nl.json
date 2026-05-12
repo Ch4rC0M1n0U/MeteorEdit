@@ -230,6 +230,11 @@
   },
   "home": {
     "myDossiers": "Mijn dossiers",
+    "kpis": {
+      "open": "Open",
+      "inProgress": "In behandeling",
+      "closedThisYear": "Afgesloten dit jaar"
+    },
     "greetingName": "Hallo {name}.",
     "greetingNeutral": "Hallo.",
     "todayWithWeek": "{date} · Week {week}",

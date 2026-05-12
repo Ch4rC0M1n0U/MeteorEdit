@@ -1,14 +1,14 @@
 <template>
   <div class="dossier-card glass-card" @click="$emit('open', dossier._id)">
     <div class="dc-header">
-      <div class="dc-status" v-if="dossier.isContinuous">
-        <i class="pi pi-replay" style="color: #818cf8; font-size: 12px;" />
-        <span class="dc-status-label dc-status-label--continuous mono">{{ t('dossier.statusContinuous') }}</span>
-      </div>
-      <div class="dc-status" v-else>
+      <span v-if="dossier.isContinuous" class="dc-status-pill dc-status-pill--continuous">
+        <i class="pi pi-replay" style="font-size: 11px;" />
+        <span class="mono">{{ t('dossier.statusContinuous') }}</span>
+      </span>
+      <span v-else class="dc-status-pill" :class="`dc-status-pill--${statusDot}`">
         <span :class="['status-dot', `status-dot--${statusDot}`, statusDot === 'in-progress' ? 'status-dot--pulse' : '']" />
-        <span class="dc-status-label mono">{{ statusLabel }}</span>
-      </div>
+        <span class="mono">{{ statusLabel }}</span>
+      </span>
       <div class="dc-actions">
         <button class="dc-fav" :class="{ 'dc-fav--active': isFav }" @click.stop="$emit('toggle-favorite', dossier._id)" :title="isFav ? $t('home.removeFromFavorites') : $t('home.addToFavorites')">
           <i :class="isFav ? 'pi pi-star-fill' : 'pi pi-star'" />
@@ -127,7 +127,44 @@ const statusLabel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
 }
+
+/* Status pill (v3.30) — full pill background tinted with the status color,
+   replaces the previous bare dot+label combo. Same widget for `open`,
+   `in_progress`, `closed` and `continuous` — only colors change. */
+.dc-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  background: var(--me-bg-elevated);
+  color: var(--me-text-muted);
+}
+.dc-status-pill--open {
+  background: rgba(129, 178, 154, 0.16);
+  color: var(--me-accent-soft);
+}
+.dc-status-pill--in-progress {
+  background: rgba(var(--me-accent-rgb), 0.16);
+  color: var(--me-accent);
+}
+.dc-status-pill--closed {
+  background: rgba(201, 123, 123, 0.16);
+  color: #c97b7b;
+}
+.dc-status-pill--continuous {
+  background: rgba(129, 140, 248, 0.16);
+  color: var(--me-info);
+}
+
+/* Legacy classes kept for any consumer still rendering the old dot+label */
 .dc-status {
   display: flex;
   align-items: center;
@@ -141,7 +178,7 @@ const statusLabel = computed(() => {
   color: var(--me-text-muted);
 }
 .dc-status-label--continuous {
-  color: #818cf8;
+  color: var(--me-info);
 }
 .dc-actions {
   display: flex;
