@@ -84,6 +84,8 @@
     "unit": "Unit",
     "unitPlaceholder": "Your unit",
     "osintPlatform": "OSINT investigation platform",
+    "heroTitle": "The workspace for cyber investigators.",
+    "heroDesc": "Centralize your OSINT sources, notes, attachments and analyses in a shared case file. MeteorEdit tracks everything — version, author, source — so the chain of custody stays intact.",
     "features": {
       "dossierManagement": "Investigation case management",
       "realTimeCollab": "Real-time collaboration",
