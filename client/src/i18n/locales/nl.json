@@ -554,6 +554,44 @@
     "durationWarningUrgent": "DRINGEND — Dit dossier is al {days} dagen open (drempel: {threshold} dagen)",
     "noDate": "Niet ingesteld",
     "autoClosureDate": "Automatisch ingevuld bij afsluiting",
+    "urgent": "Dringend",
+    "breadcrumb": { "all": "Dossiers" },
+    "toolbar": {
+      "snapshots": "Versies",
+      "share": "Delen",
+      "more": "Meer",
+      "exportPdf": "PDF exporteren",
+      "exportJson": "JSON exporteren",
+      "duplicate": "Dupliceren",
+      "archive": "Archiveren",
+      "delete": "Verwijderen",
+      "toggleInfo": "Info-paneel tonen/verbergen"
+    },
+    "indicators": {
+      "e2e": "End-to-end-versleuteling actief",
+      "embargo": "Embargo tot {date}",
+      "continuous": "Doorlopend volgen"
+    },
+    "tree": {
+      "title": "Boomstructuur",
+      "tasks": "Taken",
+      "empty": { "title": "Leeg dossier", "sub": "Maak je eerste element aan" }
+    },
+    "editor": {
+      "empty": { "title": "Niets geselecteerd", "sub": "Kies een knooppunt uit de boom" },
+      "saved": "Opgeslagen",
+      "saving": "Opslaan…",
+      "lastSaved": "Opgeslagen {time}"
+    },
+    "infoPanel": {
+      "title": "Informatie",
+      "details": "Details",
+      "magistrate": "Magistraat",
+      "investigator": "Onderzoeker",
+      "objectives": "Doelstellingen",
+      "judicialFacts": "Gerechtelijke feiten",
+      "collaborators": "Medewerkers"
+    },
     "isUrgent": "Dringend",
     "isEmbargo": "Onder embargo",
     "isContinuous": "Doorlopend dossier",
@@ -1744,6 +1782,37 @@
       "today": "Vandaag",
       "tomorrow": "Morgen"
     }
+  },
+  "modal": {
+    "create": {
+      "section": {
+        "identity": "Identiteit",
+        "classification": "Classificatie",
+        "assignment": "Toewijzing"
+      }
+    },
+    "confirm": {
+      "defaultTitle": "Bevestigen",
+      "defaultConfirm": "Bevestigen",
+      "defaultCancel": "Annuleren"
+    },
+    "palette": {
+      "placeholder": "Zoek opdrachten, dossiers, knooppunten, contacten…",
+      "noResults": "Geen resultaten",
+      "sections": {
+        "commands": "Opdrachten",
+        "dossiers": "Dossiers",
+        "nodes": "Knooppunten",
+        "contacts": "Contacten"
+      }
+    },
+    "whatsNew": {
+      "title": "Nieuw",
+      "readMore": "Lees meer"
+    }
+  },
+  "empty": {
+    "generic": { "title": "Niets te tonen", "sub": "Dit paneel is leeg." }
   },
   "notifications": {
     "open": "Meldingen openen",

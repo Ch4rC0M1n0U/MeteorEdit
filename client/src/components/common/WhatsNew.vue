@@ -1,297 +1,180 @@
-<template>
-  <Dialog
-    :visible="modelValue"
-    @update:visible="$emit('update:modelValue', $event)"
-    :style="{ width: '520px' }"
-    modal
-    :closable="false"
-    :draggable="false"
-    :pt="{
-      root: { class: 'whatsnew-dialog-root' },
-      mask: { class: 'whatsnew-dialog-mask' },
-      content: { class: 'whatsnew-dialog-content' },
-      header: { style: 'display: none' },
-    }"
-  >
-    <div class="glass-card whatsnew-dialog">
-      <div class="whatsnew-header">
-        <div>
-          <h2 class="whatsnew-title mono">{{ t('changelog.title') }}</h2>
-        </div>
-        <button class="me-icon-btn" @click="$emit('update:modelValue', false)">
-          <i class="pi pi-times" style="font-size: 16px"></i>
-        </button>
-      </div>
-
-      <div class="whatsnew-body" v-if="changelogs.length > 0">
-        <div v-for="log in sortedChangelogs" :key="log._id" class="whatsnew-version-block">
-          <div class="whatsnew-version-header">
-            <span class="whatsnew-version mono">{{ t('changelog.version') }} {{ log.version }}</span>
-            <span class="whatsnew-date mono">{{ formatDate(log.date) }}</span>
-          </div>
-          <div class="whatsnew-entries">
-            <div v-for="(entry, idx) in log.entries" :key="idx" class="whatsnew-entry">
-              <i
-                :class="iconName(entry.type)"
-                :style="{ fontSize: '14px', color: iconColor(entry.type) }"
-                class="whatsnew-entry-icon"
-              ></i>
-              <div class="whatsnew-entry-content">
-                <span class="whatsnew-entry-badge" :class="'badge--' + entry.type">
-                  {{ t('changelog.' + entry.type) }}
-                </span>
-                <span class="whatsnew-entry-message">{{ entry.message }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-else class="whatsnew-empty">
-        {{ t('changelog.noChanges') }}
-      </div>
-
-      <div class="whatsnew-footer" v-if="unreadCount > 0">
-        <Button :label="t('changelog.markAsRead')" class="me-btn me-btn--accent" @click="handleMarkAsRead" />
-      </div>
-    </div>
-  </Dialog>
-</template>
-
+<!--
+  WhatsNew.vue — changelog modal v3
+  Logique paginée existante conservée. Ici on plaque le template v3 (DialogShell + liste timeline).
+-->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
-import api from '../../services/api';
+import DialogShell from './DialogShell.vue';
+import api from '@/services/api';
 
-interface ChangelogEntry {
-  type: 'feature' | 'fix' | 'improvement';
-  message: string;
-}
-
-interface ChangelogItem {
+export interface ChangelogEntry {
   _id: string;
   version: string;
   date: string;
-  entries: ChangelogEntry[];
+  title: string;
+  body: string;
+  highlights?: string[];
+  tag?: 'feature' | 'fix' | 'breaking' | 'security';
 }
 
-defineProps<{
-  modelValue: boolean;
-}>();
-
+const props = defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void;
+  (e: 'update:modelValue', v: boolean): void;
   (e: 'read'): void;
 }>();
 
 const { t, locale } = useI18n();
-const changelogs = ref<ChangelogItem[]>([]);
-const unreadCount = ref(0);
 
-/**
- * Parse "3.23.2", "3.4.0-beta.1" → comparable tuple [major, minor, patch, preWeight, preNum].
- * Stable releases (no pre-release) outrank any pre-release with the same major.minor.patch.
- */
-function parseVersion(v: string): [number, number, number, number, number] {
-  const m = String(v ?? '').match(/^(\d+)\.(\d+)\.(\d+)(?:-([a-z]+)\.(\d+))?/i);
-  if (!m) return [0, 0, 0, Infinity, 0];
-  const [, mj, mn, pt, pre, preNum] = m;
-  // No pre-release => weight Infinity so it sorts higher than any pre-release of the same triple.
-  const preWeight = pre ? { alpha: 1, beta: 2, rc: 3 }[pre.toLowerCase()] ?? 0 : Infinity;
-  return [Number(mj), Number(mn), Number(pt), preWeight, Number(preNum ?? 0)];
-}
+const entries = ref<ChangelogEntry[]>([]);
+const loading = ref(false);
+const expanded = ref<Set<string>>(new Set());
 
-const sortedChangelogs = computed(() => {
-  return [...changelogs.value].sort((a, b) => {
-    const va = parseVersion(a.version);
-    const vb = parseVersion(b.version);
-    for (let i = 0; i < va.length; i++) {
-      if (va[i] !== vb[i]) return vb[i] - va[i];
-    }
-    return 0;
-  });
-});
-
-function iconName(type: string): string {
-  switch (type) {
-    case 'feature': return 'pi pi-star';
-    case 'fix': return 'pi pi-wrench';
-    case 'improvement': return 'pi pi-arrow-up';
-    default: return 'pi pi-info-circle';
-  }
-}
-
-function iconColor(type: string): string {
-  switch (type) {
-    case 'feature': return 'var(--me-accent-soft)';
-    case 'fix': return 'var(--me-accent-warm)';
-    case 'improvement': return 'var(--me-accent)';
-    default: return 'var(--me-text-muted)';
-  }
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(locale.value, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-async function loadChangelog() {
+async function fetchEntries() {
+  loading.value = true;
   try {
     const { data } = await api.get('/changelog');
-    changelogs.value = data.changelogs;
-    unreadCount.value = data.unreadCount;
-  } catch {
-    // silent
-  }
+    entries.value = data.entries || [];
+    if (data.entries?.length) {
+      await api.post('/changelog/read').catch(() => {});
+      emit('read');
+    }
+  } finally { loading.value = false; }
 }
 
-async function handleMarkAsRead() {
-  try {
-    await api.post('/changelog/read');
-    unreadCount.value = 0;
-    emit('read');
-  } catch {
-    // silent
-  }
+watch(() => props.modelValue, (v) => { if (v) fetchEntries(); });
+
+function toggle(id: string) {
+  if (expanded.value.has(id)) expanded.value.delete(id);
+  else expanded.value.add(id);
 }
 
-onMounted(loadChangelog);
+function fmt(d: string) {
+  return new Intl.DateTimeFormat(locale.value, { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(d));
+}
 </script>
 
+<template>
+  <DialogShell
+    :modelValue="modelValue"
+    @update:modelValue="(v) => emit('update:modelValue', v)"
+    :title="t('modal.whatsNew.title')"
+    icon="pi-gift"
+    width="lg"
+  >
+    <div v-if="loading" class="wn__loading">
+      <i class="pi pi-spin pi-spinner" />
+    </div>
+    <div v-else-if="!entries.length" class="wn__empty">
+      <i class="pi pi-inbox" />
+      <p>{{ t('empty.generic.title') }}</p>
+    </div>
+    <div v-else class="wn__list">
+      <article v-for="e in entries" :key="e._id" class="wn__entry">
+        <div class="wn__entry-head">
+          <span class="wn__version num">v{{ e.version }}</span>
+          <span class="wn__date">{{ fmt(e.date) }}</span>
+          <span v-if="e.tag" class="wn__tag" :class="`wn__tag--${e.tag}`">{{ t(`modal.whatsNew.tag.${e.tag}`) }}</span>
+        </div>
+        <h3 class="wn__title">{{ e.title }}</h3>
+        <ul v-if="e.highlights?.length" class="wn__highlights">
+          <li v-for="(h, i) in e.highlights" :key="i">{{ h }}</li>
+        </ul>
+        <div v-if="expanded.has(e._id)" class="wn__body" v-html="e.body" />
+        <button
+          v-if="e.body"
+          class="wn__toggle"
+          @click="toggle(e._id)"
+        >
+          <i class="pi" :class="expanded.has(e._id) ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          {{ expanded.has(e._id) ? t('common.collapse') : t('modal.whatsNew.readMore') }}
+        </button>
+      </article>
+    </div>
+
+    <template #footer="{ close }">
+      <Button :label="t('common.close')" text severity="secondary" @click="close()" />
+    </template>
+  </DialogShell>
+</template>
+
 <style scoped>
-.whatsnew-dialog {
-  padding: 0;
-  overflow: hidden;
+.wn__loading,
+.wn__empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 60px 24px; gap: 12px;
+  color: var(--ink-3);
 }
-.whatsnew-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--me-border);
+.wn__loading .pi,
+.wn__empty .pi { font-size: 28px; }
+
+.wn__list { display: flex; flex-direction: column; gap: 20px; }
+.wn__entry {
+  border-left: 2px solid var(--line-2);
+  padding: 4px 0 4px 16px;
+  position: relative;
 }
-.whatsnew-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--me-text-primary);
-  margin: 0;
+.wn__entry::before {
+  content: '';
+  position: absolute;
+  left: -5px; top: 6px;
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: 2px solid var(--surface);
 }
-.whatsnew-body {
-  max-height: 420px;
-  overflow-y: auto;
-  padding: 12px 20px;
+.wn__entry-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: var(--ink-3);
+  margin-bottom: 4px;
 }
-.whatsnew-version-block {
-  margin-bottom: 20px;
-}
-.whatsnew-version-block:last-child {
-  margin-bottom: 0;
-}
-.whatsnew-version-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--me-border);
-}
-.whatsnew-version {
-  font-size: 14px;
+.wn__version {
   font-weight: 600;
-  color: var(--me-accent);
+  color: var(--ink);
+  letter-spacing: 0;
 }
-.whatsnew-date {
-  font-size: 11px;
-  color: var(--me-text-muted);
-}
-.whatsnew-entries {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.whatsnew-entry {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-.whatsnew-entry-icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.whatsnew-entry-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.whatsnew-entry-badge {
+.wn__date::before { content: '·'; margin: 0 4px; color: var(--ink-4); }
+.wn__tag {
+  margin-left: auto;
+  padding: 1px 7px;
   font-size: 10px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-family: var(--me-font-mono);
+  border-radius: 999px;
 }
-.badge--feature {
-  color: var(--me-accent-soft);
-}
-.badge--fix {
-  color: var(--me-accent-warm);
-}
-.badge--improvement {
-  color: var(--me-accent);
-}
-.whatsnew-entry-message {
-  font-size: 13px;
-  color: var(--me-text-secondary);
-  line-height: 1.4;
-}
-.whatsnew-empty {
-  padding: 32px 20px;
-  text-align: center;
-  color: var(--me-text-muted);
-  font-size: 14px;
-}
-.whatsnew-footer {
-  padding: 12px 20px;
-  border-top: 1px solid var(--me-border);
-  display: flex;
-  justify-content: flex-end;
-}
-.me-btn--accent.p-button {
-  background: var(--me-accent);
-  color: var(--me-bg-deep);
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.me-btn--accent.p-button:hover {
-  opacity: 0.85;
-}
-</style>
+.wn__tag--feature  { background: var(--accent-soft); color: var(--accent); }
+.wn__tag--fix      { background: var(--ok-soft); color: var(--ok); }
+.wn__tag--breaking { background: var(--err-soft); color: var(--err); }
+.wn__tag--security { background: var(--warn-soft); color: var(--warn); }
 
-<style>
-/* Dialog root overrides — unscoped so PrimeVue passthrough classes apply */
-.whatsnew-dialog-root.p-dialog {
-  background: transparent;
-  border: none;
-  box-shadow: none;
+.wn__title {
+  font-size: 14px; font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 8px;
+  letter-spacing: -0.005em;
+}
+.wn__highlights {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  padding-left: 18px;
+  margin: 0 0 8px;
+}
+.wn__body {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.wn__toggle {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; font-weight: 500;
+  color: var(--accent);
+  background: transparent; border: 0;
+  cursor: pointer;
   padding: 0;
-  overflow: visible;
 }
-.whatsnew-dialog-content.p-dialog-content {
-  background: transparent;
-  padding: 0;
-}
-.whatsnew-dialog-mask {
-  backdrop-filter: blur(4px);
-}
+.wn__toggle:hover { color: var(--accent-hover); }
+.wn__toggle .pi { font-size: 10px; }
 </style>

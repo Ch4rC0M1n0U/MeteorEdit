@@ -555,6 +555,44 @@
     "durationWarningUrgent": "URGENT — This dossier has been open for {days} days (threshold: {threshold} days)",
     "noDate": "Not set",
     "autoClosureDate": "Auto-filled on closure",
+    "urgent": "Urgent",
+    "breadcrumb": { "all": "Cases" },
+    "toolbar": {
+      "snapshots": "Versions",
+      "share": "Share",
+      "more": "More",
+      "exportPdf": "Export PDF",
+      "exportJson": "Export JSON",
+      "duplicate": "Duplicate",
+      "archive": "Archive",
+      "delete": "Delete",
+      "toggleInfo": "Toggle info panel"
+    },
+    "indicators": {
+      "e2e": "End-to-end encryption active",
+      "embargo": "Embargo until {date}",
+      "continuous": "Continuous tracking"
+    },
+    "tree": {
+      "title": "Tree",
+      "tasks": "Tasks",
+      "empty": { "title": "Empty case", "sub": "Create your first item" }
+    },
+    "editor": {
+      "empty": { "title": "Nothing selected", "sub": "Pick a node from the tree" },
+      "saved": "Saved",
+      "saving": "Saving…",
+      "lastSaved": "Saved {time}"
+    },
+    "infoPanel": {
+      "title": "Information",
+      "details": "Details",
+      "magistrate": "Magistrate",
+      "investigator": "Investigator",
+      "objectives": "Objectives",
+      "judicialFacts": "Judicial facts",
+      "collaborators": "Collaborators"
+    },
     "isUrgent": "Urgent",
     "isEmbargo": "Under embargo",
     "isContinuous": "Ongoing dossier",
@@ -1745,6 +1783,37 @@
       "today": "Today",
       "tomorrow": "Tomorrow"
     }
+  },
+  "modal": {
+    "create": {
+      "section": {
+        "identity": "Identity",
+        "classification": "Classification",
+        "assignment": "Assignment"
+      }
+    },
+    "confirm": {
+      "defaultTitle": "Confirm",
+      "defaultConfirm": "Confirm",
+      "defaultCancel": "Cancel"
+    },
+    "palette": {
+      "placeholder": "Search commands, cases, nodes, contacts…",
+      "noResults": "No results",
+      "sections": {
+        "commands": "Commands",
+        "dossiers": "Cases",
+        "nodes": "Nodes",
+        "contacts": "Contacts"
+      }
+    },
+    "whatsNew": {
+      "title": "What's new",
+      "readMore": "Read more"
+    }
+  },
+  "empty": {
+    "generic": { "title": "Nothing to show", "sub": "This panel is empty." }
   },
   "notifications": {
     "open": "Open notifications",

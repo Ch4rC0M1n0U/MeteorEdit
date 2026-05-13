@@ -44,6 +44,14 @@ app.use(PrimeVue, {
       darkModeSelector: ':root:not([data-theme="light"])',
     },
   },
+  // v3.38 — pass-through global pour aligner Dialog/Popover sur tokens v3
+  pt: {
+    dialog: {
+      root: { class: 'v3-dialog' },
+      mask: { class: 'v3-dialog-mask' },
+    },
+    popover: { root: { class: 'v3-popover' } },
+  },
 });
 app.use(ToastService);
 app.use(ConfirmationService);

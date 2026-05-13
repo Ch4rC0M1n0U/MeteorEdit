@@ -1,98 +1,197 @@
-<template>
-  <Button icon="pi pi-plus" :label="$t('dossier.newDossier')" @click="dialog = true" />
-
-  <Dialog v-model:visible="dialog" :header="$t('dossier.newDossier')" modal :style="{ width: '500px' }" class="create-dossier-dialog">
-    <div class="dialog-body">
-      <!-- Icon picker (keeps MDI icons for specialized police/OSINT icons) -->
-      <div class="icon-picker-section">
-        <span class="icon-picker-label mono">{{ $t('dossier.dossierIcon') }}</span>
-        <div class="icon-picker-grid">
-          <button
-            v-for="ic in dossierIcons"
-            :key="ic"
-            :class="['icon-picker-item', { 'icon-picker-item--active': selectedIcon === ic }]"
-            @click="selectedIcon = selectedIcon === ic ? null : ic"
-            type="button"
-          >
-            <span class="mdi" :class="ic" style="font-size: 20px;" />
-          </button>
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="dossier-title" class="field-label">{{ $t('dossier.dossierTitle') }}</label>
-        <InputText id="dossier-title" v-model="title" :placeholder="$t('dossier.dossierTitle')" autofocus class="w-full" />
-      </div>
-
-      <div class="field">
-        <label for="dossier-desc" class="field-label">{{ $t('common.description') }}</label>
-        <Textarea id="dossier-desc" v-model="description" :placeholder="$t('common.description')" rows="3" class="w-full" />
-      </div>
-    </div>
-
-    <template #footer>
-      <Button :label="$t('common.cancel')" text severity="secondary" @click="dialog = false" />
-      <Button :label="$t('common.create')" icon="pi pi-check" @click="handleCreate" :disabled="!title.trim()" />
-    </template>
-  </Dialog>
-</template>
-
+<!--
+  CreateDossierDialog.vue — formulaire création dossier v3
+  Sections collapsibles via PrimeVue Accordion.
+  PRÉSERVE l'API : <Button> trigger + Dialog + appel dossierStore.createDossier(payload).
+-->
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
-import { useDossierStore } from '../../stores/dossier';
-import { DOSSIER_ICONS } from '../../constants/dossierIcons';
+import Select from 'primevue/select';
+import DatePicker from 'primevue/datepicker';
+import Checkbox from 'primevue/checkbox';
+import Accordion from 'primevue/accordion';
+import AccordionPanel from 'primevue/accordionpanel';
+import AccordionHeader from 'primevue/accordionheader';
+import AccordionContent from 'primevue/accordioncontent';
 
+import DialogShell from '../common/DialogShell.vue';
+import FormField from '../shared/FormField.vue';
+import IconPicker from '../shared/IconPicker.vue';
+import TagInput from '../shared/TagInput.vue';
+import { useDossierStore } from '@/stores/dossier';
+
+const { t } = useI18n();
 const dossierStore = useDossierStore();
-const dialog = ref(false);
+
+const open = ref(false);
+
+// Champs (alignés sur le modèle Dossier MeteorEdit)
 const title = ref('');
 const description = ref('');
-const selectedIcon = ref<string | null>(null);
-const dossierIcons = DOSSIER_ICONS;
+const icon = ref<string | null>(null);
+const classification = ref<'priority' | 'routine'>('routine');
+const isUrgent = ref(false);
+const isEmbargo = ref(false);
+const magistrate = ref('');
+const language = ref<'fr' | 'nl'>('fr');
+const arrivalDate = ref<Date | null>(null);
+const tags = ref<string[]>([]);
+
+const classifOptions = computed(() => [
+  { value: 'priority', label: t('dossier.classificationPriority') },
+  { value: 'routine', label: t('dossier.classificationRoutine') },
+]);
+
+const langOptions = [
+  { value: 'fr', label: 'Français' },
+  { value: 'nl', label: 'Nederlands' },
+  { value: 'en', label: 'English' },
+];
+
+const canCreate = computed(() => title.value.trim().length > 0);
+
+function reset() {
+  title.value = ''; description.value = ''; icon.value = null;
+  classification.value = 'routine'; isUrgent.value = false;
+  isEmbargo.value = false;
+  magistrate.value = '';
+  language.value = 'fr'; arrivalDate.value = null; tags.value = [];
+}
 
 async function handleCreate() {
   await dossierStore.createDossier({
     title: title.value,
-    description: description.value,
-    icon: selectedIcon.value,
+    description: description.value || '',
+    icon: icon.value,
+    classification: classification.value,
+    isUrgent: isUrgent.value,
+    isEmbargo: isEmbargo.value,
+    magistrate: magistrate.value || '',
+    dossierLanguage: language.value,
+    arrivalDate: arrivalDate.value ? arrivalDate.value.toISOString() : null,
+    tags: tags.value,
   });
-  title.value = '';
-  description.value = '';
-  selectedIcon.value = null;
-  dialog.value = false;
+  reset();
+  open.value = false;
 }
 </script>
 
-<style scoped>
-.dialog-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field-label {
-  font-size: 12px; font-weight: 600; color: var(--me-text-muted);
-  text-transform: uppercase; letter-spacing: 0.5px;
-}
-.w-full { width: 100%; }
+<template>
+  <Button icon="pi pi-plus" :label="t('dossier.newDossier')" @click="open = true" />
 
-/* Icon picker */
-.icon-picker-section { margin-bottom: 4px; }
-.icon-picker-label {
-  display: block; font-size: 11px; text-transform: uppercase;
-  letter-spacing: 1px; color: var(--me-text-muted); margin-bottom: 8px;
+  <DialogShell
+    v-model="open"
+    :title="t('dossier.newDossier')"
+    icon="pi-folder-plus"
+    width="md"
+  >
+    <Accordion :value="['identity']" multiple>
+      <!-- Identité -->
+      <AccordionPanel value="identity">
+        <AccordionHeader>{{ t('modal.create.section.identity') }}</AccordionHeader>
+        <AccordionContent>
+          <div class="cd__col">
+            <FormField :label="t('dossier.dossierIcon')">
+              <IconPicker v-model="icon" />
+            </FormField>
+            <FormField :label="t('dossier.dossierTitle')" required for="cd-title">
+              <InputText id="cd-title" v-model="title" :placeholder="t('dossier.dossierTitle')" autofocus fluid />
+            </FormField>
+            <FormField :label="t('common.description')" for="cd-desc">
+              <Textarea id="cd-desc" v-model="description" rows="3" fluid />
+            </FormField>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
+
+      <!-- Classification -->
+      <AccordionPanel value="classification">
+        <AccordionHeader>{{ t('modal.create.section.classification') }}</AccordionHeader>
+        <AccordionContent>
+          <div class="cd__col">
+            <FormField :label="t('dossier.classification')">
+              <Select v-model="classification" :options="classifOptions" optionLabel="label" optionValue="value" fluid />
+            </FormField>
+            <div class="cd__row">
+              <label class="cd__check">
+                <Checkbox v-model="isUrgent" :binary="true" />
+                <span>{{ t('dossier.urgent') }}</span>
+              </label>
+              <label class="cd__check">
+                <Checkbox v-model="isEmbargo" :binary="true" />
+                <span>{{ t('dossier.isEmbargo') }}</span>
+              </label>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
+
+      <!-- Affectation -->
+      <AccordionPanel value="assignment">
+        <AccordionHeader>{{ t('modal.create.section.assignment') }}</AccordionHeader>
+        <AccordionContent>
+          <div class="cd__col">
+            <FormField :label="t('dossier.magistrate')" for="cd-mag">
+              <InputText id="cd-mag" v-model="magistrate" fluid />
+            </FormField>
+            <FormField :label="t('dossier.dossierLanguage')">
+              <Select v-model="language" :options="langOptions" optionLabel="label" optionValue="value" fluid />
+            </FormField>
+            <FormField :label="t('dossier.arrivalDate')">
+              <DatePicker v-model="arrivalDate" showIcon fluid />
+            </FormField>
+            <FormField :label="t('common.tags')">
+              <TagInput v-model="tags" />
+            </FormField>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
+
+    <template #footer="{ close }">
+      <Button :label="t('common.cancel')" text severity="secondary" @click="close()" />
+      <Button :label="t('common.create')" icon="pi pi-check" :disabled="!canCreate" @click="handleCreate" />
+    </template>
+  </DialogShell>
+</template>
+
+<style scoped>
+.cd__col { display: flex; flex-direction: column; gap: 14px; }
+.cd__row { display: flex; gap: 16px; align-items: center; }
+.cd__check {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--ink-2); cursor: pointer;
 }
-.icon-picker-grid { display: flex; flex-wrap: wrap; gap: 4px; }
-.icon-picker-item {
-  width: 36px; height: 36px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 8px; background: none;
-  border: 1px solid transparent;
-  color: var(--me-text-muted); cursor: pointer; transition: all 0.15s;
+.cd__check :deep(.p-checkbox-box) {
+  border: 1px solid var(--line-2) !important;
+  background: var(--surface) !important;
 }
-.icon-picker-item:hover { background: var(--me-accent-glow); color: var(--me-text-primary); }
-.icon-picker-item--active { background: var(--me-accent-glow); border-color: var(--me-accent); color: var(--me-accent); }
+.cd__check :deep(.p-checkbox.p-highlight .p-checkbox-box) {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+:deep(.p-accordionpanel) {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md) !important;
+  margin-bottom: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+:deep(.p-accordionheader) {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 10px 12px !important;
+  background: var(--bg-2) !important;
+  border: 0 !important;
+}
+:deep(.p-accordionheader:hover) { background: var(--bg-3) !important; }
+:deep(.p-accordioncontent-content) {
+  padding: 14px 12px 16px !important;
+  background: var(--surface) !important;
+}
 </style>

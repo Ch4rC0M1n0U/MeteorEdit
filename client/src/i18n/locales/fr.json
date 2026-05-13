@@ -567,6 +567,44 @@
     "durationWarningUrgent": "URGENT — Ce dossier est ouvert depuis {days} jours (seuil : {threshold} jours)",
     "noDate": "Non définie",
     "autoClosureDate": "Remplie automatiquement à la clôture",
+    "urgent": "Urgent",
+    "breadcrumb": { "all": "Dossiers" },
+    "toolbar": {
+      "snapshots": "Versions",
+      "share": "Partager",
+      "more": "Plus",
+      "exportPdf": "Exporter en PDF",
+      "exportJson": "Exporter JSON",
+      "duplicate": "Dupliquer",
+      "archive": "Archiver",
+      "delete": "Supprimer",
+      "toggleInfo": "Afficher / masquer le panneau d'information"
+    },
+    "indicators": {
+      "e2e": "Chiffrement bout-en-bout actif",
+      "embargo": "Embargo jusqu'au {date}",
+      "continuous": "Suivi continu"
+    },
+    "tree": {
+      "title": "Arborescence",
+      "tasks": "Tâches",
+      "empty": { "title": "Dossier vide", "sub": "Créez votre premier élément" }
+    },
+    "editor": {
+      "empty": { "title": "Aucun élément sélectionné", "sub": "Sélectionnez un nœud dans l'arbre" },
+      "saved": "Enregistré",
+      "saving": "Enregistrement…",
+      "lastSaved": "Sauvegardé {time}"
+    },
+    "infoPanel": {
+      "title": "Informations",
+      "details": "Détails",
+      "magistrate": "Magistrat",
+      "investigator": "Enquêteur",
+      "objectives": "Objectifs",
+      "judicialFacts": "Faits judiciaires",
+      "collaborators": "Collaborateurs"
+    },
     "isUrgent": "Urgent",
     "isEmbargo": "Sous embargo",
     "isContinuous": "Dossier en continu",
@@ -1757,6 +1795,37 @@
       "today": "Aujourd'hui",
       "tomorrow": "Demain"
     }
+  },
+  "modal": {
+    "create": {
+      "section": {
+        "identity": "Identité",
+        "classification": "Classification",
+        "assignment": "Affectation"
+      }
+    },
+    "confirm": {
+      "defaultTitle": "Confirmer",
+      "defaultConfirm": "Confirmer",
+      "defaultCancel": "Annuler"
+    },
+    "palette": {
+      "placeholder": "Rechercher commandes, dossiers, nœuds, contacts…",
+      "noResults": "Aucun résultat",
+      "sections": {
+        "commands": "Commandes",
+        "dossiers": "Dossiers",
+        "nodes": "Nœuds",
+        "contacts": "Contacts"
+      }
+    },
+    "whatsNew": {
+      "title": "Nouveautés",
+      "readMore": "Lire plus"
+    }
+  },
+  "empty": {
+    "generic": { "title": "Rien à afficher", "sub": "Ce panneau est vide." }
   },
   "notifications": {
     "open": "Ouvrir les notifications",
