@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import api from '../services/api';
 import { connectSocket, getSocket } from '../services/socket';
 import type { Dossier, DossierNode } from '../types';
@@ -594,11 +594,16 @@ export const useDossierStore = defineStore('dossier', () => {
 
   /**
    * v3.37 — Bootstraps les données nécessaires à la HomeView v3 (KPI + tâches + activité).
-   * Appelée par HomeView.onMounted(). Idempotente, best-effort.
+   * v3.37.4 — Force refetch quand encryption est unlocked OU si liste vide.
+   * Evite l'affichage ENC:... quand un fetch précédent a tourné sans unlock.
    */
   async function fetchDashboard(): Promise<void> {
     try {
-      if (dossiers.value.length === 0) {
+      const encStore = useEncryptionStore();
+      const someEncrypted = dossiers.value.some((d) =>
+        typeof d.description === 'string' && d.description.startsWith('ENC:'),
+      );
+      if (dossiers.value.length === 0 || (encStore.isUnlocked && someEncrypted)) {
         await fetchDossiers(true);
       }
       try {
@@ -667,6 +672,36 @@ export const useDossierStore = defineStore('dossier', () => {
     await fetchDossiers(true);
     if (newDossier?._id) await openDossier(newDossier._id);
   }
+
+  // v3.37.4 — Watcher : quand encryption passe locked → unlocked APRÈS qu'on
+  // ait déjà chargé des dossiers chiffrés en clair (ENC:...), on refetch pour
+  // re-décrypter. Évite le bug où la home affiche « ENC:... » et les entities
+  // disparaissent à cause d'une race init/unlock.
+  const encStoreForWatch = useEncryptionStore();
+  watch(() => encStoreForWatch.isUnlocked, async (unlocked, was) => {
+    if (!unlocked || was) return;
+    // (1) Refetch la liste home si elle contient des ENC: encore présents
+    if (dossiers.value.length > 0) {
+      const hasEncrypted = dossiers.value.some((d) =>
+        typeof d.description === 'string' && d.description.startsWith('ENC:'),
+      );
+      if (hasEncrypted) await fetchDossiers(true);
+    }
+    // (2) Re-décrypte le dossier ouvert si présent et encore en ENC:
+    if (currentDossier.value) {
+      const desc = (currentDossier.value as { description?: unknown }).description;
+      const ents = (currentDossier.value as { entities?: unknown }).entities;
+      const stillEncrypted =
+        (typeof desc === 'string' && desc.startsWith('ENC:')) ||
+        (typeof ents === 'string' && (ents as string).startsWith('ENC:'));
+      if (stillEncrypted) {
+        try {
+          const { data } = await api.get<Dossier>(`/dossiers/${currentDossier.value._id}`);
+          currentDossier.value = await decryptDossierFields(data);
+        } catch { /* silent */ }
+      }
+    }
+  });
 
   return {
     dossiers, activeDossiers, currentDossier, nodes, trashNodes, selectedNode, loading,
