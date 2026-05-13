@@ -1732,25 +1732,49 @@ function downloadBlob(blob: Blob, filename: string) {
 </script>
 
 <style scoped>
+/* ─── v3.38.2 — Tokens v3 scopés à DossierView (light override) ─── */
+.dossier-view {
+  --v3-bg: var(--me-bg-deep);
+  --v3-bg-2: var(--me-bg-surface);
+  --v3-bg-3: var(--me-bg-elevated);
+  --v3-ink: var(--me-text-primary);
+  --v3-ink-2: var(--me-text-secondary);
+  --v3-ink-3: var(--me-text-muted);
+  --v3-line: var(--me-border);
+  --v3-accent: var(--me-accent);
+}
+:global([data-theme='light']) .dossier-view {
+  --v3-bg: #FAFAF7;
+  --v3-bg-2: #F5F4EF;
+  --v3-bg-3: #EFEEE8;
+  --v3-ink: #1C1B18;
+  --v3-ink-2: #45433D;
+  --v3-ink-3: #6F6C63;
+  --v3-line: #E7E5DD;
+  --v3-accent: #2E4FA8;
+}
+
 .dossier-view {
   display: flex;
-  height: calc(100vh - 56px);
+  height: calc(100vh - 48px);
+  background: var(--v3-bg);
+  color: var(--v3-ink);
 }
 .dv-sidebar {
-  width: 320px;
+  width: 280px;
   flex-shrink: 0;
-  border-right: 1px solid var(--me-border);
-  background: var(--me-bg-surface);
+  border-right: 1px solid var(--v3-line);
+  background: var(--v3-bg-2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 .dv-sidebar-header {
-  padding: 8px 10px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  border-bottom: 1px solid var(--me-border);
+  gap: 6px;
+  border-bottom: 1px solid var(--v3-line);
 }
 .dv-header-toolbar {
   display: flex;
