@@ -543,6 +543,115 @@ export const useDossierStore = defineStore('dossier', () => {
   // Utilisé pour les compteurs sidebar/dashboard, le picker du clipper, etc.
   const activeDossiers = computed(() => dossiers.value.filter((d) => d.status !== 'closed'));
 
+  // ─── v3.37 — Données HomeView (KPIs + dossiers récents + tâches + activité équipe) ───
+  const openCount = computed(() => dossiers.value.filter((d) => d.status === 'open').length);
+  const inProgressCount = computed(() => dossiers.value.filter((d) => d.status === 'in_progress').length);
+  const closedThisYearCount = computed(() => {
+    const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    return dossiers.value.filter((d) => {
+      if (d.status !== 'closed') return false;
+      const refDate = d.closureDate ?? d.updatedAt;
+      return refDate ? new Date(refDate).getTime() >= yearStart : false;
+    }).length;
+  });
+  const tasksTodayCount = ref(0);
+
+  type V3Task = {
+    _id: string;
+    title: string;
+    dossierTitle?: string;
+    dossierCode?: string;
+    due?: string;
+    done?: boolean;
+  };
+  type V3Activity = {
+    _id: string;
+    author: string;
+    action: string;
+    target?: string;
+    time: string;
+    dot?: 'accent' | 'ok' | 'warn' | 'err' | 'info';
+  };
+  const tasksToday = ref<V3Task[]>([]);
+  const teamActivity = ref<V3Activity[]>([]);
+
+  const recentMine = computed(() => {
+    return [...dossiers.value]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 12);
+  });
+  const recentTeam = computed(() => {
+    return [...dossiers.value]
+      .filter((d) => d.collaborators && d.collaborators.length > 0)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 12);
+  });
+  const recentAll = computed(() => {
+    return [...dossiers.value]
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 12);
+  });
+
+  /**
+   * v3.37 — Bootstraps les données nécessaires à la HomeView v3 (KPI + tâches + activité).
+   * Appelée par HomeView.onMounted(). Idempotente, best-effort.
+   */
+  async function fetchDashboard(): Promise<void> {
+    try {
+      if (dossiers.value.length === 0) {
+        await fetchDossiers(true);
+      }
+      try {
+        const { data } = await api.get('/tasks/today/count');
+        tasksTodayCount.value = data.count || 0;
+      } catch {
+        tasksTodayCount.value = 0;
+      }
+      try {
+        const { data } = await api.get('/dossiers/dashboard');
+        if (data?.recentActivity && Array.isArray(data.recentActivity)) {
+          teamActivity.value = data.recentActivity.slice(0, 8).map((a: Record<string, unknown>, i: number) => {
+            const user = a.user as { firstName?: string; lastName?: string } | null;
+            const target = a.target as { title?: string } | null;
+            return {
+              _id: String(a._id || `act-${i}`),
+              author: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Utilisateur',
+              action: String(a.action || ''),
+              target: String(target?.title || a.targetType || ''),
+              time: String(a.createdAt || new Date().toISOString()),
+              dot: 'accent' as const,
+            };
+          });
+        }
+      } catch {
+        teamActivity.value = [];
+      }
+      tasksToday.value = [];
+    } catch {
+      /* silent */
+    }
+  }
+
+  /**
+   * v3.37 — Toggle done sur une tâche (placeholder, à brancher quand l'API tasksToday sera prête).
+   */
+  async function toggleTask(id: string): Promise<void> {
+    const task = tasksToday.value.find((t) => t._id === id);
+    if (task) task.done = !task.done;
+  }
+
+  /**
+   * v3.37 — Import JSON d'un dossier depuis fichier uploadé.
+   */
+  async function importJson(file: File): Promise<void> {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.dossier?.title) throw new Error('Invalid import payload');
+    const { data: newDossier } = await api.post('/dossiers/import/json', data);
+    await fetchDossiers(true);
+    if (newDossier?._id) await openDossier(newDossier._id);
+  }
+
   return {
     dossiers, activeDossiers, currentDossier, nodes, trashNodes, selectedNode, loading,
     hasMoreDossiers, dossierPage,
@@ -552,5 +661,10 @@ export const useDossierStore = defineStore('dossier', () => {
     createNode, updateNode, deleteNode, selectNode,
     restoreNode, purgeNode, emptyTrashAction,
     emitNodeUpdate, emitExcalidrawUpdate,
+    // v3.37 — Home v3
+    openCount, inProgressCount, closedThisYearCount, tasksTodayCount,
+    tasksToday, teamActivity,
+    recentMine, recentTeam, recentAll,
+    fetchDashboard, toggleTask, importJson,
   };
 });

@@ -130,8 +130,15 @@
     "systemGroup": "System",
     "dashboard": "Dashboard",
     "dossiers": "Dossiers",
+    "tasks": "Tasks",
+    "osint": "OSINT search",
     "collapse": "Collapse",
     "expand": "Expand",
+    "groups": {
+      "work": "Work",
+      "library": "Library",
+      "system": "System"
+    },
     "closeDossier": "Close dossier",
     "phoneScanner": "Phone Scanner"
   },
@@ -250,6 +257,13 @@
       "closedThisYear": "Closed this year",
       "closedThisYearTrend": "Year {year}"
     },
+    "greeting": "Hello.",
+    "filters": "Filters",
+    "customize": "Customize",
+    "recentDossiers": "Recent cases",
+    "todayTasks": "To do — today",
+    "teamActivity": "Team activity",
+    "weekShort": "Wk",
     "greetingName": "Hello {name}.",
     "greetingNeutral": "Hello.",
     "todayWithWeek": "{date} · Week {week}",
@@ -274,6 +288,9 @@
     "yesterday": "yesterday",
     "daysAgo": "{n} d ago",
     "tabs": {
+      "mine": "Mine",
+      "team": "My team",
+      "all": "All",
       "favorites": "Favorites",
       "active": "Active",
       "closed": "Closed",
@@ -1545,7 +1562,8 @@
     "alertMsgPlaceholder": "Leave empty for default message"
   },
   "search": {
-    "placeholder": "Search a command, case, or page...",
+    "placeholder": "Search anywhere…",
+    "openPalette": "Open search palette",
     "addTag": "Add a tag...",
     "from": "From",
     "to": "To",
@@ -1703,7 +1721,25 @@
     "activeSessions": "Active sessions",
     "currentSession": "Current session"
   },
+  "theme": {
+    "toggle": "Toggle theme"
+  },
+  "whatsNew": {
+    "open": "What's new"
+  },
+  "user": {
+    "role": {
+      "investigator": "Investigator"
+    }
+  },
+  "task": {
+    "due": {
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    }
+  },
   "notifications": {
+    "open": "Open notifications",
     "title": "Notification preferences",
     "channels": "Channel configuration",
     "inApp": "In-app",

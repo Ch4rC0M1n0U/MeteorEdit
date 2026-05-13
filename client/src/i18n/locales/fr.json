@@ -130,8 +130,15 @@
     "systemGroup": "Système",
     "dashboard": "Tableau de bord",
     "dossiers": "Dossiers",
+    "tasks": "Tâches",
+    "osint": "Recherche OSINT",
     "collapse": "Replier",
     "expand": "Déplier",
+    "groups": {
+      "work": "Travail",
+      "library": "Bibliothèque",
+      "system": "Système"
+    },
     "closeDossier": "Fermer le dossier",
     "phoneScanner": "Phone Scanner"
   },
@@ -250,6 +257,13 @@
       "closedThisYear": "Clôturés cette année",
       "closedThisYearTrend": "Année {year}"
     },
+    "greeting": "Bonjour.",
+    "filters": "Filtres",
+    "customize": "Personnaliser",
+    "recentDossiers": "Dossiers récents",
+    "todayTasks": "À faire — aujourd'hui",
+    "teamActivity": "Activité de l'équipe",
+    "weekShort": "Sem.",
     "greetingName": "Bonjour {name}.",
     "greetingNeutral": "Bonjour.",
     "todayWithWeek": "{date} · Semaine {week}",
@@ -274,6 +288,9 @@
     "yesterday": "hier",
     "daysAgo": "il y a {n} j",
     "tabs": {
+      "mine": "À moi",
+      "team": "Mon équipe",
+      "all": "Tous",
       "favorites": "Favoris",
       "active": "En cours",
       "closed": "Clôturés",
@@ -1557,7 +1574,8 @@
     "alertMsgPlaceholder": "Laisser vide pour le message par défaut"
   },
   "search": {
-    "placeholder": "Rechercher une commande, un dossier, une page...",
+    "placeholder": "Rechercher partout…",
+    "openPalette": "Ouvrir la palette de recherche",
     "addTag": "Ajouter un tag...",
     "from": "Du",
     "to": "Au",
@@ -1715,7 +1733,25 @@
     "activeSessions": "Sessions actives",
     "currentSession": "Session actuelle"
   },
+  "theme": {
+    "toggle": "Basculer le thème"
+  },
+  "whatsNew": {
+    "open": "Voir les nouveautés"
+  },
+  "user": {
+    "role": {
+      "investigator": "Enquêteur"
+    }
+  },
+  "task": {
+    "due": {
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain"
+    }
+  },
   "notifications": {
+    "open": "Ouvrir les notifications",
     "title": "Préférences de notification",
     "channels": "Configuration des canaux",
     "inApp": "In-app",

@@ -1,449 +1,468 @@
+<!--
+  AppSidebar.vue — Sidebar institutionnelle MeteorEdit v3
+  ============================================================
+  Largeur : 248 px expanded / 64 px collapsed (override possible via prop).
+  Surface : --bg-2 (plus chaude que canvas), border-right --line.
+  Wiring  : useThemeStore (toggle), useAuthStore (user), useBrandingStore (appName, organizationTag).
+            Le collapse local est porté ici via localStorage 'me.sidebar.collapsed'
+            — déplacer dans un store UI dédié si plusieurs vues en dépendent.
+  PrimeVue : Button (toggles), Badge (compteurs), Avatar (user).
+  ============================================================
+-->
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, RouterLink } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import { useAuthStore } from '@/stores/auth';
+import { useThemeStore } from '@/stores/theme';
+import { useBrandingStore } from '@/stores/branding';
+import Button from 'primevue/button';
+import Badge from 'primevue/badge';
+import Avatar from 'primevue/avatar';
+
+interface NavItem {
+  to: string;
+  icon: string;      // PrimeIcons class fragment, ex: 'pi-folder-open'
+  labelKey: string;  // i18n key
+  count?: number;
+}
+
+interface NavGroup {
+  titleKey: string;
+  items: NavItem[];
+}
+
+const props = withDefaults(defineProps<{
+  /** Comptes affichés à droite des items — branchés depuis le parent sur dossierStore */
+  counts?: Record<string, number>;
+}>(), { counts: () => ({}) });
+
+const route = useRoute();
+const { t } = useI18n();
+const auth = useAuthStore();
+const theme = useThemeStore();
+const branding = useBrandingStore();
+
+const collapsed = ref(localStorage.getItem('me.sidebar.collapsed') === '1');
+watch(collapsed, (v) => {
+  localStorage.setItem('me.sidebar.collapsed', v ? '1' : '0');
+  // Émis pour que le parent <App.vue> propage data-sidebar sur .app
+  emit('update:collapsed', v);
+});
+const emit = defineEmits<{ (e: 'update:collapsed', value: boolean): void }>();
+onMounted(() => emit('update:collapsed', collapsed.value));
+
+const groups = computed<NavGroup[]>(() => [
+  {
+    titleKey: 'nav.groups.work',
+    items: [
+      { to: '/',          icon: 'pi-home',          labelKey: 'nav.dashboard' },
+      { to: '/dossiers',  icon: 'pi-folder-open',   labelKey: 'nav.dossiers',  count: props.counts.dossiers },
+      { to: '/tasks',     icon: 'pi-check-square',  labelKey: 'nav.tasks',     count: props.counts.tasks },
+      { to: '/messages',  icon: 'pi-comments',      labelKey: 'nav.messages',  count: props.counts.messages },
+    ],
+  },
+  {
+    titleKey: 'nav.groups.library',
+    items: [
+      { to: '/templates', icon: 'pi-file',          labelKey: 'nav.templates' },
+      { to: '/osint',     icon: 'pi-search',        labelKey: 'nav.osint' },
+      { to: '/companies', icon: 'pi-building',      labelKey: 'nav.companies' },
+    ],
+  },
+  {
+    titleKey: 'nav.groups.system',
+    items: [
+      { to: '/admin',     icon: 'pi-cog',           labelKey: 'nav.admin' },
+      { to: '/help',      icon: 'pi-question-circle', labelKey: 'nav.help' },
+    ],
+  },
+]);
+
+const userInitials = computed(() => {
+  const first = auth.user?.firstName?.[0] || '';
+  const last = auth.user?.lastName?.[0] || '';
+  if (first || last) return (first + last).toUpperCase();
+  return (auth.user?.email?.[0] || '?').toUpperCase();
+});
+const userFullName = computed(() => {
+  if (auth.user?.firstName || auth.user?.lastName) {
+    return `${auth.user.firstName || ''} ${auth.user.lastName || ''}`.trim();
+  }
+  return auth.user?.email || '';
+});
+
+function isActive(to: string): boolean {
+  return route.path === to || (to !== '/' && route.path.startsWith(to));
+}
+</script>
+
 <template>
   <aside class="sidebar" :class="{ 'sidebar--collapsed': collapsed }">
-    <div class="sidebar-header">
-      <div class="sidebar-brand" @click="$emit('toggle-collapse')">
-        <div class="brand-icon">
-          <img :src="meLogo" alt="MeteorEdit" class="brand-logo" />
-        </div>
-        <transition name="fade-text">
-          <div v-if="!collapsed" class="brand-text">
-            <span class="brand-name">{{ brandingStore.appName }}</span>
-            <div class="brand-meta">
-              <span class="brand-version mono">v{{ appVersion }}</span>
-              <span
-                class="connection-dot"
-                :class="backendConnected ? 'connection-dot--ok' : 'connection-dot--err'"
-                :title="backendConnected ? t('nav.backendConnected') : t('nav.backendDisconnected')"
-              />
-            </div>
-          </div>
-        </transition>
+    <!-- BRAND ============================================== -->
+    <div class="sidebar__brand">
+      <div class="sidebar__logo">
+        <img v-if="branding.logoUrl" :src="branding.logoUrl" alt="" />
+        <i v-else class="pi pi-bolt" />
+      </div>
+      <div v-if="!collapsed" class="sidebar__brand-meta">
+        <div class="sidebar__brand-name">{{ branding.appName }}</div>
+        <div v-if="branding.organizationTag" class="sidebar__brand-env">{{ branding.organizationTag }}</div>
       </div>
     </div>
 
-    <nav class="sidebar-nav">
-      <!-- Close dossier button when a dossier is open -->
-      <div v-if="dossierStore.currentDossier" class="nav-section">
-        <button
-          class="nav-item nav-item--back"
-          :title="collapsed ? t('nav.closeDossier') : undefined"
-          @click="closeDossier"
-        >
-          <i class="pi pi-arrow-left nav-icon" />
-          <transition name="fade-text">
-            <span v-if="!collapsed" class="nav-text">{{ t('nav.closeDossier') }}</span>
-          </transition>
-        </button>
-      </div>
-
-      <!-- v3.34 — sections nav (TRAVAIL / BIBLIOTHÈQUE / SYSTÈME) générées dynamiquement -->
-      <div v-for="section in navSections" :key="section.key" class="nav-section">
-        <span v-if="!collapsed" class="nav-label">{{ section.label }}</span>
-        <router-link
-          v-for="item in section.items"
-          :key="item.key"
+    <!-- NAV ============================================== -->
+    <nav class="sidebar__nav">
+      <template v-for="group in groups" :key="group.titleKey">
+        <div v-if="!collapsed" class="sidebar__group">{{ t(group.titleKey) }}</div>
+        <RouterLink
+          v-for="item in group.items"
+          :key="item.to"
           :to="item.to"
-          class="nav-item"
-          :class="{ 'nav-item--active': isActive(item) }"
-          :title="collapsed ? item.label : undefined"
-          @click="item.key === 'dossiers' || item.key === 'dashboard' ? onHomeClick($event) : undefined"
+          custom
+          v-slot="{ navigate }"
         >
-          <span class="nav-active-bar" aria-hidden="true" />
-          <i :class="item.icon" class="nav-icon" />
-          <transition name="fade-text">
-            <span v-if="!collapsed" class="nav-text">{{ item.label }}</span>
-          </transition>
-          <span v-if="item.count != null && !collapsed" class="nav-count num">{{ item.count }}</span>
-        </router-link>
-      </div>
+          <button
+            class="nav-item"
+            :aria-current="isActive(item.to) ? 'page' : undefined"
+            :data-label="t(item.labelKey)"
+            :title="collapsed ? t(item.labelKey) : undefined"
+            @click="navigate"
+          >
+            <i class="pi" :class="item.icon" />
+            <span class="nav-item__label">{{ t(item.labelKey) }}</span>
+            <Badge
+              v-if="item.count && !collapsed"
+              :value="item.count"
+              severity="secondary"
+              class="nav-item__count"
+            />
+          </button>
+        </RouterLink>
+      </template>
     </nav>
 
-    <!-- v3.34 — Footer institutionnel : Replier button + carte user + theme + logout -->
-    <div class="sidebar-footer">
-      <button class="sidebar-collapse-btn" @click="$emit('toggle-collapse')" :title="collapsed ? t('nav.expand') : t('nav.collapse')">
-        <i :class="collapsed ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'" class="nav-icon" />
-        <transition name="fade-text">
-          <span v-if="!collapsed" class="nav-text">{{ t('nav.collapse') }}</span>
-        </transition>
-      </button>
+    <!-- COLLAPSE TOGGLE ============================================== -->
+    <Button
+      class="sidebar__collapse"
+      :icon="collapsed ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'"
+      :label="collapsed ? undefined : t('nav.collapse')"
+      text
+      size="small"
+      :aria-label="t('nav.collapse')"
+      @click="collapsed = !collapsed"
+    />
 
-      <div class="sidebar-user" @click="$router.push('/profile')">
-        <Avatar :label="initials" :image="avatarUrl || undefined" shape="circle" class="user-avatar" />
-        <transition name="fade-text">
-          <div v-if="!collapsed" class="user-info">
-            <span class="user-name">{{ authStore.user?.firstName }} {{ authStore.user?.lastName }}</span>
-            <span class="user-role">{{ authStore.isAdmin ? 'Admin' : 'Analyste' }} · Cyber</span>
-          </div>
-        </transition>
-        <button
-          v-if="!collapsed"
-          class="user-action-btn"
-          @click.stop="themeStore.toggle()"
-          :title="themeStore.isDark ? t('nav.lightMode') : t('nav.darkMode')"
-        >
-          <i :class="themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'" />
-        </button>
-        <button
-          v-if="!collapsed"
-          class="user-action-btn user-action-btn--danger"
-          @click.stop="$emit('logout')"
-          :title="t('auth.logout')"
-        >
-          <i class="pi pi-sign-out" />
-        </button>
+    <!-- USER FOOTER ============================================== -->
+    <div class="sidebar__user">
+      <Avatar
+        :label="userInitials"
+        shape="circle"
+        size="normal"
+        class="sidebar__user-avatar"
+      />
+      <div v-if="!collapsed" class="sidebar__user-meta">
+        <div class="sidebar__user-name">{{ userFullName }}</div>
+        <div class="sidebar__user-role">{{ auth.isAdmin ? 'Admin' : t('user.role.investigator') }}</div>
+      </div>
+      <div v-if="!collapsed" class="sidebar__user-actions">
+        <Button
+          :icon="theme.isDark ? 'pi pi-sun' : 'pi pi-moon'"
+          text rounded size="small"
+          :aria-label="t('theme.toggle')"
+          @click="theme.toggle()"
+        />
+        <Button
+          icon="pi pi-sign-out"
+          text rounded size="small"
+          :aria-label="t('auth.logout')"
+          @click="auth.logout?.()"
+        />
       </div>
     </div>
   </aside>
 </template>
 
-<script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
-import Avatar from 'primevue/avatar';
-import { useAuthStore } from '../../stores/auth';
-import { useThemeStore } from '../../stores/theme';
-import { useDossierStore } from '../../stores/dossier';
-import { useMessagingStore } from '../../stores/messaging';
-import { useBrandingStore } from '../../stores/branding';
-import { SERVER_URL } from '../../services/api';
-import api from '../../services/api';
-
-defineProps<{ collapsed: boolean }>();
-defineEmits<{ 'toggle-collapse': []; logout: [] }>();
-
-const { t } = useI18n();
-const route = useRoute();
-const router = useRouter();
-const authStore = useAuthStore();
-const themeStore = useThemeStore();
-const dossierStore = useDossierStore();
-const messagingStore = useMessagingStore();
-const appVersion = __APP_VERSION__;
-const brandingStore = useBrandingStore();
-
-const backendConnected = ref(true);
-let healthInterval: ReturnType<typeof setInterval> | null = null;
-
-const meLogo = computed(() => themeStore.isDark ? '/logo-me-red.png' : '/logo-me-blue.png');
-const initials = computed(() => {
-  const f = authStore.user?.firstName?.[0] || '';
-  const l = authStore.user?.lastName?.[0] || '';
-  return (f + l).toUpperCase();
-});
-const avatarUrl = computed(() => authStore.user?.avatarPath ? `${SERVER_URL}/${authStore.user.avatarPath}` : null);
-
-/* v3.34 — sections nav alignées sur le brief v3 */
-const navSections = computed(() => [
-  {
-    key: 'work',
-    label: t('nav.work'),
-    items: [
-      { key: 'dashboard', icon: 'pi pi-th-large', label: t('nav.dashboard'), to: '/' },
-      { key: 'dossiers', icon: 'pi pi-folder', label: t('nav.dossiers'), to: '/', count: dossierStore.activeDossiers.length || null },
-      { key: 'osint', icon: 'pi pi-search', label: t('nav.osintSearch'), to: '/osint-search' },
-      { key: 'companies', icon: 'pi pi-building', label: t('nav.companies'), to: '/companies' },
-      { key: 'messages', icon: 'pi pi-comments', label: t('nav.messages'), to: '/messages', count: messagingStore.totalUnread || null },
-    ],
-  },
-  {
-    key: 'library',
-    label: t('nav.library'),
-    items: [
-      { key: 'templates', icon: 'pi pi-file-edit', label: t('nav.templates'), to: '/templates' },
-      { key: 'extension', icon: 'mdi mdi-puzzle-outline', label: t('nav.extension'), to: '/extension' },
-    ],
-  },
-  {
-    key: 'system',
-    label: t('nav.systemGroup'),
-    items: [
-      ...(authStore.isAdmin ? [{ key: 'admin', icon: 'pi pi-shield', label: t('nav.admin'), to: '/admin' }] : []),
-      { key: 'help', icon: 'pi pi-question-circle', label: t('nav.help'), to: '/help' },
-    ],
-  },
-]);
-
-function isActive(item: { to: string; key: string }): boolean {
-  // v3.34 — sur / on garde "dashboard" actif (dossiers n'est plus mis en évidence par défaut)
-  if (route.path === '/') return item.key === 'dashboard';
-  return route.path === item.to || route.path.startsWith(item.to + '/');
-}
-
-function closeDossier() {
-  dossierStore.closeDossier();
-  router.push('/');
-}
-
-function onHomeClick(e: MouseEvent) {
-  // Si un dossier est ouvert, on le ferme avant de retourner à l'accueil
-  if (dossierStore.currentDossier) {
-    e.preventDefault();
-    closeDossier();
-  }
-}
-
-async function checkHealth() {
-  try { await api.get('/health'); backendConnected.value = true; } catch { backendConnected.value = false; }
-}
-
-onMounted(() => { checkHealth(); healthInterval = setInterval(checkHealth, 30000); });
-onUnmounted(() => { if (healthInterval) clearInterval(healthInterval); });
-</script>
-
 <style scoped>
-/* ─── v3.33 — Tokens locaux scopés à AppSidebar (light + dark warm) ─── */
+/* ============================================================
+   STRUCTURE
+   Largeur portée par le parent .app via grid-template-columns
+   (cf. App.vue). On lit la largeur depuis le grid, donc :host = 100%.
+   ============================================================ */
 .sidebar {
-  --v3-bg-2: var(--me-bg-surface);
-  --v3-bg-3: var(--me-bg-elevated);
-  --v3-ink: var(--me-text-primary);
-  --v3-ink-2: var(--me-text-secondary);
-  --v3-ink-3: var(--me-text-muted);
-  --v3-line: var(--me-border);
-  --v3-accent: var(--me-accent);
-  --v3-accent-soft: rgba(99, 145, 214, 0.10);
-}
-:global([data-theme='light']) .sidebar {
-  --v3-bg-2: #F5F4EF;
-  --v3-bg-3: #EFEEE8;
-  --v3-ink: #1C1B18;
-  --v3-ink-2: #45433D;
-  --v3-ink-3: #6F6C63;
-  --v3-line: #E7E5DD;
-  --v3-accent: #2E4FA8;
-  --v3-accent-soft: rgba(46, 79, 168, 0.08);
-}
-
-.sidebar {
-  width: var(--me-sidebar-w, 240px);
-  background: var(--v3-bg-2);
-  border-right: 1px solid var(--v3-line);
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  transition: width var(--me-dur) var(--me-ease);
-  flex-shrink: 0;
-  z-index: 50;
+  min-height: 0;
+  height: 100%;
+  font-family: var(--font);
+  transition: background 120ms ease;
 }
-.sidebar--collapsed { width: var(--me-sidebar-w-collapsed, 64px); }
 
-.sidebar-header {
-  padding: 16px 14px;
-  border-bottom: 1px solid var(--v3-line);
-}
-.sidebar-brand {
+/* ============================================================
+   BRAND
+   ============================================================ */
+.sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  padding: 4px 6px;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--line);
+  min-height: 60px;
+}
+.sidebar__logo {
+  width: 28px; height: 28px;
+  flex-shrink: 0;
   border-radius: 6px;
-  transition: background 0.15s;
+  background: var(--ink);
+  color: var(--surface);
+  display: grid; place-items: center;
+  overflow: hidden;
 }
-.sidebar--collapsed .sidebar-header {
-  padding: 16px 0;
-  display: flex;
-  justify-content: center;
-}
-.sidebar--collapsed .sidebar-brand {
-  padding: 6px;
-  justify-content: center;
-}
-.sidebar-brand:hover { background: var(--v3-bg-3); }
-.brand-icon {
-  width: 32px; height: 32px;
-  border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; overflow: hidden;
-  background: var(--v3-ink);
-}
-.brand-logo { width: 32px; height: 32px; object-fit: contain; }
-.brand-text { display: flex; flex-direction: column; min-width: 0; }
-.brand-name {
-  font-weight: 600;
+.sidebar__logo img { width: 100%; height: 100%; object-fit: contain; }
+.sidebar__logo .pi { font-size: 14px; }
+.sidebar__brand-meta { min-width: 0; flex: 1; }
+.sidebar__brand-name {
   font-size: 14px;
-  color: var(--v3-ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
   white-space: nowrap;
-  letter-spacing: -0.2px;
-}
-.brand-meta { display: flex; align-items: center; gap: 6px; margin-top: 1px; }
-.brand-version {
-  font-size: 10px;
-  color: var(--v3-ink-3);
-  letter-spacing: 0.4px;
-  font-variant-numeric: tabular-nums;
-}
-
-.connection-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  display: inline-block; transition: background 0.3s;
-}
-.connection-dot--ok { background: var(--me-success); opacity: 0.85; box-shadow: 0 0 6px var(--me-success); }
-.connection-dot--err { background: var(--me-error); opacity: 0.85; }
-
-.sidebar-nav { flex: 1; overflow-y: auto; padding: 10px 8px; }
-.sidebar-footer { padding: 8px; border-top: 1px solid var(--v3-line); display: flex; flex-direction: column; gap: 2px; }
-
-.nav-section { display: flex; flex-direction: column; gap: 1px; margin-bottom: 20px; }
-.nav-section:last-child { margin-bottom: 0; }
-.nav-label {
-  /* v3 : group header plus institutionnel (tracking moins exagéré, weight 600) */
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--v3-ink-3);
-  padding: 10px 12px 8px;
-}
-
-.nav-item {
-  position: relative;
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; border-radius: 6px;
-  border: none; background: none;
-  color: var(--v3-ink-2); font-size: 13px;
-  font-weight: 500;
-  cursor: pointer; transition: all var(--me-dur-fast) var(--me-ease);
-  width: 100%; text-align: left; white-space: nowrap; overflow: hidden;
-  text-decoration: none;
-}
-.nav-active-bar {
-  position: absolute;
-  left: 0; top: 7px; bottom: 7px;
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: transparent;
-  transition: background var(--me-dur-fast) var(--me-ease);
-}
-.sidebar--collapsed .nav-item { justify-content: center; padding: 10px; }
-.nav-item:hover {
-  background: var(--v3-bg-3);
-  color: var(--v3-ink);
-}
-.nav-item--active {
-  background: var(--v3-accent-soft);
-  color: var(--v3-accent);
-  font-weight: 600;
-}
-.nav-item--active .nav-icon { color: var(--v3-accent); }
-.nav-item--active .nav-active-bar { background: var(--v3-accent); }
-.nav-item--back {
-  color: var(--v3-accent);
-  font-weight: 600;
-  background: var(--v3-accent-soft);
-  border: 1px solid var(--v3-line);
-}
-.nav-item--back:hover { background: var(--v3-accent-soft); color: var(--v3-accent); }
-.nav-item--back .nav-icon { color: var(--v3-accent); }
-.nav-item--danger:hover { color: var(--me-error); }
-.nav-item--danger:hover .nav-icon { color: var(--me-error); }
-
-.nav-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; color: var(--v3-ink-3); transition: color 0.15s; }
-.nav-item:hover .nav-icon { color: var(--v3-ink); }
-.nav-text { overflow: hidden; text-overflow: ellipsis; flex: 1; }
-.nav-badge { margin-left: auto; }
-
-/* v3.34 — Compteur discret aligné à droite (style brief) */
-.nav-count {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--v3-ink-3);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-}
-.nav-item--active .nav-count { color: var(--v3-accent); font-weight: 600; }
-
-.nav-item--user { gap: 10px; padding: 8px; }
-.nav-avatar { width: 28px !important; height: 28px !important; font-size: 11px !important; flex-shrink: 0; }
-.nav-user-info { display: flex; flex-direction: column; min-width: 0; }
-.nav-user-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--v3-ink);
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: -0.1px;
 }
-.nav-user-role { font-size: 10px; color: var(--v3-ink-3); letter-spacing: 0.4px; }
-
-/* v3.34 — Bouton Replier (footer) */
-.sidebar-collapse-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  margin-bottom: 6px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--v3-ink-3);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  letter-spacing: 0.02em;
-  transition: background 0.15s, color 0.15s;
-}
-.sidebar-collapse-btn:hover { background: var(--v3-bg-3); color: var(--v3-ink); }
-.sidebar-collapse-btn .nav-icon { font-size: 14px; }
-.sidebar--collapsed .sidebar-collapse-btn { justify-content: center; padding: 10px; }
-
-/* v3.34 — Carte user dédiée en footer (style brief) */
-.sidebar-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 7px;
-  cursor: pointer;
-  background: var(--v3-bg-3);
-  border: 1px solid var(--v3-line);
-  transition: border-color 0.15s, background 0.15s;
-}
-.sidebar-user:hover { border-color: var(--v3-accent); }
-.sidebar--collapsed .sidebar-user { justify-content: center; padding: 6px; }
-
-.user-avatar { width: 30px !important; height: 30px !important; font-size: 11px !important; flex-shrink: 0; }
-.user-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.user-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--v3-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: -0.1px;
-}
-.user-role {
+.sidebar__brand-env {
   font-size: 10.5px;
-  color: var(--v3-ink-3);
+  color: var(--ink-3);
   letter-spacing: 0.04em;
+  margin-top: 1px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.user-action-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-  border: none;
+/* ============================================================
+   NAV
+   ============================================================ */
+.sidebar__nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sidebar__group {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 14px 10px 6px;
+  font-weight: 600;
+}
+.sidebar__group:first-child { padding-top: 4px; }
+
+/* ============================================================
+   NAV ITEM
+   Hauteur effective 32 px (7+18+7). Hover = bg-3, active = surface + bar.
+   ============================================================ */
+.nav-item {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: var(--r-md);
+  border: 0;
   background: transparent;
-  color: var(--v3-ink-3);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 450;
+  text-align: left;
+  letter-spacing: -0.005em;
   cursor: pointer;
+  transition: background 80ms ease, color 80ms ease;
+  font-family: inherit;
+  width: 100%;
+}
+.nav-item:hover { background: var(--bg-3); color: var(--ink); }
+.nav-item .pi { font-size: 16px; color: var(--ink-3); line-height: 1; }
+.nav-item:hover .pi { color: var(--ink-2); }
+
+.nav-item[aria-current="page"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--line);
+  padding: 6px 9px; /* compensation 1 px de la bordure */
+}
+.nav-item[aria-current="page"] .pi { color: var(--accent); }
+
+.nav-item__label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* PrimeVue Badge override → look v3 (compteur tabulaire, pas un badge rouge) */
+.nav-item__count :deep(.p-badge),
+.nav-item :deep(.p-badge) {
+  font-size: 11px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--ink-3);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.nav-item[aria-current="page"] :deep(.p-badge) { color: var(--ink-2); }
+
+/* ============================================================
+   COLLAPSED MODE (64 px)
+   ============================================================ */
+.sidebar--collapsed .sidebar__brand {
+  padding: 14px 0;
+  justify-content: center;
+}
+.sidebar--collapsed .sidebar__nav {
+  padding: 8px 6px;
+  align-items: center;
+}
+.sidebar--collapsed .nav-item {
+  width: 40px; height: 40px;
+  padding: 0;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  position: relative;
+}
+.sidebar--collapsed .nav-item[aria-current="page"] {
+  padding: 0; width: 40px; height: 40px;
+}
+.sidebar--collapsed .nav-item__label { display: none; }
+
+/* Tooltip natif en mode collapsé via data-label */
+.sidebar--collapsed .nav-item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 11.5px;
+  padding: 5px 9px;
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 80ms ease;
+  z-index: 100;
+}
+.sidebar--collapsed .nav-item:hover::after { opacity: 1; }
+
+/* ============================================================
+   COLLAPSE TOGGLE
+   ============================================================ */
+.sidebar__collapse :deep(.p-button) {
+  margin: 8px 10px;
+  height: 28px;
+  width: calc(100% - 20px);
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink-3);
+  background: transparent !important;
+  border: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: var(--r-sm);
+  letter-spacing: -0.005em;
+}
+.sidebar__collapse :deep(.p-button:hover) {
+  background: var(--bg-3) !important;
+  color: var(--ink);
+}
+.sidebar__collapse :deep(.p-button-icon) { font-size: 14px; }
+
+.sidebar--collapsed .sidebar__collapse :deep(.p-button) {
+  width: 40px;
+  margin: 8px auto;
+  padding: 0;
+}
+
+/* ============================================================
+   USER FOOTER
+   ============================================================ */
+.sidebar__user {
+  border-top: 1px solid var(--line);
+  padding: 10px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
+  gap: 10px;
 }
-.user-action-btn:hover { background: var(--v3-bg-2); color: var(--v3-ink); }
-.user-action-btn--danger:hover { color: var(--me-error); }
-.user-action-btn i { font-size: 13px; }
+.sidebar__user-avatar :deep(.p-avatar) {
+  width: 32px;
+  height: 32px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--accent-line);
+}
+.sidebar__user-meta { flex: 1; min-width: 0; }
+.sidebar__user-name {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar__user-role {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar__user-actions { display: flex; gap: 2px; }
+.sidebar__user-actions :deep(.p-button) {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ink-3);
+}
+.sidebar__user-actions :deep(.p-button:hover) {
+  background: var(--bg-3) !important;
+  color: var(--ink);
+}
+.sidebar__user-actions :deep(.p-button-icon) { font-size: 14px; }
 
-.fade-text-enter-active, .fade-text-leave-active { transition: opacity 0.2s, transform 0.2s; }
-.fade-text-enter-from, .fade-text-leave-to { opacity: 0; transform: translateX(-4px); }
+.sidebar--collapsed .sidebar__user {
+  justify-content: center;
+  padding: 8px;
+}
+.sidebar--collapsed .sidebar__user-meta,
+.sidebar--collapsed .sidebar__user-actions { display: none; }
 
-@media (max-width: 768px) { .sidebar { display: none; } }
+/* ============================================================
+   DARK MODE — overrides explicites
+   ============================================================ */
+[data-theme="dark"] .sidebar {
+  background: var(--bg-2); /* #1F1E1A */
+  border-right-color: var(--line);
+}
+[data-theme="dark"] .sidebar__logo { background: var(--ink); color: var(--bg); }
+[data-theme="dark"] .nav-item[aria-current="page"] {
+  background: var(--surface); /* #232218 */
+  border-color: var(--line-2);
+}
+[data-theme="dark"] .sidebar__user-avatar :deep(.p-avatar) {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-line);
+}
 </style>

@@ -1,17 +1,27 @@
 <template>
-  <div v-if="authStore.isAuthenticated" class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+  <div
+    v-if="authStore.isAuthenticated"
+    class="app app-shell"
+    :class="{ 'sidebar-collapsed': sidebarCollapsed }"
+    :data-sidebar="sidebarCollapsed ? 'collapsed' : 'expanded'"
+  >
     <AppSidebar
-      :collapsed="sidebarCollapsed"
-      @toggle-collapse="sidebarCollapsed = !sidebarCollapsed"
-      @logout="handleLogout"
+      :counts="navCounts"
+      @update:collapsed="(v: boolean) => sidebarCollapsed = v"
     />
-    <div class="main-area">
+    <div class="main-area app__main">
       <AppTopbar
         :title="pageTitle"
-        :subtitle="pageSubtitle"
-        :dossier-icon="(route.path === '/' || route.path === '/home') && dossierStore.currentDossier ? (dossierStore.currentDossier.icon || 'mdi-folder-outline') : undefined"
-        @toggle-sidebar="sidebarCollapsed = !sidebarCollapsed"
-      />
+        :icon="pageIcon"
+        :notif-count="messagingStore.totalUnread ?? 0"
+        @open-search="onOpenSearch"
+        @open-notifications="onOpenNotifications"
+        @open-whats-new="onOpenWhatsNew"
+      >
+        <template #actions>
+          <div id="topbar-actions" />
+        </template>
+      </AppTopbar>
       <div
         v-if="brandingStore.announcementEnabled && brandingStore.announcementMessage"
         class="announcement-banner"
@@ -52,6 +62,7 @@ import { useAuthStore } from './stores/auth';
 import { useThemeStore } from './stores/theme';
 import { useBrandingStore } from './stores/branding';
 import { useDossierStore } from './stores/dossier';
+import { useMessagingStore } from './stores/messaging';
 import AppSidebar from './components/common/AppSidebar.vue';
 import AppTopbar from './components/common/AppTopbar.vue';
 import ConfirmDialog from './components/common/ConfirmDialog.vue';
@@ -70,6 +81,7 @@ const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const brandingStore = useBrandingStore();
 const dossierStore = useDossierStore();
+const messagingStore = useMessagingStore();
 const toolsUI = useToolsUIStore();
 
 const sidebarCollapsed = ref(false);
@@ -94,7 +106,7 @@ const announcementIcon = computed(() => {
 
 const pageTitle = computed(() => {
   if (route.path === '/' || route.path === '/home') {
-    return dossierStore.currentDossier ? dossierStore.currentDossier.title : t('home.myDossiers');
+    return dossierStore.currentDossier ? dossierStore.currentDossier.title : t('nav.dashboard');
   }
   const titles: Record<string, string> = {
     '/admin': t('nav.admin'),
@@ -104,21 +116,54 @@ const pageTitle = computed(() => {
     '/osint-search': t('nav.osintSearch') || 'OSINT Search',
     '/companies': t('nav.companies'),
     '/extension': t('nav.extension'),
+    '/messages': t('nav.messages'),
   };
   return titles[route.path] || '';
 });
 
-const pageSubtitle = computed(() => {
-  if ((route.path === '/' || route.path === '/home') && !dossierStore.currentDossier) {
-    const count = dossierStore.activeDossiers.length;
-    return `${count} dossier${count > 1 ? 's' : ''}`;
+// v3.37 — icône topbar par route (matche les icônes de la sidebar v3)
+const pageIcon = computed(() => {
+  if (route.path === '/' || route.path === '/home') {
+    return dossierStore.currentDossier
+      ? (dossierStore.currentDossier.icon?.startsWith('pi ') ? dossierStore.currentDossier.icon.replace('pi ', '') : 'pi-folder-open')
+      : 'pi-home';
   }
-  return '';
+  const icons: Record<string, string> = {
+    '/admin': 'pi-cog',
+    '/profile': 'pi-user',
+    '/templates': 'pi-file',
+    '/help': 'pi-question-circle',
+    '/osint-search': 'pi-search',
+    '/companies': 'pi-building',
+    '/extension': 'pi-puzzle',
+    '/messages': 'pi-comments',
+  };
+  return icons[route.path] || 'pi-home';
 });
+
+// v3.37 — compteurs nav v3 (sidebar reçoit via props.counts)
+const navCounts = computed(() => ({
+  dossiers: dossierStore.activeDossiers.length || 0,
+  tasks: dossierStore.tasksTodayCount || 0,
+  messages: messagingStore.totalUnread || 0,
+}));
 
 function handleLogout() {
   authStore.logout();
   router.push('/login');
+}
+
+// v3.37 — handlers événements topbar
+function onOpenSearch() {
+  // CommandPalette s'ouvre via Ctrl+K — déclencher le shortcut
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, metaKey: true }));
+}
+function onOpenNotifications() {
+  router.push('/profile?tab=notifications');
+}
+function onOpenWhatsNew() {
+  // Délégué à WhatsNew modal — déclenchement via event global
+  window.dispatchEvent(new CustomEvent('open-whats-new'));
 }
 
 onMounted(() => {

@@ -130,8 +130,15 @@
     "systemGroup": "Systeem",
     "dashboard": "Dashboard",
     "dossiers": "Dossiers",
+    "tasks": "Taken",
+    "osint": "OSINT-zoekopdracht",
     "collapse": "Inklappen",
     "expand": "Uitklappen",
+    "groups": {
+      "work": "Werk",
+      "library": "Bibliotheek",
+      "system": "Systeem"
+    },
     "closeDossier": "Dossier sluiten",
     "phoneScanner": "Phone Scanner"
   },
@@ -250,6 +257,13 @@
       "closedThisYear": "Afgesloten dit jaar",
       "closedThisYearTrend": "Jaar {year}"
     },
+    "greeting": "Hallo.",
+    "filters": "Filters",
+    "customize": "Aanpassen",
+    "recentDossiers": "Recente dossiers",
+    "todayTasks": "Te doen — vandaag",
+    "teamActivity": "Team-activiteit",
+    "weekShort": "Wk",
     "greetingName": "Hallo {name}.",
     "greetingNeutral": "Hallo.",
     "todayWithWeek": "{date} · Week {week}",
@@ -274,6 +288,9 @@
     "yesterday": "gisteren",
     "daysAgo": "{n} d geleden",
     "tabs": {
+      "mine": "Van mij",
+      "team": "Mijn team",
+      "all": "Alles",
       "favorites": "Favorieten",
       "active": "Actief",
       "closed": "Afgesloten",
@@ -1544,7 +1561,8 @@
     "alertMsgPlaceholder": "Laat leeg voor standaardbericht"
   },
   "search": {
-    "placeholder": "Zoek een opdracht, dossier of pagina...",
+    "placeholder": "Overal zoeken…",
+    "openPalette": "Zoekpalet openen",
     "addTag": "Tag toevoegen...",
     "from": "Van",
     "to": "Tot",
@@ -1702,7 +1720,25 @@
     "activeSessions": "Actieve sessies",
     "currentSession": "Huidige sessie"
   },
+  "theme": {
+    "toggle": "Thema wisselen"
+  },
+  "whatsNew": {
+    "open": "Nieuw"
+  },
+  "user": {
+    "role": {
+      "investigator": "Onderzoeker"
+    }
+  },
+  "task": {
+    "due": {
+      "today": "Vandaag",
+      "tomorrow": "Morgen"
+    }
+  },
   "notifications": {
+    "open": "Meldingen openen",
     "title": "Meldingsvoorkeuren",
     "channels": "Kanaalconfiguratie",
     "inApp": "In-app",

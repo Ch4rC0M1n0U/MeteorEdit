@@ -104,6 +104,8 @@ export default defineConfig({
         __dirname,
         'node_modules/@excalidraw/excalidraw/dist/prod/index.css'
       ),
+      // v3.37 — alias @ → src (utilisé par les SFC handoff v3)
+      '@': path.resolve(__dirname, 'src'),
     },
   },
   optimizeDeps: {
