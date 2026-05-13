@@ -610,14 +610,30 @@ export const useDossierStore = defineStore('dossier', () => {
       try {
         const { data } = await api.get('/dossiers/dashboard');
         if (data?.recentActivity && Array.isArray(data.recentActivity)) {
+          // v3.37.1 — Mapping action lisible (action raw → verbe humain) + nom dossier propre
+          const actionLabels: Record<string, string> = {
+            'dossier.create': 'a créé le dossier',
+            'dossier.update': 'a mis à jour le dossier',
+            'dossier.delete': 'a supprimé le dossier',
+            'dossier.close': 'a clôturé le dossier',
+            'dossier.reopen': 'a réouvert le dossier',
+            'node.create': 'a créé une note dans',
+            'node.update': 'a modifié une note dans',
+            'node.delete': 'a supprimé une note dans',
+            'task.create': 'a créé une tâche dans',
+            'task.complete': 'a terminé une tâche dans',
+          };
           teamActivity.value = data.recentActivity.slice(0, 8).map((a: Record<string, unknown>, i: number) => {
             const user = a.user as { firstName?: string; lastName?: string } | null;
             const target = a.target as { title?: string } | null;
+            const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+            const actionRaw = String(a.action || '');
+            const actionHuman = actionLabels[actionRaw] || actionRaw;
             return {
               _id: String(a._id || `act-${i}`),
-              author: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Utilisateur',
-              action: String(a.action || ''),
-              target: String(target?.title || a.targetType || ''),
+              author: fullName || 'Utilisateur',
+              action: actionHuman,
+              target: String(target?.title || ''),
               time: String(a.createdAt || new Date().toISOString()),
               dot: 'accent' as const,
             };

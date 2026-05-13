@@ -34,8 +34,8 @@ function relTime(iso: string): string {
         <span class="activity__dot" :class="item.dot ? `activity__dot--${item.dot}` : null" />
         <div>
           <span class="activity__author">{{ item.author }}</span>
-          <span class="activity__action"> {{ item.action }}</span>
-          <span v-if="item.target" class="activity__target"> {{ item.target }}</span>
+          <span class="activity__action">&nbsp;{{ item.action }}</span>
+          <span v-if="item.target" class="activity__target">&nbsp;{{ item.target }}</span>
           <div class="activity__time">{{ relTime(item.time) }}</div>
         </div>
       </div>

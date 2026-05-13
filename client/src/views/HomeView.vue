@@ -79,7 +79,9 @@ function handleImport(e: Event) {
 }
 
 function openDossier(id: string) {
-  router.push(`/dossiers/${id}`);
+  // MeteorEdit n'utilise PAS de route /dossiers/:id — l'ouverture se fait via
+  // le store (currentDossier ref), et HomeView affiche <DossierView v-else /> conditionnellement.
+  dossiers.openDossier(id);
 }
 
 onMounted(() => {

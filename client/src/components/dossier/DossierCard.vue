@@ -40,6 +40,9 @@ const { t, locale } = useI18n();
 const cat = computed<DossierCategory>(() => props.dossier.category || 'entity');
 const status = computed<DossierStatus>(() => props.dossier.status || 'open');
 
+// v3.37.1 — Strip HTML tags from description (TipTap stores rich HTML, but card affiche du texte brut).
+const plainDescription = computed(() => (props.dossier.description || '').replace(/<[^>]*>/g, '').trim());
+
 const catIcon = computed(() => ({
   note:     'pi-file-edit',
   mindmap:  'pi-sitemap',
@@ -93,8 +96,8 @@ const relTime = computed(() => {
       </div>
     </div>
 
-    <!-- BODY : description 2 lignes clamp -->
-    <p v-if="dossier.description" class="dcard__sub">{{ dossier.description }}</p>
+    <!-- BODY : description 2 lignes clamp (HTML strippé pour afficher du texte brut) -->
+    <p v-if="dossier.description" class="dcard__sub">{{ plainDescription }}</p>
 
     <!-- FOOT : avatars + status + temps -->
     <div class="dcard__foot">

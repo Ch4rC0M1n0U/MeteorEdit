@@ -56,18 +56,20 @@ const groups = computed<NavGroup[]>(() => [
   {
     titleKey: 'nav.groups.work',
     items: [
+      // /dossiers, /tasks n'existent pas en route MeteorEdit ; on pointe Dashboard et Dossiers
+      // vers / (HomeView gère liste + ouverture via store.currentDossier).
       { to: '/',          icon: 'pi-home',          labelKey: 'nav.dashboard' },
-      { to: '/dossiers',  icon: 'pi-folder-open',   labelKey: 'nav.dossiers',  count: props.counts.dossiers },
-      { to: '/tasks',     icon: 'pi-check-square',  labelKey: 'nav.tasks',     count: props.counts.tasks },
+      { to: '/',          icon: 'pi-folder-open',   labelKey: 'nav.dossiers',  count: props.counts.dossiers },
       { to: '/messages',  icon: 'pi-comments',      labelKey: 'nav.messages',  count: props.counts.messages },
     ],
   },
   {
     titleKey: 'nav.groups.library',
     items: [
-      { to: '/templates', icon: 'pi-file',          labelKey: 'nav.templates' },
-      { to: '/osint',     icon: 'pi-search',        labelKey: 'nav.osint' },
-      { to: '/companies', icon: 'pi-building',      labelKey: 'nav.companies' },
+      { to: '/templates',    icon: 'pi-file',          labelKey: 'nav.templates' },
+      { to: '/osint-search', icon: 'pi-search',        labelKey: 'nav.osint' },
+      { to: '/companies',    icon: 'pi-building',      labelKey: 'nav.companies' },
+      { to: '/extension',    icon: 'pi-bookmark',      labelKey: 'nav.extension' },
     ],
   },
   {

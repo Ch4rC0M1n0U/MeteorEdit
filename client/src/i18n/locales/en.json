@@ -258,6 +258,7 @@
       "closedThisYearTrend": "Year {year}"
     },
     "greeting": "Hello.",
+    "greetingNamed": "Hello {name}.",
     "filters": "Filters",
     "customize": "Customize",
     "recentDossiers": "Recent cases",

@@ -258,6 +258,7 @@
       "closedThisYearTrend": "Année {year}"
     },
     "greeting": "Bonjour.",
+    "greetingNamed": "Bonjour {name}.",
     "filters": "Filtres",
     "customize": "Personnaliser",
     "recentDossiers": "Dossiers récents",
