@@ -309,6 +309,13 @@
     "statusInProgress": "En cours",
     "statusClosed": "Clos",
     "statusContinuous": "En continu",
+    "status": {
+      "open": "Ouvert",
+      "in_progress": "En cours",
+      "paused": "En pause",
+      "closed": "Clos",
+      "continuous": "En continu"
+    },
     "objectives": "Objectifs de la recherche",
     "judicialFacts": "Faits judiciaires",
     "synthesis": "Description / Synthèse",

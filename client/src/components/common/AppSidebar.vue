@@ -97,6 +97,17 @@ const userFullName = computed(() => {
 function isActive(to: string): boolean {
   return route.path === to || (to !== '/' && route.path.startsWith(to));
 }
+
+// v3.37.3 — Cliquer Tableau de bord / Dossiers ferme le dossier courant
+// (pattern MeteorEdit : currentDossier ref dans le store, pas de route /dossiers/:id)
+import { useDossierStore } from '@/stores/dossier';
+const dossiers = useDossierStore();
+function handleNavClick(to: string, navigate: () => void) {
+  if (to === '/' && dossiers.currentDossier) {
+    dossiers.closeDossier();
+  }
+  navigate();
+}
 </script>
 
 <template>
@@ -129,7 +140,7 @@ function isActive(to: string): boolean {
             :aria-current="isActive(item.to) ? 'page' : undefined"
             :data-label="t(item.labelKey)"
             :title="collapsed ? t(item.labelKey) : undefined"
-            @click="navigate"
+            @click="handleNavClick(item.to, navigate)"
           >
             <i class="pi" :class="item.icon" />
             <span class="nav-item__label">{{ t(item.labelKey) }}</span>

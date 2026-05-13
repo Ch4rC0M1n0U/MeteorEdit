@@ -309,6 +309,13 @@
     "statusInProgress": "In behandeling",
     "statusClosed": "Gesloten",
     "statusContinuous": "Doorlopend",
+    "status": {
+      "open": "Open",
+      "in_progress": "In behandeling",
+      "paused": "Gepauzeerd",
+      "closed": "Gesloten",
+      "continuous": "Doorlopend"
+    },
     "objectives": "Onderzoeksdoelstellingen",
     "judicialFacts": "Gerechtelijke feiten",
     "synthesis": "Beschrijving / Samenvatting",

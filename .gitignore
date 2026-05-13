@@ -79,3 +79,4 @@ logo.png
 .wwebjs_cache/
 server/.wwebjs_auth/
 server/.wwebjs_cache/
+.gstack/
