@@ -21,6 +21,7 @@ import TaskList, { type Task } from '@/components/shared/TaskList.vue';
 import ActivityTimeline, { type ActivityItem } from '@/components/shared/ActivityTimeline.vue';
 import DossierCard, { type DossierLike } from '@/components/dossier/DossierCard.vue';
 import CreateDossierDialog from '@/components/dossier/CreateDossierDialog.vue';
+import DossierView from '@/components/dossier/DossierView.vue';
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -90,7 +91,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="dashboard home-page">
+  <!-- v3.37.1 — Pattern MeteorEdit : si un dossier est ouvert (store), on affiche DossierView,
+       sinon on affiche le tableau de bord. Pas de routage /dossiers/:id. -->
+  <DossierView v-if="dossiers.currentDossier" />
+  <div v-else class="dashboard home-page">
     <!-- Actions contextuelles téléportées vers la topbar (compat legacy : id="topbar-actions") -->
     <Teleport to="#topbar-actions" defer>
       <Button
